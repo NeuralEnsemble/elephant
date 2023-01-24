@@ -529,10 +529,158 @@ def multitaper_psd(signal, n_segments=1, len_segment=None,
     return freqs, psd
 
 
-def multitaper_cross_spectrum(signals, fs=1., n_segments=1, len_segment=None,
-                              frequency_resolution=None, overlap=0.5, nw=4.,
-                              num_tapers=None, peak_resolution=None,
-                              return_onesided=True, axis=-1):
+def multitaper_cross_spectrum(signals, fs=1., nw=4, num_tapers=None,
+                              peak_resolution=None, return_onesided=True):
+    """
+    Estimates the cross spectrum of a given 'neo.AnalogSignal' using the
+    Multitaper method.
+
+    The cross spectrum is obtained through the following steps
+
+    1. obtain approximately independent estimates of the spectrum for each
+       signal by multiplying the segment with tapering functions (obtained as
+       the discrete prolate spheroidal functions, also known as slepian
+       functions) and calculating the cross spectrum for the tapered signals.
+       The number of tapering functions (and hence the number of the estimates)
+       is specified by the parameter `num_tapers`.
+
+    2. average the approximately independent estimates of each signal to
+       decrease overall variance of the estimates
+
+    Parameters
+    ----------
+    signal : neo.AnalogSignal or pq.Quantity or np.ndarray
+        Time series data of which PSD is estimated. When `signal` is
+        np.ndarray, it needs to be passed as a 2-dimensional array of shape
+        (n_channels, n_samples), and the data sampling frequency should be
+        given through the keyword argument `fs`.
+    fs : float, optional
+        Specifies the sampling frequency of the input time series
+        Default: 1.0.
+    frequency_resolution : pq.Quantity or float, optional
+        Desired frequency resolution of the obtained PSD estimate in terms of
+        the interval between adjacent frequency bins. When given as a `float`,
+        it is taken as frequency in Hz.
+        If None, it will be determined from other parameters.
+        Default: None.
+    nw : float, optional
+        Time-halfbandwidth product. This parameter can be used to determine the
+        number of tapers following the equation:
+            num_tapers = 2*nw - 1
+        It can be determined by multplying the duration of the signal with the
+        desired half-peak resolution frequency:
+            n_samples/fs * peak_resolution/2.
+        Default: 4.0.
+    num_tapers : int, optional
+        Number of tapers used in step 2 (see above) to obtain estimate of PSD.
+        By default, [2*nw] - 1 is chosen.
+        Default: None.
+    peak_resolution : pq.Quantity float, optional
+        Quantity in Hz determining the number of tapers used for analysis.
+        Fine peak resolution --> low numerical value --> low number of tapers
+        High peak resolution --> high numerical value --> high number of tapers
+        When given as a `float`, it is taken as frequency in Hz.
+        Default: None.
+    return_onesided : bool, optional
+        If True, return a one-sided spectrum for real data.
+        If False return a two-sided spectrum.
+        Default: True.
+
+    Notes
+    -----
+    1. There is a parameter hierarchy regarding nw, num_tapers and
+       peak_resolution. If peak_resolution is provided, it determines both nw
+       and the num_tapers. Specifying num_tapers has an effect only if
+       peak_resolution is not provided.
+
+    Returns
+    -------
+    freqs : np.ndarray
+        Frequencies associated with power estimate in `psd`
+    cross_spec : np.ndarray
+        Estimate of the cross spectrum of time series in `signal`
+
+    Raises
+    ------
+    ValueError
+        If `peak_resolution` is None and `num_tapers` is not a positive number.
+
+    TypeError
+        If `peak_resolution` is None and `num_tapers` is not an int.
+    """
+    # When the input is AnalogSignal, fetch the underlying numpy array and swap
+    # axes from (n_samples, n_channels) to (n_channels, n_samples)
+    data = np.asarray(signals)
+    if isinstance(signals, neo.AnalogSignal):
+        data = np.moveaxis(data, 0, 1)
+
+    # Number of data points in time series
+    length_signal = np.shape(data)[1]
+
+    # If the data is given as AnalogSignal, use its attribute to specify the
+    # sampling frequency
+    if hasattr(signals, 'sampling_rate'):
+        fs = signals.sampling_rate.rescale('Hz')
+
+    # If fs and peak resolution is pq.Quantity, get magnitude
+    if isinstance(fs, pq.quantity.Quantity):
+        fs = fs.rescale('Hz').magnitude
+
+    # Determine time-halfbandwidth product from given parameters
+    if peak_resolution is not None:
+        if isinstance(peak_resolution, pq.quantity.Quantity):
+            peak_resolution = peak_resolution.rescale('Hz').magnitude
+        if peak_resolution <= 0:
+            raise ValueError("peak_resolution must be positive")
+        nw = n_per_seg / fs * peak_resolution / 2
+        num_tapers = int(np.floor(2*nw) - 1)
+
+    if num_tapers is None:
+        num_tapers = int(np.floor(2*nw) - 1)
+    else:
+        if not isinstance(num_tapers, int):
+            raise TypeError("num_tapers must be integer")
+        if num_tapers <= 0:
+            raise ValueError("num_tapers must be positive")
+
+    # Get slepian functions (sym='False' used for spectral analysis)
+    slepian_fcts = scipy.signal.windows.dpss(M=n_samples,
+                                             NW=nw,
+                                             #Kmax=num_tapers,
+                                             Kmax=7,
+                                             sym=False)
+
+    # Use broadcasting to match dime for point-wise multiplication
+    tapered_signals = (signals[:, np.newaxis] * slepian_fcts)
+
+
+    if return_onesided:
+        # Determine frequencies for real Fourier transform
+        freqs = np.fft.rfftfreq(length_signal, 1 / fs)
+        # Determine real Fourier transform of tapered signal
+        spectrum_estimates = np.fft.rfft(tapered_signals, axis=-1)
+
+    else:
+        # Determine frequencies for full Fourier transform
+        freqs = np.fft.fftfreq(length_signal, 1 / fs)
+        # Determine full Fourier transform of tapered signal
+        spectrum_estimates = np.fft.fft(tapered_signals, axis=-1)
+
+    temp = (spectrum_estimates[np.newaxis, :, :, :]
+            * np.conjugate(spectrum_estimates[:, np.newaxis, :, :]))
+
+
+    # Average Fourier transform windowed signal
+    cross_spec = np.mean(temp, axis=-2, dtype=np.complex64) / fs
+
+    return freq, cross_spec
+
+def segmented_multitaper_cross_spectrum(signals, fs=1., n_segments=1,
+                                        len_segment=None,
+                                        frequency_resolution=None,
+                                        overlap=0.5, nw=4., num_tapers=None,
+                                        peak_resolution=None,
+                                        return_onesided=True):
     """
     Estimates the cross spectrum of a given 'neo.AnalogSignal' using the
     Multitaper method.
@@ -546,14 +694,14 @@ def multitaper_cross_spectrum(signals, fs=1., n_segments=1, len_segment=None,
        to the parameters `n_segments`, `len_segment` or `frequency_resolution`.
        By default, the data is not cut into segments;
 
-    2. Obtain approximately independent estimates of the spectrum for each
+    2. obtain approximately independent estimates of the spectrum for each
        signal segment by multiplying the segment with tapering functions
        (obtained as the discrete prolate spheroidal functions, also known as
-       Slepian functions) and calculating the cross spectrum for the tapered
-       segment. The number of tapering functions (and hence the number of the
+       slepian functions) and calculating the cross spectrum for the tapered
+       segment. the number of tapering functions (and hence the number of the
        estimates) is specified by the parameter `num_tapers`.
 
-    3. Average the approximately independent estimates of each segment to
+    3. average the approximately independent estimates of each segment to
        decrease overall variance of the estimates
 
     4. Average the obtained estimates for each segment
@@ -742,10 +890,6 @@ def multitaper_cross_spectrum(signals, fs=1., n_segments=1, len_segment=None,
                                      data.shape[0],
                                      len(freqs)),
                                     dtype=np.complex64)
-    phase_spec_estimates = np.zeros((n_segments,
-                                     data.shape[0],
-                                     data.shape[0],
-                                     len(freqs)))
 
     n_overlap_step = n_per_seg - n_overlap
 
@@ -1122,3 +1266,9 @@ def welch_cohere(*args, **kwargs):
     warnings.warn("'welch_cohere' is deprecated; use 'welch_coherence'",
                   DeprecationWarning)
     return welch_coherence(*args, **kwargs)
+
+if __name__ == '__main__':
+
+    signals = np.random.normal(0, 1, (2, 10))
+
+    f, c = multitaper_cross_spectrum(signals)
