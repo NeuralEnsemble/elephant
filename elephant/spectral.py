@@ -12,7 +12,7 @@ spectrum).
     multitaper_cross_spectrum
     multitaper_coherence
 
-    
+
 :copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
@@ -644,10 +644,9 @@ def multitaper_cross_spectrum(signals, fs=1., nw=4, num_tapers=None,
             raise ValueError("num_tapers must be positive")
 
     # Get slepian functions (sym='False' used for spectral analysis)
-    slepian_fcts = scipy.signal.windows.dpss(M=n_samples,
+    slepian_fcts = scipy.signal.windows.dpss(M=length_signal,
                                              NW=nw,
-                                             #Kmax=num_tapers,
-                                             Kmax=7,
+                                             Kmax=num_tapers,
                                              sym=False)
 
     # Use broadcasting to match dime for point-wise multiplication
@@ -673,14 +672,11 @@ def multitaper_cross_spectrum(signals, fs=1., nw=4, num_tapers=None,
     # Average Fourier transform windowed signal
     cross_spec = np.mean(temp, axis=-2, dtype=np.complex64) / fs
 
-    return freq, cross_spec
+    return freqs, cross_spec
 
-def segmented_multitaper_cross_spectrum(signals, fs=1., n_segments=1,
-                                        len_segment=None,
-                                        frequency_resolution=None,
-                                        overlap=0.5, nw=4., num_tapers=None,
-                                        peak_resolution=None,
-                                        return_onesided=True):
+def _segmented_apply_func(signals, n_segments=1, len_segment=None,
+                          frequency_resolution=None, overlap=0.5,
+                          func=None, func_params_dict=None):
     """
     Estimates the cross spectrum of a given 'neo.AnalogSignal' using the
     Multitaper method.
@@ -800,7 +796,6 @@ def segmented_multitaper_cross_spectrum(signals, fs=1., n_segments=1,
     TypeError
         If `peak_resolution` is None and `num_tapers` is not an int.
     """
-
     # When the input is AnalogSignal, fetch the underlying numpy array and swap
     # axes from (n_samples, n_channels) to (n_channels, n_samples)
     data = np.asarray(signals)
@@ -809,6 +804,17 @@ def segmented_multitaper_cross_spectrum(signals, fs=1., n_segments=1,
 
     # Number of data points in time series
     length_signal = np.shape(data)[1]
+
+    # It is assumed that data has shape (n_channels, n_samples). To fetch
+    # samples set correct axis
+    axis = -1
+
+    # If the data is given as AnalogSignal, use its attribute to specify the
+    # sampling frequency
+    if hasattr(signals, 'sampling_rate'):
+        fs = signals.sampling_rate.rescale('Hz')
+    else:
+        fs = func_params_dict.get('fs')
 
     # If the data is given as AnalogSignal, use its attribute to specify the
     # sampling frequency
@@ -854,26 +860,8 @@ def segmented_multitaper_cross_spectrum(signals, fs=1., n_segments=1,
     n_overlap = int(n_per_seg * overlap)
     n_segments = int((length_signal - n_overlap) / (n_per_seg - n_overlap))
 
-
-    # Determine time-halfbandwidth product from given parameters
-    if peak_resolution is not None:
-        if isinstance(peak_resolution, pq.quantity.Quantity):
-            peak_resolution = peak_resolution.rescale('Hz').magnitude
-        if peak_resolution <= 0:
-            raise ValueError("peak_resolution must be positive")
-        nw = n_per_seg / fs * peak_resolution / 2
-        num_tapers = int(np.floor(2*nw) - 1)
-
-    if num_tapers is None:
-        num_tapers = int(np.floor(2*nw) - 1)
-    else:
-        if not isinstance(num_tapers, int):
-            raise TypeError("num_tapers must be integer")
-        if num_tapers <= 0:
-            raise ValueError("num_tapers must be positive")
-
     # Generate frequencies of CSD estimate
-    if return_onesided:
+    if func_params_dict.get('return_onesided'):
         freqs = np.fft.rfftfreq(n_per_seg, d=1/fs)
     else:
         freqs = np.fft.fftfreq(n_per_seg, d=1/fs)
@@ -885,51 +873,52 @@ def segmented_multitaper_cross_spectrum(signals, fs=1., n_segments=1,
                   mode='constant', constant_values=0)
 
     # Generate array for storing cross spectra estimates of segments
-    cross_spec_estimates = np.zeros((n_segments,
-                                     data.shape[0],
-                                     data.shape[0],
-                                     len(freqs)),
-                                    dtype=np.complex64)
+    seg_estimates = np.zeros((n_segments,
+                              data.shape[0],
+                              data.shape[0],
+                              len(freqs)),
+                              dtype=np.complex64)
 
     n_overlap_step = n_per_seg - n_overlap
 
     for i in range(n_segments):
-        # Get slepian functions (sym='False' used for spectral analysis)
-        slepian_fcts = scipy.signal.windows.dpss(M=n_per_seg,
-                                                 NW=nw,
-                                                 Kmax=num_tapers,
-                                                 sym=False)
 
-        # Use broadcasting to match dime for point-wise multiplication
-        tapered_signal = (data[:, np.newaxis,
-                               i * n_overlap_step:
-                               i * n_overlap_step + n_per_seg]
-                          * slepian_fcts)
+        _, estimate = func(
+            data[:, i * n_overlap_step:i * n_overlap_step + n_per_seg],
+            **func_params_dict)
 
-        if return_onesided:
-            # Determine real Fourier transform of tapered signal
-            spectrum_estimates = np.fft.rfft(tapered_signal, axis=-1)
+        seg_estimates[i] = estimate
 
-        else:
-            # Determine full Fourier transform of tapered signal
-            spectrum_estimates = np.fft.fft(tapered_signal, axis=-1)
-
-        temp = (spectrum_estimates[np.newaxis, :, :, :]
-                * np.conjugate(spectrum_estimates[:, np.newaxis, :, :]))
-
-        # Average Fourier transform windowed signal
-        cross_spec_estimates[i] = np.mean(temp,
-                                          axis=-2,
-                                          dtype=np.complex64) / fs
-
-    cross_spec = np.mean(cross_spec_estimates, axis=0)
+    avg_estimate = np.mean(seg_estimates, axis=0)
 
     # Attach proper units to return values
     if isinstance(signals, pq.quantity.Quantity):
         cross_spec = cross_spec * signals.units * signals.units / pq.Hz
         freqs = freqs * pq.Hz
 
-    return freqs, cross_spec
+    return freqs, avg_estimate
+
+def segmented_multitaper_cross_spectrum(signals, n_segments=1,
+                                        len_segment=None,
+                                        frequency_resolution=None, overlap=0.5,
+                                        fs=1, nw=4, num_tapers=None,
+                                        peak_resolution=None,
+                                        return_onesided=True):
+
+    cross_spec_params_dict = {
+        'fs': fs,
+        'nw': nw,
+        'num_tapers': num_tapers,
+        'peak_resolution': peak_resolution,
+        'return_onesided': return_onesided}
+
+    freqs, cross_sepc_estimate = _segmented_apply_func(
+        signals=signals, n_segments=n_segments, len_segment=len_segment,
+        frequency_resolution=frequency_resolution,
+        func=multitaper_cross_spectrum,
+        func_params_dict=cross_spec_params_dict)
+
+    return freqs, cross_sepc_estimate
 
 
 def multitaper_coherence(signal_i, signal_j, n_segments=8, len_segment=None,
@@ -1271,4 +1260,5 @@ if __name__ == '__main__':
 
     signals = np.random.normal(0, 1, (2, 10))
 
-    f, c = multitaper_cross_spectrum(signals)
+    f, c = segmented_multitaper_cross_spectrum(signals, len_segment=5,
+                                               num_tapers=2, nw=2)
