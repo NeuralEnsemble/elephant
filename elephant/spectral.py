@@ -652,7 +652,6 @@ def multitaper_cross_spectrum(signals, fs=1., nw=4, num_tapers=None,
     # Use broadcasting to match dime for point-wise multiplication
     tapered_signals = (signals[:, np.newaxis] * slepian_fcts)
 
-
     if return_onesided:
         # Determine frequencies for real Fourier transform
         freqs = np.fft.rfftfreq(length_signal, 1 / fs)
@@ -668,11 +667,11 @@ def multitaper_cross_spectrum(signals, fs=1., nw=4, num_tapers=None,
     temp = (spectrum_estimates[np.newaxis, :, :, :]
             * np.conjugate(spectrum_estimates[:, np.newaxis, :, :]))
 
-
     # Average Fourier transform windowed signal
     cross_spec = np.mean(temp, axis=-2, dtype=np.complex64) / fs
 
     return freqs, cross_spec
+
 
 def _segmented_apply_func(signals, n_segments=1, len_segment=None,
                           frequency_resolution=None, overlap=0.5,
@@ -877,7 +876,7 @@ def _segmented_apply_func(signals, n_segments=1, len_segment=None,
                               data.shape[0],
                               data.shape[0],
                               len(freqs)),
-                              dtype=np.complex64)
+                             dtype=np.complex64)
 
     n_overlap_step = n_per_seg - n_overlap
 
@@ -892,6 +891,7 @@ def _segmented_apply_func(signals, n_segments=1, len_segment=None,
     avg_estimate = np.mean(seg_estimates, axis=0)
 
     return freqs, avg_estimate
+
 
 def segmented_multitaper_cross_spectrum(signals, n_segments=1,
                                         len_segment=None,
@@ -909,7 +909,7 @@ def segmented_multitaper_cross_spectrum(signals, n_segments=1,
 
     freqs, cross_spec_estimate = _segmented_apply_func(
         signals=signals, n_segments=n_segments, len_segment=len_segment,
-        frequency_resolution=frequency_resolution,
+        overlap=overlap, frequency_resolution=frequency_resolution,
         func=multitaper_cross_spectrum,
         func_params_dict=cross_spec_params_dict)
 
@@ -996,7 +996,7 @@ def multitaper_coherence(signal_i, signal_j, n_segments=8, len_segment=None,
     """
     signals = np.vstack([signal_i, signal_j])
 
-    freqs, Pxy = multitaper_cross_spectrum(
+    freqs, Pxy = segmented_multitaper_cross_spectrum(
         signals=signals, n_segments=n_segments, len_segment=len_segment,
         frequency_resolution=frequency_resolution, overlap=overlap, fs=fs,
         nw=nw, num_tapers=num_tapers, peak_resolution=peak_resolution)
@@ -1256,6 +1256,7 @@ def welch_cohere(*args, **kwargs):
     warnings.warn("'welch_cohere' is deprecated; use 'welch_coherence'",
                   DeprecationWarning)
     return welch_coherence(*args, **kwargs)
+
 
 if __name__ == '__main__':
 
