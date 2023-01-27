@@ -632,7 +632,7 @@ def multitaper_cross_spectrum(signals, fs=1., nw=4, num_tapers=None,
             peak_resolution = peak_resolution.rescale('Hz').magnitude
         if peak_resolution <= 0:
             raise ValueError("peak_resolution must be positive")
-        nw = n_per_seg / fs * peak_resolution / 2
+        nw = length_signal / fs * peak_resolution / 2
         num_tapers = int(np.floor(2*nw) - 1)
 
     if num_tapers is None:
@@ -891,11 +891,6 @@ def _segmented_apply_func(signals, n_segments=1, len_segment=None,
 
     avg_estimate = np.mean(seg_estimates, axis=0)
 
-    # Attach proper units to return values
-    if isinstance(signals, pq.quantity.Quantity):
-        cross_spec = cross_spec * signals.units * signals.units / pq.Hz
-        freqs = freqs * pq.Hz
-
     return freqs, avg_estimate
 
 def segmented_multitaper_cross_spectrum(signals, n_segments=1,
@@ -912,13 +907,19 @@ def segmented_multitaper_cross_spectrum(signals, n_segments=1,
         'peak_resolution': peak_resolution,
         'return_onesided': return_onesided}
 
-    freqs, cross_sepc_estimate = _segmented_apply_func(
+    freqs, cross_spec_estimate = _segmented_apply_func(
         signals=signals, n_segments=n_segments, len_segment=len_segment,
         frequency_resolution=frequency_resolution,
         func=multitaper_cross_spectrum,
         func_params_dict=cross_spec_params_dict)
 
-    return freqs, cross_sepc_estimate
+    # Attach proper units to return values
+    if isinstance(signals, pq.quantity.Quantity):
+        cross_spec_estimate = cross_spec_estimate * signals.units * \
+                              signals.units / pq.Hz
+        freqs = freqs * pq.Hz
+
+    return freqs, cross_spec_estimate
 
 
 def multitaper_coherence(signal_i, signal_j, n_segments=8, len_segment=None,
@@ -1260,5 +1261,28 @@ if __name__ == '__main__':
 
     signals = np.random.normal(0, 1, (2, 10))
 
-    f, c = segmented_multitaper_cross_spectrum(signals, len_segment=5,
-                                               num_tapers=2, nw=2)
+    # f, c = segmented_multitaper_cross_spectrum(signals, len_segment=5,
+    #                                            num_tapers=2, nw=2)
+    import neo.core as n
+    r = np.ones(2501) * 0.2
+    r[0], r[500] = 0, 10  # Zero DC, peak at 100 Hz
+    phi_x = np.random.uniform(-np.pi, np.pi, len(r))
+    phi_y = np.random.uniform(-np.pi, np.pi, len(r))
+    fake_coeffs_x = r * np.exp(1j * phi_x)
+    fake_coeffs_y = r * np.exp(1j * phi_y)
+    signal_x = scipy.fft.irfft(fake_coeffs_x)
+    signal_y = scipy.fft.irfft(fake_coeffs_y)
+    sampling_period = 0.001
+    freqs = scipy.fft.rfftfreq(len(signal_x), d=sampling_period)
+    signal_freq = freqs[r.argmax()]
+    data = n.AnalogSignal(np.vstack([signal_x, signal_y]).T,
+                          sampling_period=sampling_period * pq.s,
+                          units='mV')
+
+    freqs, csd = segmented_multitaper_cross_spectrum(data,
+                                                     fs=data.sampling_rate,
+                                                     nw=4)
+
+    import matplotlib.pyplot as plt
+
+    plt.semilogy(freqs, csd[0, 1, :])
