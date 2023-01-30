@@ -20,9 +20,8 @@ Introductory
 
   .. image:: https://mybinder.org/badge.svg
      :target: https://mybinder.org/v2/gh/NeuralEnsemble/elephant/master?filepath=doc/tutorials/statistics.ipynb
-
-.. image:: https://img.shields.io/badge/try%20it%20on-ebrains-brightgreen
-    :target: https://lab.ch.ebrains.eu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FNeuralEnsemble%2Felephant&urlpath=lab%2Ftree%2Felephant%2Fdoc%2Ftutorials%2Fstatistics.ipynb&branch=master
+  .. image:: https://img.shields.io/badge/try%20it%20on-ebrains-brightgreen
+     :target: https://lab.ch.ebrains.eu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FNeuralEnsemble%2Felephant&urlpath=lab%2Ftree%2Felephant%2Fdoc%2Ftutorials%2Fstatistics.ipynb&branch=master
 
 Advanced
 --------
@@ -38,9 +37,8 @@ Advanced
 
   .. image:: https://mybinder.org/badge.svg
      :target: https://mybinder.org/v2/gh/NeuralEnsemble/elephant/master?filepath=doc/tutorials/unitary_event_analysis.ipynb
-
-.. image:: https://img.shields.io/badge/try%20it%20on-ebrains-brightgreen
-    :target: https://lab.ch.ebrains.eu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FNeuralEnsemble%2Felephant&urlpath=lab%2Ftree%2Felephant%2Fdoc%2Ftutorials%2F+unitary_event_analysis.ipynb&branch=master
+  .. image:: https://img.shields.io/badge/try%20it%20on-ebrains-brightgreen
+     :target: https://lab.ch.ebrains.eu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FNeuralEnsemble%2Felephant&urlpath=lab%2Ftree%2Felephant%2Fdoc%2Ftutorials%2F+unitary_event_analysis.ipynb&branch=master
 
 * Gaussian Process Factor Analysis (GPFA).
 
@@ -51,9 +49,8 @@ Advanced
 
   .. image:: https://mybinder.org/badge.svg
      :target: https://mybinder.org/v2/gh/NeuralEnsemble/elephant/master?filepath=doc/tutorials/gpfa.ipynb
-
-.. image:: https://img.shields.io/badge/try%20it%20on-ebrains-brightgreen
-    :target: https://lab.ch.ebrains.eu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FNeuralEnsemble%2Felephant&urlpath=lab%2Ftree%2Felephant%2Fdoc%2Ftutorials%2Fgpfa.ipynb&branch=master
+  .. image:: https://img.shields.io/badge/try%20it%20on-ebrains-brightgreen
+     :target: https://lab.ch.ebrains.eu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FNeuralEnsemble%2Felephant&urlpath=lab%2Ftree%2Felephant%2Fdoc%2Ftutorials%2Fgpfa.ipynb&branch=master
 
 * Spike Pattern Detection and Evaluation (SPADE)
 
@@ -61,9 +58,8 @@ Advanced
 
   .. image:: https://mybinder.org/badge.svg
      :target: https://mybinder.org/v2/gh/NeuralEnsemble/elephant/master?filepath=doc/tutorials/spade.ipynb
-
-.. image:: https://img.shields.io/badge/try%20it%20on-ebrains-brightgreen
-    :target: https://lab.ch.ebrains.eu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FNeuralEnsemble%2Felephant&urlpath=lab%2Ftree%2Felephant%2Fdoc%2Ftutorials%2Fspade.ipynb&branch=master
+  .. image:: https://img.shields.io/badge/try%20it%20on-ebrains-brightgreen
+     :target: https://lab.ch.ebrains.eu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FNeuralEnsemble%2Felephant&urlpath=lab%2Ftree%2Felephant%2Fdoc%2Ftutorials%2Fspade.ipynb&branch=master
 
 * Analysis of Sequences of Synchronous EvenTs (ASSET)
 
@@ -71,9 +67,8 @@ Advanced
 
   .. image:: https://mybinder.org/badge.svg
      :target: https://mybinder.org/v2/gh/NeuralEnsemble/elephant/master?filepath=doc/tutorials/asset.ipynb
-
-.. image:: https://img.shields.io/badge/try%20it%20on-ebrains-brightgreen
-    :target: https://lab.ch.ebrains.eu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FNeuralEnsemble%2Felephant&urlpath=lab%2Ftree%2Felephant%2Fdoc%2Ftutorials%2Fasset.ipynb&branch=master
+  .. image:: https://img.shields.io/badge/try%20it%20on-ebrains-brightgreen
+     :target: https://lab.ch.ebrains.eu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FNeuralEnsemble%2Felephant&urlpath=lab%2Ftree%2Felephant%2Fdoc%2Ftutorials%2Fasset.ipynb&branch=master
 
 * Granger causality
 
@@ -81,9 +76,8 @@ Advanced
 
   .. image:: https://mybinder.org/badge.svg
      :target: https://mybinder.org/v2/gh/NeuralEnsemble/elephant/master?filepath=doc/tutorials/granger_causality.ipynb
-
-.. image:: https://img.shields.io/badge/try%20it%20on-ebrains-brightgreen
-    :target: https://lab.ch.ebrains.eu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FNeuralEnsemble%2Felephant&urlpath=lab%2Ftree%2Felephant%2Fdoc%2Ftutorials%2Fgranger_causality.ipynb+&branch=master
+  .. image:: https://img.shields.io/badge/try%20it%20on-ebrains-brightgreen
+     :target: https://lab.ch.ebrains.eu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FNeuralEnsemble%2Felephant&urlpath=lab%2Ftree%2Felephant%2Fdoc%2Ftutorials%2Fgranger_causality.ipynb+&branch=master
 
 
 Additional
@@ -98,9 +92,8 @@ Additional
 
   .. image:: https://mybinder.org/badge.svg
      :target: https://mybinder.org/v2/gh/NeuralEnsemble/elephant/master?filepath=doc/tutorials/parallel.ipynb
-
-.. image:: https://img.shields.io/badge/try%20it%20on-ebrains-brightgreen
-    :target: https://lab.ch.ebrains.eu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FNeuralEnsemble%2Felephant&urlpath=lab%2Ftree%2Felephant%2Fdoc%2Ftutorials%2Fparallel.ipynb+&branch=master
+  .. image:: https://img.shields.io/badge/try%20it%20on-ebrains-brightgreen
+     :target: https://lab.ch.ebrains.eu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FNeuralEnsemble%2Felephant&urlpath=lab%2Ftree%2Felephant%2Fdoc%2Ftutorials%2Fparallel.ipynb+&branch=master
 
 ..
     Index the notebooks in a hidden toctree to avoid sphinx warnings.
