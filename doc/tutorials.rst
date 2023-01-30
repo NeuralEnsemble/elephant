@@ -4,7 +4,8 @@ Tutorials
 
 These tutorials provide narrative explanations, sample code, and expected
 output for some of the neurophysiological analyses in Elephant. You can browse
-the tutorials or launch them in mybinder to change and interact with the code.
+the tutorials, launch them in mybinder or try them on ebrains to change and
+interact with the code.
 
 
 Introductory
