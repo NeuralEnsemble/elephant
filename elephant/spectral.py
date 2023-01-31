@@ -1319,33 +1319,3 @@ def welch_cohere(*args, **kwargs):
                   DeprecationWarning)
     return welch_coherence(*args, **kwargs)
 
-
-if __name__ == '__main__':
-
-    signals = np.random.normal(0, 1, (2, 10))
-
-    # f, c = segmented_multitaper_cross_spectrum(signals, len_segment=5,
-    #                                            num_tapers=2, nw=2)
-    import neo.core as n
-    r = np.ones(2501) * 0.2
-    r[0], r[500] = 0, 10  # Zero DC, peak at 100 Hz
-    phi_x = np.random.uniform(-np.pi, np.pi, len(r))
-    phi_y = np.random.uniform(-np.pi, np.pi, len(r))
-    fake_coeffs_x = r * np.exp(1j * phi_x)
-    fake_coeffs_y = r * np.exp(1j * phi_y)
-    signal_x = scipy.fft.irfft(fake_coeffs_x)
-    signal_y = scipy.fft.irfft(fake_coeffs_y)
-    sampling_period = 0.001
-    freqs = scipy.fft.rfftfreq(len(signal_x), d=sampling_period)
-    signal_freq = freqs[r.argmax()]
-    data = n.AnalogSignal(np.vstack([signal_x, signal_y]).T,
-                          sampling_period=sampling_period * pq.s,
-                          units='mV')
-
-    freqs, csd = segmented_multitaper_cross_spectrum(data,
-                                                     fs=data.sampling_rate,
-                                                     nw=4)
-
-    import matplotlib.pyplot as plt
-
-    plt.semilogy(freqs, csd[0, 1, :])
