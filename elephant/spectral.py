@@ -674,7 +674,7 @@ def multitaper_cross_spectrum(signals, fs=1., nw=4, num_tapers=None,
     # Average Fourier transform windowed signal
     cross_spec = np.mean(temp, axis=-2, dtype=np.complex64) / fs
 
-    if attach_units and isinstance(signal, pq.quantity.Quantity):
+    if attach_units and isinstance(signals, pq.quantity.Quantity):
         freqs = freqs * pq.Hz
         cross_spec = cross_spec * signals.units * signals.units / pq.Hz
 
