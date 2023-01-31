@@ -530,7 +530,8 @@ def multitaper_psd(signal, n_segments=1, len_segment=None,
 
 
 def multitaper_cross_spectrum(signals, fs=1., nw=4, num_tapers=None,
-                              peak_resolution=None, return_onesided=True):
+                              peak_resolution=None, return_onesided=True,
+                              attach_units=True):
     """
     Estimates the cross spectrum of a given 'neo.AnalogSignal' using the
     Multitaper method.
@@ -650,7 +651,7 @@ def multitaper_cross_spectrum(signals, fs=1., nw=4, num_tapers=None,
                                              sym=False)
 
     # Use broadcasting to match dime for point-wise multiplication
-    tapered_signals = (signals[:, np.newaxis] * slepian_fcts)
+    tapered_signals = (data[:, np.newaxis] * slepian_fcts)
 
     if return_onesided:
         # Determine frequencies for real Fourier transform
@@ -669,6 +670,10 @@ def multitaper_cross_spectrum(signals, fs=1., nw=4, num_tapers=None,
 
     # Average Fourier transform windowed signal
     cross_spec = np.mean(temp, axis=-2, dtype=np.complex64) / fs
+
+    if attach_units:
+        freqs = freqs * pq.Hz
+        cross_spec = cross_spec * signals.units * signals.units / pq.Hz
 
     return freqs, cross_spec
 
@@ -905,7 +910,8 @@ def segmented_multitaper_cross_spectrum(signals, n_segments=1,
         'nw': nw,
         'num_tapers': num_tapers,
         'peak_resolution': peak_resolution,
-        'return_onesided': return_onesided}
+        'return_onesided': return_onesided,
+        'attach_units': False}
 
     freqs, cross_spec_estimate = _segmented_apply_func(
         signals=signals, n_segments=n_segments, len_segment=len_segment,
