@@ -396,53 +396,21 @@ class MultitaperCrossSpectrumTestCase(unittest.TestCase):
         signal = n.AnalogSignal(np.zeros(data_length),
                                 sampling_period=0.001 * pq.s,
                                 units='mV')
-        fs = 1000 * pq.Hz
+        fs = signal.sampling_rate
 
         # check for invalid parameter values
         # - number of tapers
         self.assertRaises(ValueError,
                           elephant.spectral.multitaper_cross_spectrum, signal,
-                          fs, num_tapers=-5)
+                          fs=fs, num_tapers=-5)
         self.assertRaises(TypeError,
                           elephant.spectral.multitaper_cross_spectrum, signal,
-                          fs, num_tapers=-5.0)
+                          fs=fs, num_tapers=-5.0)
         
         # - peak resolution
         self.assertRaises(ValueError,
                           elephant.spectral.multitaper_cross_spectrum, signal,
-                          fs, peak_resolution=-1)
-
-        # - frequency resolution
-        self.assertRaises(ValueError,
-                          elephant.spectral.multitaper_cross_spectrum, signal,
-                          fs, frequency_resolution=-10)
-
-        # - n per segment
-        # n_per_seg = int(fs / dF), where dF is the frequency_resolution
-        broken_freq_resolution = fs / (data_length+1)
-        self.assertRaises(ValueError,
-                          elephant.spectral.multitaper_cross_spectrum, signal,
-                          fs, frequency_resolution=broken_freq_resolution)
-
-        # - length of segment (negative)
-        self.assertRaises(ValueError,
-                          elephant.spectral.multitaper_cross_spectrum, signal,
-                          fs, len_segment=-10)
-
-        # - length of segment (larger than data length)
-        self.assertRaises(ValueError,
-                          elephant.spectral.multitaper_cross_spectrum, signal,
-                          fs, len_segment=data_length+1)
-
-        # - number of segments (negative)
-        self.assertRaises(ValueError,
-                          elephant.spectral.multitaper_cross_spectrum, signal,
-                          fs, n_segments=-10)
-
-        # - number of segments (larger than data length)
-        self.assertRaises(ValueError,
-                          elephant.spectral.multitaper_cross_spectrum, signal,
-                          fs, n_segments=data_length+1)
+                          fs=fs, peak_resolution=-1)
 
     def test_multitaper_cross_spectrum_behavior(self):
         # generate data (frequency domain to time domain)
@@ -475,22 +443,6 @@ class MultitaperCrossSpectrumTestCase(unittest.TestCase):
                     num_tapers=6)
         self.assertTrue((cross_spec1 == cross_spec2).all()
                         and (freqs1 == freqs2).all())
-
-        # consistency between different ways of specifying n_per_seg
-        # n_per_seg = int(fs/dF) and n_per_seg = len_segment
-        frequency_resolution = 1 * pq.Hz
-        len_segment = int(data.sampling_rate / frequency_resolution)
-
-        freqs_fr, cross_spec_fr = \
-            elephant.spectral.multitaper_cross_spectrum(
-                data, frequency_resolution=frequency_resolution)
-
-        freqs_ls, cross_spec_ls = \
-            elephant.spectral.multitaper_cross_spectrum(
-                data, len_segment=len_segment)
-
-        np.testing.assert_array_equal(freqs_fr, freqs_ls)
-        np.testing.assert_array_equal(cross_spec_fr, cross_spec_ls)
 
         # peak resolution and consistency with data
         peak_res = 1.0 * pq.Hz
@@ -546,69 +498,22 @@ class MultitaperCrossSpectrumTestCase(unittest.TestCase):
                               units='mV')
 
         # Test num_tapers vs nw
-        freqs1, cross_spec1 = \
-                elephant.spectral.multitaper_cross_spectrum(
-                    data,
-                    fs=data.sampling_rate,
-                    nw=3,
-                    num_tapers=9)
-        freqs2, cross_spec2 = \
-                elephant.spectral.multitaper_cross_spectrum(
-                    data,
-                    fs=data.sampling_rate,
-                    nw=3)
+        freqs1, cross_spec1 = elephant.spectral.multitaper_cross_spectrum(
+            data, fs=data.sampling_rate, nw=3, num_tapers=9)
+        freqs2, cross_spec2 = elephant.spectral.multitaper_cross_spectrum(
+            data, fs=data.sampling_rate, nw=3)
+
         self.assertTrue((freqs1 == freqs2).all()
                         and (cross_spec1 != cross_spec2).all())
 
         # Test peak_resolution vs nw
-        freqs1, cross_spec1 = \
-                elephant.spectral.multitaper_cross_spectrum(
-                    data,
-                    fs=data.sampling_rate,
-                    nw=3,
-                    num_tapers=9,
-                    peak_resolution=1)
-        freqs2, cross_spec2 = \
-                elephant.spectral.multitaper_cross_spectrum(
-                    data,
-                    fs=data.sampling_rate,
-                    nw=3,
-                    num_tapers=9)
+        freqs1, cross_spec1 = elephant.spectral.multitaper_cross_spectrum(
+            data, fs=data.sampling_rate, nw=3, num_tapers=9, peak_resolution=1)
+        freqs2, cross_spec2 = elephant.spectral.multitaper_cross_spectrum(
+            data, fs=data.sampling_rate, nw=3, num_tapers=9)
+
         self.assertTrue((freqs1 == freqs2).all()
                         and (cross_spec1 != cross_spec2).all())
-
-    def test_multitaper_cross_spectrum_against_multitaper_psd(self):
-        data_length = 5000
-        sampling_period = 0.001
-        signal_freq = 100.0
-        noise = np.random.normal(size=(2, data_length))
-        time_points = np.arange(0, data_length * sampling_period,
-                                sampling_period)
-        signal_x = np.sin(2 * np.pi * signal_freq * time_points) + noise[0]
-        signal_y = np.cos(2 * np.pi * signal_freq * time_points) + noise[1]
-        data = n.AnalogSignal(np.vstack([signal_x, signal_y]).T,
-                              sampling_period=sampling_period * pq.s,
-                              units='mV')
-
-        freqs1, psd_multitaper = elephant.spectral.multitaper_psd(
-            signal=data, fs=data.sampling_rate, nw=4, num_tapers=8)
-
-        psd_multitaper[:, 1:] /= 2  # since comparing rfft and fft results
-
-        freqs2, cross_spec = \
-                elephant.spectral.multitaper_cross_spectrum(
-                    data,
-                    fs=data.sampling_rate,
-                    nw=4,
-                    num_tapers=8,
-                    return_onesided=True)
-
-        self.assertTrue((freqs1 == freqs2).all())
-
-        np.testing.assert_allclose(psd_multitaper.magnitude,
-                                   np.diagonal(cross_spec).T.real.magnitude,
-                                   rtol=0.01,
-                                   atol=0.01)
 
     def test_multitaper_cross_spectrum_input_types(self):
         # generate a test data
@@ -646,21 +551,6 @@ class MultitaperCrossSpectrumTestCase(unittest.TestCase):
         self.assertFalse(isinstance(freqs_np, pq.quantity.Quantity))
         self.assertFalse(isinstance(cross_spec_np, pq.quantity.Quantity))
 
-        # frequency resolution as an integer
-        freq_res_int = 1
-        freq_res_hz = 1 * pq.Hz
-
-        freqs_int, cross_spec_int = \
-            elephant.spectral.multitaper_cross_spectrum(
-                data, frequency_resolution=freq_res_int)
-
-        freqs_hz, cross_spec_hz = \
-            elephant.spectral.multitaper_cross_spectrum(
-                data, frequency_resolution=freq_res_hz)
-
-        np.testing.assert_array_equal(freqs_int, freqs_hz)
-        np.testing.assert_array_equal(cross_spec_int, cross_spec_hz)
-
         # check if the results from different input types are identical
         self.assertTrue(
             (freqs_neo == freqs_pq).all() and
@@ -668,6 +558,146 @@ class MultitaperCrossSpectrumTestCase(unittest.TestCase):
         self.assertTrue(
             (freqs_neo == freqs_np).all() and
             (cross_spec_neo == cross_spec_np).all())
+
+
+class SegmentedMultitaperCrossSpectrumTestCase(unittest.TestCase):
+    def test_segmented_multitaper_cross_spectrum_errors(self):
+        # generate dummy data
+        data_length = 5000
+        signal = n.AnalogSignal(np.zeros(data_length),
+                                sampling_period=0.001 * pq.s,
+                                units='mV')
+        fs = signal.sampling_rate
+
+        # - frequency resolution
+        self.assertRaises(
+            ValueError, elephant.spectral.segmented_multitaper_cross_spectrum,
+            signal, fs=fs, frequency_resolution=-10)
+
+        # - n per segment
+        # n_per_seg = int(fs / dF), where dF is the frequency_resolution
+        broken_freq_resolution = fs / (data_length+1)
+        self.assertRaises(
+            ValueError, elephant.spectral.segmented_multitaper_cross_spectrum,
+            signal, fs=fs, frequency_resolution=broken_freq_resolution)
+
+        # - length of segment (negative)
+        self.assertRaises(
+            ValueError, elephant.spectral.segmented_multitaper_cross_spectrum,
+            signal, fs=fs, len_segment=-10)
+
+        # - length of segment (larger than data length)
+        self.assertRaises(
+            ValueError, elephant.spectral.segmented_multitaper_cross_spectrum,
+            signal, fs=fs, len_segment=data_length+1)
+
+        # - number of segments (negative)
+        self.assertRaises(
+            ValueError, elephant.spectral.segmented_multitaper_cross_spectrum,
+            signal, fs=fs, n_segments=-10)
+
+        # - number of segments (larger than data length)
+        self.assertRaises(
+            ValueError, elephant.spectral.segmented_multitaper_cross_spectrum,
+            signal, fs=fs, n_segments=data_length+1)
+
+    def test_segmented_multitaper_cross_spectrum_behavior(self):
+        # generate data (frequency domain to time domain)
+        r = np.ones(2501) * 0.2
+        r[0], r[500] = 0, 10  # Zero DC, peak at 100 Hz
+        phi_x = np.random.uniform(-np.pi, np.pi, len(r))
+        phi_y = np.random.uniform(-np.pi, np.pi, len(r))
+        fake_coeffs_x = r*np.exp(1j * phi_x)
+        fake_coeffs_y = r*np.exp(1j * phi_y)
+        signal_x = scipy.fft.irfft(fake_coeffs_x)
+        signal_y = scipy.fft.irfft(fake_coeffs_y)
+        sampling_period = 0.001
+        freqs = scipy.fft.rfftfreq(len(signal_x), d=sampling_period)
+        signal_freq = freqs[r.argmax()]
+        data = n.AnalogSignal(np.vstack([signal_x, signal_y]).T,
+                              sampling_period=sampling_period * pq.s,
+                              units='mV')
+
+        # consistency between different ways of specifying n_per_seg
+        # n_per_seg = int(fs/dF) and n_per_seg = len_segment
+        frequency_resolution = 1 * pq.Hz
+        len_segment = int(data.sampling_rate / frequency_resolution)
+
+        freqs_fr, cross_spec_fr = \
+            elephant.spectral.segmented_multitaper_cross_spectrum(
+                data, frequency_resolution=frequency_resolution)
+
+        freqs_ls, cross_spec_ls = \
+            elephant.spectral.segmented_multitaper_cross_spectrum(
+                data, len_segment=len_segment)
+
+        np.testing.assert_array_equal(freqs_fr, freqs_ls)
+        np.testing.assert_array_equal(cross_spec_fr, cross_spec_ls)
+
+    def test_segmented_multitaper_cross_spectrum_parameter_hierarchy(self):
+        pass
+
+    def test_segmented_multitaper_cross_spectrum_against_multitaper_psd(self):
+        data_length = 5000
+        sampling_period = 0.001
+        signal_freq = 100.0
+        noise = np.random.normal(size=(2, data_length))
+        time_points = np.arange(0, data_length * sampling_period,
+                                sampling_period)
+        signal_x = np.sin(2 * np.pi * signal_freq * time_points) + noise[0]
+        signal_y = np.cos(2 * np.pi * signal_freq * time_points) + noise[1]
+        data = n.AnalogSignal(np.vstack([signal_x, signal_y]).T,
+                              sampling_period=sampling_period * pq.s,
+                              units='mV')
+
+        freqs1, psd_multitaper = elephant.spectral.multitaper_psd(
+            signal=data, fs=data.sampling_rate, nw=4, num_tapers=8)
+
+        psd_multitaper[:, 1:] /= 2  # since comparing rfft and fft results
+
+        freqs2, cross_spec = \
+            elephant.spectral.segmented_multitaper_cross_spectrum(
+                data,
+                fs=data.sampling_rate,
+                nw=4,
+                num_tapers=8,
+                return_onesided=True)
+
+        self.assertTrue((freqs1 == freqs2).all())
+
+        np.testing.assert_allclose(psd_multitaper.magnitude,
+                                   np.diagonal(cross_spec).T.real.magnitude,
+                                   rtol=0.01,
+                                   atol=0.01)
+
+    def test_segmented_multitaper_cross_spectrum_input_types(self):
+        # generate a test data
+        data_length = 5000
+        sampling_period = 0.001
+        signal_freq = 100.0
+        noise = np.random.normal(size=(2, data_length))
+        time_points = np.arange(0, data_length * sampling_period,
+                                sampling_period)
+        signal_x = np.sin(2 * np.pi * signal_freq * time_points) + noise[0]
+        signal_y = np.cos(2 * np.pi * signal_freq * time_points) + noise[1]
+        data = n.AnalogSignal(np.vstack([signal_x, signal_y]).T,
+                              sampling_period=sampling_period * pq.s,
+                              units='mV')
+
+        # frequency resolution as an integer
+        freq_res_int = 1
+        freq_res_hz = 1 * pq.Hz
+
+        freqs_int, cross_spec_int = \
+            elephant.spectral.segmented_multitaper_cross_spectrum(
+                data, frequency_resolution=freq_res_int)
+
+        freqs_hz, cross_spec_hz = \
+            elephant.spectral.segmented_multitaper_cross_spectrum(
+                data, frequency_resolution=freq_res_hz)
+
+        np.testing.assert_array_equal(freqs_int, freqs_hz)
+        np.testing.assert_array_equal(cross_spec_int, cross_spec_hz)
 
 
 class MultitaperCoherenceTestCase(unittest.TestCase):
@@ -771,6 +801,7 @@ class MultitaperCoherenceTestCase(unittest.TestCase):
         np.testing.assert_allclose(peak_heights,
                                    np.pi / 4 * np.ones(len(peak_heights)),
                                    rtol=0.05)
+
 
 class WelchCohereTestCase(unittest.TestCase):
     def test_welch_cohere_errors(self):
