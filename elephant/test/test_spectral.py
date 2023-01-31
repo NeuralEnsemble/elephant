@@ -660,7 +660,46 @@ class SegmentedMultitaperCrossSpectrumTestCase(unittest.TestCase):
             cross_spec_ts[:, :, ts_freq_indices].magnitude, rtol=1e-12, atol=0)
 
     def test_segmented_multitaper_cross_spectrum_parameter_hierarchy(self):
-        pass
+        # test frequency_resolution vs len_segment vs n_segments
+        # generate data (frequency domain to time domain)
+        r = np.ones(2501) * 0.2
+        r[0], r[500] = 0, 10  # Zero DC, peak at 100 Hz
+        phi_x = np.random.uniform(-np.pi, np.pi, len(r))
+        phi_y = np.random.uniform(-np.pi, np.pi, len(r))
+        fake_coeffs_x = r*np.exp(1j * phi_x)
+        fake_coeffs_y = r*np.exp(1j * phi_y)
+        signal_x = scipy.fft.irfft(fake_coeffs_x)
+        signal_y = scipy.fft.irfft(fake_coeffs_y)
+        sampling_period = 0.001
+        freqs = scipy.fft.rfftfreq(len(signal_x), d=sampling_period)
+        signal_freq = freqs[r.argmax()]
+        data = n.AnalogSignal(np.vstack([signal_x, signal_y]).T,
+                              sampling_period=sampling_period * pq.s,
+                              units='mV')
+
+        n_segments = 5
+        len_segment = 2000
+        frequency_resolution = 1 * pq.Hz
+
+        freqs_ns, cross_spec_ns = \
+            elephant.spectral.segmented_multitaper_cross_spectrum(
+                data, n_segments=n_segments)
+
+        freqs_ls, cross_spec_ls = \
+            elephant.spectral.segmented_multitaper_cross_spectrum(
+                data, n_segments=n_segments, len_segment=len_segment)
+
+        freqs_fr, cross_spec_fr = \
+            elephant.spectral.segmented_multitaper_cross_spectrum(
+                data, n_segments=n_segments, len_segment=len_segment,
+                frequency_resolution=frequency_resolution)
+
+        self.assertNotEqual(freqs_ns.shape, freqs_ls.shape)
+        self.assertNotEqual(freqs_ls.shape, freqs_fr.shape)
+        self.assertNotEqual(freqs_fr.shape, freqs_ns.shape)
+        self.assertNotEqual(cross_spec_ns.shape, cross_spec_ls.shape)
+        self.assertNotEqual(cross_spec_ls.shape, cross_spec_fr.shape)
+        self.assertNotEqual(cross_spec_fr.shape, cross_spec_ns.shape)
 
     def test_segmented_multitaper_cross_spectrum_against_multitaper_psd(self):
         data_length = 5000
