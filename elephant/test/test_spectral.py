@@ -634,6 +634,31 @@ class SegmentedMultitaperCrossSpectrumTestCase(unittest.TestCase):
         np.testing.assert_array_equal(freqs_fr, freqs_ls)
         np.testing.assert_array_equal(cross_spec_fr, cross_spec_ls)
 
+        # one-sided vs two-sided spectrum
+        freqs_os, cross_spec_os = \
+            elephant.spectral.segmented_multitaper_cross_spectrum(
+                data, return_onesided=True)
+
+        freqs_ts, cross_spec_ts = \
+            elephant.spectral.segmented_multitaper_cross_spectrum(
+                data, return_onesided=False)
+
+        # Nyquist frequency is negative when using onesided=False (fftfreq)
+        # See: https://docs.scipy.org/doc/scipy/reference/generated/scipy.fft.rfftfreq.html#scipy.fft.rfftfreq  # noqa
+        nonnegative_freqs_indices = np.nonzero(freqs_ts >= 0)[0]
+        nyquist_freq_idx = np.abs(freqs_ts).argmax()
+        ts_freq_indices = np.append(nonnegative_freqs_indices,
+                                    nyquist_freq_idx)
+        ts_overlap_freqs = np.append(
+            freqs_ts[nonnegative_freqs_indices].rescale('Hz').magnitude,
+            np.abs(freqs_ts[nyquist_freq_idx].rescale('Hz').magnitude)) * pq.Hz
+
+        np.testing.assert_array_equal(freqs_os, ts_overlap_freqs)
+
+        np.testing.assert_allclose(
+            cross_spec_os.magnitude,
+            cross_spec_ts[:, :, ts_freq_indices].magnitude, rtol=1e-12, atol=0)
+
     def test_segmented_multitaper_cross_spectrum_parameter_hierarchy(self):
         pass
 
