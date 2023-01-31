@@ -827,6 +827,7 @@ def _segmented_apply_func(signals, func,  n_segments=1, len_segment=None,
                         (n_segments - overlap * (n_segments - 1)))
 
     n_overlap = int(n_per_seg * overlap)
+    n_overlap_step = n_per_seg - n_overlap
     n_segments = int((length_signal - n_overlap) / (n_per_seg - n_overlap))
 
     # Generate frequencies for spectral measure estimate
@@ -836,7 +837,7 @@ def _segmented_apply_func(signals, func,  n_segments=1, len_segment=None,
         freqs = np.fft.fftfreq(n_per_seg, d=1/fs)
 
     # Zero-pad signal to fit segment length
-    remainder = length_signal % n_per_seg
+    remainder = length_signal % n_overlap_step
 
     data = np.pad(data, [(0, 0), (0, remainder)],
                   mode='constant', constant_values=0)
