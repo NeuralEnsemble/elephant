@@ -643,6 +643,28 @@ class SegmentedMultitaperCrossSpectrumTestCase(unittest.TestCase):
             elephant.spectral.segmented_multitaper_cross_spectrum(
                 data, return_onesided=False)
 
+        # test overlap parameter
+        no_overlap = 0
+        half_overlap = 0.5
+        large_overlap = 0.99
+        n_segments = 10
+
+        freqs_no, cross_spec_no = \
+            elephant.spectral.segmented_multitaper_cross_spectrum(
+                data, n_segments=n_segments, overlap=no_overlap)
+
+        freqs_ho, cross_spec_ho = \
+            elephant.spectral.segmented_multitaper_cross_spectrum(
+                data, n_segments=n_segments, overlap=half_overlap)
+
+        freqs_lo, cross_spec_lo = \
+            elephant.spectral.segmented_multitaper_cross_spectrum(
+                data, n_segments=n_segments, overlap=large_overlap)
+
+        self.assertTrue(freqs_no.shape < freqs_ho.shape < freqs_lo.shape)
+        self.assertTrue(
+            cross_spec_no.shape < cross_spec_ho.shape < cross_spec_lo.shape)
+
         # Nyquist frequency is negative when using onesided=False (fftfreq)
         # See: https://docs.scipy.org/doc/scipy/reference/generated/scipy.fft.rfftfreq.html#scipy.fft.rfftfreq  # noqa
         nonnegative_freqs_indices = np.nonzero(freqs_ts >= 0)[0]
