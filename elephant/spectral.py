@@ -586,6 +586,9 @@ def multitaper_cross_spectrum(signals, fs=1., nw=4, num_tapers=None,
         If True, return a one-sided spectrum for real data.
         If False return a two-sided spectrum.
         Default: True.
+    attach_units : bool, optional
+        If True and signal is instance of pq.Quantity, units are attached to
+        the esimtated cross spectrum.
 
     Notes
     -----
@@ -671,7 +674,7 @@ def multitaper_cross_spectrum(signals, fs=1., nw=4, num_tapers=None,
     # Average Fourier transform windowed signal
     cross_spec = np.mean(temp, axis=-2, dtype=np.complex64) / fs
 
-    if attach_units:
+    if attach_units and isinstance(signal, pq.quantity.Quantity):
         freqs = freqs * pq.Hz
         cross_spec = cross_spec * signals.units * signals.units / pq.Hz
 
