@@ -58,6 +58,11 @@ class Trials:
         """Get the number of analogsignals in each trial."""
         pass
 
+    @abstractmethod
+    def get_spiketrains_list_from_trial(self, trial_number: int) -> List[neo.core.SpikeTrain]:
+        """Get all spiketrains from a specific trial and return a list"""
+        pass
+
 
 class TrialsFromLists(Trials):
     """
@@ -86,15 +91,22 @@ class TrialsFromLists(Trials):
         """Get the number of trials."""
         return len(self.list_of_trials)
 
+    @property
     def n_spiketrains(self) -> List[int]:
         """Get the number of spiketrains in each trial."""
         return[sum(map(lambda x: isinstance(x,  neo.core.SpikeTrain), trial))
                for trial in self.list_of_trials]
 
+    @property
     def n_analogsignals(self) -> List[int]:
         """Get the number of analogsignals in each trial."""
         return [sum(map(lambda x: isinstance(x, neo.core.AnalogSignal), trial))
                 for trial in self.list_of_trials]
+
+    def get_spiketrains_list_from_trial(self, trial_number: int =0
+                                        ) -> List[neo.core.SpikeTrain]:
+        """Return a list of all spiketrians from a trial"""
+        return self.list_of_trials[trial_number]
 
 
 class TrialsFromBlock(Trials):
@@ -138,15 +150,7 @@ class TrialsFromBlock(Trials):
         """Get the number of AnalogSignals instances in each trial."""
         return[len(trial.analogsignals) for trial in self.block.segments]
 
-
-def spiketrains_over_trials(func: callable) -> callable:
-    @wraps(func)
-    def wrapper_spiketrains_over_trials(*args: tuple,
-                                        **kwargs: tuple) -> callable:
-        for arg in args:
-            if isinstance(arg, TrialsFromBlock):
-                return func(list(itertools.chain.from_iterable(
-                    [seg.spiketrains for seg in arg])), **kwargs)
-
-        return func(*args, **kwargs)
-    return wrapper_spiketrains_over_trials
+    def get_spiketrains_list_from_trial(self, trial_number: int =0
+                                        ) -> List[neo.core.SpikeTrain]:
+        """Return a list of all spiketrians from a trial"""
+        return self.block.segments[trial_number].spiketrains
