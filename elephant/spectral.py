@@ -738,8 +738,9 @@ def _segmented_apply_func(signals, func,  n_segments=1, len_segment=None,
 
     Notes
     -----
-    1. There is a parameter hierarchy regarding n_segments and len_segment. The
-       former parameter is ignored if the latter one is passed.
+    1. There is a parameter hierarchy regarding frequency_resolution,
+    len_segment and n_segments (in decreasing order of priority). If the
+    former parameter is passed, the latter parameter(s) is/are ignored.
 
     Returns
     -------
