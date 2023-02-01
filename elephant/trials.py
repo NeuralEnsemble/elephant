@@ -23,6 +23,9 @@ class Trials:
         The description of the trials.
         Default: None.
 
+    Methods
+    -------
+
     """
 
     __metaclass__ = ABCMeta
@@ -57,7 +60,19 @@ class Trials:
     @abstractmethod
     def get_spiketrains_from_trial(self, trial_number: int
                                    ) -> List[neo.core.SpikeTrain]:
-        """Get all spiketrains from a specific trial and return a list"""
+        """
+        Get all spiketrains from a specific trial and return a list
+
+        Parameters
+        ----------
+        trial_number : int
+            Trial number to get the spiketrains from, e.g. 0
+            for the first trial
+
+        Returns
+        -------
+        list of spiketrains: List[neo.core.SpikeTrain]
+        """
         pass
 
 
@@ -102,7 +117,7 @@ class TrialsFromLists(Trials):
 
     def get_spiketrains_from_trial(self, trial_number: int =0
                                    ) -> List[neo.core.SpikeTrain]:
-        """Return a list of all spiketrians from a trial"""
+        """Return a list of all spiketrains from a trial"""
         return self.list_of_trials[trial_number]
 
 
@@ -117,8 +132,7 @@ class TrialsFromBlock(Trials):
 
     Properties
     ----------
-    n_trials : int
-        Calculated based on the number of segments in the block.
+    See Trials Class
 
     """
     def __init__(self, block: neo.core.block, **kwargs):
@@ -149,5 +163,5 @@ class TrialsFromBlock(Trials):
 
     def get_spiketrains_from_trial(self, trial_number: int =0
                                    ) -> List[neo.core.SpikeTrain]:
-        """Return a list of all spiketrians from a trial"""
+        """Return a list of all spiketrains from a trial"""
         return self.block.segments[trial_number].spiketrains
