@@ -39,24 +39,23 @@ class Trials:
         self.description = description
 
     @abstractmethod
-    def n_trials(self):
-        """
-        Get the number of trials.
-        """
+    def __getitem__(self, trial_number: int):
+        """Get a specific trial by number"""
         pass
 
     @abstractmethod
-    def n_spiketrains(self):
-        """
-        Get the number of spiketrains in each trial.
-        """
+    def n_trials(self) -> int:
+        """Get the number of trials."""
         pass
 
     @abstractmethod
-    def n_analogsignals(self):
-        """
-        Get the number of analogsignals in each trial.
-        """
+    def n_spiketrains(self) -> List[int]:
+        """Get the number of spiketrains in each trial."""
+        pass
+
+    @abstractmethod
+    def n_analogsignals(self) -> List[int]:
+        """Get the number of analogsignals in each trial."""
         pass
 
 
@@ -79,26 +78,21 @@ class TrialsFromLists(Trials):
         super().__init__(**kwargs)
 
     def __getitem__(self, trial_number: int):
+        """Get a specific trial by number"""
         return self.list_of_trials[trial_number]
 
     @property
     def n_trials(self) -> int:
-        """
-        Get the number of trials.
-        """
+        """Get the number of trials."""
         return len(self.list_of_trials)
 
     def n_spiketrains(self) -> List[int]:
-        """
-        Get the number of spiketrains in each trial.
-        """
+        """Get the number of spiketrains in each trial."""
         return[sum(map(lambda x: isinstance(x,  neo.core.SpikeTrain), trial))
                for trial in self.list_of_trials]
 
     def n_analogsignals(self) -> List[int]:
-        """
-        Get the number of analogsignals in each trial.
-        """
+        """Get the number of analogsignals in each trial."""
         return [sum(map(lambda x: isinstance(x, neo.core.AnalogSignal), trial))
                 for trial in self.list_of_trials]
 
@@ -131,21 +125,17 @@ class TrialsFromBlock(Trials):
 
     @property
     def n_trials(self) -> int:
-        """
-        Get the number of trials.
-        """
+        """Get the number of trials."""
         return len(self.block.segments)
 
+    @property
     def n_spiketrains(self) -> List[int]:
-        """
-        Get the number of SpikeTrain instances in each trial.
-        """
+        """Get the number of SpikeTrain instances in each trial."""
         return[len(trial.spiketrains) for trial in self.block.segments]
 
+    @property
     def n_analogsignals(self) -> List[int]:
-        """
-        Get the number of AnalogSignals instances in each trial.
-        """
+        """Get the number of AnalogSignals instances in each trial."""
         return[len(trial.analogsignals) for trial in self.block.segments]
 
 
