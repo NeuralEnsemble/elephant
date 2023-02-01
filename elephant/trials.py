@@ -5,14 +5,10 @@ used by all :module:`elephant.trials` classes.
 :copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
-from functools import wraps
 
 import neo.utils
 from abc import ABCMeta, abstractmethod
-
 from typing import List
-import itertools
-
 
 class Trials:
     """
@@ -59,7 +55,8 @@ class Trials:
         pass
 
     @abstractmethod
-    def get_spiketrains_list_from_trial(self, trial_number: int) -> List[neo.core.SpikeTrain]:
+    def get_spiketrains_from_trial(self, trial_number: int
+                                   ) -> List[neo.core.SpikeTrain]:
         """Get all spiketrains from a specific trial and return a list"""
         pass
 
@@ -103,8 +100,8 @@ class TrialsFromLists(Trials):
         return [sum(map(lambda x: isinstance(x, neo.core.AnalogSignal), trial))
                 for trial in self.list_of_trials]
 
-    def get_spiketrains_list_from_trial(self, trial_number: int =0
-                                        ) -> List[neo.core.SpikeTrain]:
+    def get_spiketrains_from_trial(self, trial_number: int =0
+                                   ) -> List[neo.core.SpikeTrain]:
         """Return a list of all spiketrians from a trial"""
         return self.list_of_trials[trial_number]
 
@@ -150,7 +147,7 @@ class TrialsFromBlock(Trials):
         """Get the number of AnalogSignals instances in each trial."""
         return[len(trial.analogsignals) for trial in self.block.segments]
 
-    def get_spiketrains_list_from_trial(self, trial_number: int =0
-                                        ) -> List[neo.core.SpikeTrain]:
+    def get_spiketrains_from_trial(self, trial_number: int =0
+                                   ) -> List[neo.core.SpikeTrain]:
         """Return a list of all spiketrians from a trial"""
         return self.block.segments[trial_number].spiketrains
