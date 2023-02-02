@@ -23,9 +23,6 @@ class Trials:
         The description of the trials.
         Default: None.
 
-    Methods
-    -------
-
     """
 
     __metaclass__ = ABCMeta
