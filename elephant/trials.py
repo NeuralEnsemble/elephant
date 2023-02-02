@@ -85,6 +85,12 @@ class TrialsFromLists(Trials):
     list_of_trials : list of lists
         A list of lists. Each list entry contains a list of neo.SpikeTrains
         or neo.AnalogSignals.
+
+    Properties
+    ----------
+    see Trials class
+
+
     """
     def __init__(self, list_of_trials: list, **kwargs):
         """
@@ -129,6 +135,9 @@ class TrialsFromBlock(Trials):
     ----------
     block : neo.Block
         An instance of neo.Block containing the trials.
+        The structure is assumed to follow the neo representation:
+        A block contains multiple segments which are considered to contain the
+        single trials.
 
     Properties
     ----------
