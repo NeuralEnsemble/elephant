@@ -66,8 +66,8 @@ class Trials:
         Parameters
         ----------
         trial_number : int
-            Trial number to get the spiketrains from, e.g. 0
-            for the first trial
+            Trial number to get the spiketrains from, e.g. choose
+            0 for the first trial.
 
         Returns
         -------
