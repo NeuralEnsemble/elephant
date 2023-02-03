@@ -8,6 +8,7 @@ Unit tests for the spectral module.
 
 import unittest
 
+import neo.core
 import numpy as np
 import scipy.signal as spsig
 import scipy.fft
@@ -787,6 +788,37 @@ class SegmentedMultitaperCrossSpectrumTestCase(unittest.TestCase):
 
 
 class MultitaperCoherenceTestCase(unittest.TestCase):
+    def test_multitaper_coherence_input_types(self):
+        # Generate dummy data
+        data_length = 10000
+        sampling_period = 0.001
+        signal_freq = 100.0
+        np.random.seed(123)
+        noise = np.random.normal(size=(2, data_length))
+        time_points = np.arange(0, data_length * sampling_period,
+                                sampling_period)
+        # Signals are designed to have coherence peak at `signal_freq`
+        arr_signal_i = np.sin(2 * np.pi * signal_freq * time_points) + noise[0]
+        arr_signal_j = np.cos(2 * np.pi * signal_freq * time_points) + noise[1]
+
+        fs = 1000 * pq.Hz
+        anasig_signal_i = neo.core.AnalogSignal(arr_signal_i,
+                                                sampling_rate=fs,
+                                                units=pq.mV)
+        anasig_signal_j = neo.core.AnalogSignal(arr_signal_j,
+                                                sampling_rate=fs,
+                                                units=pq.mV)
+
+        arr_f, arr_coh, arr_phi = elephant.spectral.multitaper_coherence(
+            arr_signal_i, arr_signal_j, fs=fs)
+        anasig_f, anasig_coh, anasig_phi = \
+            elephant.spectral.multitaper_coherence(anasig_signal_i,
+                                                   anasig_signal_j)
+
+        np.testing.assert_array_equal(arr_f, anasig_f)
+        np.testing.assert_allclose(arr_coh, anasig_coh, atol=1e-8)
+        np.testing.assert_array_equal(arr_phi, anasig_phi)
+
     def test_multitaper_cohere_peak(self):
         # Generate dummy data
         data_length = 10000
