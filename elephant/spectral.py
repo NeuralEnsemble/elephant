@@ -681,7 +681,7 @@ def multitaper_cross_spectrum(signals, fs=1., nw=4, num_tapers=None,
     return freqs, cross_spec
 
 
-def _segmented_apply_func(signals, func,  n_segments=1, len_segment=None,
+def _segmented_apply_func(data, func,  n_segments=1, len_segment=None,
                           frequency_resolution=None, overlap=0.5,
                           func_params_dict=None):
     """
@@ -706,11 +706,11 @@ def _segmented_apply_func(signals, func,  n_segments=1, len_segment=None,
 
     Parameters
     ----------
-    signal : neo.AnalogSignal or pq.Quantity or np.ndarray
-        Time series data of which PSD is estimated. When `signal` is
-        np.ndarray, it needs to be passed as a 2-dimensional array of shape
-        (n_channels, n_samples), and the data sampling frequency should be
-        given through the keyword argument `fs`.
+    data : np.ndarray
+        Time series data of which spectral measure is estimated. `data`
+        is np.ndarray of shape (n_channels, n_samples), and the data sampling
+        frequency should be given through the keyword argument `fs` in
+        `func_params_dict`.
     func : callable
         Function calculating spectral measure.
     n_segments : int, optional
@@ -766,12 +766,6 @@ def _segmented_apply_func(signals, func,  n_segments=1, len_segment=None,
         If both `frequency_resolution` and `len_segment` are None and
         `n_segments` is greater than the length of data at `axis`.
     """
-    # When the input is AnalogSignal, fetch the underlying numpy array and swap
-    # axes from (n_samples, n_channels) to (n_channels, n_samples)
-    data = np.asarray(signals)
-    if isinstance(signals, neo.AnalogSignal):
-        data = np.moveaxis(data, 0, 1)
-
     # Number of data points in time series
     length_signal = np.shape(data)[1]
 
@@ -779,17 +773,7 @@ def _segmented_apply_func(signals, func,  n_segments=1, len_segment=None,
     # samples set correct axis
     axis = -1
 
-    # If the data is given as AnalogSignal, use its attribute to specify the
-    # sampling frequency
-    if hasattr(signals, 'sampling_rate'):
-        fs = signals.sampling_rate.rescale('Hz')
-    else:
-        fs = func_params_dict.get('fs')
-
-    # If the data is given as AnalogSignal, use its attribute to specify the
-    # sampling frequency
-    if hasattr(signals, 'sampling_rate'):
-        fs = signals.sampling_rate.rescale('Hz')
+    fs = func_params_dict.get('fs')
 
     # If fs and peak resolution is pq.Quantity, get magnitude
     if isinstance(fs, pq.quantity.Quantity):
@@ -959,6 +943,13 @@ def segmented_multitaper_cross_spectrum(signals, n_segments=1,
         Estimate of the cross spectrum of time series in `signal`
 
     """
+    # When the input is AnalogSignal, fetch the underlying numpy array and swap
+    # axes from (n_samples, n_channels) to (n_channels, n_samples)
+    data = np.asarray(signals)
+    if isinstance(signals, neo.AnalogSignal):
+        data = np.moveaxis(data, 0, 1)
+        fs = signals.sampling_rate
+
     # Initialize argument dictionary for multitaper_cross_spectrum called on
     # segments
     cross_spec_params_dict = {
@@ -971,7 +962,7 @@ def segmented_multitaper_cross_spectrum(signals, n_segments=1,
 
     # Apply segmentation
     freqs, cross_spec_estimate = _segmented_apply_func(
-        signals=signals, n_segments=n_segments, len_segment=len_segment,
+        data=data, n_segments=n_segments, len_segment=len_segment,
         overlap=overlap, frequency_resolution=frequency_resolution,
         func=multitaper_cross_spectrum,
         func_params_dict=cross_spec_params_dict)
