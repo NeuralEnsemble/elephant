@@ -1057,7 +1057,10 @@ def multitaper_coherence(signal_i, signal_j, n_segments=8, len_segment=None,
         Phase lags associated with the magnitude-square coherence estimate
 
     """
-    signals = np.vstack([signal_i, signal_j])
+    if isinstance(signal_i, neo.core.AnalogSignal):
+        signals = signal_i.merge(signal_j)
+    elif isinstance(signal_i, np.ndarray):
+        signals = np.vstack([signal_i, signal_j])
 
     freqs, Pxy = segmented_multitaper_cross_spectrum(
         signals=signals, n_segments=n_segments, len_segment=len_segment,
