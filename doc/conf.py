@@ -213,7 +213,7 @@ htmlhelp_basename = 'elephantdoc'
 # see here https://github.com/phn/pytpm/issues/3#issuecomment-12133978
 numpydoc_show_class_members = False
 
-# path to bibtex-bibfiles
+# path to bibtex-bibfiles.
 bibtex_bibfiles = ['bib/elephant.bib']
 
 # To configure your referencing style:
