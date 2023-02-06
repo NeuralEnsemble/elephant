@@ -331,6 +331,7 @@ jobs:
         run: |
           conda config --add channels conda-forge # bugfix with scipy==1.8.1: libstdcxx-ng 12.1.0 required
           conda update conda
+          conda install -c conda-forge libstdcxx-ng=12 # fix libstdc++.so.6: version for new scipy versions > 1.9.1
           conda env update --file requirements/environment-tests.yml --name base
           activate base
           conda install -c conda-forge openmpi
