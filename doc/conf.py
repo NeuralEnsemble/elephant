@@ -133,6 +133,7 @@ html_theme_options = {
     'font_family': 'Arial',
     'page_width': '1200px',  # default is 940
     'sidebar_width': '280px',  # default is 220
+    'logo_only': True
 }
 
 # Theme options are theme-specific and customize the look and feel of a theme
