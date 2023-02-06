@@ -273,6 +273,7 @@ jobs:
 
       - name: Setup environment
         run: |
+          sudo apt-get update
           sudo apt install -y libopenmpi-dev openmpi-bin
 
           python -m pip install --upgrade pip
