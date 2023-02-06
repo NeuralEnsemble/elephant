@@ -82,7 +82,7 @@ jobs:
       - name: Cache test_env
         uses: actions/cache@v3
         with:
-          path: ~/runner/.cache/pip
+          path: /home/runner/.cache/pip
           # Look to see if there is a cache hit for the corresponding requirements files
           # cache will be reset on changes to any requirements or every month
           key: ${{ runner.os }}-venv-${{ hashFiles('**/requirements.txt') }}-${{ hashFiles('**/requirements-tests.txt') }}
