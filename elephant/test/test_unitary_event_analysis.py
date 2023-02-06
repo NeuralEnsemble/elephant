@@ -319,6 +319,7 @@ class UETestCase(unittest.TestCase):
                         item1))
 
     def test_jointJ_window_analysis(self):
+
         sts1 = self.sts1_neo
         sts2 = self.sts2_neo
 
@@ -498,6 +499,7 @@ class UETestCase(unittest.TestCase):
 
     def test_multiple_neurons(self):
         np.random.seed(12)
+
         # Create a list of lists containing 3 Trials with 5 spiketrains
         spiketrains = \
             [StationaryPoissonProcess(

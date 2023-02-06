@@ -510,8 +510,8 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
     def test_to_array(self):
         x = cv.BinnedSpikeTrain(self.spiketrain_a, bin_size=1 * pq.s,
                                 n_bins=10, t_stop=10. * pq.s)
-        arr_float = x.to_array(dtype=np.float32)
-        assert_array_equal(arr_float, x.to_array().astype(np.float32))
+        arr_float = x.to_array(dtype=float)
+        assert_array_equal(arr_float, x.to_array().astype(float))
 
     # Test if error is raised when providing insufficient number of
     # parameters

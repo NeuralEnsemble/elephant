@@ -1,4 +1,4 @@
-# This workflow will setup GitHub-hosted runners and install the required dependencies for elephant tests.
+# This workflow will set up GitHub-hosted runners and install the required dependencies for elephant tests.
 # On a pull requests and on pushes to master it will run different tests for elephant.
 
 name: tests
@@ -57,8 +57,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        # python versions for elephant: [3.7, 3.8, 3.9, "3.10"]
-        python-version: [3.7, 3.8, 3.9, "3.10"]
+        # python versions for elephant: [3.8, 3.9, "3.10", 3.11]
+        python-version: [3.8, 3.9, "3.10", 3.11]
         # OS [ubuntu-latest, macos-latest, windows-latest]
         os: [ubuntu-latest]
       # do not cancel all in-progress jobs if any matrix job fails
@@ -82,7 +82,7 @@ jobs:
       - name: Cache test_env
         uses: actions/cache@v3
         with:
-          path: ~/test_env
+          path: /home/runner/.cache/pip
           # Look to see if there is a cache hit for the corresponding requirements files
           # cache will be reset on changes to any requirements or every month
           key: ${{ runner.os }}-venv-${{ hashFiles('**/requirements.txt') }}-${{ hashFiles('**/requirements-tests.txt') }}
@@ -181,7 +181,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        # python versions for elephant: [3.6, 3.7, 3.8, 3.9]
+        # python versions for elephant: [3.8, 3.9, 3.10, 3.11]
         python-version: [3.8,]
         # OS [ubuntu-latest, macos-latest, windows-latest]
         os: [windows-latest]
@@ -243,7 +243,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        # python versions for elephant: [3.6, 3.7, 3.8, 3.9]
+        # python versions for elephant: [3.8, 3.9, 3.10, 3.11]
         python-version: [3.9]
         # OS [ubuntu-latest, macos-latest, windows-latest]
         os: [ubuntu-latest]
@@ -273,6 +273,7 @@ jobs:
 
       - name: Setup environment
         run: |
+          sudo apt-get update
           sudo apt install -y libopenmpi-dev openmpi-bin
 
           python -m pip install --upgrade pip
@@ -331,6 +332,7 @@ jobs:
         run: |
           conda config --add channels conda-forge # bugfix with scipy==1.8.1: libstdcxx-ng 12.1.0 required
           conda update conda
+          conda install -c conda-forge libstdcxx-ng=12 # fix libstdc++.so.6: version for new scipy versions > 1.9.1
           conda env update --file requirements/environment-tests.yml --name base
           activate base
           conda install -c conda-forge openmpi
@@ -387,6 +389,7 @@ jobs:
 
       - name: Install dependencies
         run: |
+          sudo apt-get update
           sudo apt install -y libopenmpi-dev openmpi-bin
           python -m pip install --upgrade pip
           pip install -r requirements/requirements-docs.txt

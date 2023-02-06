@@ -14,7 +14,7 @@ Below is the explanation of how to proceed with these two steps.
 Prerequisites
 *************
 
-Elephant requires `Python <http://python.org/>`_ 3.7, 3.8, 3.9 or 3.10.
+Elephant requires `Python <http://python.org/>`_ 3.8, 3.9, 3.10 or 3.11.
 
 .. tabs::
 
@@ -25,7 +25,7 @@ Elephant requires `Python <http://python.org/>`_ 3.7, 3.8, 3.9 or 3.10.
 
            .. code-block:: sh
 
-              conda create --name elephant python=3.7 numpy scipy tqdm
+              conda create --name elephant python=3.8 numpy scipy tqdm
 
         2. Activate your environment:
 
