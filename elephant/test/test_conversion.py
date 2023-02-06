@@ -666,11 +666,11 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
                                   bin_size=1 * pq.ms)
         self.assertEqual(bst.units, pq.s)
         target_edges = np.array([1000, 1001, 1002, 1003, 1004, 1005, 1006,
-                                 1007, 1008, 1009, 1010], dtype=np.float
+                                 1007, 1008, 1009, 1010], dtype=float
                                 ) * pq.ms
         target_centers = np.array(
             [1000.5, 1001.5, 1002.5, 1003.5, 1004.5, 1005.5, 1006.5, 1007.5,
-             1008.5, 1009.5], dtype=np.float) * pq.ms
+             1008.5, 1009.5], dtype=float) * pq.ms
         assert_array_almost_equal(bst.bin_edges, target_edges)
         assert_array_almost_equal(bst.bin_centers, target_centers)
 
