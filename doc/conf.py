@@ -33,7 +33,6 @@ extensions = [
     'sphinx.ext.doctest',
     'sphinx.ext.intersphinx',
     'sphinx.ext.todo',
-    'sphinx.ext.imgmath',
     'sphinx.ext.viewcode',
     'sphinx.ext.mathjax',
     'sphinxcontrib.bibtex',
@@ -350,8 +349,8 @@ intersphinx_mapping = {
     'numpy': ('https://numpy.org/doc/stable', None)
 }
 
-# Use more reliable mathjax source
-mathjax_path = 'https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML'
+# The name of math_renderer extension for HTML output.
+html_math_renderer = 'mathjax'
 
 
 def process_docstring_remove_copyright(app, what, name, obj, options, lines):
