@@ -396,6 +396,7 @@ jobs:
           pip install -r requirements/requirements-tutorials.txt
           conda config --add channels conda-forge # bugfix with scipy==1.8.1: libstdcxx-ng 12.1.0 required
           conda update conda
+          conda install -c conda-forge gcc=12.1.0
           conda env update --file requirements/environment-docs.yml --name base
           conda install -c conda-forge openmpi
           conda install -c conda-forge pandoc
