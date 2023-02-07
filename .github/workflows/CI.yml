@@ -393,14 +393,12 @@ jobs:
           sudo apt-get update
           sudo apt install -y libopenmpi-dev openmpi-bin
           conda update conda
-          conda install -c conda-forge libstdcxx-ng=12 # fix libstdc++.so.6: version for new scipy versions > 1.9.1
+          conda install -c conda-forge openmpi pandoc libstdcxx-ng # fix libstdc++.so.6: version for new scipy versions > 1.9.1
+          conda env update --file requirements/environment-docs.yml --name base
+          activate base
           python -m pip install --upgrade pip
           pip install -r requirements/requirements-docs.txt
           pip install -r requirements/requirements-tutorials.txt
-          conda env update --file requirements/environment-docs.yml --name base
-          activate base
-          conda install -c conda-forge openmpi
-          conda install -c conda-forge pandoc
           pip install -e .[extras]
           # run notebooks
           sed -i -E "s/nbsphinx_execute *=.*/nbsphinx_execute = 'always'/g" doc/conf.py
