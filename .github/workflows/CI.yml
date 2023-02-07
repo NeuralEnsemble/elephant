@@ -382,7 +382,7 @@ jobs:
       - name: Cache pip
         uses: actions/cache@v3
         with:
-          path: ~/.cache/pip
+          path: ~/runner/.cache/pip
           # Look to see if there is a cache hit for the corresponding requirements files
           key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements-docs.txt') }}-${{ hashFiles('**/requirements-tutorials.txt') }}-${{ hashFiles('**/environment-docs.yml') }}
            -${{ hashFiles('**/CI.yml') }}-${{ steps.date.outputs.date }}
@@ -398,6 +398,7 @@ jobs:
           pip install -r requirements/requirements-docs.txt
           pip install -r requirements/requirements-tutorials.txt
           conda env update --file requirements/environment-docs.yml --name base
+          activate base
           conda install -c conda-forge openmpi
           conda install -c conda-forge pandoc
           pip install -e .[extras]
@@ -406,11 +407,13 @@ jobs:
 
       - name: List packages
         run: |
+          activate base
           pip list
           conda list
           python --version
 
       - name: make html
         run: |
+          activate base
           cd doc
           make html
