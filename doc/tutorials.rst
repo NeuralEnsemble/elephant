@@ -7,6 +7,12 @@ output for some of the neurophysiological analyses in Elephant. You can browse
 the tutorials, launch them in mybinder or try them on ebrains to change and
 interact with the code.
 
+Launching a notebook on ebrains and Binder both provide a convenient way to
+run and interact with code. The main difference between the two is that
+changes made to a notebook launched on Binder are not saved, while
+changes made to a notebook launched on ebrains are persistent and bound to the
+user's ebrains account. This makes ebrains a great choice if you want to save
+your work and come back to it later.
 
 Introductory
 ------------
