@@ -378,7 +378,7 @@ class GPFA(sklearn.base.BaseEstimator):
             seq['y'] = seq['y'][self.has_spikes_bool, :]
         return seqs
 
-    def transform(self, trials, returned_data=['latent_variable_orth']):
+    def transform(self, trials, returned_data=('latent_variable_orth',)):
         """
         Obtain trajectories of neural activity in a low-dimensional latent
         variable space by inferring the posterior mean of the obtained GPFA
@@ -386,7 +386,7 @@ class GPFA(sklearn.base.BaseEstimator):
 
         Parameters
         ----------
-        trials : list of list of neo.SpikeTrain
+        trials : list of list of neo.SpikeTrain or np.recarray
             Spike train data to be transformed to latent variables.
             The outer list corresponds to trials and the inner list corresponds
             to the neurons recorded in that trial, such that
@@ -498,20 +498,15 @@ class GPFA(sklearn.base.BaseEstimator):
             return seqs[returned_data[0]]
         return {x: seqs[x] for x in returned_data}
 
-    def fit_transform(self, trials, seqs_train=None,
-                      returned_data=['latent_variable_orth']):
+    def fit_transform(self, trials, returned_data=('latent_variable_orth',)):
         """
         Fit the model with `trials` data and apply the dimensionality
         reduction on `trials`.
 
         Parameters
         ----------
-        trials : list of list of neo.SpikeTrain
+        trials : list of list of neo.SpikeTrain or np.recarray
             Refer to the :func:`GPFA.fit` docstring.
-
-        seqs_train : np.recarray
-            Refer to the :func:`GPFA.fit` docstring.
-            Default: `None`
 
         returned_data : list of str
             Refer to the :func:`GPFA.transform` docstring.
@@ -540,13 +535,13 @@ class GPFA(sklearn.base.BaseEstimator):
             raise ValueError('Must supply either trials as '
                              'np.recarray or List of Lists!')
 
-    def score(self, spiketrains):
+    def score(self, trials):
         """
         Returns the log-likelihood of the given data under the fitted model
 
         Parameters
         ----------
-        spiketrains : list of list of neo.SpikeTrain
+        trials : list of list of neo.SpikeTrain
             Spike train data to be scored.
             The outer list corresponds to trials and the inner list corresponds
             to the neurons recorded in that trial, such that
@@ -561,5 +556,5 @@ class GPFA(sklearn.base.BaseEstimator):
         log_likelihood : float
             Log-likelihood of the given trials under the fitted model.
         """
-        self.transform(spiketrains)
+        self.transform(trials)
         return self.transform_info['log_likelihood']
