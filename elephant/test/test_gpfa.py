@@ -71,6 +71,7 @@ class GPFATestCase(unittest.TestCase):
             n8 = neo.SpikeTrain(gen_test_data(rates_b, durs), units=1 * pq.s,
                                 t_start=0 * pq.s, t_stop=10 * pq.s)
             self.data0.append([n1, n2, n3, n4, n5, n6, n7, n8])
+
         self.x_dim = 4
 
         self.data1 = self.data0[:20]
@@ -135,9 +136,9 @@ class GPFATestCase(unittest.TestCase):
             _ = GPFA(tau_init=invalid_tau_init)
         gpfa = GPFA()
         with self.assertRaises(ValueError):
-            gpfa.fit(spiketrains=invalid_data)
+            gpfa.fit(trials=invalid_data)
         with self.assertRaises(ValueError):
-            gpfa.fit(spiketrains=[])
+            gpfa.fit(trials=[])
 
     def test_data2(self):
         gpfa = GPFA(bin_size=self.bin_size, x_dim=8, em_max_iters=self.n_iters)
