@@ -166,7 +166,7 @@ class GPFATestCase(unittest.TestCase):
         self.assertTrue(len(returned_data) == len(seqs))
         self.assertTrue(isinstance(seqs, dict))
         with self.assertRaises(ValueError):
-            seqs = gpfa.transform(self.data2, returned_data=['invalid_name'])
+            gpfa.transform(self.data2, returned_data=['invalid_name'])
 
     def test_fit_transform(self):
         gpfa1 = GPFA(bin_size=self.bin_size, x_dim=self.x_dim,
