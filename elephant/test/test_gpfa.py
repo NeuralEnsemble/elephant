@@ -78,15 +78,13 @@ class GPFATestCase(unittest.TestCase):
 
         # generate data2
         np.random.seed(27)
-        self.data2 = []
         n_trials = 10
         n_channels = 20
-        for trial in range(n_trials):
-            rates = np.random.randint(low=1, high=100, size=n_channels)
-            spike_times = [StationaryPoissonProcess(rate=rate * pq.Hz,
-                            t_stop=1000*pq.ms).generate_spiketrain()
-                           for rate in rates]
-            self.data2.append(spike_times)
+        rates = lambda : np.random.randint(low=1, high=100, size=n_channels)
+
+        self.data2 =[[StationaryPoissonProcess(rate=rate * pq.Hz,
+                        t_stop=1000*pq.ms).generate_spiketrain()
+                       for rate in rates()]for trial in range(n_trials)]
 
         # generate seqs_train data
         self.seqs_train = gpfa_util.get_seqs(self.data1,
