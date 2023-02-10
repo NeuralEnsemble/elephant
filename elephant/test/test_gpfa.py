@@ -13,7 +13,9 @@ import numpy as np
 import quantities as pq
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
-from elephant.spike_train_generation import homogeneous_poisson_process
+from elephant.spike_train_generation import StationaryPoissonProcess
+
+
 
 try:
     import sklearn
@@ -52,25 +54,23 @@ class GPFATestCase(unittest.TestCase):
         np.random.seed(0)
         n_trials = 100
 
-        self.data0 = [[
-            neo.SpikeTrain(gen_test_data(rates_a, durs), units=1 * pq.s,
-                                        t_start=0 * pq.s, t_stop=10 * pq.s),
-            neo.SpikeTrain(gen_test_data(rates_a, durs), units=1 * pq.s,
-                                        t_start=0 * pq.s, t_stop=10 * pq.s),
-            neo.SpikeTrain(gen_test_data(rates_b, durs), units=1 * pq.s,
-                                        t_start=0 * pq.s, t_stop=10 * pq.s),
-            neo.SpikeTrain(gen_test_data(rates_b, durs), units=1 * pq.s,
-                                        t_start=0 * pq.s, t_stop=10 * pq.s),
-            neo.SpikeTrain(gen_test_data(rates_a, durs), units=1 * pq.s,
-                                        t_start=0 * pq.s, t_stop=10 * pq.s),
-            neo.SpikeTrain(gen_test_data(rates_a, durs), units=1 * pq.s,
-                                        t_start=0 * pq.s, t_stop=10 * pq.s),
-            neo.SpikeTrain(gen_test_data(rates_b, durs), units=1 * pq.s,
-                                        t_start=0 * pq.s, t_stop=10 * pq.s),
-            neo.SpikeTrain(gen_test_data(rates_b, durs), units=1 * pq.s,
-                                        t_start=0 * pq.s, t_stop=10 * pq.s)]
-        for _ in range(n_trials)]
+        # create 100 trials with each trial containing 8 spiketrains each
+        # 10 seconds long with rates a or b
+        spiketrain_10_sec = lambda rate_a_or_b: \
+            neo.SpikeTrain(gen_test_data(rate_a_or_b, durs), units=1 * pq.s,
+                           t_start=0 * pq.s, t_stop=10 * pq.s)
+        neurons = lambda : [
+                            spiketrain_10_sec(rates_a), # n1
+                            spiketrain_10_sec(rates_a), # n2
+                            spiketrain_10_sec(rates_b), # n3
+                            spiketrain_10_sec(rates_b), # n4
+                            spiketrain_10_sec(rates_a), # n5
+                            spiketrain_10_sec(rates_a), # n6
+                            spiketrain_10_sec(rates_b), # n7
+                            spiketrain_10_sec(rates_b), # n8
+                            ]
 
+        self.data0 = [neurons() for _ in range(n_trials)]
 
         self.x_dim = 4
 
@@ -83,7 +83,8 @@ class GPFATestCase(unittest.TestCase):
         n_channels = 20
         for trial in range(n_trials):
             rates = np.random.randint(low=1, high=100, size=n_channels)
-            spike_times = [homogeneous_poisson_process(rate=rate * pq.Hz)
+            spike_times = [StationaryPoissonProcess(rate=rate * pq.Hz,
+                            t_stop=1000*pq.ms).generate_spiketrain()
                            for rate in rates]
             self.data2.append(spike_times)
 
