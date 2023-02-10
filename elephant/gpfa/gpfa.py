@@ -2,7 +2,7 @@
 Gaussian-process factor analysis (GPFA) is a dimensionality reduction method
 :cite:`gpfa-Yu2008_1881` for neural trajectory visualization of parallel spike
 trains. GPFA applies factor analysis (FA) to time-binned spike count data to
-reduce the dimensionality and at the same time smoothes the resulting
+reduce the dimensionality and at the same time smooth the resulting
 low-dimensional trajectories by fitting a Gaussian process (GP) model to them.
 
 The input consists of a set of trials (Y), each containing a list of spike
@@ -20,18 +20,18 @@ Gaussian process are estimated from the data using an expectation-maximization
 
 Internally, the analysis consists of the following steps:
 
-0) bin the spike train data to get a sequence of N dimensional vectors of spike
-counts in respective time bins, and choose the reduced dimensionality x_dim
+#. bin the spike train data to get a sequence of N dimensional vectors of spike
+   counts in respective time bins, and choose the reduced dimensionality x_dim.
 
-1) expectation-maximization for fitting of the parameters C, d, R and the
-time-scales and variances of the Gaussian process, using all the trials
-provided as input (c.f., `gpfa_core.em()`)
+#. expectation-maximization for fitting of the parameters C, d, R and the
+   time-scales and variances of the Gaussian process, using all the trials
+   provided as input (c.f., `gpfa_core.em()`).
 
-2) projection of single trials in the low dimensional space (c.f.,
-`gpfa_core.exact_inference_with_ll()`)
+#. projection of single trials in the low dimensional space (c.f.,
+   `gpfa_core.exact_inference_with_ll()`).
 
-3) orthonormalization of the matrix C and the corresponding subspace, for
-visualization purposes: (c.f., `gpfa_core.orthonormalize()`)
+#. orthonormalization of the matrix C and the corresponding subspace, for
+   visualization purposes: (c.f., `gpfa_core.orthonormalize()`).
 
 
 .. autosummary::
@@ -54,7 +54,7 @@ Tutorial
 Run tutorial interactively:
 
 .. image:: https://mybinder.org/badge.svg
-   :target: https://mybinder.org/v2/gh/NeuralEnsemble/elephant/master
+    :target: https://mybinder.org/v2/gh/NeuralEnsemble/elephant/master
             ?filepath=doc/tutorials/gpfa.ipynb
 
 
@@ -273,7 +273,7 @@ class GPFA(sklearn.base.BaseEstimator):
         warnings.warn("'binsize' is deprecated; use 'bin_size'")
         return self.bin_size
 
-    def fit(self, spiketrains):
+    def fit(self, spiketrains, seqs_train=None):
         """
         Fit the model with the given training data.
 
@@ -289,6 +289,16 @@ class GPFA(sklearn.base.BaseEstimator):
             `spiketrains[k][n]` refer to spike trains of the same neuron
             for any choices of `l`, `k`, and `n`.
 
+        seqs_train: np.recarray
+            Alternatively, pass a pre-processed seqs_train array.
+            This is a training data structure, whose n-th element
+            (corresponding to the n-th experimental trial) has fields
+
+            T : int
+                number of bins
+            y : (#units, T) np.ndarray
+                neural data
+
         Returns
         -------
         self : object
@@ -303,8 +313,17 @@ class GPFA(sklearn.base.BaseEstimator):
 
             If covariance matrix of input spike data is rank deficient.
         """
-        self._check_training_data(spiketrains)
-        seqs_train = self._format_training_data(spiketrains)
+
+        if seqs_train is not None and spiketrains is not None:
+            raise ValueError('Cannot provide both spiketrains and seqs_train!')
+        elif spiketrains is not None:
+            self._check_training_data(spiketrains)
+            seqs_train = self._format_training_data(spiketrains)
+        elif seqs_train is not None:
+            seqs_train = self._format_training_data_seqs(seqs_train)
+        else:
+            raise ValueError('Must supply either spiketrains or seqs_train!')
+
         # Check if training data covariance is full rank
         y_all = np.hstack(seqs_train['y'])
         y_dim = y_all.shape[0]
@@ -353,7 +372,15 @@ class GPFA(sklearn.base.BaseEstimator):
             seq['y'] = seq['y'][self.has_spikes_bool, :]
         return seqs
 
-    def transform(self, spiketrains, returned_data=['latent_variable_orth']):
+    def _format_training_data_seqs(self, seqs):
+        # Remove inactive units based on training set
+        self.has_spikes_bool = np.hstack(seqs['y']).any(axis=1)
+        for seq in seqs:
+            seq['y'] = seq['y'][self.has_spikes_bool, :]
+        return seqs
+
+    def transform(self, spiketrains, seqs=None,
+                  returned_data=['latent_variable_orth']):
         """
         Obtain trajectories of neural activity in a low-dimensional latent
         variable space by inferring the posterior mean of the obtained GPFA
@@ -426,14 +453,25 @@ class GPFA(sklearn.base.BaseEstimator):
             If `returned_data` contains keys different from the ones in
             `self.valid_data_names`.
         """
-        if len(spiketrains[0]) != len(self.has_spikes_bool):
-            raise ValueError("'spiketrains' must contain the same number of "
-                             "neurons as the training spiketrain data")
+
         invalid_keys = set(returned_data).difference(self.valid_data_names)
         if len(invalid_keys) > 0:
             raise ValueError("'returned_data' can only have the following "
                              "entries: {}".format(self.valid_data_names))
-        seqs = gpfa_util.get_seqs(spiketrains, self.bin_size)
+
+        if spiketrains is not None:
+            if len(spiketrains[0]) != len(self.has_spikes_bool):
+                raise ValueError("'spiketrains' must contain the same number "
+                                 "of neurons as the training spiketrain data")
+
+            seqs = gpfa_util.get_seqs(spiketrains, self.bin_size)
+        elif seqs is not None:
+            # check some stuff
+            if len(seqs['y'][0]) != len(self.has_spikes_bool):
+                raise ValueError(
+                    "'seq_trains' must contain the same number of neurons as "
+                    "the training spiketrain data")
+
         for seq in seqs:
             seq['y'] = seq['y'][self.has_spikes_bool, :]
         seqs, ll = gpfa_core.exact_inference_with_ll(seqs,
@@ -447,8 +485,8 @@ class GPFA(sklearn.base.BaseEstimator):
             return seqs[returned_data[0]]
         return {x: seqs[x] for x in returned_data}
 
-    def fit_transform(self, spiketrains, returned_data=[
-                      'latent_variable_orth']):
+    def fit_transform(self, spiketrains, seqs_train=None,
+                      returned_data=['latent_variable_orth']):
         """
         Fit the model with `spiketrains` data and apply the dimensionality
         reduction on `spiketrains`.
@@ -457,6 +495,10 @@ class GPFA(sklearn.base.BaseEstimator):
         ----------
         spiketrains : list of list of neo.SpikeTrain
             Refer to the :func:`GPFA.fit` docstring.
+
+        seqs_train : np.recarray
+            Refer to the :func:`GPFA.fit` docstring.
+            Default: `None`
 
         returned_data : list of str
             Refer to the :func:`GPFA.transform` docstring.
@@ -469,7 +511,7 @@ class GPFA(sklearn.base.BaseEstimator):
         Raises
         ------
         ValueError
-             Refer to :func:`GPFA.fit` and :func:`GPFA.transform`.
+            Refer to :func:`GPFA.fit` and :func:`GPFA.transform`.
 
         See Also
         --------
@@ -477,8 +519,17 @@ class GPFA(sklearn.base.BaseEstimator):
         GPFA.transform : transform `spiketrains` into trajectories
 
         """
-        self.fit(spiketrains)
-        return self.transform(spiketrains, returned_data=returned_data)
+        if seqs_train is not None and spiketrains is not None:
+            raise ValueError('Cannot provide both spiketrains and seqs_train!')
+        elif spiketrains is not None:
+            self.fit(spiketrains)
+            return self.transform(spiketrains, returned_data=returned_data)
+        elif seqs_train is not None:
+            self.fit(None, seqs_train=seqs_train)
+            return self.transform(None, seqs=seqs_train,
+                                  returned_data=returned_data)
+        else:
+            raise ValueError('Must supply either spiketrains or seqs_train!')
 
     def score(self, spiketrains):
         """

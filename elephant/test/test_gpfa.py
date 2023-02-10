@@ -86,6 +86,10 @@ class GPFATestCase(unittest.TestCase):
                            for rate in rates]
             self.data2.append(spike_times)
 
+        # generate seqs_train data
+        self.seqs_train = gpfa_util.get_seqs(self.data1,
+                                             bin_size=self.bin_size)
+
     def test_data1(self):
         gpfa = GPFA(x_dim=self.x_dim, em_max_iters=self.n_iters)
         gpfa.fit(self.data1)
@@ -215,6 +219,38 @@ class GPFATestCase(unittest.TestCase):
         logdet_fast = gpfa_util.logdet(matrix)
         logdet_ground_truth = np.log(np.linalg.det(matrix))
         assert_array_almost_equal(logdet_fast, logdet_ground_truth)
+
+    def test_equality_spiketrains_seqs_train(self):
+        gpfa_seqs = GPFA(x_dim=self.x_dim, em_max_iters=self.n_iters)
+        gpfa_seqs.fit_transform(None, seqs_train=self.seqs_train)
+
+        gpfa_spiketrains = GPFA(x_dim=self.x_dim, em_max_iters=self.n_iters)
+        gpfa_spiketrains.fit_transform(self.data1)
+
+        self.assertAlmostEqual(
+            gpfa_seqs.transform_info['log_likelihood'],
+            gpfa_spiketrains.transform_info['log_likelihood'], places=5)
+
+    def test_fit_seqs_train(self):
+        gpfa = GPFA(x_dim=self.x_dim, em_max_iters=self.n_iters)
+        gpfa.fit(None, seqs_train=self.seqs_train)
+        target = [0.07919926, 0.07546947, 0.07397758, 0.0780272,  0.07773862,
+                  0.07695879, 0.07469927, 0.07867749]
+        res = gpfa.params_estimated['d']
+        assert_array_almost_equal(res, target, decimal=5)
+
+    def test_transform_seqs_train(self):
+        gpfa = GPFA(x_dim=self.x_dim, em_max_iters=self.n_iters)
+        gpfa.fit(None, seqs_train=self.seqs_train)
+        gpfa.transform(None, seqs=self.seqs_train)
+        self.assertAlmostEqual(gpfa.transform_info['log_likelihood'],
+                               -8172.004695554373, places=5)
+
+    def test_fit_transform_seqs_train(self):
+        gpfa = GPFA(x_dim=self.x_dim, em_max_iters=self.n_iters)
+        gpfa.fit_transform(None, seqs_train=self.seqs_train)
+        self.assertAlmostEqual(gpfa.transform_info['log_likelihood'],
+                               -8172.004695554373, places=5)
 
 
 if __name__ == "__main__":
