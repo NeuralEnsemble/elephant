@@ -473,7 +473,6 @@ class GPFA(sklearn.base.BaseEstimator):
                 raise ValueError("'trials' must contain the same number "
                                  "of neurons as the training spiketrain data")
             seqs = gpfa_util.get_seqs(trials, self.bin_size)
-
         elif isinstance(trials,np.ndarray):
             # check some stuff
             if len(trials['y'][0]) != len(self.has_spikes_bool):
