@@ -30,10 +30,9 @@ except ImportError:
 class GPFATestCase(unittest.TestCase):
     def setUp(self):
         def gen_gamma_spike_train(k, theta, t_max):
-            x = []
-            for i in range(int(3 * t_max / (k * theta))):
-                x.append(np.random.gamma(k, theta))
-            s = np.cumsum(x)
+            x = (np.random.gamma(k, theta) for _ in
+                 range(int(3 * t_max / (k * theta))))
+            s = np.cumsum(list(x))
             return s[s < t_max]
 
         def gen_test_data(rates, durs, shapes=(1, 1, 1, 1)):
@@ -52,25 +51,26 @@ class GPFATestCase(unittest.TestCase):
         durs = (2.5, 2.5, 2.5, 2.5)
         np.random.seed(0)
         n_trials = 100
-        self.data0 = []
-        for trial in range(n_trials):
-            n1 = neo.SpikeTrain(gen_test_data(rates_a, durs), units=1 * pq.s,
-                                t_start=0 * pq.s, t_stop=10 * pq.s)
-            n2 = neo.SpikeTrain(gen_test_data(rates_a, durs), units=1 * pq.s,
-                                t_start=0 * pq.s, t_stop=10 * pq.s)
-            n3 = neo.SpikeTrain(gen_test_data(rates_b, durs), units=1 * pq.s,
-                                t_start=0 * pq.s, t_stop=10 * pq.s)
-            n4 = neo.SpikeTrain(gen_test_data(rates_b, durs), units=1 * pq.s,
-                                t_start=0 * pq.s, t_stop=10 * pq.s)
-            n5 = neo.SpikeTrain(gen_test_data(rates_a, durs), units=1 * pq.s,
-                                t_start=0 * pq.s, t_stop=10 * pq.s)
-            n6 = neo.SpikeTrain(gen_test_data(rates_a, durs), units=1 * pq.s,
-                                t_start=0 * pq.s, t_stop=10 * pq.s)
-            n7 = neo.SpikeTrain(gen_test_data(rates_b, durs), units=1 * pq.s,
-                                t_start=0 * pq.s, t_stop=10 * pq.s)
-            n8 = neo.SpikeTrain(gen_test_data(rates_b, durs), units=1 * pq.s,
-                                t_start=0 * pq.s, t_stop=10 * pq.s)
-            self.data0.append([n1, n2, n3, n4, n5, n6, n7, n8])
+
+        self.data0 = [[
+            neo.SpikeTrain(gen_test_data(rates_a, durs), units=1 * pq.s,
+                                        t_start=0 * pq.s, t_stop=10 * pq.s),
+            neo.SpikeTrain(gen_test_data(rates_a, durs), units=1 * pq.s,
+                                        t_start=0 * pq.s, t_stop=10 * pq.s),
+            neo.SpikeTrain(gen_test_data(rates_b, durs), units=1 * pq.s,
+                                        t_start=0 * pq.s, t_stop=10 * pq.s),
+            neo.SpikeTrain(gen_test_data(rates_b, durs), units=1 * pq.s,
+                                        t_start=0 * pq.s, t_stop=10 * pq.s),
+            neo.SpikeTrain(gen_test_data(rates_a, durs), units=1 * pq.s,
+                                        t_start=0 * pq.s, t_stop=10 * pq.s),
+            neo.SpikeTrain(gen_test_data(rates_a, durs), units=1 * pq.s,
+                                        t_start=0 * pq.s, t_stop=10 * pq.s),
+            neo.SpikeTrain(gen_test_data(rates_b, durs), units=1 * pq.s,
+                                        t_start=0 * pq.s, t_stop=10 * pq.s),
+            neo.SpikeTrain(gen_test_data(rates_b, durs), units=1 * pq.s,
+                                        t_start=0 * pq.s, t_stop=10 * pq.s)]
+        for _ in range(n_trials)]
+
 
         self.x_dim = 4
 

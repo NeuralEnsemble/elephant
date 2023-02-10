@@ -58,12 +58,14 @@ def get_seqs(trials, bin_size, use_sqrt=True):
     if not isinstance(bin_size, pq.Quantity):
         raise ValueError("'bin_size' must be of type pq.Quantity")
 
+    # Create a np.recarray
+    # a generator that generates a tuple (n_bins, neural data)
     seqs = ((BinnedSpikeTrain(trial, bin_size=bin_size).n_bins,
              np.sqrt(BinnedSpikeTrain(trial, bin_size=bin_size).to_array())
              if use_sqrt
              else BinnedSpikeTrain(trial, bin_size=bin_size).to_array())
             for trial in trials)
-
+    # create np.recarray by specifying dtype with np.array()
     seqs = np.array(list(seqs), dtype=[('T', int), ('y', 'O')])
 
     # Remove trials that are shorter than one bin width
