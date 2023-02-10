@@ -86,12 +86,12 @@ def cut_trials(seq_in, seg_length=20):
     Parameters
     ----------
     seq_in : np.recarray
-        data structure, whose nth entry (corresponding to the nth experimental
+        trials structure, whose nth entry (corresponding to the nth experimental
         trial) has fields
         T : int
             number of timesteps in trial
         y : (yDim, T) np.ndarray
-            neural data
+            neural trials
 
     seg_length : int
         length of segments to extract, in number of timesteps. If infinite,
@@ -101,12 +101,12 @@ def cut_trials(seq_in, seg_length=20):
     Returns
     -------
     seqOut : np.recarray
-        data structure, whose nth entry (corresponding to the nth experimental
+        trials structure, whose nth entry (corresponding to the nth experimental
         trial) has fields
         T : int
             number of timesteps in segment
         y : (yDim, T) np.ndarray
-            neural data
+            neural trials
 
     Raises
     ------
@@ -498,7 +498,7 @@ def orthonormalize(x, l):
     """
     Orthonormalize the columns of the loading matrix and apply the
     corresponding linear transform to the latent variables.
-    In the following description, yDim and xDim refer to data dimensionality
+    In the following description, yDim and xDim refer to trials dimensionality
     and latent dimensionality, respectively.
 
     Parameters
@@ -534,7 +534,7 @@ def orthonormalize(x, l):
 
 def segment_by_trial(seqs, x, fn):
     """
-    Segment and store data by trial.
+    Segment and store trials by trial.
 
     Parameters
     ----------
