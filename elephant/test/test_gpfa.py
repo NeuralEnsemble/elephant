@@ -84,7 +84,7 @@ class GPFATestCase(unittest.TestCase):
 
         self.data2 =[[StationaryPoissonProcess(rate=rate * pq.Hz,
                         t_stop=1000*pq.ms).generate_spiketrain()
-                       for rate in rates()]for trial in range(n_trials)]
+                       for rate in rates()] for _ in range(n_trials)]
 
         # generate seqs_train data
         self.seqs_train = gpfa_util.get_seqs(self.data1,
