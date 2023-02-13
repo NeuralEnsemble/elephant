@@ -10,6 +10,7 @@ spectrum).
     welch_coherence
     multitaper_psd
     multitaper_cross_spectrum
+    segmented_multitaper_cross_spectrum
     multitaper_coherence
 
 
@@ -31,6 +32,7 @@ __all__ = [
     "welch_coherence",
     "multitaper_psd",
     "multitaper_cross_spectrum",
+    "segmented_multitaper_cross_spectrum",
     "multitaper_coherence"
 ]
 
@@ -550,7 +552,7 @@ def multitaper_cross_spectrum(signals, fs=1.0, nw=4.0, num_tapers=None,
 
     Parameters
     ----------
-    signal : neo.AnalogSignal or pq.Quantity or np.ndarray
+    signals : neo.AnalogSignal or pq.Quantity or np.ndarray
         Time series data of which PSD is estimated. When `signal` is
         `np.ndarray` or `pq.Quantity`, it needs to be passed as a 2-dimensional
         array of shape (n_channels, n_samples), and the data sampling frequency
@@ -558,12 +560,6 @@ def multitaper_cross_spectrum(signals, fs=1.0, nw=4.0, num_tapers=None,
     fs : float, optional
         Specifies the sampling frequency of the input time series
         Default: 1.0
-    frequency_resolution : pq.Quantity or float, optional
-        Desired frequency resolution of the obtained PSD estimate in terms of
-        the interval between adjacent frequency bins. When given as a `float`,
-        it is taken as frequency in Hz.
-        If None, it will be determined from other parameters.
-        Default: None
     nw : float, optional
         Time-halfbandwidth product. This parameter can be used to determine the
         number of tapers following the equation:
@@ -708,9 +704,9 @@ def _segmented_apply_func(data, func, fs=1.0, n_segments=1, len_segment=None,
     ----------
     data : np.ndarray
         Time series data of which spectral measure is estimated. `data`
-        is `np.ndarray` or `pq.Quantity` of shape (n_channels, n_samples), and the
-        data sampling frequency should be given through the keyword argument
-        `fs` in `func_params_dict`.
+        is `np.ndarray` or `pq.Quantity` of shape (n_channels, n_samples), and
+        the data sampling frequency should be given through the keyword
+        argument `fs` in `func_params_dict`.
     func : callable
         Function calculating spectral measure.
     fs : float, optional
@@ -994,7 +990,7 @@ def multitaper_coherence(signal_i, signal_j, n_segments=1, len_segment=None,
     thus both functions share parts of the respective signatures.
 
     .. math::
-        C(\omega)=\frac{|S_{xy}(\omega)|^2}{S_{xx}(\omega)S_{yy}(\omega)}
+        C(\omega)=\\frac{|S_{xy}(\omega)|^2}{S_{xx}(\omega)S_{yy}(\omega)}
 
     Parameters
     ----------
