@@ -583,8 +583,9 @@ def multitaper_cross_spectrum(signals, fs=1.0, nw=4.0, num_tapers=None,
         If False return a two-sided spectrum.
         Default: True
     attach_units : bool, optional
-        If True and signal is instance of pq.Quantity, units are attached to
-        the esimtated cross spectrum.
+        If True and signals is instance of pq.Quantity, units are attached to
+        the estimated cross spectrum.
+        Default: True
 
     Notes
     -----
@@ -596,9 +597,15 @@ def multitaper_cross_spectrum(signals, fs=1.0, nw=4.0, num_tapers=None,
     Returns
     -------
     freqs : np.ndarray
-        Frequencies associated with power estimate in `psd`
+        Frequencies associated with cross spectrum estimate in `cross_spec`. If
+        signals is an instance of `neo.AnalogSignal` or `Quantity` and the
+        `attach_units` is set to `True`, the returned values will have units of
+        Hz.
     cross_spec : np.ndarray
-        Estimate of the cross spectrum of time series in `signal`
+        Estimate of the cross spectrum of time series in `signals`. If signals
+        is an instance of `neo.AnalogSignal` or `Quantity` and the
+        `attach_units` is set to `True`, the returned values will have units
+        attached to them (i.e. signals.units ** 2/Hz).
 
     Raises
     ------
@@ -877,8 +884,8 @@ def segmented_multitaper_cross_spectrum(signals, n_segments=1,
 
     4. Average the obtained estimates for each segment.
 
-    The estimation is done by applying :func:`_segmented_apply_func` to
-    :func:`multitaper_cross_spectrum`. See the respective functions for further
+    The estimation is done by applying `_segmented_apply_func` to
+    :func:`multitaper_cross_spectrum`. See the latter function for further
     documentation.
 
     Parameters
@@ -937,13 +944,16 @@ def segmented_multitaper_cross_spectrum(signals, n_segments=1,
     Returns
     -------
     freqs : np.ndarray
-        Frequencies associated with power estimate in `psd`
+        Frequencies associated with the cross spectrum estimate in
+        `cross_spec`. If signals is an instance of `neo.AnalogSignal` or
+        `Quantity`, the returned values will have units of Hz.
     cross_spec : np.ndarray
-        Estimate of the cross spectrum of time series in `signal`
+        Estimate of the cross spectrum of time series in `signals`. If signals
+        is an instance of `neo.AnalogSignal` or `Quantity`, the returned
+        values will have units attached to them (i.e. signals.units ** 2/Hz).
 
     See Also
     --------
-    :func:`_segmented_apply_func`
     :func:`multitaper_cross_spectrum`
 
 
@@ -965,7 +975,7 @@ def segmented_multitaper_cross_spectrum(signals, n_segments=1,
         'attach_units': False}
 
     # Apply segmentation
-    freqs, cross_spec_estimate = _segmented_apply_func(
+    freqs, cross_spec = _segmented_apply_func(
         data=data, fs=fs, n_segments=n_segments, len_segment=len_segment,
         overlap=overlap, frequency_resolution=frequency_resolution,
         func=multitaper_cross_spectrum,
@@ -973,11 +983,10 @@ def segmented_multitaper_cross_spectrum(signals, n_segments=1,
 
     # Attach proper units to return values
     if isinstance(signals, pq.quantity.Quantity):
-        cross_spec_estimate = cross_spec_estimate * signals.units * \
-                              signals.units / pq.Hz
+        cross_spec = cross_spec * signals.units * signals.units / pq.Hz
         freqs = freqs * pq.Hz
 
-    return freqs, cross_spec_estimate
+    return freqs, cross_spec
 
 
 def multitaper_coherence(signal_i, signal_j, n_segments=1, len_segment=None,
