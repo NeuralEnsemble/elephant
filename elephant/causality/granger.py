@@ -88,7 +88,7 @@ import numpy as np
 import quantities as pq
 import neo
 from neo.core import AnalogSignal
-from elephant.spectral import multitaper_cross_spectrum, multitaper_psd
+from elephant.spectral import segmented_multitaper_cross_spectrum, multitaper_psd
 
 
 __all__ = (
@@ -848,33 +848,14 @@ def pairwise_spectral_granger(signal_i, signal_j, n_segments=8,
                 of X and Y. If the total interdependence is positive, X and Y
                 are not independent.
     """
-    if (isinstance(signal_i, neo.AnalogSignal)
-        and isinstance(signal_j, neo.AnalogSignal)):
-
-        if not (signal_i.sampling_rate is signal_j.sampling_rate):
-            raise ValueError('Sampling rates do not coincide')
-
-        fs = signal_i.sampling_rate
-
-    if isinstance(signal_i, neo.AnalogSignal):
-        xdata = signal_i.rescale('mV').magnitude
-        xdata = np.rollaxis(xdata, 0, len(data.shape))
-    else:
-        xdata = signal_i
-    if isinstance(signal_j, neo.AnalogSignal):
-        ydata = signal_j.rescale('mV').magnitude
-        ydata = np.rollaxis(ydata, 0, len(data.shape))
-    else:
-        ydata = signal_j
-
-    if not isinstance(fs, pq.Quantity):
-        fs = fs * pq.Hz
-
-
-    signals = np.vstack([xdata, ydata])
+    if isinstance(signal_i, neo.core.AnalogSignal) and \
+            isinstance(signal_j, neo.core.AnalogSignal):
+        signals = signal_i.merge(signal_j)
+    elif isinstance(signal_i, np.ndarray) and isinstance(signal_j, np.ndarray):
+        signals = np.vstack([signal_i, signal_j])
 
     # Calculate cross spectrum for signals
-    freqs, _, S = multitaper_cross_spectrum(
+    freqs, S = segmented_multitaper_cross_spectrum(
         signals=signals, n_segments=n_segments, len_segment=len_segment,
         frequency_resolution=frequency_resolution, overlap=overlap, fs=fs,
         nw=nw, num_tapers=num_tapers, peak_resolution=peak_resolution,
@@ -931,7 +912,7 @@ if __name__ == '__main__':
 
     # Test spectral factorization
     np.random.seed(12321)
-    length_2d = 1124
+    length_2d = 2**12 
     signal = np.zeros((2, length_2d))
 
     order = 2
@@ -960,15 +941,14 @@ if __name__ == '__main__':
     f, psd_1 = multitaper_psd(x, num_tapers=15, n_segments=8)
     f, psd_2 = multitaper_psd(y, num_tapers=15, n_segments=8)
 
-    _, _, cross_spectrum = multitaper_cross_spectrum(signal, n_segments=8,
-                                                     num_tapers=15,
-                                                     return_onesided=True)
+    _,  cross_spectrum = segmented_multitaper_cross_spectrum(signal,
+                                                               n_segments=8,
+                                                               num_tapers=15,
+                                                               return_onesided=True)
 
     cov_matrix, transfer_function = _spectral_factorization(cross_spectrum,
                                                             num_iterations=100)
 
-    import IPython
-    IPython.embed()
     A = np.matmul(np.matmul(transfer_function, cov_matrix),
                   _dagger(transfer_function))
 
@@ -1007,7 +987,7 @@ if __name__ == '__main__':
     plt.show()
 
     # Test spectral granger
-    length_2d = 2**18
+    length_2d = 2**16
     signal = np.zeros((2, length_2d))
 
     order = 2
@@ -1032,7 +1012,7 @@ if __name__ == '__main__':
     f, spectral_causality = \
             pairwise_spectral_granger(signal[0], signal[1],
                                       len_segment=2**10,
-                                      num_tapers=5,
+                                      num_tapers=4,
                                       num_iterations=50)
 
     from matplotlib import pyplot as plt
