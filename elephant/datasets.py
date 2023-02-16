@@ -65,9 +65,9 @@ def download(url, filepath=None, checksum=None, verbose=True):
         try:
             urlretrieve(url, filename=filepath, reporthook=t.update_to)
         except URLError:
-            urlretrieve(url, filename=filepath, reporthook=t.update_to,
-                        data=ssl._create_unverified_context())
-
+            # do not authenticate SSL certificate
+            ssl._create_default_https_context = ssl._create_unverified_context
+            urlretrieve(url, filename=filepath, reporthook=t.update_to)
     return filepath
 
 
@@ -160,9 +160,10 @@ def download_datasets(repo_path, filepath=None, checksum=None,
         except URLError as error:
             # if verification of SSL certificate fails, do not verify cert
             try:  # try again without certificate verification
-                urlopen(default_url + '/README.md',
-                        context=ssl._create_unverified_context())
-            except HTTPError as http_error:  # e.g. 404:
+                ctx = ssl._create_unverified_context()
+                ctx.check_hostname = True
+                urlopen(default_url + '/README.md')
+            except HTTPError:  # e.g. 404
                 default_url = url_to_root + f"raw/master"
 
             warnings.warn(f"Data URL:{default_url}, error: {error}."
