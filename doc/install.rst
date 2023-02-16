@@ -209,9 +209,10 @@ You can have one, both, or none installed in your system.
             unresponsive until the compute program terminates.
 
 .. _no-compile-spade:
-***********
+
+****************************
 Resolving compilation issues
-***********
+****************************
 
 Some modules in Elephant make use of C extensions to speed up computation.
 However, those extensions need to be compiled before use. In some cases, this
