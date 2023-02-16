@@ -389,27 +389,29 @@ jobs:
 
       - name: Install dependencies
         run: |
+          conda config --add channels conda-forge # bugfix with scipy==1.8.1: libstdcxx-ng 12.1.0 required
           sudo apt-get update
           sudo apt install -y libopenmpi-dev openmpi-bin
+          conda update conda
+          conda install -c conda-forge openmpi pandoc libstdcxx-ng # fix libstdc++.so.6: version for new scipy versions > 1.9.1
+          conda env update --file requirements/environment-docs.yml --name base
+          activate base
           python -m pip install --upgrade pip
           pip install -r requirements/requirements-docs.txt
           pip install -r requirements/requirements-tutorials.txt
-          conda config --add channels conda-forge # bugfix with scipy==1.8.1: libstdcxx-ng 12.1.0 required
-          conda update conda
-          conda env update --file requirements/environment-docs.yml --name base
-          conda install -c conda-forge openmpi
-          conda install -c conda-forge pandoc
           pip install -e .[extras]
           # run notebooks
           sed -i -E "s/nbsphinx_execute *=.*/nbsphinx_execute = 'always'/g" doc/conf.py
 
       - name: List packages
         run: |
+          activate base
           pip list
           conda list
           python --version
 
       - name: make html
         run: |
+          activate base
           cd doc
           make html
