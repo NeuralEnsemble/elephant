@@ -68,7 +68,7 @@ def get_seqs(data, bin_size, use_sqrt=True):
             binned = binned_spiketrain.to_array()
         seqs.append(
             (binned_spiketrain.n_bins, binned))
-    seqs = np.array(seqs, dtype=[('T', np.int), ('y', 'O')])
+    seqs = np.array(seqs, dtype=[('T', int), ('y', 'O')])
 
     # Remove trials that are shorter than one bin width
     if len(seqs) > 0:
@@ -122,8 +122,8 @@ def cut_trials(seq_in, seg_length=20):
         seqOut = seq_in
         return seqOut
 
-    dtype_seqOut = [('segId', np.int), ('T', np.int),
-                    ('y', np.object)]
+    dtype_seqOut = [('segId', int), ('T', int),
+                    ('y', object)]
     seqOut_buff = []
     for n, seqIn_n in enumerate(seq_in):
         T = seqIn_n['T']
@@ -135,14 +135,14 @@ def cut_trials(seq_in, seg_length=20):
                 'skipping'.format(n))
             continue
 
-        numSeg = np.int(np.ceil(float(T) / seg_length))
+        numSeg = int(np.ceil(float(T) / seg_length))
 
         # Randomize the sizes of overlaps
         if numSeg == 1:
             cumOL = np.array([0, ])
         else:
             totalOL = (seg_length * numSeg) - T
-            probs = np.ones(numSeg - 1, np.float) / (numSeg - 1)
+            probs = np.ones(numSeg - 1, float) / (numSeg - 1)
             randOL = np.random.multinomial(totalOL, probs)
             cumOL = np.hstack([0, np.cumsum(randOL)])
 
@@ -271,7 +271,7 @@ def inv_persymm(M, blk_size):
         Log determinant of M
     """
     T = int(M.shape[0] / blk_size)
-    Thalf = np.int(np.ceil(T / 2.0))
+    Thalf = int(np.ceil(T / 2.0))
     mkr = blk_size * Thalf
 
     invA11 = np.linalg.inv(M[:mkr, :mkr])
@@ -327,8 +327,8 @@ def fill_persymm(p_in, blk_size, n_blocks, blk_size_vert=None):
 
     Nh = blk_size * n_blocks
     Nv = blk_size_vert * n_blocks
-    Thalf = np.int(np.floor(n_blocks / 2.0))
-    THalf = np.int(np.ceil(n_blocks / 2.0))
+    Thalf = int(np.floor(n_blocks / 2.0))
+    THalf = int(np.ceil(n_blocks / 2.0))
 
     Pout = np.empty((blk_size_vert * n_blocks, blk_size * n_blocks))
     Pout[:blk_size_vert * THalf, :] = p_in
@@ -386,8 +386,8 @@ def make_precomp(seqs, xDim):
     # this is computationally cheap, so we keep a few loops in MATLAB
     # for ease of readability.
     precomp = np.empty(xDim, dtype=[(
-        'absDif', np.object), ('difSq', np.object), ('Tall', np.object),
-        ('Tu', np.object)])
+        'absDif', object), ('difSq', object), ('Tall', object),
+        ('Tu', object)])
     for i in range(xDim):
         precomp[i]['absDif'] = np.abs(Tdif)
         precomp[i]['difSq'] = Tdif ** 2
@@ -397,8 +397,8 @@ def make_precomp(seqs, xDim):
     # Loop once for each state dimension (each GP)
     for i in range(xDim):
         precomp_Tu = np.empty(len(trial_lengths_num_unique), dtype=[(
-            'nList', np.object), ('T', np.int), ('numTrials', np.int),
-            ('PautoSUM', np.object)])
+            'nList', object), ('T', int), ('numTrials', int),
+            ('PautoSUM', object)])
         for j, trial_len_num in enumerate(trial_lengths_num_unique):
             precomp_Tu[j]['nList'] = np.where(Tall == trial_len_num)[0]
             precomp_Tu[j]['T'] = trial_len_num
@@ -462,7 +462,7 @@ def grad_betgam(p, pre_comp, const):
     f = 0
     for j in range(len(pre_comp['Tu'])):
         T = pre_comp['Tu'][j]['T']
-        Thalf = np.int(np.ceil(T / 2.0))
+        Thalf = int(np.ceil(T / 2.0))
 
         Kinv = np.linalg.inv(Kmax[:T, :T])
         logdet_K = logdet(Kmax[:T, :T])
@@ -473,7 +473,7 @@ def grad_betgam(p, pre_comp, const):
         dg_KinvM = np.diag(KinvM)
         tr_KinvM = 2 * dg_KinvM.sum() - np.fmod(T, 2) * dg_KinvM[-1]
 
-        mkr = np.int(np.ceil(0.5 * T ** 2))
+        mkr = int(np.ceil(0.5 * T ** 2))
         numTrials = pre_comp['Tu'][j]['numTrials']
         PautoSUM = pre_comp['Tu'][j]['PautoSUM']
 
@@ -562,7 +562,7 @@ def segment_by_trial(seqs, x, fn):
         raise ValueError('size of X incorrect.')
 
     dtype_new = [(i, seqs[i].dtype) for i in seqs.dtype.names]
-    dtype_new.append((fn, np.object))
+    dtype_new.append((fn, object))
     seqs_new = np.empty(len(seqs), dtype=dtype_new)
     for dtype_name in seqs.dtype.names:
         seqs_new[dtype_name] = seqs[dtype_name]
