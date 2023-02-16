@@ -133,12 +133,8 @@ html_theme_options = {
     'font_family': 'Arial',
     'page_width': '1200px',  # default is 940
     'sidebar_width': '280px',  # default is 220
+    'logo': 'elephant_logo_sidebar.png' # add logo to sidebar
 }
-
-# Theme options are theme-specific and customize the look and feel of a theme
-# further.  For a list of options available for each theme, see the
-# documentation.
-#html_theme_options = {}
 
 # Add any paths that contain custom themes here, relative to this directory.
 #html_theme_path = []
@@ -148,11 +144,11 @@ html_theme_options = {
 #html_title = None
 
 # A shorter title for the navigation bar.  Default is the same as html_title.
-#html_short_title = None
+html_short_title = None
 
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
-html_logo = 'images/elephant_logo_sidebar.png'
+# html_logo = 'images/elephant_logo_sidebar.png'
 
 # The name of an image file (within the static path) to use as favicon of the
 # docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
@@ -162,7 +158,7 @@ html_favicon = 'images/elephant_favicon.ico'
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-# html_static_path = ['_static']
+html_static_path = ['images/elephant_logo_sidebar.png']
 
 # If not '', a 'Last updated on:' timestamp is inserted at every page bottom,
 # using the given strftime format.
