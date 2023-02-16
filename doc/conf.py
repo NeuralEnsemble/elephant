@@ -131,16 +131,16 @@ autosummary_generate_overwrite = True
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 html_theme = 'alabaster'
-html_theme_options = {
-    'font_family': 'Arial',
-    'page_width': '1200px',  # default is 940
-    'sidebar_width': '280px',  # default is 220
-}
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
-# html_theme_options = {}
+html_theme_options = {
+    'font_family': 'Arial',
+    'page_width': '1200px',  # default is 940
+    'sidebar_width': '280px',  # default is 220
+    'logo': 'elephant_logo_sidebar.png' # add logo to sidebar
+}
 
 # Add any paths that contain custom themes here, relative to this directory.
 # html_theme_path = []
@@ -150,11 +150,11 @@ html_theme_options = {
 # html_title = None
 
 # A shorter title for the navigation bar.  Default is the same as html_title.
-# html_short_title = None
+html_short_title = None
 
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
-html_logo = 'images/elephant_logo_sidebar.png'
+# html_logo = 'images/elephant_logo_sidebar.png'
 
 # The name of an image file (within the static path) to use as favicon of the
 # docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
@@ -164,7 +164,7 @@ html_favicon = 'images/elephant_favicon.ico'
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-# html_static_path = ['_static']
+html_static_path = ['images/elephant_logo_sidebar.png']
 
 # If not '', a 'Last updated on:' timestamp is inserted at every page bottom,
 # using the given strftime format.
@@ -214,10 +214,14 @@ htmlhelp_basename = 'elephantdoc'
 # see here https://github.com/phn/pytpm/issues/3#issuecomment-12133978
 numpydoc_show_class_members = False
 
-# A fix for Alabaster theme for no space between a citation reference
-# and citation text
-# https://github.com/sphinx-doc/sphinx/issues/6705#issuecomment-536197438
-html4_writer = True
+# path to bibtex-bibfiles.
+bibtex_bibfiles = ['bib/elephant.bib']
+
+# To configure your referencing style:
+bibtex_reference_style = 'author_year_round'
+
+# To configure the bibliography style:
+bibtex_default_style = 'author_year'
 
 # -- Options for LaTeX output --------------------------------------------
 
@@ -352,10 +356,10 @@ intersphinx_mapping = {
 # The name of math_renderer extension for HTML output.
 html_math_renderer = 'mathjax'
 
-# Remove the copyright notice from docstrings:
-
 
 def process_docstring_remove_copyright(app, what, name, obj, options, lines):
+    """Remove the copyright notice from docstrings: """
+
     copyright_line = None
     for i, line in enumerate(lines):
         if line.startswith(':copyright:'):
@@ -369,3 +373,56 @@ def process_docstring_remove_copyright(app, what, name, obj, options, lines):
 def setup(app):
     app.connect('autodoc-process-docstring',
                 process_docstring_remove_copyright)
+
+# replace square brackets in citation with round brackets
+from dataclasses import dataclass, field
+import sphinxcontrib.bibtex.plugin
+
+from sphinxcontrib.bibtex.style.referencing import BracketStyle
+from sphinxcontrib.bibtex.style.referencing.author_year \
+    import AuthorYearReferenceStyle
+
+
+def bracket_style() -> BracketStyle:
+    return BracketStyle(
+        left='(',
+        right=')',
+    )
+
+
+@dataclass
+class RoundBracketReferenceStyle(AuthorYearReferenceStyle):
+    bracket_parenthetical: BracketStyle = field(default_factory=bracket_style)
+    bracket_textual: BracketStyle = field(default_factory=bracket_style)
+    bracket_author: BracketStyle = field(default_factory=bracket_style)
+    bracket_label: BracketStyle = field(default_factory=bracket_style)
+    bracket_year: BracketStyle = field(default_factory=bracket_style)
+
+
+sphinxcontrib.bibtex.plugin.register_plugin(
+    'sphinxcontrib.bibtex.style.referencing',
+    'author_year_round', RoundBracketReferenceStyle)
+
+# Custom style for bibliography labels
+
+from pybtex.style.formatting.unsrt import Style as UnsrtStyle
+from pybtex.style.labels import BaseLabelStyle
+from pybtex.plugin import register_plugin
+
+
+# a simple label style which uses the bibtex keys for labels
+class AuthorYearStyle(BaseLabelStyle):
+
+    def format_labels(self, sorted_entries):
+        for entry in sorted_entries:
+            # create string for label
+            yield entry.persons["author"][0].last_names[0] + ", " +\
+                entry.fields["year"][-4:]
+
+
+class AuthorYear(UnsrtStyle):
+
+    default_label_style = AuthorYearStyle
+
+
+register_plugin('pybtex.style.formatting', 'author_year', AuthorYear)
