@@ -1,0 +1,202 @@
+{
+    "@context": "https://doi.org/10.5063/schema/codemeta-2.0",
+    "@type": "SoftwareSourceCode",
+    "license": "https://spdx.org/licenses/BSD-3-Clause",
+    "codeRepository": "git+https://github.com/NeuralEnsemble/elephant.git",
+    "contIntegration": "https://github.com/NeuralEnsemble/elephant/actions",
+    "dateCreated": "2013-17-15",
+    "datePublished": "2015-04-08",
+    "dateModified": "2022-10-26",
+    "downloadUrl": "https://files.pythonhosted.org/packages/dc/54/c3303b8af84ea5ee3c7b720620797d988553d8a5703e264c1c2549841380/elephant-0.11.2.tar.gz",
+    "issueTracker": "https://github.com/NeuralEnsemble/elephant/issues",
+    "name": "Elephant",
+    "version": "0.11.2",
+    "identifier": "doi:10.5281/zenodo.1186602",
+    "description": "Elephant (Electrophysiology Analysis Toolkit) is an open-source, community centered library for the analysis of electrophysiological data in the Python programming language. The focus of Elephant is on generic analysis functions for spike train data and time series recordings from electrodes, such as the local field potentials (LFP) or intracellular voltages.In addition to providing a common platform for analysis code from different laboratories, the Elephant project aims to provide a consistent and homogeneous analysis framework that is built on a modular foundation. \nElephant is the direct successor to Neurotools and maintains ties to complementary projects such as OpenElectrophy and spykeviewer.",
+    "applicationCategory": "library",
+    "releaseNotes": "## New functionality and features\n-  new installation option to not compile c-extensions, e.g. `pip install elephant --install-option='--no-compile'`  (#494)\n\n## Bug fixes\n- added CUDA/OpenCL sources for ASSET GPU acceleration to `manifest.in`, they are now included in the distribution package (#483) \n- fixed bug in `elephant.kernels` when passing a multi-dimensional kernel sigma, handling was added for 1-dimensional case (#499)\n- fixed bug in `unitary_event_analysis` that broke elephants build on arm based systems (#500)\n- fixed bug in `elephant/spade_src/include/FPGrowth.h` when using current versions of GCC for compilation (#508)\n- fixed bug in `welch_psd`, `welch_cohere`, replace 'hanning' with 'hann', to ensure compatibility with scipy=>1.9.0 (#511)\n\n## Documentation\n- fixed bug in CI documentation build (#492)\n- reformatted code examples to be used as doctests in the future (#502)\n- added specification and example for entries in the bibtex file to the \"Contributing to Elephant\" section (#504)\n- updated documentation on running unit tests from `nosetest` to `pytest` (#505)\n- fixed broken citation in `change_point_detection`, updated entry in bibtex file, added DOI (#513)\n\n## Optimizations\n- Include `spike_train_synchrony` in the `init` of elephant, now `spike_train_synchrony` module is imported automatically (#518) \n\n## Validations\n- added two validation tests for Victor-Purpura-distance to validate against original Matlab implementation in spike train dissimilarity (#482)\n\n## Other changes\n- re-added report to coveralls.io to github action CI (#480) \n- added OpenSSF (Open Source Security Foundations) best practices badge  (#495)\n- improved documentation by adding links to documentation, bug tracker and source code on pypi (#496) (see: https://pypi.org/project/elephant/)\n- CI workflows for macOS updated from version 10 to macOS 11 and 12 (#509)\n\n## Selected dependency changes\n- removed scipy version cap on GitHub actions runners \"docs\" and \"test-conda\", by updating to `libstdcxx-ng 12.1.0` from conda-forge (#490) \n- `nixio` added to test requirements, now nix files can be used in unit tests (#515)\n",
+    "funding": "604102, 720270, 785907, 945539",
+    "developmentStatus": "active",
+    "isPartOf": "https://neuralensemble.org/",
+    "keywords": [
+        "neuroscience",
+        "neurophysiology",
+        "electrophysiology",
+        "statistics",
+        "data-analysis"
+    ],
+    "programmingLanguage": [
+        "Python3",
+        ""
+    ],
+    "operatingSystem": [
+        "Linux",
+        "Windos",
+        "MacOS"
+    ],
+    "softwareRequirements": [
+        "Python 3.8-3.11",
+        "neo>=0.10.0",
+        "numpy>=1.18.1",
+        "quantities>=0.12.1",
+        "scipy<1.7.0",
+        "six>=1.10.0",
+        "tqdm",
+        "scipy>=1.5.4"
+    ],
+    "relatedLink": [
+        "https://neuralensemble.org/elephant/",
+        "http://elephant.readthedocs.org/"
+    ],
+    "author": [
+        {
+            "@type": "Person",
+            "@id": "https://orcid.org/0000-0003-1255-7300",
+            "givenName": "Michael",
+            "familyName": "Denker",
+            "affiliation": {
+                "@type": "Organization",
+                "name": "Institute of Neuroscience and Medicine (INM-6) and Institute for Advanced Simulation (IAS-6) and JARA-Institute Brain Structure-Function Relationships (INM-10), Jülich Research Centre, Jülich, Germany"
+            }
+        },
+        {
+            "@type": "Person",
+            "@id": "https://orcid.org/0000-0003-0503-5264",
+            "givenName": "Cristiano",
+            "familyName": "Köhler",
+            "affiliation": {
+                "@type": "Organization",
+                "name": "Institute of Neuroscience and Medicine (INM-6) and Institute for Advanced Simulation (IAS-6) and JARA-Institute Brain Structure-Function Relationships (INM-10), Jülich Research Centre, Jülich, Germany"
+            }
+        },
+        {
+            "@type": "Person",
+            "@id": "https://orcid.org/0000-0002-2403-928X",
+            "givenName": "Aitor",
+            "familyName": "Morales-Gregorio",
+            "affiliation": {
+                "@type": "Organization",
+                "name": "Institute of Neuroscience and Medicine (INM-6) and Institute for Advanced Simulation (IAS-6) and JARA-Institute Brain Structure-Function Relationships (INM-10), Jülich Research Centre, Jülich, Germany"
+            }
+        },
+        {
+            "@type": "Person",
+            "@id": "https://orcid.org/0000-0003-3776-4226",
+            "givenName": "Alexander",
+            "familyName": "Kleinjohann",
+            "affiliation": {
+                "@type": "Organization",
+                "name": "Institute of Neuroscience and Medicine (INM-6) and Institute for Advanced Simulation (IAS-6) and JARA-Institute Brain Structure-Function Relationships (INM-10), Jülich Research Centre, Jülich, Germany"
+            }
+        },
+        {
+            "@type": "Person",
+            "@id": "https://orcid.org/0000-0003-2498-0536",
+            "givenName": "Peter",
+            "familyName": "Bouss",
+            "affiliation": {
+                "@type": "Organization",
+                "name": "Institute of Neuroscience and Medicine (INM-6) and Institute for Advanced Simulation (IAS-6) and JARA-Institute Brain Structure-Function Relationships (INM-10), Jülich Research Centre, Jülich, Germany"
+            }
+        },
+        {
+            "@type": "Person",
+            "@id": "https://orcid.org/0000-0002-3818-5587",
+            "givenName": "Alessandra",
+            "familyName": "Stella",
+            "affiliation": {
+                "@type": "Organization",
+                "name": "Institute of Neuroscience and Medicine (INM-6) and Institute for Advanced Simulation (IAS-6) and JARA-Institute Brain Structure-Function Relationships (INM-10), Jülich Research Centre, Jülich, Germany"
+            }
+        },
+        {
+            "@type": "Person",
+            "@id": "https://orcid.org/0000-0003-0789-6279",
+            "givenName": "Regimantas",
+            "familyName": "Jurkus",
+            "affiliation": {
+                "@type": "Organization",
+                "name": "Institute of Neuroscience and Medicine (INM-6) and Institute for Advanced Simulation (IAS-6) and JARA-Institute Brain Structure-Function Relationships (INM-10), Jülich Research Centre, Jülich, Germany"
+            }
+        },
+        {
+            "@type": "Person",
+            "@id": "https://orcid.org/0000-0002-9302-5893",
+            "givenName": "Maximailian",
+            "familyName": "Kramer",
+            "affiliation": {
+                "@type": "Organization",
+                "name": "Institute of Neuroscience and Medicine (INM-6) and Institute for Advanced Simulation (IAS-6) and JARA-Institute Brain Structure-Function Relationships (INM-10), Jülich Research Centre, Jülich, Germany"
+            }
+        },
+        {
+            "@type": "Person",
+            "givenName": "Oliver",
+            "familyName": "Kloß",
+            "affiliation": {
+                "@type": "Organization",
+                "name": "Institute of Neuroscience and Medicine (INM-6) and Institute for Advanced Simulation (IAS-6) and JARA-Institute Brain Structure-Function Relationships (INM-10), Jülich Research Centre, Jülich, Germany"
+            }
+        },
+        {
+            "@type": "Person",
+            "@id": "https://orcid.org/0000-0002-5555-3206",
+            "givenName": "Paulina",
+            "familyName": "Dąbrowska",
+            "affiliation": {
+                "@type": "Organization",
+                "name": "Institute of Neuroscience and Medicine (INM-6) and Institute for Advanced Simulation (IAS-6) and JARA-Institute Brain Structure-Function Relationships (INM-10), Jülich Research Centre, Jülich, Germany"
+            }
+        },
+        {
+            "@type": "Person",
+            "@id": "https://orcid.org/0000-0001-7292-1982",
+            "givenName": "Moritz",
+            "familyName": "Kern",
+            "affiliation": {
+                "@type": "Organization",
+                "name": "Institute of Neuroscience and Medicine (INM-6) and Institute for Advanced Simulation (IAS-6) and JARA-Institute Brain Structure-Function Relationships (INM-10), Jülich Research Centre, Jülich, Germany"
+            }
+        },
+        {
+            "@type": "Person",
+            "@id": "https://orcid.org/0000-0002-9557-1003",
+            "givenName": "Anno Christopher",
+            "familyName": "Kurth",
+            "affiliation": {
+                "@type": "Organization",
+                "name": "Institute of Neuroscience and Medicine (INM-6) and Institute for Advanced Simulation (IAS-6) and JARA-Institute Brain Structure-Function Relationships (INM-10), Jülich Research Centre, Jülich, Germany"
+            }
+        },
+        {
+            "@type": "Person",
+            "@id": "https://orcid.org/0000-0001-7373-5962",
+            "givenName": "Robin",
+            "familyName": "Gutzen",
+            "affiliation": {
+                "@type": "Organization",
+                "name": "Institute of Neuroscience and Medicine (INM-6) and Institute for Advanced Simulation (IAS-6) and JARA-Institute Brain Structure-Function Relationships (INM-10), Jülich Research Centre, Jülich, Germany"
+            }
+        },
+        {
+            "@type": "Person",
+            "@id": "https://orcid.org/0000-0003-2401-7862",
+            "givenName": "Florian",
+            "familyName": "Porrmann",
+            "affiliation": {
+                "@type": "Organization",
+                "name": "Cognitronics and Sensor Systems, CITEC, Bielefeld University, Bielefeld, Germany"
+            }
+        },
+        {
+            "@type": "Person",
+            "@id": "https://orcid.org/0000-0002-3168-7365",
+            "givenName": "Sarah",
+            "familyName": "Pilz",
+            "affiliation": {
+                "@type": "Organization",
+                "name": "Cognitronics and Sensor Systems, CITEC, Bielefeld University, Bielefeld, Germany"
+            }
+        }
+    ]
+}
