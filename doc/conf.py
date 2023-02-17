@@ -139,7 +139,8 @@ html_theme_options = {
     'font_family': 'Arial',
     'page_width': '1200px',  # default is 940
     'sidebar_width': '280px',  # default is 220
-    'logo': 'elephant_logo_sidebar.png' # add logo to sidebar
+    'logo': 'elephant_logo_sidebar.png', # add logo to sidebar
+    'fixed_sidebar': 'true'
 }
 
 # Add any paths that contain custom themes here, relative to this directory.
