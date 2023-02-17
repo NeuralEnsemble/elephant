@@ -768,7 +768,7 @@ class JointISI(object):
         Default: False
     method : {'fast', 'window'}, optional
         * 'fast': the spike can move in the whole range between the
-            previous and subsequent spikes (computationally efficient).
+           previous and subsequent spikes (computationally efficient).
         * 'window': the spike movement is limited to the parameter `dither`.
 
         Default: 'window'
@@ -1029,7 +1029,7 @@ class JointISI(object):
             Default: 1
 
         Returns
-        ----------
+        -------
         dithered_sts : list of neo.SpikeTrain
             Spike trains, that are dithered versions of the given
             :attr:`spiketrain`.

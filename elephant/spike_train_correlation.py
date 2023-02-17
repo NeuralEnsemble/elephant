@@ -329,7 +329,7 @@ def covariance(binned_spiketrain, binary=False, fast=True):
         When using `fast=True` and `binned_spiketrain` shape is large.
 
     Warns
-    --------
+    -----
     UserWarning
         If at least one row in `binned_spiketrain` is empty (has no spikes).
 
@@ -438,7 +438,7 @@ def correlation_coefficient(binned_spiketrain, binary=False, fast=True):
         When using `fast=True` and `binned_spiketrain` shape is large.
 
     Warns
-    --------
+    -----
     UserWarning
         If at least one row in `binned_spiketrain` is empty (has no spikes).
 
@@ -562,6 +562,7 @@ def cross_correlation_histogram(
     """
     Computes the cross-correlation histogram (CCH) between two binned spike
     trains `binned_spiketrain_i` and `binned_spiketrain_j`.
+    :cite:`correlation-Eggermont2010_77`
 
     Visualization of this function is covered in Viziphant:
     :func:`viziphant.spike_train_correlation.plot_cross_correlation_histogram`.
@@ -574,18 +575,18 @@ def cross_correlation_histogram(
         spike trains can have any `t_start` and `t_stop`.
     window : {'valid', 'full'} or list of int, optional
         ‘full’: This returns the cross-correlation at each point of overlap,
-                with an output shape of (N+M-1,). At the end-points of the
-                cross-correlogram, the signals do not overlap completely, and
-                boundary effects may be seen.
+              with an output shape of (N+M-1,). At the end-points of the
+              cross-correlogram, the signals do not overlap completely, and
+              boundary effects may be seen.
         ‘valid’: Mode valid returns output of length max(M, N) - min(M, N) + 1.
-                 The cross-correlation product is only given for points where
-                 the signals overlap completely.
-                 Values outside the signal boundary have no effect.
+              The cross-correlation product is only given for points where
+              the signals overlap completely.
+              Values outside the signal boundary have no effect.
         List of integers (min_lag, max_lag):
               The entries of window are two integers representing the left and
               right extremes (expressed as number of bins) where the
               cross-correlation is computed.
-        Default: 'full'
+    Default: 'full'
     border_correction : bool, optional
         whether to correct for the border effect. If True, the value of the
         CCH at bin :math:`b` (for :math:`b=-H,-H+1, ...,H`, where :math:`H` is
@@ -606,10 +607,12 @@ def cross_correlation_histogram(
         smoothing window. The smoothing window cannot be larger than the
         maximum lag of the CCH. The kernel is normalized to unit area before
         being applied to the resulting CCH. Popular choices for the kernel are
+
           * normalized boxcar kernel: `numpy.ones(N)`
           * hamming: `numpy.hamming(N)`
           * hanning: `numpy.hanning(N)`
           * bartlett: `numpy.bartlett(N)`
+
         If None, the CCH is not smoothed.
         Default: None
     method : {'speed', 'memory'}, optional

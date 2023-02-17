@@ -8,7 +8,5 @@ Causality measures
 References
 ----------
 
-.. bibliography:: ../bib/elephant.bib
-   :labelprefix: gr
-   :keyprefix: granger-
-   :style: unsrt
+.. bibliography::
+    :keyprefix: granger-

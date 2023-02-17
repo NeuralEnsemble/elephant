@@ -340,10 +340,8 @@ Each module in ``doc/reference`` folder ends with the reference section:
     References
     ----------
 
-    .. bibliography:: ../bib/elephant.bib
-       :labelprefix: <module name shortcut>
-       :keyprefix: <module name>-
-       :style: unsrt
+    .. bibliography::
+        :keyprefix: <module name>-
 
 where ``<module name>`` is (by convention) the Python source file name, and
 ``<module name shortcut>`` is what will be displayed to the users.

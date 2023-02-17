@@ -54,10 +54,8 @@ Run tutorial interactively:
 References
 ----------
 
-.. bibliography:: ../bib/elephant.bib
-   :labelprefix: st
+.. bibliography::
    :keyprefix: statistics-
-   :style: unsrt
 
 
 :copyright: Copyright 2014-2023 by the Elephant team, see `doc/authors.rst`.

@@ -360,8 +360,8 @@ def exact_inference_with_ll(seqs, params, get_ll=True):
 
     # copy the contents of the input data structure to output structure
     dtype_out = [(x, seqs[x].dtype) for x in seqs.dtype.names]
-    dtype_out.extend([('latent_variable', np.object), ('Vsm', np.object),
-                      ('VsmGP', np.object)])
+    dtype_out.extend([('latent_variable', object), ('Vsm', object),
+                      ('VsmGP', object)])
     seqs_latent = np.empty(len(seqs), dtype=dtype_out)
     for dtype_name in seqs.dtype.names:
         seqs_latent[dtype_name] = seqs[dtype_name]
@@ -416,7 +416,7 @@ def exact_inference_with_ll(seqs, params, get_ll=True):
 
         # Compute blkProd = CRinvC_big * invM efficiently
         # blkProd is block persymmetric, so just compute top half
-        t_half = np.int(np.ceil(t / 2.0))
+        t_half = int(np.ceil(t / 2.0))
         blk_prod = np.zeros((x_dim * t_half, x_dim * t))
         idx = range(0, x_dim * t_half + 1, x_dim)
         for i in range(t_half):
