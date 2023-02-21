@@ -538,17 +538,17 @@ def multitaper_cross_spectrum(signals, fs=1.0, nw=4.0, num_tapers=None,
     Estimates the cross spectrum of a given `neo.AnalogSignal` using the
     Multitaper method.
 
-    The cross spectrum is obtained through the following steps
+    The cross spectrum is obtained through the following steps:
 
-    1. obtain approximately independent estimates of the spectrum for each
-       signal by multiplying the segment with tapering functions (obtained as
+    1. Obtain approximately independent estimates of the spectrum for each
+       signal by multiplying it with tapering functions (obtained as
        the discrete prolate spheroidal functions, also known as slepian
        functions) and calculating the cross spectrum for the tapered signals.
        The number of tapering functions (and hence the number of the estimates)
        is specified by the parameter `num_tapers`.
 
-    2. average the approximately independent estimates of each signal to
-       decrease overall variance of the estimates
+    2. Average the approximately independent estimates of each tapered
+       instance of the signal to decrease overall variance of the estimates.
 
     Parameters
     ----------
