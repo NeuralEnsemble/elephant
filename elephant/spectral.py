@@ -8,15 +8,15 @@ spectrum).
 
     welch_psd
     welch_coherence
+    multitaper_psd
 
 :copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
-from __future__ import division, print_function, unicode_literals
+import warnings
 
 import neo
-import warnings
 import numpy as np
 import quantities as pq
 import scipy.signal
@@ -32,7 +32,7 @@ __all__ = [
 @deprecated_alias(num_seg='n_segments', len_seg='len_segment',
                   freq_res='frequency_resolution')
 def welch_psd(signal, n_segments=8, len_segment=None,
-              frequency_resolution=None, overlap=0.5, fs=1.0, window='hanning',
+              frequency_resolution=None, overlap=0.5, fs=1.0, window='hann',
               nfft=None, detrend='constant', return_onesided=True,
               scaling='density', axis=-1):
     """
@@ -91,7 +91,7 @@ def welch_psd(signal, n_segments=8, len_segment=None,
     window : str or tuple or np.ndarray, optional
         Desired window to use.
         See Notes [2].
-        Default: 'hanning'
+        Default: 'hann'
     nfft : int, optional
         Length of the FFT used.
         See Notes [2].
@@ -186,17 +186,24 @@ def welch_psd(signal, n_segments=8, len_segment=None,
 
     >>> freq, psd = welch_psd(signal)
     >>> freq
-    array([ 0.        ,  0.90909091,  1.81818182,  2.72727273,
-            3.63636364,  4.54545455,  5.45454545,  6.36363636,
-            7.27272727,  8.18181818,  9.09090909, 10.        ]) * Hz
-    >>> psd
-    array([[1.09566410e-03, 2.33607943e-02, 1.35436832e-03,
-        6.74408723e-05, 1.00810196e-05, 2.40079315e-06,
-        7.35821437e-07, 2.58361700e-07, 9.44183422e-08,
-        3.14573483e-08, 6.82050475e-09, 1.18183354e-10]]) * mV**2/Hz
+    array([ 0.        ,  0.90909091,  1.81818182,  2.72727273,  3.63636364,
+            4.54545455,  5.45454545,  6.36363636,  7.27272727,  8.18181818,
+            9.09090909, 10.        ]) * Hz
+
+    >>> psd # noqa
+    array([[1.09566410e-03, 2.33607943e-02, 1.35436832e-03, 6.74408723e-05,
+            1.00810196e-05, 2.40079315e-06, 7.35821437e-07, 2.58361700e-07,
+            9.44183422e-08, 3.14573483e-08, 6.82050475e-09, 1.18183354e-10]]) * mV**2/Hz
+
 
     """
-
+    # 'hanning' window was removed with release of scipy 1.9.0, it was
+    # deprecated since 1.1.0.
+    if window == 'hanning':
+        warnings.warn("'hanning' is deprecated and was removed from scipy "
+                      "with release 1.9.0. Please use 'hann' instead",
+                      DeprecationWarning)
+        window = 'hann'
     # initialize a parameter dict (to be given to scipy.signal.welch()) with
     # the parameters directly passed on to scipy.signal.welch()
     params = {'window': window, 'nfft': nfft,
@@ -298,7 +305,7 @@ def multitaper_psd(signal, n_segments=1, len_segment=None,
 
     Parameters
     ----------
-    signal : neo.AnalogSignal
+    signal : neo.AnalogSignal or pq.Quantity or np.ndarray
         Time series data of which PSD is estimated. When `signal` is np.ndarray
         sampling frequency should be given through keyword argument `fs`.
         Signal should be passed as (n_channels, n_samples)
@@ -329,7 +336,7 @@ def multitaper_psd(signal, n_segments=1, len_segment=None,
         Time bandwidth product
         Default: 4.0.
     num_tapers : int, optional
-        Number of tapers used in 1. to obtain estimate of PSD. By default
+        Number of tapers used in 1. to obtain estimate of PSD. By default,
         [2*nw] - 1 is chosen.
         Default: None.
     peak_resolution : pq.Quantity float, optional
@@ -520,7 +527,7 @@ def multitaper_psd(signal, n_segments=1, len_segment=None,
                   len_seg='len_segment', freq_res='frequency_resolution')
 def welch_coherence(signal_i, signal_j, n_segments=8, len_segment=None,
                     frequency_resolution=None, overlap=0.5, fs=1.0,
-                    window='hanning', nfft=None, detrend='constant',
+                    window='hann', nfft=None, detrend='constant',
                     scaling='density', axis=-1):
     r"""
     Estimates coherence between a given pair of analog signals.
@@ -574,7 +581,7 @@ def welch_coherence(signal_i, signal_j, n_segments=8, len_segment=None,
     window : str or tuple or np.ndarray, optional
         Desired window to use.
         See Notes [1].
-        Default: 'hanning'
+        Default: 'hann'
     nfft : int, optional
         Length of the FFT used.
         See Notes [1].
@@ -607,7 +614,7 @@ def welch_coherence(signal_i, signal_j, n_segments=8, len_segment=None,
         Estimate of coherency between the input time series. For each
         frequency, coherency takes a value between 0 and 1, with 0 or 1
         representing no or perfect coherence, respectively.
-        When the input arrays `signal_i` and `signal_j` are multi-dimensional,
+        When the input arrays `signal_i` and `signal_j` are multidimensional,
         `coherency` is of the same shape as the inputs, and the frequency is
         indexed depending on the type of the input. If the input is
         `neo.AnalogSignal`, the first axis indexes frequency. Otherwise,
@@ -660,9 +667,11 @@ def welch_coherence(signal_i, signal_j, n_segments=8, len_segment=None,
 
     >>> freq, coherency, phase_lag = welch_coherence(signal, signal)
     >>> freq
-    array([ 0.        ,  0.90909091,  1.81818182,  2.72727273,
-            3.63636364,  4.54545455,  5.45454545,  6.36363636,
-            7.27272727,  8.18181818,  9.09090909, 10.        ]) * Hz
+    array([ 0.        ,  0.90909091,  1.81818182,  2.72727273,  3.63636364,
+            4.54545455,  5.45454545,  6.36363636,  7.27272727,  8.18181818,
+            9.09090909, 10.        ]) * Hz
+
+
     >>> coherency.flatten()
     array([1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1.])
     >>> phase_lag.flatten()
@@ -671,6 +680,13 @@ def welch_coherence(signal_i, signal_j, n_segments=8, len_segment=None,
     """
 
     # TODO: code duplication with welch_psd()
+    # 'hanning' window was removed with release of scipy 1.9.0, it was
+    # deprecated since 1.1.0.
+    if window == 'hanning':
+        warnings.warn("'hanning' is deprecated and was removed from scipy "
+                      "with release 1.9.0. Please use 'hann' instead",
+                      DeprecationWarning)
+        window = 'hann'
 
     # initialize a parameter dict for scipy.signal.csd()
     params = {'window': window, 'nfft': nfft,

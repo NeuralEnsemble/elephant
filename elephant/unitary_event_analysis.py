@@ -169,11 +169,12 @@ def inverse_hash_from_pattern(h, N, base=2):
     >>> import numpy as np
     >>> h = np.array([3, 7])
     >>> N = 4
-    >>> inverse_hash_from_pattern(h, N)
-    array([[1, 1],
-        [1, 1],
-        [0, 1],
-        [0, 0]])
+    >>> print(inverse_hash_from_pattern(h, N))
+    [[0 0]
+     [0 1]
+     [1 1]
+     [1 1]]
+
 
     """
     h = np.asarray(h)  # this will cast to object type if h > int64
@@ -233,9 +234,9 @@ def n_emp_mat(mat, pattern_hash, base=2):
     >>> pattern_hash = np.array([1,3])
     >>> n_emp, n_emp_indices = n_emp_mat(mat, pattern_hash)
     >>> print(n_emp)
-    [ 0.  2.]
+    [0. 2.]
     >>> print(n_emp_indices)
-    [array([]), array([0, 3])]
+    [array([], dtype=int64), array([0, 3])]
 
     """
     # check if the mat is zero-one matrix
@@ -295,10 +296,10 @@ def n_emp_mat_sum_trial(mat, pattern_hash):
     ...                  [0, 1, 1, 1, 1],
     ...                  [1, 1, 0, 1, 0]]])
     >>> pattern_hash = np.array([4,6])
-    >>> n_emp_sum_trial, n_emp_sum_trial_idx = \
-    ...                   n_emp_mat_sum_trial(mat, pattern_hash)
-    >>> n_emp_sum_trial
-    array([ 1.,  3.])
+    >>> n_emp_sum_trial, n_emp_sum_trial_idx = n_emp_mat_sum_trial(
+    ...                                                     mat, pattern_hash)
+    >>> print(n_emp_sum_trial)
+    [1. 3.]
     >>> n_emp_sum_trial_idx
     [[array([0]), array([3])], [array([], dtype=int64), array([2, 4])]]
 
@@ -404,11 +405,11 @@ def n_exp_mat(mat, pattern_hash, method='analytic', n_surrogates=1):
     ...                 [0, 0, 1, 0]])
     >>> pattern_hash = np.array([5,6])
     >>> n_exp_anal = n_exp_mat(mat, pattern_hash, method='analytic')
-    >>> n_exp_anal
-    [ 0.5 1.5 ]
+    >>> print(n_exp_anal)
+    [0.5 1.5]
     >>> n_exp_surr = n_exp_mat(mat, pattern_hash, method='surr',
-    ...                        n_surrogates=5000)
-    >>> print(n_exp_surr)
+    ...                        n_surrogates=5000) # doctest: +SKIP
+    >>> print(n_exp_surr) # doctest: +SKIP
     [[ 1.  1.]
      [ 2.  0.]
      [ 2.  0.]
@@ -424,7 +425,7 @@ def n_exp_mat(mat, pattern_hash, method='analytic', n_surrogates=1):
 
     if method == 'analytic':
         return _n_exp_mat_analytic(mat, pattern_hash)
-    if method == 'surr':
+    elif method == 'surr':
         return _n_exp_mat_surrogate(mat, pattern_hash,
                                     n_surrogates=n_surrogates)
 
@@ -486,7 +487,7 @@ def n_exp_mat_sum_trial(mat, pattern_hash, method='analytic_TrialByTrial',
     >>> pattern_hash = np.array([5,6])
     >>> n_exp_anal = n_exp_mat_sum_trial(mat, pattern_hash)
     >>> print(n_exp_anal)
-        array([ 1.56,  2.56])
+    [1.56 2.56]
     """
     if method == 'analytic_TrialByTrial':
         n_exp = np.zeros(len(pattern_hash))
@@ -567,8 +568,8 @@ def gen_pval_anal(mat, pattern_hash, method='analytic_TrialByTrial',
     ...                  [1, 1, 0, 1, 0]]])
     >>> pattern_hash = np.array([5, 6])
     >>> pval_anal, n_exp = gen_pval_anal(mat, pattern_hash)
-    >>> n_exp
-    array([ 1.56,  2.56])
+    >>> print(n_exp)
+    [1.56 2.56]
 
     """
     if method == 'analytic_TrialByTrial' or method == 'analytic_TrialAverage':
@@ -582,7 +583,7 @@ def gen_pval_anal(mat, pattern_hash, method='analytic_TrialByTrial',
             mat, pattern_hash, method=method, n_surrogates=n_surrogates)
 
         def pval(n_emp):
-            hist = np.bincount(np.int64(n_exp))
+            hist = np.bincount(n_exp.astype(int, casting='unsafe'))
             exp_dist = hist / float(np.sum(hist))
             if len(n_emp) > 1:
                 raise ValueError('In surrogate method the p_value can be'
@@ -616,8 +617,8 @@ def jointJ(p_val):
     Examples
     --------
     >>> p_val = np.array([0.31271072,  0.01175031])
-    >>> jointJ(p_val)
-    array([0.3419968 ,  1.92481736])
+    >>> print(jointJ(p_val))
+    [0.3419968  1.92481736]
 
     """
     p_arr = np.asarray(p_val)
@@ -726,15 +727,15 @@ def jointJ_window_analysis(spiketrains, bin_size=5 * pq.ms,
         Default: None
     method : str, optional
         The method with which to compute the unitary events:
+
           * 'analytic_TrialByTrial': calculate the analytical expectancy
             on each trial, then sum over all trials;
-
           * 'analytic_TrialAverage': calculate the expectancy by averaging over
             trials (cf. Gruen et al. 2003);
-
           * 'surrogate_TrialByTrial': calculate the distribution of expected
             coincidences by spike time randomization in each trial and sum over
             trials.
+
         Default: 'analytic_trialByTrial'
     t_start, t_stop : float or pq.Quantity, optional
         The start and stop times to use for the time points.

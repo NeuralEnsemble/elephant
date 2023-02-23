@@ -370,8 +370,10 @@ def pairwise_granger(signals, max_order, information_criterion='aic'):
         Maximal order of autoregressive model.
     information_criterion : {'aic', 'bic'}, optional
         A function to compute the information criterion:
-            `bic` for Bayesian information_criterion,
-            `aic` for Akaike information criterion,
+
+        * `bic` for Bayesian information_criterion,
+        * `aic` for Akaike information criterion,
+
         Default: 'aic'
 
     Returns
@@ -436,11 +438,8 @@ def pairwise_granger(signals, max_order, information_criterion='aic'):
 
     >>> import numpy as np
     >>> from elephant.causality.granger import pairwise_granger
-    >>> pairwise_granger(np.random.uniform(size=(1000, 2)), max_order=2)
-    Causality(directional_causality_x_y=0.0,
-             directional_causality_y_x=-0.0,
-             instantaneous_causality=0.0,
-             total_interdependence=0.0)
+    >>> pairwise_granger(np.random.uniform(size=(1000, 2)), max_order=2)  # noqa
+    Causality(directional_causality_x_y=-0.0, directional_causality_y_x=0.0, instantaneous_causality=0.0, total_interdependence=0.0)
 
     Example 2. Dependent variables. Y depends on X but not vice versa.
 
@@ -453,14 +452,12 @@ def pairwise_granger(signals, max_order, information_criterion='aic'):
 
     In this case, the directional causality is non-zero.
 
+    >>> np.random.seed(31)
     >>> x = np.random.randn(1001)
     >>> y = 3.5 * x[:-1] + np.random.randn(1000)
     >>> signals = np.array([x[1:], y]).T  # N x 2 matrix
-    >>> pairwise_granger(signals, max_order=1)
-    Causality(directional_causality_x_y=2.64,
-              directional_causality_y_x=0.0,
-              instantaneous_causality=0.0,
-              total_interdependence=2.64)
+    >>> pairwise_granger(signals, max_order=1)  # noqa
+    Causality(directional_causality_x_y=2.64, directional_causality_y_x=-0.0, instantaneous_causality=0.0, total_interdependence=2.64)
 
     """
     if isinstance(signals, AnalogSignal):
@@ -543,8 +540,10 @@ def conditional_granger(signals, max_order, information_criterion='aic'):
         Maximal order of autoregressive model.
     information_criterion : {'aic', 'bic'}, optional
         A function to compute the information criterion:
-            `bic` for Bayesian information_criterion,
-            `aic` for Akaike information criterion,
+
+        * `bic` for Bayesian information_criterion,
+        * `aic` for Akaike information criterion,
+
         Default: 'aic'
 
     Returns

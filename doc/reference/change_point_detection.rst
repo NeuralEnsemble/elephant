@@ -8,7 +8,5 @@ Detection of non-stationary processes
 References
 ----------
 
-.. bibliography:: ../bib/elephant.bib
-   :labelprefix: cpd
-   :keyprefix: cpd-
-   :style: unsrt
+.. bibliography::
+    :keyprefix: cpd-

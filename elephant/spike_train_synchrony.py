@@ -87,7 +87,7 @@ def spike_contrast(spiketrains, t_start=None, t_stop=None,
         A list of input spike trains to calculate the synchrony from.
     t_start : pq.Quantity, optional
         The beginning of the spike train. If None, it's taken as the minimum
-        value of `t_start`s of the input spike trains.
+        value of `t_start` values of the input spike trains.
         Default: None
     t_stop : pq.Quantity, optional
         The end of the spike train. If None, it's taken as the maximum value
@@ -144,14 +144,16 @@ def spike_contrast(spiketrains, t_start=None, t_stop=None,
     Examples
     --------
     >>> import quantities as pq
-    >>> from elephant.spike_train_generation import homogeneous_poisson_process
+    >>> import numpy as np
+    >>> from elephant.spike_train_generation import StationaryPoissonProcess
     >>> from elephant.spike_train_synchrony import spike_contrast
-    >>> spiketrain_1 = homogeneous_poisson_process(rate=20*pq.Hz,
-    ...     t_stop=1000*pq.ms)
-    >>> spiketrain_2 = homogeneous_poisson_process(rate=20*pq.Hz,
-    ...     t_stop=1000*pq.ms)
-    >>> spike_contrast([spiketrain_1, spiketrain_2])
-    0.4192546583850932
+    >>> np.random.seed(225)
+    >>> spiketrain_1 = StationaryPoissonProcess(rate=20*pq.Hz,
+    ...     t_stop=1000*pq.ms).generate_spiketrain()
+    >>> spiketrain_2 = StationaryPoissonProcess(rate=20*pq.Hz,
+    ...     t_stop=1000*pq.ms).generate_spiketrain()
+    >>> round(spike_contrast([spiketrain_1, spiketrain_2]),3)
+    0.419
 
     """
     if not 0. < bin_shrink_factor < 1.:
@@ -284,22 +286,26 @@ class Synchrotool(Complexity):
         threshold : int
             Threshold value for the deletion of spikes engaged in synchronous
             activity.
+
               * `deletion_threshold >= 2` leads to all spikes with a larger or
-                equal complexity value to be deleted/extracted.
+                 equal complexity value to be deleted/extracted.
               * `deletion_threshold <= 1` leads to a ValueError, since this
-              would delete/extract all spikes and there are definitely more
-              efficient ways of doing so.
+                 would delete/extract all spikes and there are definitely more
+                 efficient ways of doing so.
+
         in_place : bool, optional
             Determines whether the modification are made in place
             on ``self.input_spiketrains``.
             Default: False
         mode : {'delete', 'extract'}, optional
             Inversion of the mask for deletion of synchronous events.
+
               * ``'delete'`` leads to the deletion of all spikes with
                 complexity >= `threshold`,
                 i.e. deletes synchronous spikes.
               * ``'extract'`` leads to the deletion of all spikes with
                 complexity < `threshold`, i.e. extracts synchronous spikes.
+
             Default: 'delete'
 
         Raises
@@ -314,6 +320,7 @@ class Synchrotool(Complexity):
         list of neo.SpikeTrain
             List of spiketrains where the spikes with
             ``complexity >= threshold`` have been deleted/extracted.
+
               * If ``in_place`` is True, the returned list is the same as
                 ``self.input_spiketrains``.
               * If ``in_place`` is False, the returned list is a deepcopy of

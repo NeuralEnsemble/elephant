@@ -101,17 +101,18 @@ def zscore(signal, inplace=True):
     >>> import numpy as np
     >>> import quantities as pq
     >>> from elephant.signal_processing import zscore
-    ...
+
     >>> a = neo.AnalogSignal(
     ...       np.array([1, 2, 3, 4, 5, 6]).reshape(-1,1) * pq.mV,
     ...       t_start=0*pq.s, sampling_rate=1000*pq.Hz)
     >>> zscore(a).as_quantity()
-    [[-1.46385011]
-     [-0.87831007]
-     [-0.29277002]
-     [ 0.29277002]
-     [ 0.87831007]
-     [ 1.46385011]] dimensionless
+    array([[-1.46385011],
+           [-0.87831007],
+           [-0.29277002],
+           [ 0.29277002],
+           [ 0.87831007],
+           [ 1.46385011]]) * dimensionless
+
 
     Z-transform a single `neo.AnalogSignal` containing multiple signals.
 
@@ -119,13 +120,14 @@ def zscore(signal, inplace=True):
     ...       np.transpose([[1, 2, 3, 4, 5, 6],
     ...                     [11, 12, 13, 14, 15, 16]]) * pq.mV,
     ...       t_start=0*pq.s, sampling_rate=1000*pq.Hz)
-    >>> zscore(b).as_quantity()
-    [[-1.46385011 -1.46385011]
-     [-0.87831007 -0.87831007]
-     [-0.29277002 -0.29277002]
-     [ 0.29277002  0.29277002]
-     [ 0.87831007  0.87831007]
-     [ 1.46385011  1.46385011]] dimensionless
+    >>> zscore(b, inplace=False).as_quantity()
+    array([[-1.46385011, -1.46385011],
+           [-0.87831007, -0.87831007],
+           [-0.29277002, -0.29277002],
+           [ 0.29277002,  0.29277002],
+           [ 0.87831007,  0.87831007],
+           [ 1.46385011,  1.46385011]]) * dimensionless
+
 
     Z-transform a list of `neo.AnalogSignal`, each one containing more than
     one signal:
@@ -134,7 +136,7 @@ def zscore(signal, inplace=True):
     ...       np.transpose([[21, 22, 23, 24, 25, 26],
     ...                     [31, 32, 33, 34, 35, 36]]) * pq.mV,
     ...       t_start=0*pq.s, sampling_rate=1000*pq.Hz)
-    >>> zscore([b, c])
+    >>> zscore([b, c])  # doctest: +SKIP
     [<AnalogSignal(array([[-1.11669108, -1.08361877],
        [-1.0672076 , -1.04878252],
        [-1.01772411, -1.01394628],
@@ -149,8 +151,8 @@ def zscore(signal, inplace=True):
        [ 1.11974608,  1.08576948],
        [ 1.20425521,  1.1452637 ]]) * dimensionless, [0.0 s, 0.006 s],
        sampling rate: 1000.0 Hz)>]
-
     """
+
     # Transform input to a list
     if isinstance(signal, neo.AnalogSignal):
         signal = [signal]
@@ -165,7 +167,7 @@ def zscore(signal, inplace=True):
     for sig in signal:
         # Perform inplace operation only if array is of dtype float.
         # Otherwise, raise an error.
-        if inplace and not np.issubdtype(np.float, sig.dtype):
+        if inplace and not np.issubdtype(float, sig.dtype):
             raise ValueError(f"Cannot perform inplace operation as the "
                              f"signal dtype is not float. Source: {sig.name}")
 
@@ -294,29 +296,33 @@ def cross_correlation_function(signal, channel_pairs, hilbert_envelope=False,
 
     Examples
     --------
-    >>> import neo
-    >>> import quantities as pq
-    >>> import matplotlib.pyplot as plt
-    >>> from elephant.signal_processing import cross_correlation_function
-    >>> dt = 0.02
-    >>> N = 2018
-    >>> f = 0.5
-    >>> t = np.arange(N)*dt
-    >>> x = np.zeros((N,2))
-    >>> x[:,0] = 0.2 * np.sin(2.*np.pi*f*t)
-    >>> x[:,1] = 5.3 * np.cos(2.*np.pi*f*t)
+    .. plot::
+       :include-source:
 
-    Generate neo.AnalogSignals from x and find cross-correlation
+       import neo
+       import numpy as np
+       import quantities as pq
+       import matplotlib.pyplot as plt
+       from elephant.signal_processing import cross_correlation_function
+       dt = 0.02
+       N = 2018
+       f = 0.5
+       t = np.arange(N)*dt
+       x = np.zeros((N,2))
+       x[:,0] = 0.2 * np.sin(2.*np.pi*f*t)
+       x[:,1] = 5.3 * np.cos(2.*np.pi*f*t)
 
-    >>> signal = neo.AnalogSignal(x, units='mV', t_start=0.*pq.ms,
-    >>>     sampling_rate=1/dt*pq.Hz, dtype=float)
-    >>> rho = cross_correlation_function(signal, [0,1], n_lags=150)
-    >>> env = cross_correlation_function(signal, [0,1], n_lags=150,
-    ...     hilbert_envelope=True)
-    ...
-    >>> plt.plot(rho.times, rho)
-    >>> plt.plot(env.times, env) # should be equal to one
-    >>> plt.show()
+       # Generate neo.AnalogSignals from x and find cross-correlation
+
+       signal = neo.AnalogSignal(x, units='mV', t_start=0.*pq.ms,
+                sampling_rate=1/dt*pq.Hz, dtype=float)
+       rho = cross_correlation_function(signal, [0,1], n_lags=150)
+       env = cross_correlation_function(signal, [0,1], n_lags=150,
+           hilbert_envelope=True)
+
+       plt.plot(rho.times, rho)
+       plt.plot(env.times, env) # should be equal to one
+       plt.show()
 
     """
 
@@ -413,13 +419,10 @@ def butter(signal, highpass_frequency=None, lowpass_frequency=None, order=4,
         `lowpass_frequency` and `highpass_frequency`:
 
         * `highpass_frequency` only (`lowpass_frequency` is None):
-        highpass filter
-
+           highpass filter
         * `lowpass_frequency` only (`highpass_frequency` is None):
-        lowpass filter
-
+           lowpass filter
         * `highpass_frequency` < `lowpass_frequency`: bandpass filter
-
         * `highpass_frequency` > `lowpass_frequency`: bandstop filter
 
         Default: None
@@ -430,9 +433,7 @@ def butter(signal, highpass_frequency=None, lowpass_frequency=None, order=4,
         Filtering function to be used. Available filters:
 
         * 'filtfilt': `scipy.signal.filtfilt`;
-
         * 'lfilter': `scipy.signal.lfilter`;
-
         * 'sosfiltfilt': `scipy.signal.sosfiltfilt`.
 
         In most applications 'filtfilt' should be used, because it doesn't
@@ -470,13 +471,19 @@ def butter(signal, highpass_frequency=None, lowpass_frequency=None, order=4,
     >>> import numpy as np
     >>> import quantities as pq
     >>> from elephant.signal_processing import butter
+    >>> np.random.seed(0)
     >>> noise = neo.AnalogSignal(np.random.normal(size=5000),
     ...     sampling_rate=1000 * pq.Hz, units='mV')
     >>> filtered_noise = butter(noise, highpass_frequency=250.0 * pq.Hz)
     >>> filtered_noise
-    AnalogSignal with 1 channels of length 5000; units mV; datatype float64
-    sampling rate: 1000.0 Hz
-    time: 0.0 s to 5.0 s
+    <AnalogSignal(array([[-2.70236218e-05],
+           [-3.44299631e-01],
+           [-1.36890122e-01],
+           ...,
+           [ 1.12088277e-01],
+           [-3.11053132e-01],
+           [ 2.63563988e-03]]) * mV, [0.0 s, 5.0 s], sampling rate: 1000.0 Hz)>
+
 
     Let's check that the normal noise power spectrum at zero frequency is close
     to zero.
@@ -485,9 +492,8 @@ def butter(signal, highpass_frequency=None, lowpass_frequency=None, order=4,
     >>> freq, psd = welch_psd(filtered_noise, fs=1000.0)
     >>> psd.shape
     (1, 556)
-    >>> freq[0], psd[0, 0]
+    >>> freq[0], psd[0, 0] # doctest: +SKIP
     (array(0.) * Hz, array(7.21464674e-08) * mV**2/Hz)
-
     """
     available_filters = 'lfilter', 'filtfilt', 'sosfiltfilt'
     if filter_function not in available_filters:
@@ -647,7 +653,7 @@ def wavelet_transform(signal, frequency, n_cycles=6.0, sampling_frequency=1.0,
     The wavelet frequency must be less than the half of the sampling rate;
     picking at 5 Hz.
 
-    >>> wavelet_transform(noise, frequency=5)
+    >>> wavelet_transform(noise, frequency=5) # doctest: +SKIP
     array([[-1.00890049+3.003473j  ],
        [-1.43664254-2.8389273j ],
        [ 3.02499511+0.96534578j],
@@ -662,7 +668,7 @@ def wavelet_transform(signal, frequency, n_cycles=6.0, sampling_frequency=1.0,
         # in Le van Quyen et al. J Neurosci Meth 111:83-98 (2001).
         sigma = n_cycles / (6. * freq)
         freqs = np.fft.fftfreq(n, 1.0 / fs)
-        heaviside = np.array(freqs > 0., dtype=np.float)
+        heaviside = np.array(freqs > 0., dtype=float)
         ft_real = np.sqrt(2 * np.pi * freq) * sigma * np.exp(
             -2 * (np.pi * sigma * (freqs - freq)) ** 2) * heaviside * fs
         ft_imag = np.zeros_like(ft_real)
@@ -706,7 +712,7 @@ def wavelet_transform(signal, frequency, n_cycles=6.0, sampling_frequency=1.0,
         n = n_orig
 
     # generate Morlet wavelets (in the frequency domain)
-    wavelet_fts = np.empty([len(freqs), n], dtype=np.complex)
+    wavelet_fts = np.empty([len(freqs), n], dtype=complex)
     for i, f in enumerate(freqs):
         wavelet_fts[i] = _morlet_wavelet_ft(f, n_cycles, sampling_frequency, n)
 
@@ -778,33 +784,28 @@ def hilbert(signal, padding='nextpow'):
     Create a sine signal at 5 Hz with increasing amplitude and calculate the
     instantaneous phases:
 
-    >>> import neo
-    >>> import numpy as np
-    >>> import quantities as pq
-    >>> import matplotlib.pyplot as plt
-    >>> from elephant.signal_processing import hilbert
-    >>> t = np.arange(0, 5000) * pq.ms
-    >>> f = 5. * pq.Hz
-    >>> a = neo.AnalogSignal(
-    ...       np.array(
-    ...           (1 + t.magnitude / t[-1].magnitude) * np.sin(
-    ...               2. * np.pi * f * t.rescale(pq.s))).reshape(
-    ...                   (-1,1)) * pq.mV,
-    ...       t_start=0*pq.s,
-    ...       sampling_rate=1000*pq.Hz)
-    ...
-    >>> analytic_signal = hilbert(a, padding='nextpow')
-    >>> angles = np.angle(analytic_signal)
-    >>> amplitudes = np.abs(analytic_signal)
-    >>> print(angles)
-    [[-1.57079633]
-     [-1.51334228]
-     [-1.46047675]
-     ...,
-     [-1.73112977]
-     [-1.68211683]
-     [-1.62879501]]
-    >>> plt.plot(t, angles)
+    .. plot::
+        :include-source:
+
+        import neo
+        import numpy as np
+        import quantities as pq
+        import matplotlib.pyplot as plt
+        from elephant.signal_processing import hilbert
+        t = np.arange(0, 5000) * pq.ms
+        f = 5. * pq.Hz
+        a = neo.AnalogSignal(
+              np.array(
+                  (1 + t.magnitude / t[-1].magnitude) * np.sin(
+                      2. * np.pi * f * t.rescale(pq.s))).reshape(
+                          (-1,1)) * pq.mV,
+              t_start=0*pq.s,
+              sampling_rate=1000*pq.Hz)
+
+        analytic_signal = hilbert(a, padding='nextpow')
+        angles = np.angle(analytic_signal)
+        amplitudes = np.abs(analytic_signal)
+        plt.plot(t, angles)
 
     """
     # Length of input signals
@@ -884,8 +885,8 @@ def rauc(signal, baseline=None, bin_duration=None, t_start=None, t_stop=None):
         If None, ends at the last time of `signal`.
         The signal is cropped using `signal.time_slice(t_start, t_stop)` after
         baseline removal. Useful if you want the RAUC for a short section of
-        the signal but want the mean or median calculation (`baseline`='mean'
-        or `baseline`='median') to use the entire signal for better baseline
+        the signal but want the mean or median calculation (`baseline` ='mean'
+        or `baseline` ='median') to use the entire signal for better baseline
         estimation.
         Default: None
 
