@@ -83,6 +83,8 @@ ignored/
 
 # data
 *.nix
+*.csv
+*.mat
 
 # neo logs
 **/logs

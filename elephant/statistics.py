@@ -40,7 +40,7 @@ Statistics across spike trains
 
 
 Tutorial
-********
+========
 
 :doc:`View tutorial <../tutorials/statistics>`
 
