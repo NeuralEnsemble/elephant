@@ -10,7 +10,7 @@ interact with the code.
 Launching a notebook on EBRAINS and Binder both provide a convenient way to
 run and interact with code. The main difference between the two is that
 changes made to a notebook launched on Binder are not saved, while
-changes made to a notebook launched on ebrains are persistent and bound to the
+changes made to a notebook launched on EBRAINS are persistent and bound to the
 user's ebrains account. This makes ebrains a great choice if you want to save
 your work and come back to it later.
 
