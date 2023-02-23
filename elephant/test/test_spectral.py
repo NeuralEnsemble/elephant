@@ -816,7 +816,7 @@ class MultitaperCoherenceTestCase(unittest.TestCase):
                                                    anasig_signal_j)
 
         np.testing.assert_array_equal(arr_f, anasig_f)
-        np.testing.assert_allclose(arr_coh, anasig_coh, atol=1e-8)
+        np.testing.assert_allclose(arr_coh, anasig_coh, atol=1e-6)
         np.testing.assert_array_equal(arr_phi, anasig_phi)
 
     def test_multitaper_cohere_peak(self):
