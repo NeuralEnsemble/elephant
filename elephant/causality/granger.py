@@ -516,7 +516,7 @@ def _spectral_factorization(cross_spectrum, num_iterations):
 
         diff = factorization - factorization_old
         error = np.max(np.abs(diff))
-        if error < 1e-10:
+        if error < 1e-12:
             print(f'Spectral factorization converged after {i} steps')
             break
 
@@ -873,6 +873,8 @@ def pairwise_spectral_granger(signal_i, signal_j, n_segments=8,
 
     # Get cross-spectrum and transfer function for positive frequencies
     S = np.transpose(S, axes=(2, 0, 1))[mask]
+    ########## Experimental line #######
+    S = np.conjugate(S)
     H = H[mask]
 
     # Calculate spectral Granger Causality.
@@ -911,83 +913,83 @@ def pairwise_spectral_granger(signal_i, signal_j, n_segments=8,
 if __name__ == '__main__':
 
     # Test spectral factorization
-    np.random.seed(12321)
-    length_2d = 2**12 
-    signal = np.zeros((2, length_2d))
+    #np.random.seed(12321)
+    #length_2d = 2**12 
+    #signal = np.zeros((2, length_2d))
 
-    order = 2
-    weights_1 = np.array([[0.9, 0], [0.16, 0.8]]).T
-    weights_2 = np.array([[-0.5, 0], [-0.2, -0.5]]).T
+    #order = 2
+    #weights_1 = np.array([[0.9, 0], [0.16, 0.8]]).T
+    #weights_2 = np.array([[-0.5, 0], [-0.2, -0.5]]).T
 
-    weights = np.stack((weights_1, weights_2))
+    #weights = np.stack((weights_1, weights_2))
 
-    noise_covariance = np.array([[1., 0.4], [0.4, 0.7]])
+    #noise_covariance = np.array([[1., 0.4], [0.4, 0.7]])
 
-    for i in range(length_2d):
-        for lag in range(order):
-            signal[:, i] += np.dot(weights[lag],
-                                   signal[:, i - lag - 1])
-        rnd_var = np.random.multivariate_normal([0, 0], noise_covariance)
-        signal[0, i] += rnd_var[0]
-        signal[1, i] += rnd_var[1]
+    #for i in range(length_2d):
+    #    for lag in range(order):
+    #        signal[:, i] += np.dot(weights[lag],
+    #                               signal[:, i - lag - 1])
+    #    rnd_var = np.random.multivariate_normal([0, 0], noise_covariance)
+    #    signal[0, i] += rnd_var[0]
+    #    signal[1, i] += rnd_var[1]
 
-    signal = signal[:, 100:]
-    length_2d -= 100
-    n = length_2d
+    #signal = signal[:, 100:]
+    #length_2d -= 100
+    #n = length_2d
 
-    x = signal[0]
-    y = signal[1]
+    #x = signal[0]
+    #y = signal[1]
 
-    f, psd_1 = multitaper_psd(x, num_tapers=15, n_segments=8)
-    f, psd_2 = multitaper_psd(y, num_tapers=15, n_segments=8)
+    #f, psd_1 = multitaper_psd(x, num_tapers=15, n_segments=8)
+    #f, psd_2 = multitaper_psd(y, num_tapers=15, n_segments=8)
 
-    _,  cross_spectrum = segmented_multitaper_cross_spectrum(signal,
-                                                               n_segments=8,
-                                                               num_tapers=15,
-                                                               return_onesided=True)
+    #_,  cross_spectrum = segmented_multitaper_cross_spectrum(signal,
+    #                                                           n_segments=8,
+    #                                                           num_tapers=15,
+    #                                                           return_onesided=True)
 
-    cov_matrix, transfer_function = _spectral_factorization(cross_spectrum,
-                                                            num_iterations=100)
+    #cov_matrix, transfer_function = _spectral_factorization(cross_spectrum,
+    #                                                        num_iterations=100)
 
-    A = np.matmul(np.matmul(transfer_function, cov_matrix),
-                  _dagger(transfer_function))
+    #A = np.matmul(np.matmul(transfer_function, cov_matrix),
+    #              _dagger(transfer_function))
 
 
-    print('################')
-    from matplotlib import pyplot as plt
+    #print('################')
+    #from matplotlib import pyplot as plt
 
-    plt.plot(f, cross_spectrum[0,0, :(n+2)//2], label='True')
-    plt.plot(f, A[:(n+2)//2, 0, 0], label='Mult')
-    plt.legend()
-    plt.show()
+    #plt.plot(f, cross_spectrum[0,0, :(n+2)//2], label='True')
+    #plt.plot(f, A[:(n+2)//2, 0, 0], label='Mult')
+    #plt.legend()
+    #plt.show()
 
-    plt.plot(f, np.real(cross_spectrum[0, 1, :(n+2)//2]), label='True')
-    plt.plot(f, np.real(A[:(n+2)//2, 0, 1]), label='Mult')
-    plt.legend()
-    plt.show()
+    #plt.plot(f, np.real(cross_spectrum[0, 1, :(n+2)//2]), label='True')
+    #plt.plot(f, np.real(A[:(n+2)//2, 0, 1]), label='Mult')
+    #plt.legend()
+    #plt.show()
 
-    plt.plot(f, np.imag(cross_spectrum[0,1, :(n+2)//2]), label='True')
-    plt.plot(f, np.imag(A[:(n+2)//2, 0, 1]), label='Mult')
-    plt.legend()
-    plt.show()
+    #plt.plot(f, np.imag(cross_spectrum[0,1, :(n+2)//2]), label='True')
+    #plt.plot(f, np.imag(A[:(n+2)//2, 0, 1]), label='Mult')
+    #plt.legend()
+    #plt.show()
 
-    plt.plot(f, np.real(cross_spectrum[1,0, :(n+2)//2]), label='True')
-    plt.plot(f, np.real(A[:(n+2)//2, 1, 0]), label='Mult')
-    plt.legend()
-    plt.show()
+    #plt.plot(f, np.real(cross_spectrum[1,0, :(n+2)//2]), label='True')
+    #plt.plot(f, np.real(A[:(n+2)//2, 1, 0]), label='Mult')
+    #plt.legend()
+    #plt.show()
 
-    plt.plot(f, np.imag(cross_spectrum[1,0, :(n+2)//2]), label='True')
-    plt.plot(f, np.imag(A[:(n+2)//2, 1, 0]), label='Mult')
-    plt.legend()
-    plt.show()
+    #plt.plot(f, np.imag(cross_spectrum[1,0, :(n+2)//2]), label='True')
+    #plt.plot(f, np.imag(A[:(n+2)//2, 1, 0]), label='Mult')
+    #plt.legend()
+    #plt.show()
 
-    plt.plot(f, cross_spectrum[1,1,:(n+2)//2], label='True')
-    plt.plot(f, A[:(n+2)//2, 1, 1], label='Mult')
-    plt.legend()
-    plt.show()
+    #plt.plot(f, cross_spectrum[1,1,:(n+2)//2], label='True')
+    #plt.plot(f, A[:(n+2)//2, 1, 1], label='Mult')
+    #plt.legend()
+    #plt.show()
 
     # Test spectral granger
-    length_2d = 2**16
+    length_2d = 2**10
     signal = np.zeros((2, length_2d))
 
     order = 2
@@ -1006,14 +1008,84 @@ if __name__ == '__main__':
         signal[0, i] += rnd_var[0]
         signal[1, i] += rnd_var[1]
 
-    #f, _, cross_spec = multitaper_cross_spectrum(signal, num_tapers=15)
+    freq, cross_spectrum = segmented_multitaper_cross_spectrum(signal,
+                                                            nw=5,
+                                                            return_onesided=True)
+
+    from spectral_connectivity import Connectivity, Multitaper
 
 
     f, spectral_causality = \
             pairwise_spectral_granger(signal[0], signal[1],
                                       len_segment=2**10,
-                                      num_tapers=4,
+                                      num_tapers=10,
+                                      fs=1,
                                       num_iterations=50)
+
+    # Spectral connectivity package
+
+    ##connectivity = Connectivity(
+    ##    fourier_coefficients=multitaper.fft(),
+    ##    expectation_type="tapers",
+    ##    frequencies=multitaper.frequencies,
+    ##    time=multitaper.time,
+    ##    blocks=1,)
+    #fcs, cross_spectrum = segmented_multitaper_cross_spectrum(signal,
+    #                                                     len_segment=2**9,
+    #                                                     nw=5,
+    #                                                     return_onesided=True)
+    #cov_matrix, transfer_function = _spectral_factorization(cross_spectrum,
+    #                                                        num_iterations=100)
+
+    #c_lfp = Connectivity.from_multitaper(multitaper)
+
+    fn = np.arange(0, np.pi , 0.01)
+
+
+
+    # Theoretical prediction for granger causality
+    freqs_for_theo = np.array([1, 2])[:, np.newaxis] * fn
+    A_theo = (np.identity(2)[np.newaxis]
+              - weights_1.T * np.exp(
+                  - 1j * freqs_for_theo[0][:, np.newaxis, np.newaxis]))
+    A_theo -= weights_2.T * np.exp(
+        - 1j * freqs_for_theo[1][:, np.newaxis, np.newaxis])
+
+    H_theo = np.array([[A_theo[:, 1, 1], -A_theo[:, 0, 1]],
+                      [-A_theo[:, 1, 0], A_theo[:, 0, 0]]])
+    H_theo /= np.linalg.det(A_theo)
+    H_theo = np.moveaxis(H_theo, 2, 0)
+
+    S_theo = np.matmul(np.matmul(H_theo, noise_covariance), _dagger(H_theo))
+
+    H_tilde_xx = (H_theo[:, 0, 0]
+                  + noise_covariance[0, 1]/noise_covariance[0, 0]*H_theo[:, 0,
+                                                                         1])
+    H_tilde_yy = (H_theo[:, 1, 1]
+                  + noise_covariance[0, 1]/noise_covariance[1, 1]*H_theo[:, 1,
+                                                                         0])
+
+    directional_causality_y_x = np.log(S_theo[:, 0, 0].real /
+                                       (H_tilde_xx
+                                        * noise_covariance[0, 0]
+                                        * H_tilde_xx.conj()).real)
+
+    directional_causality_x_y = np.log(S_theo[:, 1, 1].real /
+                                       (H_tilde_yy
+                                        * noise_covariance[1, 1]
+                                        * H_tilde_yy.conj()).real)
+
+    instantaneous_causality = np.log(
+        (H_tilde_xx * noise_covariance[0, 0] * H_tilde_xx.conj()).real
+        * (H_tilde_yy * noise_covariance[1, 1] * H_tilde_yy.conj()).real)
+    instantaneous_causality -= np.linalg.slogdet(S_theo)[1]
+
+    from matplotlib import pyplot as plt
+    plt.plot(fn, directional_causality_x_y,label='x->y')
+    plt.plot(fn, directional_causality_y_x,label='y->x')
+    plt.plot(fn, instantaneous_causality, label='inst')
+
+    plt.show()
 
     from matplotlib import pyplot as plt
 
@@ -1021,5 +1093,12 @@ if __name__ == '__main__':
     plt.plot(f, spectral_causality[1], label='y->x')
     plt.plot(f, spectral_causality[2], label='inst')
     plt.plot(f, spectral_causality[3], label='tot')
+    plt.legend()
+    plt.show()
+
+    plt.plot(fn * f.max() / fn.max(), directional_causality_x_y,label='x->y true')
+    plt.plot(fn * f.max() / fn.max(), directional_causality_y_x,label='y->x true')
+    plt.plot(f, spectral_causality[0], label='x->y')
+    plt.plot(f, spectral_causality[1], label='y->x')
     plt.legend()
     plt.show()
