@@ -989,7 +989,7 @@ if __name__ == '__main__':
     #plt.show()
 
     # Test spectral granger
-    length_2d = 2**10
+    length_2d = 2**14
     signal = np.zeros((2, length_2d))
 
     order = 2
@@ -1008,19 +1008,23 @@ if __name__ == '__main__':
         signal[0, i] += rnd_var[0]
         signal[1, i] += rnd_var[1]
 
-    freq, cross_spectrum = segmented_multitaper_cross_spectrum(signal,
-                                                            nw=5,
-                                                            return_onesided=True)
+    # from elephant.test.test_causality import ConditionalGrangerTestCase
+    # signal3 = ConditionalGrangerTestCase._generate_ground_truth(length_2d=2**10, causality_type='indirect').T
+    # temp_signal = signal
+    # signal = signal3[:2, :]
 
-    from spectral_connectivity import Connectivity, Multitaper
+    np.save('/home/jurkus/repositories/r_spectral_granger/signal.npy', signal)
+    freq, cross_spectrum = segmented_multitaper_cross_spectrum(signal, nw=5, return_onesided=True)
+
+    # from spectral_connectivity import Connectivity, Multitaper
 
 
-    f, spectral_causality = \
-            pairwise_spectral_granger(signal[0], signal[1],
-                                      len_segment=2**10,
-                                      num_tapers=10,
-                                      fs=1,
-                                      num_iterations=50)
+    # Good choices
+    # length_2d=2 ** 16; len_segment=2**8, num_tapers=25
+    # length_2d=2 ** 14; len_segment=2**8, num_tapers=25
+    # length_2d=2 ** 16; frequency_resolution=0.01
+    f, spectral_causality = pairwise_spectral_granger(signal[0], signal[1], len_segment=2**8, num_tapers=25, fs=1, num_iterations=50)
+    # f, spectral_causality = pairwise_spectral_granger(signal[0], signal[1], frequency_resolution=0.01, fs=1, num_iterations=50)
 
     # Spectral connectivity package
 
@@ -1081,24 +1085,67 @@ if __name__ == '__main__':
     instantaneous_causality -= np.linalg.slogdet(S_theo)[1]
 
     from matplotlib import pyplot as plt
-    plt.plot(fn, directional_causality_x_y,label='x->y')
-    plt.plot(fn, directional_causality_y_x,label='y->x')
-    plt.plot(fn, instantaneous_causality, label='inst')
+    # plt.figure()
+    # plt.plot(fn, directional_causality_x_y, label='x->y')
+    # plt.plot(fn, directional_causality_y_x, label='y->x')
+    # plt.plot(fn, instantaneous_causality, label='inst')
+    # plt.legend()
+    # plt.title('Theoretical prediction')
+    # plt.show()
+    #
+    # from matplotlib import pyplot as plt
+    #
+    # plt.figure()
+    # plt.plot(f, spectral_causality[0], label='x->y')
+    # plt.plot(f, spectral_causality[1], label='y->x')
+    # plt.plot(f, spectral_causality[2], label='inst')
+    # plt.plot(f, spectral_causality[3], label='tot')
+    # plt.legend()
+    # plt.title('Granger (Elephant) estimate')
+    # plt.show()
 
+    plt.figure()
+    plt.plot(fn * f.max() / fn.max(), directional_causality_x_y, 'r:', label='Theoretical x->y')
+    plt.plot(fn * f.max() / fn.max(), directional_causality_y_x, 'b:', label='Theoretical y->x')
+    plt.plot(fn * f.max() / fn.max(), instantaneous_causality, 'k:', label='Theoretical inst')
+    plt.plot(f, spectral_causality[0], 'r', label='Estimated x->y')
+    plt.plot(f, spectral_causality[1], 'b', label='Estimated y->x')
+    plt.plot(f, spectral_causality[2], 'k', label='Estimated inst')
+    plt.legend()
+    plt.title('Granger (Elephant) vs Theoretical estimate')
     plt.show()
 
-    from matplotlib import pyplot as plt
-
+    plt.figure()
+    plt.plot(fn * f.max() / fn.max(), directional_causality_x_y, label='x->y true')
+    plt.plot(fn * f.max() / fn.max(), directional_causality_y_x, label='y->x true')
     plt.plot(f, spectral_causality[0], label='x->y')
     plt.plot(f, spectral_causality[1], label='y->x')
-    plt.plot(f, spectral_causality[2], label='inst')
-    plt.plot(f, spectral_causality[3], label='tot')
     plt.legend()
+    plt.title('Theoretical vs Elephant')
     plt.show()
 
-    plt.plot(fn * f.max() / fn.max(), directional_causality_x_y,label='x->y true')
-    plt.plot(fn * f.max() / fn.max(), directional_causality_y_x,label='y->x true')
-    plt.plot(f, spectral_causality[0], label='x->y')
-    plt.plot(f, spectral_causality[1], label='y->x')
+
+    from elephant.spectral import multitaper_coherence
+    freqs, coh, phase_lag = multitaper_coherence(signal[0, :], signal[1, :], len_segment=2**8, num_tapers=25, fs=1,)
+
+    tot = spectral_causality[3]
+    der_tot = -np.log(1 - coh)[:len(tot)]
+    print(f"Max error of total interdependence values: "
+          f"{(tot - der_tot)[np.argmax(np.abs(tot - der_tot))]}")
+
+
+    # Signal used: length_2d = 2 ** 14
+    gc_mat = np.load('/home/jurkus/repositories/r_spectral_granger/gc_matrix.npy')
+
+    plt.figure()
+    plt.plot(fn * f.max() / fn.max(), directional_causality_x_y, 'r--', label='Theoretical: x->y')
+    plt.plot(fn * f.max() / fn.max(), directional_causality_y_x, 'g--', label='Theoretical: y->x')
+    plt.plot(f, spectral_causality[0], 'r', label='Elephant: x->y')
+    plt.plot(f, spectral_causality[1], 'g', label='Elephant: y->x')
+    plt.plot(gc_mat[:, 0], gc_mat[:, 1], 'r:', label='R: x->y')
+    plt.plot(gc_mat[:, 0], gc_mat[:, 2], 'g:', label='R: y->x')
+    info_str = f'length_2d={length_2d}\nlen_segment=2**8\nnum_tapers=25'
+    plt.text(0, 1, info_str, transform=ax.TransAxes)
     plt.legend()
+    plt.title('Theoretical vs Elephant vs R')
     plt.show()
