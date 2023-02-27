@@ -74,8 +74,11 @@ bin (i.e., detecting only synchronous patterns).
 
 >>> patterns = spade(spiketrains, bin_size=10 * pq.ms, winlen=1,
 ...                  dither=5 * pq.ms, min_spikes=6, n_surr=10,
-...                  psr_param=[0, 0, 3])['patterns']
->>> patterns[0]
+...                  psr_param=[0, 0, 3])['patterns']  # doctest:+ELLIPSIS
+Time for data mining: ...
+Time for pvalue spectrum computation: ...
+
+>>> patterns[0] # doctest: +SKIP
 {'itemset': (4, 3, 0, 2, 5, 1),
  'windows_ids': (9,
   16,
@@ -95,7 +98,7 @@ bin (i.e., detecting only synchronous patterns).
 
 Refer to Viziphant documentation to check how to visualzie such patterns.
 
-:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2023 by the Elephant team, see `doc/authors.rst`.
 :license: BSD, see LICENSE.txt for details.
 """
 from __future__ import division, print_function, unicode_literals
@@ -314,9 +317,19 @@ def spade(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
 
     >>> from elephant.spade import spade
     >>> import quantities as pq
+    >>> from elephant.spike_train_generation import compound_poisson_process
+
+    >>> np.random.seed(30)
+    >>> spiketrains = compound_poisson_process(rate=15*pq.Hz,
+    ...     amplitude_distribution=[0, 0.95, 0, 0, 0, 0, 0.05], t_stop=5*pq.s)
+
     >>> bin_size = 3 * pq.ms # time resolution to discretize the spiketrains
     >>> winlen = 10 # maximal pattern length in bins (i.e., sliding window)
-    >>> result_spade = spade(spiketrains, bin_size, winlen)
+
+    >>> result_spade = spade(
+    ...                     spiketrains, bin_size, winlen) # doctest: +ELLIPSIS
+    Time for data mining: ...
+
 
     """
     if HAVE_MPI:  # pragma: no cover
