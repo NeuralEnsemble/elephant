@@ -993,8 +993,10 @@ if __name__ == '__main__':
     signal = np.zeros((2, length_2d))
 
     order = 2
-    weights_1 = np.array([[0.9, 0], [0.16, 0.8]]).T
-    weights_2 = np.array([[-0.5, 0], [-0.2, -0.5]]).T
+    # weights_1 = np.array([[0.9, 0], [0.16, 0.8]]).T
+    # weights_2 = np.array([[-0.5, 0], [-0.2, -0.5]]).T
+    weights_1 = np.array([[0.9, 0], [0.16, 0.8]])
+    weights_2 = np.array([[-0.5, 0], [-0.2, -0.5]])
 
     weights = np.stack((weights_1, weights_2))
 
@@ -1050,9 +1052,9 @@ if __name__ == '__main__':
     # Theoretical prediction for granger causality
     freqs_for_theo = np.array([1, 2])[:, np.newaxis] * fn
     A_theo = (np.identity(2)[np.newaxis]
-              - weights_1.T * np.exp(
+              - weights_1 * np.exp(
                   - 1j * freqs_for_theo[0][:, np.newaxis, np.newaxis]))
-    A_theo -= weights_2.T * np.exp(
+    A_theo -= weights_2 * np.exp(
         - 1j * freqs_for_theo[1][:, np.newaxis, np.newaxis])
 
     H_theo = np.array([[A_theo[:, 1, 1], -A_theo[:, 0, 1]],
