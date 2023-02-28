@@ -914,7 +914,7 @@ if __name__ == '__main__':
 
     # Test spectral factorization
     #np.random.seed(12321)
-    #length_2d = 2**12 
+    #length_2d = 2**12
     #signal = np.zeros((2, length_2d))
 
     #order = 2
@@ -1137,7 +1137,8 @@ if __name__ == '__main__':
     # Signal used: length_2d = 2 ** 14
     gc_mat = np.load('/home/jurkus/repositories/r_spectral_granger/gc_matrix.npy')
 
-    plt.figure()
+    fig = plt.figure()
+    ax = fig.gca()
     plt.plot(fn * f.max() / fn.max(), directional_causality_x_y, 'r--', label='Theoretical: x->y')
     plt.plot(fn * f.max() / fn.max(), directional_causality_y_x, 'g--', label='Theoretical: y->x')
     plt.plot(f, spectral_causality[0], 'r', label='Elephant: x->y')
@@ -1145,7 +1146,7 @@ if __name__ == '__main__':
     plt.plot(gc_mat[:, 0], gc_mat[:, 1], 'r:', label='R: x->y')
     plt.plot(gc_mat[:, 0], gc_mat[:, 2], 'g:', label='R: y->x')
     info_str = f'length_2d={length_2d}\nlen_segment=2**8\nnum_tapers=25'
-    plt.text(0, 1, info_str, transform=ax.TransAxes)
+    plt.text(0, 1, info_str, ha='left', va='top', transform=ax.transAxes)
     plt.legend()
     plt.title('Theoretical vs Elephant vs R')
     plt.show()
