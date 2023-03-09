@@ -14,6 +14,7 @@ import quantities as pq
 from neo.core import AnalogSignal
 from numpy.testing import assert_array_almost_equal
 
+from elephant.spectral import multitaper_cross_spectrum
 import elephant.causality.granger
 
 
@@ -283,6 +284,109 @@ class ConditionalGrangerTestCase(unittest.TestCase):
     def test_non_zero_conditional_causality(self):
         self.assertGreater(elephant.causality.granger.conditional_granger(
             self.non_zero_signal, 10, 'bic'), 0.0)
+
+
+
+class PairwiseSpectralGrangerTestCase(unittest.TestCase):
+
+    def setUp(self):
+        pass
+
+    def test_bracket_operator_one_signal(self):
+        # Generate a spectrum from random dataset and test bracket operator
+        np.random.seed(10)
+        n = 10
+        spectrum = np.random.normal(0, 1, n)
+
+        # Generate causal part according to The Factorization of Matricial
+        # Spectral Densities', Wilson 1972, SiAM J Appl Math, Definition 1.2
+        # (ii).
+
+        spectrum_causal = np.fft.ifft(spectrum, axis=0)
+        spectrum_causal[(n + 1) // 2:] = 0
+        spectrum_causal[0] /= 2
+
+        spectrum_causal_ground_truth = np.fft.fft(spectrum_causal, axis=0)
+
+        spectrum_causal_est = elephant.causality.granger._bracket_operator(
+            spectrum=spectrum,
+            num_freqs=n,
+            num_signals=1)
+
+        np.testing.assert_array_almost_equal(spectrum_causal_est,
+                                             spectrum_causal_ground_truth)
+
+    def test_bracket_operator_mult_signal(self):
+        # Generate a spectrum from random dataset and test bracket operator
+        np.random.seed(10)
+        n = 10
+        num_signals = 3
+        spectrum = np.random.normal(0, 1, (n, num_signals, num_signals))
+
+        # Generate causal part according to The Factorization of Matricial
+        # Spectral Densities', Wilson 1972, SiAM J Appl Math, Definition 1.2
+        # (ii).
+
+        spectrum_causal = np.fft.ifft(spectrum, axis=0)
+        spectrum_causal[(n + 1) // 2:] = 0
+        spectrum_causal[0] /= 2
+
+        spectrum_causal_ground_truth = np.fft.fft(spectrum_causal, axis=0)
+
+        # Set element below diagonal at zero frequency to zero
+        spectrum_causal_ground_truth[0, 1, 0] = 0
+        spectrum_causal_ground_truth[0, 2, 0] = 0
+        spectrum_causal_ground_truth[0, 2, 1] = 0
+
+        spectrum_causal_est = elephant.causality.granger._bracket_operator(
+            spectrum=spectrum,
+            num_freqs=n,
+            num_signals=num_signals)
+
+        np.testing.assert_array_almost_equal(spectrum_causal_est,
+                                             spectrum_causal_ground_truth)
+
+
+    def test_spectral_factorization(self):
+        np.random.seed(11)
+        n = 100
+        num_signals = 2
+        signals = np.random.normal(0, 1, (num_signals, n))
+
+        _, _, cross_spec = multitaper_cross_spectrum(signals,
+                                                     return_onesided=True)
+
+        cov_matrix, transfer_function = \
+                elephant.causality.granger._spectral_factorization(
+                    cross_spec,
+                    num_iterations=100)
+
+        cross_spec_est = np.matmul(np.matmul(transfer_function, cov_matrix),
+                                    elephant.causality.granger._dagger(
+                                        transfer_function))
+
+        cross_spec_est = np.rollaxis(cross_spec_est, 0, 3)
+
+        np.testing.assert_array_almost_equal(cross_spec, cross_spec_est)
+
+    def test_dagger_2d(self):
+        matrix_array = np.array([[1j, 0], [2, 3]], dtype=complex)
+
+        true_dagger = np.array([[-1j, 2], [0, 3]], dtype=complex)
+
+        dagger_matrix_array = elephant.causality.granger._dagger(matrix_array)
+
+        np.testing.assert_array_equal(true_dagger, dagger_matrix_array)
+
+
+
+
+
+
+
+
+
+
 
 
 if __name__ == '__main__':
