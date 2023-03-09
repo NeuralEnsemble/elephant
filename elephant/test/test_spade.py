@@ -1,7 +1,7 @@
 """
 Unit tests for the spade module.
 
-:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2023 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 from __future__ import division
@@ -12,7 +12,7 @@ import neo
 from neo.core.spiketrainlist import SpikeTrainList
 import numpy as np
 import quantities as pq
-from numpy.testing import assert_array_equal
+from numpy.testing import assert_array_equal, assert_equal
 
 import elephant.conversion as conv
 import elephant.spade as spade
@@ -175,11 +175,11 @@ class SpadeTestCase(unittest.TestCase):
         occ_msip = sorted(occ_msip, key=len)
         lags_msip = sorted(lags_msip, key=len)
         # check neurons in the patterns
-        assert_array_equal(elements_msip, self.elements_msip)
+        assert_equal(elements_msip, self.elements_msip)
         # check the occurrences time of the patters
-        assert_array_equal(occ_msip, self.occ_msip)
+        assert_equal(occ_msip, self.occ_msip)
         # check the lags
-        assert_array_equal(lags_msip, self.lags_msip)
+        assert_equal(lags_msip, self.lags_msip)
 
     # Testing with multiple patterns input
     def test_spade_msip_spiketrainlist(self):
@@ -204,11 +204,11 @@ class SpadeTestCase(unittest.TestCase):
         occ_msip = sorted(occ_msip, key=len)
         lags_msip = sorted(lags_msip, key=len)
         # check neurons in the patterns
-        assert_array_equal(elements_msip, self.elements_msip)
+        assert_equal(elements_msip, self.elements_msip)
         # check the occurrences time of the patters
-        assert_array_equal(occ_msip, self.occ_msip)
+        assert_equal(occ_msip, self.occ_msip)
         # check the lags
-        assert_array_equal(lags_msip, self.lags_msip)
+        assert_equal(lags_msip, self.lags_msip)
 
     def test_parameters(self):
         """
@@ -269,7 +269,7 @@ class SpadeTestCase(unittest.TestCase):
             occ_msip_min_occ.append(list(out['times'].magnitude))
         occ_msip_min_occ = sorted(occ_msip_min_occ, key=len)
         # test occurrences time
-        assert_array_equal(occ_msip_min_occ, [
+        assert_equal(occ_msip_min_occ, [
             occ for occ in self.occ_msip if len(occ) >= self.min_occ])
 
         # test max_spikes parameter
@@ -371,11 +371,11 @@ class SpadeTestCase(unittest.TestCase):
         occ_msip = sorted(occ_msip, key=len)
         lags_msip = sorted(lags_msip, key=len)
         # check neurons in the patterns
-        assert_array_equal(elements_msip, self.elements_msip)
+        assert_equal(elements_msip, self.elements_msip)
         # check the occurrences time of the patters
-        assert_array_equal(occ_msip, self.occ_msip)
+        assert_equal(occ_msip, self.occ_msip)
         # check the lags
-        assert_array_equal(lags_msip, self.lags_msip)
+        assert_equal(lags_msip, self.lags_msip)
 
     # test under different configuration of parameters than the default one
     def test_parameters_3d(self):
@@ -432,7 +432,7 @@ class SpadeTestCase(unittest.TestCase):
             occ_msip_min_occ.append(list(out['times'].magnitude))
         occ_msip_min_occ = sorted(occ_msip_min_occ, key=len)
         # test occurrences time
-        assert_array_equal(occ_msip_min_occ, [
+        assert_equal(occ_msip_min_occ, [
             occ for occ in self.occ_msip if len(occ) >= self.min_occ])
 
     # Test computation spectrum
@@ -608,7 +608,7 @@ class SpadeTestCase(unittest.TestCase):
                           corr='invalid_key')
         # Test negative number of subset for stability
         self.assertRaises(ValueError, spade.approximate_stability, (),
-                          np.array([]), n_subsets=-3)
+                          np.ndarray([]), n_subsets=-3)
 
     def test_pattern_set_reduction(self):
         winlen = 6
