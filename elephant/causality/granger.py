@@ -766,45 +766,39 @@ def conditional_granger(signals, max_order, information_criterion='aic'):
     return conditional_causality_xy_z_round
 
 
-def pairwise_spectral_granger(signal_i, signal_j, n_segments=8,
+def pairwise_spectral_granger(signal_i, signal_j, fs=1, nw=4, num_tapers=None,
+                              peak_resolution=None, n_segments=1,
                               len_segment=None, frequency_resolution=None,
-                              overlap=0.5, fs=1, nw=4, num_tapers=None,
-                              peak_resolution=None, num_iterations=300):
+                              overlap=0.5, num_iterations=300):
     r"""Determine spectral Granger Causality of two signals.
+
+    The spectral Granger Causality is obtained through the following steps:
+
+    1. Determine the cross spectrum of the two signals by applying
+       `segmented_multitaper_cross_spectrum' to the joint signal. See the
+       documentation of this function for the parameter hierarchy of the
+       parameters used for the estimation of the cross spectrum.
+
+    2. Calculate the spectral factorization of the cross spectrum decomposing
+       the very same thing into the covariance matrix and the transfer
+       function.
+
+    3. Calculate the directional and instantaneous spectral Granger Causality
+       from the power spectra, the transfer function and the covariance matrix.
 
     Parameters
     ----------
     signal_i : neo.AnalogSignal or pq.Quantity or np.ndarray
         First time series data of the pair between which spectral Granger
-        causality is computed.
+        Causality is computed.
     signal_j : neo.AnalogSignal or pq.Quantity or np.ndarray
         Second time series data of the pair between which spectral Granger
-        causality is computed.
+        Causality is computed.
         The shapes and the sampling frequencies of `signal_i` and `signal_j`
         must be identical. When `signal_i` and `signal_j` are not
         `neo.AnalogSignal`, sampling frequency should be specified through the
         keyword argument `fs`. Otherwise, the default value is used
         (`fs` = 1.0).
-    n_segments : int, optional
-        Number of segments. The length of segments is adjusted so that
-        overlapping segments cover the entire stretch of the given data. This
-        parameter is ignored if `len_segment` or `frequency_resolution` is
-        given.
-        Default: 8.
-    len_segment : int, optional
-        Length of segments. This parameter is ignored if `frequency_resolution`
-        is given. If None, it will be determined from other parameters.
-        Default: None.
-    frequency_resolution : pq.Quantity or float, optional
-        Desired frequency resolution of the obtained spectral Granger causality
-        estimate in terms of the interval between adjacent frequency bins. When
-        given as a `float`, it is taken as frequency in Hz.
-        If None, it will be determined from other parameters.
-        Default: None.
-    overlap : float, optional
-        Overlap between segments represented as a float number between 0 (no
-        overlap) and 1 (complete overlap).
-        Default: 0.5 (half-overlapped).
     fs : float, optional
         Specifies the sampling frequency of the input time series
         Default: 1.0
@@ -812,7 +806,7 @@ def pairwise_spectral_granger(signal_i, signal_j, n_segments=8,
         Time bandwidth product
         Default: 4.0
     num_tapers : int, optional
-        Number of tapers used in 1. to obtain estimate of PSD. By default
+        Number of tapers used in 1. to obtain estimate of PSD. By default,
         [2*nw] - 1 is chosen.
         Default: None
     peak_resolution : pq.Quantity float, optional
@@ -821,6 +815,26 @@ def pairwise_spectral_granger(signal_i, signal_j, n_segments=8,
         High peak resolution --> high numerical value --> high number of tapers
         When given as a `float`, it is taken as frequency in Hz.
         Default: None.
+    n_segments : int, optional
+        Number of segments. The length of segments is adjusted so that
+        overlapping segments cover the entire stretch of the given data. This
+        parameter is ignored if `len_segment` or `frequency_resolution` is
+        given.
+        Default: 1
+    len_segment : int, optional
+        Length of segments. This parameter is ignored if `frequency_resolution`
+        is given. If None, it will be determined from other parameters.
+        Default: None
+    frequency_resolution : pq.Quantity or float, optional
+        Desired frequency resolution of the obtained spectral Granger Causality
+        estimate in terms of the interval between adjacent frequency bins. When
+        given as a `float`, it is taken as frequency in Hz.
+        If None, it will be determined from other parameters.
+        Default: None
+    overlap : float, optional
+        Overlap between segments represented as a float number between 0 (no
+        overlap) and 1 (complete overlap).
+        Default: 0.5 (half-overlapped)
     num_iterations : int
         Number of iterations for algorithm to estimate spectral factorization.
         Default: 300
@@ -828,8 +842,7 @@ def pairwise_spectral_granger(signal_i, signal_j, n_segments=8,
     Returns
     -------
     freqs : np.ndarray
-        Frequencies associated with the magnitude-squared spectral Granger
-        Causality estimate
+        Frequencies associated with the spectral Granger Causality estimate.
     Causality
         A `namedtuple` with the following attributes:
             directional_causality_x_y : np.ndarray
@@ -865,16 +878,19 @@ def pairwise_spectral_granger(signal_i, signal_j, n_segments=8,
     if isinstance(S, pq.Quantity):
         S = S.magnitude
 
+    # Transpose cross spectrum due to different conventions used in
+    # segemented_multitaper_cross_spectrum and the calculations of spectral
+    # Granger causality
+    S = np.transpose(S, axes=(1, 0, 2))
+
+    # Decompose cross spectrum into covariance and transfer function
     C, H = _spectral_factorization(S, num_iterations=num_iterations)
 
     # Take positive frequencies
     mask = (freqs >= 0)
     freqs = freqs[mask]
 
-    # Get cross-spectrum and transfer function for positive frequencies
     S = np.transpose(S, axes=(2, 0, 1))[mask]
-    ########## Experimental line #######
-    S = np.conjugate(S)
     H = H[mask]
 
     # Calculate spectral Granger Causality.
@@ -908,247 +924,3 @@ def pairwise_spectral_granger(signal_i, signal_j, n_segments=8,
         total_interdependence=total_interdependence)
 
     return freqs, spectral_causality
-
-
-if __name__ == '__main__':
-
-    # Test spectral factorization
-    #np.random.seed(12321)
-    #length_2d = 2**12
-    #signal = np.zeros((2, length_2d))
-
-    #order = 2
-    #weights_1 = np.array([[0.9, 0], [0.16, 0.8]]).T
-    #weights_2 = np.array([[-0.5, 0], [-0.2, -0.5]]).T
-
-    #weights = np.stack((weights_1, weights_2))
-
-    #noise_covariance = np.array([[1., 0.4], [0.4, 0.7]])
-
-    #for i in range(length_2d):
-    #    for lag in range(order):
-    #        signal[:, i] += np.dot(weights[lag],
-    #                               signal[:, i - lag - 1])
-    #    rnd_var = np.random.multivariate_normal([0, 0], noise_covariance)
-    #    signal[0, i] += rnd_var[0]
-    #    signal[1, i] += rnd_var[1]
-
-    #signal = signal[:, 100:]
-    #length_2d -= 100
-    #n = length_2d
-
-    #x = signal[0]
-    #y = signal[1]
-
-    #f, psd_1 = multitaper_psd(x, num_tapers=15, n_segments=8)
-    #f, psd_2 = multitaper_psd(y, num_tapers=15, n_segments=8)
-
-    #_,  cross_spectrum = segmented_multitaper_cross_spectrum(signal,
-    #                                                           n_segments=8,
-    #                                                           num_tapers=15,
-    #                                                           return_onesided=True)
-
-    #cov_matrix, transfer_function = _spectral_factorization(cross_spectrum,
-    #                                                        num_iterations=100)
-
-    #A = np.matmul(np.matmul(transfer_function, cov_matrix),
-    #              _dagger(transfer_function))
-
-
-    #print('################')
-    #from matplotlib import pyplot as plt
-
-    #plt.plot(f, cross_spectrum[0,0, :(n+2)//2], label='True')
-    #plt.plot(f, A[:(n+2)//2, 0, 0], label='Mult')
-    #plt.legend()
-    #plt.show()
-
-    #plt.plot(f, np.real(cross_spectrum[0, 1, :(n+2)//2]), label='True')
-    #plt.plot(f, np.real(A[:(n+2)//2, 0, 1]), label='Mult')
-    #plt.legend()
-    #plt.show()
-
-    #plt.plot(f, np.imag(cross_spectrum[0,1, :(n+2)//2]), label='True')
-    #plt.plot(f, np.imag(A[:(n+2)//2, 0, 1]), label='Mult')
-    #plt.legend()
-    #plt.show()
-
-    #plt.plot(f, np.real(cross_spectrum[1,0, :(n+2)//2]), label='True')
-    #plt.plot(f, np.real(A[:(n+2)//2, 1, 0]), label='Mult')
-    #plt.legend()
-    #plt.show()
-
-    #plt.plot(f, np.imag(cross_spectrum[1,0, :(n+2)//2]), label='True')
-    #plt.plot(f, np.imag(A[:(n+2)//2, 1, 0]), label='Mult')
-    #plt.legend()
-    #plt.show()
-
-    #plt.plot(f, cross_spectrum[1,1,:(n+2)//2], label='True')
-    #plt.plot(f, A[:(n+2)//2, 1, 1], label='Mult')
-    #plt.legend()
-    #plt.show()
-
-    # Test spectral granger
-    length_2d = 2**14
-    signal = np.zeros((2, length_2d))
-
-    order = 2
-    # weights_1 = np.array([[0.9, 0], [0.16, 0.8]]).T
-    # weights_2 = np.array([[-0.5, 0], [-0.2, -0.5]]).T
-    weights_1 = np.array([[0.9, 0], [0.16, 0.8]])
-    weights_2 = np.array([[-0.5, 0], [-0.2, -0.5]])
-
-    weights = np.stack((weights_1, weights_2))
-
-    noise_covariance = np.array([[1., 0.4], [0.4, 0.7]])
-
-    for i in range(length_2d):
-        for lag in range(order):
-            signal[:, i] += np.dot(weights[lag],
-                                   signal[:, i - lag - 1])
-        rnd_var = np.random.multivariate_normal([0, 0], noise_covariance)
-        signal[0, i] += rnd_var[0]
-        signal[1, i] += rnd_var[1]
-
-    # from elephant.test.test_causality import ConditionalGrangerTestCase
-    # signal3 = ConditionalGrangerTestCase._generate_ground_truth(length_2d=2**10, causality_type='indirect').T
-    # temp_signal = signal
-    # signal = signal3[:2, :]
-
-    np.save('/home/jurkus/repositories/r_spectral_granger/signal.npy', signal)
-    freq, cross_spectrum = segmented_multitaper_cross_spectrum(signal, nw=5, return_onesided=True)
-
-    # from spectral_connectivity import Connectivity, Multitaper
-
-
-    # Good choices
-    # length_2d=2 ** 16; len_segment=2**8, num_tapers=25
-    # length_2d=2 ** 14; len_segment=2**8, num_tapers=25
-    # length_2d=2 ** 16; frequency_resolution=0.01
-    f, spectral_causality = pairwise_spectral_granger(signal[0], signal[1], len_segment=2**8, num_tapers=25, fs=1, num_iterations=50)
-    # f, spectral_causality = pairwise_spectral_granger(signal[0], signal[1], frequency_resolution=0.01, fs=1, num_iterations=50)
-
-    # Spectral connectivity package
-
-    ##connectivity = Connectivity(
-    ##    fourier_coefficients=multitaper.fft(),
-    ##    expectation_type="tapers",
-    ##    frequencies=multitaper.frequencies,
-    ##    time=multitaper.time,
-    ##    blocks=1,)
-    #fcs, cross_spectrum = segmented_multitaper_cross_spectrum(signal,
-    #                                                     len_segment=2**9,
-    #                                                     nw=5,
-    #                                                     return_onesided=True)
-    #cov_matrix, transfer_function = _spectral_factorization(cross_spectrum,
-    #                                                        num_iterations=100)
-
-    #c_lfp = Connectivity.from_multitaper(multitaper)
-
-    fn = np.arange(0, np.pi , 0.01)
-
-
-
-    # Theoretical prediction for granger causality
-    freqs_for_theo = np.array([1, 2])[:, np.newaxis] * fn
-    A_theo = (np.identity(2)[np.newaxis]
-              - weights_1 * np.exp(
-                  - 1j * freqs_for_theo[0][:, np.newaxis, np.newaxis]))
-    A_theo -= weights_2 * np.exp(
-        - 1j * freqs_for_theo[1][:, np.newaxis, np.newaxis])
-
-    H_theo = np.array([[A_theo[:, 1, 1], -A_theo[:, 0, 1]],
-                      [-A_theo[:, 1, 0], A_theo[:, 0, 0]]])
-    H_theo /= np.linalg.det(A_theo)
-    H_theo = np.moveaxis(H_theo, 2, 0)
-
-    S_theo = np.matmul(np.matmul(H_theo, noise_covariance), _dagger(H_theo))
-
-    H_tilde_xx = (H_theo[:, 0, 0]
-                  + noise_covariance[0, 1]/noise_covariance[0, 0]*H_theo[:, 0,
-                                                                         1])
-    H_tilde_yy = (H_theo[:, 1, 1]
-                  + noise_covariance[0, 1]/noise_covariance[1, 1]*H_theo[:, 1,
-                                                                         0])
-
-    directional_causality_y_x = np.log(S_theo[:, 0, 0].real /
-                                       (H_tilde_xx
-                                        * noise_covariance[0, 0]
-                                        * H_tilde_xx.conj()).real)
-
-    directional_causality_x_y = np.log(S_theo[:, 1, 1].real /
-                                       (H_tilde_yy
-                                        * noise_covariance[1, 1]
-                                        * H_tilde_yy.conj()).real)
-
-    instantaneous_causality = np.log(
-        (H_tilde_xx * noise_covariance[0, 0] * H_tilde_xx.conj()).real
-        * (H_tilde_yy * noise_covariance[1, 1] * H_tilde_yy.conj()).real)
-    instantaneous_causality -= np.linalg.slogdet(S_theo)[1]
-
-    from matplotlib import pyplot as plt
-    # plt.figure()
-    # plt.plot(fn, directional_causality_x_y, label='x->y')
-    # plt.plot(fn, directional_causality_y_x, label='y->x')
-    # plt.plot(fn, instantaneous_causality, label='inst')
-    # plt.legend()
-    # plt.title('Theoretical prediction')
-    # plt.show()
-    #
-    # from matplotlib import pyplot as plt
-    #
-    # plt.figure()
-    # plt.plot(f, spectral_causality[0], label='x->y')
-    # plt.plot(f, spectral_causality[1], label='y->x')
-    # plt.plot(f, spectral_causality[2], label='inst')
-    # plt.plot(f, spectral_causality[3], label='tot')
-    # plt.legend()
-    # plt.title('Granger (Elephant) estimate')
-    # plt.show()
-
-    plt.figure()
-    plt.plot(fn * f.max() / fn.max(), directional_causality_x_y, 'r:', label='Theoretical x->y')
-    plt.plot(fn * f.max() / fn.max(), directional_causality_y_x, 'b:', label='Theoretical y->x')
-    plt.plot(fn * f.max() / fn.max(), instantaneous_causality, 'k:', label='Theoretical inst')
-    plt.plot(f, spectral_causality[0], 'r', label='Estimated x->y')
-    plt.plot(f, spectral_causality[1], 'b', label='Estimated y->x')
-    plt.plot(f, spectral_causality[2], 'k', label='Estimated inst')
-    plt.legend()
-    plt.title('Granger (Elephant) vs Theoretical estimate')
-    plt.show()
-
-    plt.figure()
-    plt.plot(fn * f.max() / fn.max(), directional_causality_x_y, label='x->y true')
-    plt.plot(fn * f.max() / fn.max(), directional_causality_y_x, label='y->x true')
-    plt.plot(f, spectral_causality[0], label='x->y')
-    plt.plot(f, spectral_causality[1], label='y->x')
-    plt.legend()
-    plt.title('Theoretical vs Elephant')
-    plt.show()
-
-
-    from elephant.spectral import multitaper_coherence
-    freqs, coh, phase_lag = multitaper_coherence(signal[0, :], signal[1, :], len_segment=2**8, num_tapers=25, fs=1,)
-
-    tot = spectral_causality[3]
-    der_tot = -np.log(1 - coh)[:len(tot)]
-    print(f"Max error of total interdependence values: "
-          f"{(tot - der_tot)[np.argmax(np.abs(tot - der_tot))]}")
-
-
-    # Signal used: length_2d = 2 ** 14
-    gc_mat = np.load('/home/jurkus/repositories/r_spectral_granger/gc_matrix.npy')
-
-    fig = plt.figure()
-    ax = fig.gca()
-    plt.plot(fn * f.max() / fn.max(), directional_causality_x_y, 'r--', label='Theoretical: x->y')
-    plt.plot(fn * f.max() / fn.max(), directional_causality_y_x, 'g--', label='Theoretical: y->x')
-    plt.plot(f, spectral_causality[0], 'r', label='Elephant: x->y')
-    plt.plot(f, spectral_causality[1], 'g', label='Elephant: y->x')
-    plt.plot(gc_mat[:, 0], gc_mat[:, 1], 'r:', label='R: x->y')
-    plt.plot(gc_mat[:, 0], gc_mat[:, 2], 'g:', label='R: y->x')
-    info_str = f'length_2d={length_2d}\nlen_segment=2**8\nnum_tapers=25'
-    plt.text(0, 1, info_str, ha='left', va='top', transform=ax.transAxes)
-    plt.legend()
-    plt.title('Theoretical vs Elephant vs R')
-    plt.show()
