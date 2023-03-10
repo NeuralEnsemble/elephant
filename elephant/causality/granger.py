@@ -498,6 +498,8 @@ def _spectral_factorization(cross_spectrum, num_iterations):
                          + '. This might suggest a problem with the input')
 
     factorization += initial_cond
+
+    converged = False
     # Iteration for calculating spectral factorization
     for i in range(num_iterations):
 
@@ -518,7 +520,13 @@ def _spectral_factorization(cross_spectrum, num_iterations):
         error = np.max(np.abs(diff))
         if error < 1e-12:
             print(f'Spectral factorization converged after {i} steps')
+            converged=True
             break
+
+    if not converged:
+        raise Exception("Spectral factorization did not converge after "
+                        + f"{num_iterations} steps. Try to increase "
+                        + "'num_iterations'.")
 
     cov_matrix = np.matmul(factorization[0],
                            _dagger(factorization[0]))
@@ -779,9 +787,9 @@ def pairwise_spectral_granger(signal_i, signal_j, fs=1, nw=4, num_tapers=None,
     The spectral Granger Causality is obtained through the following steps:
 
     1. Determine the cross spectrum of the two signals by applying
-       `segmented_multitaper_cross_spectrum' to the joint signal. See the
+       :func:`segmented_multitaper_cross_spectrum` to the joint signal. See the
        documentation of this function for the parameter hierarchy of the
-       parameters used for the estimation of the cross spectrum.
+       used for the estimation of the cross spectrum.
 
     2. Calculate the spectral factorization of the cross spectrum decomposing
        the very same thing into the covariance matrix and the transfer
