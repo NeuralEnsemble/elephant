@@ -14,7 +14,7 @@ import quantities as pq
 from neo.core import AnalogSignal
 from numpy.testing import assert_array_almost_equal
 
-from elephant.spectral import multitaper_cross_spectrum
+from elephant.spectral import multitaper_cross_spectrum, multitaper_coherence
 import elephant.causality.granger
 
 
@@ -292,6 +292,39 @@ class PairwiseSpectralGrangerTestCase(unittest.TestCase):
     def setUp(self):
         pass
 
+    @staticmethod
+    def _generate_ground_truth_spectral(length_2d=300000, return_coeffs=False,
+                                       return_cov=False):
+        order = 2
+        signal = np.zeros((2, length_2d + order))
+
+        weights_1 = np.array([[0.9, 0], [0.16, 0.8]])
+        weights_2 = np.array([[-0.5, 0], [-0.2, -0.5]])
+
+        weights = np.stack((weights_1, weights_2))
+
+        noise_covariance = np.array([[1., 0.4], [0.4, 0.7]])
+
+        for i in range(length_2d):
+            for lag in range(order):
+                signal[:, i + order] += np.dot(weights[lag],
+                                               signal[:, i + 1 - lag])
+            rnd_var = np.random.multivariate_normal([0, 0],
+                                                    noise_covariance)
+            signal[:, i+order] += rnd_var
+
+        signal = signal[:, 2:]
+
+        returns = [signal]
+
+        if return_coeffs:
+            returns.append(weights)
+
+        if return_cov:
+            returns.append(noise_covariance)
+
+        return returns
+
     def test_bracket_operator_one_signal(self):
         # Generate a spectrum from random dataset and test bracket operator
         np.random.seed(10)
@@ -353,8 +386,8 @@ class PairwiseSpectralGrangerTestCase(unittest.TestCase):
         num_signals = 2
         signals = np.random.normal(0, 1, (num_signals, n))
 
-        _, _, cross_spec = multitaper_cross_spectrum(signals,
-                                                     return_onesided=True)
+        _, cross_spec = multitaper_cross_spectrum(signals,
+                                                  return_onesided=True)
 
         cov_matrix, transfer_function = \
                 elephant.causality.granger._spectral_factorization(
@@ -369,6 +402,19 @@ class PairwiseSpectralGrangerTestCase(unittest.TestCase):
 
         np.testing.assert_array_almost_equal(cross_spec, cross_spec_est)
 
+    def test_spectral_factorization_non_conv_exception(self):
+        np.random.seed(11)
+        n = 10
+        num_signals = 2
+        signals = np.random.normal(0, 1, (num_signals, n))
+
+        _, cross_spec = multitaper_cross_spectrum(signals,
+                                                  return_onesided=True)
+
+        self.assertRaises(Exception,
+                     elephant.causality.granger._spectral_factorization,
+                     cross_spec, num_iterations=1)
+
     def test_dagger_2d(self):
         matrix_array = np.array([[1j, 0], [2, 3]], dtype=complex)
 
@@ -378,13 +424,88 @@ class PairwiseSpectralGrangerTestCase(unittest.TestCase):
 
         np.testing.assert_array_equal(true_dagger, dagger_matrix_array)
 
+    def test_total_channel_interdependence_equals_transformed_coherence(self):
+        np.random.seed(11)
+        n = int(2**8)
+        num_signals = 2
+        signals = np.random.normal(0, 1, (num_signals, n))
 
+        freqs, coh, phase_lag = multitaper_coherence(signals[0], signals[1],
+                                                     len_segment=2**7,
+                                                     num_tapers=2)
+        f, spectral_causality = \
+                elephant.causality.granger.pairwise_spectral_granger(
+                    signals[0], signals[1], len_segment=2**7, num_tapers=2)
 
+        total_interdependence = spectral_causality[3]
+        # Cut last frequency due to length of segment being even and
+        # multitaper_coherence using the real FFT in contrast to
+        # pairwise_spectral_granger which has to use the full FFT.
+        true_total_interdependence = -np.log(1 - coh)[:-1]
+        np.testing.assert_allclose(total_interdependence,
+                                   true_total_interdependence, atol=1e-7)
 
+    def test_pairwise_spectral_granger_against_groundtruth(self):
+        # Generate ground truth data following ARM(2)
+        # Example taken from Ding
+        signals, weights, cov = self._generate_ground_truth_spectral(
+            return_coeffs=True, return_cov=True)
 
+        # Estimate spectral Granger Causality
+        f, spectral_causality = \
+                elephant.causality.granger.pairwise_spectral_granger(
+                    signals[0], signals[1], len_segment=2**7, num_tapers=3)
 
+        # Calculate ground truth spectral Granger Causality
+        # Formulae taken from Ding et al., Granger Causality: Basic Theory and
+        # Application to Neuroscience, 2006
+        fn = np.linspace(0, np.pi , len(f))
+        freqs_for_theo = np.array([1, 2])[:, np.newaxis] * fn
+        A_theo = (np.identity(2)[np.newaxis]
+                  - weights[0] * np.exp(
+                      - 1j * freqs_for_theo[0][:, np.newaxis, np.newaxis]))
+        A_theo -= weights[1] * np.exp(
+            - 1j * freqs_for_theo[1][:, np.newaxis, np.newaxis])
 
+        H_theo = np.array([[A_theo[:, 1, 1], -A_theo[:, 0, 1]],
+                          [-A_theo[:, 1, 0], A_theo[:, 0, 0]]])
+        H_theo /= np.linalg.det(A_theo)
+        H_theo = np.moveaxis(H_theo, 2, 0)
 
+        S_theo = np.matmul(np.matmul(H_theo, cov),
+                           elephant.causality.granger._dagger(H_theo))
+
+        H_tilde_xx = (H_theo[:, 0, 0] + (cov[0, 1] /
+                                         cov[0, 0] *H_theo[:, 0, 1]))
+        H_tilde_yy = (H_theo[:, 1, 1] + (cov[0, 1] /
+                                         cov[1, 1] *H_theo[:, 1, 0]))
+
+        true_directional_causality_y_x = np.log(S_theo[:, 0, 0].real /
+                                                (H_tilde_xx
+                                                 * cov[0, 0]
+                                                 * H_tilde_xx.conj()).real)
+
+        true_directional_causality_x_y = np.log(S_theo[:, 1, 1].real /
+                                               (H_tilde_yy
+                                                * cov[1, 1]
+                                                * H_tilde_yy.conj()).real)
+
+        true_instantaneous_causality = np.log(
+            (H_tilde_xx * cov[0, 0] * H_tilde_xx.conj()).real
+            * (H_tilde_yy * cov[1, 1] * H_tilde_yy.conj()).real)
+        true_instantaneous_causality -= np.linalg.slogdet(S_theo)[1]
+
+        np.testing.assert_allclose(
+            spectral_causality.directional_causality_x_y,
+            true_directional_causality_x_y, atol=0.06)
+
+        np.testing.assert_allclose(
+            spectral_causality.directional_causality_y_x,
+            true_directional_causality_y_x, atol=0.06)
+
+        np.testing.assert_allclose(
+            spectral_causality.instantaneous_causality,
+            true_instantaneous_causality, atol=0.06)
 
 
 
