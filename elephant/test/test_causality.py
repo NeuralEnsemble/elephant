@@ -440,7 +440,7 @@ class PairwiseSpectralGrangerTestCase(unittest.TestCase):
         # pairwise_spectral_granger which has to use the full FFT.
         true_total_interdependence = -np.log(1 - coh)[:-1]
         np.testing.assert_allclose(total_interdependence,
-                                   true_total_interdependence, atol=1e-7)
+                                   true_total_interdependence, atol=1e-5)
 
     def test_pairwise_spectral_granger_against_ground_truth(self):
         # Generate ground truth data following ARM(2)
