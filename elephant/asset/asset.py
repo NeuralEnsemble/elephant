@@ -26,6 +26,8 @@ Patterns post-exploration
     synchronous_events_contained_in
     synchronous_events_contains_all
     synchronous_events_overlap
+    get_neurons_in_sse
+    get_sse_start_and_end_time_bins
 
 
 Tutorial
