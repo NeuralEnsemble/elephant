@@ -1792,8 +1792,8 @@ def get_neurons_in_sse(sse):
     list
         All neuron IDs present in the SSE, sorted in ascending order.
 
-    Example
-    -------
+    Examples
+    --------
     >>> sse = {(268, 51): {22, 27},
     ...        (274, 54): {26},
     ...        (274, 56): {77},
@@ -1845,8 +1845,8 @@ def get_sse_start_and_end_time_bins(sse):
         the second element corresponds to the second sequence (elements `j`
         in the SSE pixel).
 
-    Example
-    -------
+    Examples
+    --------
     >>> sse = {(268, 51): {22, 27},
     ...        (274, 54): {26},
     ...        (274, 56): {77},
