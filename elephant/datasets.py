@@ -130,7 +130,7 @@ def download_datasets(repo_path, filepath=None, checksum=None,
         >>> import os
         >>> from elephant.datasets import download_datasets
         >>> os.environ["ELEPHANT_DATA_URL"] = "https://web.gin.g-node.org/NeuralEnsemble/elephant-data/raw/multitaper" # noqa
-        >>> download_datasets("unittest/spectral/multitaper_psd/data/time_series.npy")
+        >>> download_datasets("unittest/spectral/multitaper_psd/data/time_series.npy") # doctest: +SKIP
         PosixPath('/tmp/elephant/time_series.npy')
         """
 
