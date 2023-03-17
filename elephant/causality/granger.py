@@ -445,7 +445,7 @@ def _dagger(matrix_array):
     return matrix_array_dagger
 
 
-def _spectral_factorization(cross_spectrum, num_iterations):
+def _spectral_factorization(cross_spectrum, num_iterations, term_crit=1e-12):
     r"""
     Determine the spectral matrix factorization of the cross-spectrum
     (denoted by S) of multiple time series:
@@ -466,6 +466,11 @@ def _spectral_factorization(cross_spectrum, num_iterations):
         function
     num_iterations : int
         Maximal number of iterations of iterative algorithm
+    term_crit : float
+        Termination criterion for iteration step in spectral matrix
+        factorization
+        Default: 1e-12
+
 
     Returns
     ------
@@ -517,7 +522,7 @@ def _spectral_factorization(cross_spectrum, num_iterations):
 
         diff = factorization - factorization_old
         error = np.max(np.abs(diff))
-        if error < 1e-12:
+        if error < term_crit:
             print(f'Spectral factorization converged after {i} steps')
             converged=True
             break
@@ -525,7 +530,9 @@ def _spectral_factorization(cross_spectrum, num_iterations):
     if not converged:
         raise Exception("Spectral factorization did not converge after "
                         + f"{num_iterations} steps. Try to increase "
-                        + "'num_iterations'.")
+                        + "'num_iterations', or lower the allowed error "
+                        + " in the termination criterion, currently "
+                        + f"{term_crit}")
 
     cov_matrix = np.matmul(factorization[0],
                            _dagger(factorization[0]))
@@ -780,7 +787,8 @@ def conditional_granger(signals, max_order, information_criterion='aic'):
 def pairwise_spectral_granger(signal_i, signal_j, fs=1, nw=4, num_tapers=None,
                               peak_resolution=None, n_segments=1,
                               len_segment=None, frequency_resolution=None,
-                              overlap=0.5, num_iterations=300):
+                              overlap=0.5, num_iterations=300,
+                              term_crit=1e-12):
     r"""Determine spectral Granger Causality of two signals.
 
     The spectral Granger Causality is obtained through the following steps:
@@ -849,6 +857,10 @@ def pairwise_spectral_granger(signal_i, signal_j, fs=1, nw=4, num_tapers=None,
     num_iterations : int
         Number of iterations for algorithm to estimate spectral factorization.
         Default: 300
+    term_crit : float
+        Termination criterion for iteration step in spectral matrix
+        factorization
+        Default: 1e-12
 
     Returns
     -------
