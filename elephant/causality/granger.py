@@ -402,7 +402,6 @@ def _bracket_operator(spectrum, num_freqs, num_signals):
     """
     # Get coefficients from spectrum
     causal_part = np.fft.ifft(spectrum, axis=0)
-    # Version 1
     # Throw away of acausal part
     causal_part[(num_freqs + 1) // 2:] = 0
 
