@@ -19,7 +19,7 @@ the influnece signals have onto each other in a frequency resolved manner. It
 relies on estimating the cross-spectrum of time series and decomposing them
 into a transfer function and a noise covariance matrix. The method to estimate
 the spectral Granger causality is non-parametric in the sense that it does not
-require to fit an autoregressive model (see :cite:`granger-Dhamala02_354`).
+require to fit an autoregressive model (see :cite:`granger-Dhamala08_354`).
 
 Limitations
 -----------
@@ -36,8 +36,8 @@ Implementation
 The mathematical implementation of Granger causality methods in this module
 closely follows :cite:`granger-Ding06_0608035`.
 The implementation of spectral Granger causality follows
-:cite:`granger-Dhamala02_354`, :cite:`granger-Wend13_20110610` and
-:cite:`granger-Wilson72` for the spectral matrix factorization.
+:cite:`granger-Dhamala08_354`, :cite:`granger-Wen13_20110610` and
+:cite:`granger-Wilson72_420` for the spectral matrix factorization.
 
 
 Overview of Functions
@@ -917,7 +917,7 @@ def pairwise_spectral_granger(signal_i, signal_j, fs=1, nw=4, num_tapers=None,
     H = H[mask]
 
     # Calculate spectral Granger Causality.
-    # Formulae follow Wen et al., 2012, Phil Trans R Soc
+    # Formulae follow Wen et al., 2013, Phil Trans R Soc
     H_tilde_xx = H[:, 0, 0] + C[0, 1]/C[0, 0]*H[:, 0, 1]
     H_tilde_yy = H[:, 1, 1] + C[0, 1]/C[1, 1]*H[:, 1, 0]
 
@@ -945,5 +945,8 @@ def pairwise_spectral_granger(signal_i, signal_j, fs=1, nw=4, num_tapers=None,
         directional_causality_y_x=directional_causality_y_x,
         instantaneous_causality=instantaneous_causality,
         total_interdependence=total_interdependence)
+
+    import IPython
+    IPython.embed()
 
     return freqs, spectral_causality
