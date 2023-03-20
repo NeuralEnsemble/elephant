@@ -946,7 +946,4 @@ def pairwise_spectral_granger(signal_i, signal_j, fs=1, nw=4, num_tapers=None,
         instantaneous_causality=instantaneous_causality,
         total_interdependence=total_interdependence)
 
-    import IPython
-    IPython.embed()
-
     return freqs, spectral_causality
