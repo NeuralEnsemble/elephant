@@ -795,15 +795,15 @@ def pairwise_spectral_granger(signal_i, signal_j, fs=1, nw=4, num_tapers=None,
 
     1. Determine the cross spectrum of the two signals by applying
        :func:`segmented_multitaper_cross_spectrum` to the joint signal. See the
-       documentation of this function for the parameter hierarchy of the
-       used for the estimation of the cross spectrum.
+       documentation of this function for the hierarchy of the parameters used
+       for the estimation of the cross spectrum.
 
     2. Calculate the spectral factorization of the cross spectrum decomposing
-       the very same thing into the covariance matrix and the transfer
-       function.
+       the cross spectrum into the covariance matrix and the transfer function.
 
     3. Calculate the directional and instantaneous spectral Granger Causality
-       from the power spectra, the transfer function and the covariance matrix.
+       from the power spectra, the transfer function and the covariance matrix
+       (see e.g. Wen et al., 2013, Phil Trans R Soc, eq. 2.10 ff).
 
     Parameters
     ----------
@@ -869,20 +869,22 @@ def pairwise_spectral_granger(signal_i, signal_j, fs=1, nw=4, num_tapers=None,
     Causality
         A `namedtuple` with the following attributes:
             directional_causality_x_y : np.ndarray
-                Spectrally resolved Granger causality of X influence onto Y.
+                Spectrally resolved Granger causality influence of `signal_i`,
+                abbreviated by  X, onto `signal_j`, abbreviated by Y.
 
             directional_causality_y_x : np.ndarray
-                Spectrally resolved Granger causality of Y influence onto X.
+                Spectrally resolved Granger causality influence of `signal_j`,
+                abbreviated by  Y, onto `signal_i`, abbreviated by Y.
 
             instantaneous_causality : np.ndarray
                 The remaining spectrally resolved channel interdependence not
                 accounted for by the directional causalities (e.g. shared input
-                to X and Y).
+                to X, i.e. `signal_i`, and Y, i.e. `signal_j`).
 
             total_interdependence : np.ndarray
                 The sum of the former three metrics. It measures the dependence
-                of X and Y. If the total interdependence is positive, X and Y
-                are not independent.
+                of X, i.e. `signal_i` and Y, i.e. `signal_j`. If the total
+                interdependence is positive, X and Y are not independent.
     """
     if isinstance(signal_i, neo.core.AnalogSignal) and \
             isinstance(signal_j, neo.core.AnalogSignal):
