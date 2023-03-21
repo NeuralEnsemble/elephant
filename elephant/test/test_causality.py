@@ -312,17 +312,17 @@ class PairwiseSpectralGrangerTestCase(unittest.TestCase):
         pass
 
     @staticmethod
-    def _generate_ground_truth_spectral(length_2d=300000, return_coeffs=False,
-                                        return_cov=False):
+    def _generate_ground_truth_spectral(
+            length_2d=300000,
+            weights_1=np.array([[0.9, 0], [0.16, 0.8]]),
+            weights_2=np.array([[-0.5, 0], [-0.2, -0.5]]),
+            noise_covariance=np.array([[1., 0.4], [0.4, 0.7]]),
+            return_coeffs=False,
+            return_cov=False):
         order = 2
         signal = np.zeros((2, length_2d + order))
 
-        weights_1 = np.array([[0.9, 0], [0.16, 0.8]])
-        weights_2 = np.array([[-0.5, 0], [-0.2, -0.5]])
-
         weights = np.stack((weights_1, weights_2))
-
-        noise_covariance = np.array([[1., 0.4], [0.4, 0.7]])
 
         for i in range(length_2d):
             for lag in range(order):
@@ -407,6 +407,8 @@ class PairwiseSpectralGrangerTestCase(unittest.TestCase):
         _, cross_spec = multitaper_cross_spectrum(signals,
                                                   return_onesided=True)
 
+        cross_spec = np.transpose(cross_spec, (2, 0, 1))
+
         cov_matrix, transfer_function = \
             elephant.causality.granger._spectral_factorization(
                 cross_spec, num_iterations=100)
@@ -414,8 +416,6 @@ class PairwiseSpectralGrangerTestCase(unittest.TestCase):
         cross_spec_est = np.matmul(np.matmul(transfer_function, cov_matrix),
                                    elephant.causality.granger._dagger(
                                        transfer_function))
-
-        cross_spec_est = np.rollaxis(cross_spec_est, 0, 3)
 
         np.testing.assert_array_almost_equal(cross_spec, cross_spec_est)
 
@@ -428,13 +428,15 @@ class PairwiseSpectralGrangerTestCase(unittest.TestCase):
         _, cross_spec = multitaper_cross_spectrum(signals,
                                                   return_onesided=True)
 
+        cross_spec = np.transpose(cross_spec, (2, 0, 1))
+
         self.assertRaises(Exception,
                           elephant.causality.granger._spectral_factorization,
                           cross_spec, num_iterations=1)
 
     def test_spectral_factorization_initial_cond(self):
         # Cross spectrum at zero frequency must always be symmetric
-        wrong_cross_spec = np.array([[[1, 2], [0, 1]],]).T 
+        wrong_cross_spec = np.array([[[1, 2], [-1, 1]], [[1, 1], [1, 1]]])
         self.assertRaises(ValueError,
                           elephant.causality.granger._spectral_factorization,
                           wrong_cross_spec, num_iterations=10)

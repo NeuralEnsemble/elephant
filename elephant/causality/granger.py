@@ -402,10 +402,11 @@ def _bracket_operator(spectrum, num_freqs, num_signals):
     """
     # Get coefficients from spectrum
     causal_part = np.fft.ifft(spectrum, axis=0)
-    # Throw away of acausal part
+
+    # Throw away acausal part
     causal_part[(num_freqs + 1) // 2:] = 0
 
-    # Treat zero frequency part
+    # Treat coefficient belonging to 0
     causal_part[0] /= 2
 
     # Back-transformation
@@ -479,8 +480,6 @@ def _spectral_factorization(cross_spectrum, num_iterations, term_crit=1e-12):
     transfer_function : np.ndarray
         Transfer function of spectral factorization
     """
-    cross_spectrum = np.transpose(cross_spectrum, axes=(2, 0, 1))
-
     # spectral_density_function = np.fft.ifft(cross_spectrum, axis=0)
     spectral_density_function = np.copy(cross_spectrum)
 
@@ -495,7 +494,7 @@ def _spectral_factorization(cross_spectrum, num_iterations, term_crit=1e-12):
 
     # Estimate initial conditions
     try:
-        initial_cond = np.linalg.cholesky(cross_spectrum[0].real).T
+        initial_cond = np.linalg.cholesky(cross_spectrum[0].real)
     except np.linalg.LinAlgError:
         raise ValueError('Could not calculate Cholesky decomposition of real'
                          + ' part of zero frequency estimate of cross-spectrum'
@@ -908,6 +907,9 @@ def pairwise_spectral_granger(signal_i, signal_j, fs=1, nw=4, num_tapers=None,
     # Granger causality
     S = np.transpose(S, axes=(1, 0, 2))
 
+    # Move frequencies to first axis - Needed for _spectral_factorization
+    S = np.transpose(S, axes=(2, 0, 1))
+
     # Decompose cross spectrum into covariance and transfer function
     C, H = _spectral_factorization(S, num_iterations=num_iterations)
 
@@ -915,7 +917,7 @@ def pairwise_spectral_granger(signal_i, signal_j, fs=1, nw=4, num_tapers=None,
     mask = (freqs >= 0)
     freqs = freqs[mask]
 
-    S = np.transpose(S, axes=(2, 0, 1))[mask]
+    S = S[mask]
     H = H[mask]
 
     # Calculate spectral Granger Causality.
