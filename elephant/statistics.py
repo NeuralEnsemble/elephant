@@ -1152,8 +1152,9 @@ class Complexity(object):
 
         Default: None
     binary : bool, optional
-        *  If True then the time histograms will be binary.
-        *  If False the total number of synchronous spikes is counted in the
+        *  If True then the time histograms will only count the number of
+           neurons which spike in each bin.
+        *  If False the total number of spikes per bin is counted in the
            time histogram.
 
         Default: True
@@ -1360,10 +1361,13 @@ class Complexity(object):
                                    self.bin_size,
                                    binary=self.binary)
 
+        time_hist_magnitude = time_hist.magnitude.flatten()
+        max_hist_entry = max(time_hist_magnitude)
+
         # Computing the histogram of the entries of pophist
         complexity_hist = np.histogram(
-            time_hist.magnitude,
-            bins=range(0, len(self.input_spiketrains) + 2))[0]
+            time_hist_magnitude,
+            bins=range(0, max_hist_entry + 2))[0]
 
         return time_hist, complexity_hist
 
