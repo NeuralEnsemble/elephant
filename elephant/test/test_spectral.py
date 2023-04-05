@@ -419,7 +419,26 @@ class SegmentedMultitaperPSDTestCase(unittest.TestCase):
                               units='mV')
 
         # test frequency_resolution vs len_segment vs n_segments
-        pass
+        n_segments = 5
+        len_segment = 2000
+        frequency_resolution = 0.25 * pq.Hz
+
+        freqs_ns, psd_ns = \
+            elephant.spectral.segmented_multitaper_psd(
+                data, n_segments=n_segments)
+
+        freqs_ls, psd_ls = \
+            elephant.spectral.segmented_multitaper_psd(
+                data, n_segments=n_segments, len_segment=len_segment)
+
+        freqs_fr, psd_fr = \
+            elephant.spectral.segmented_multitaper_psd(
+                data, n_segments=n_segments, len_segment=len_segment,
+                frequency_resolution=frequency_resolution)
+
+        self.assertTrue(freqs_ns.shape < freqs_ls.shape < freqs_fr.shape)
+        self.assertTrue(psd_ns.shape < psd_ls.shape < psd_fr.shape)
+
 
     def test_segmented_multitaper_psd_input_types(self):
         # generate a test data
