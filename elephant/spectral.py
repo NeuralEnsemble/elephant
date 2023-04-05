@@ -369,10 +369,7 @@ def multitaper_psd(signal, fs=1, nw=4, num_tapers=None, peak_resolution=None,
 
     length_signal = np.shape(data)[1]
 
-    # If fs and peak resolution is pq.Quantity, get magnitude
-    if isinstance(fs, pq.quantity.Quantity):
-        fs = fs.rescale('Hz').magnitude
-
+    # If peak resolution is pq.Quantity, get magnitude
     if isinstance(peak_resolution, pq.quantity.Quantity):
         peak_resolution = peak_resolution.rescale('Hz').magnitude
 
