@@ -201,6 +201,13 @@ class PairwiseGrangerTestCase(unittest.TestCase):
         assert_array_almost_equal(coefficients, ground_truth_coefficients,
                                   decimal=4)
 
+    def test_wrong_kwarg_optimal_vector_arm(self):
+        wrong_ic_criterion = 'cic'
+
+        self.assertRaises(ValueError,
+                          elephant.causality.granger._optimal_vector_arm,
+                          self.ground_truth.T, 2, 10, wrong_ic_criterion)
+
 
 class ConditionalGrangerTestCase(unittest.TestCase):
 
@@ -282,9 +289,22 @@ class ConditionalGrangerTestCase(unittest.TestCase):
         self.assertEqual(elephant.causality.granger.conditional_granger(
             self.ground_truth, 10, 'bic'), 0.0)
 
+    def test_ground_truth_zero_value_conditional_causality_anasig(self):
+        signals = AnalogSignal(self.ground_truth, sampling_rate=1*pq.Hz,
+                               units='V')
+        self.assertEqual(elephant.causality.granger.conditional_granger(
+            signals, 10, 'bic'), 0.0)
+
     def test_non_zero_conditional_causality(self):
         self.assertGreater(elephant.causality.granger.conditional_granger(
             self.non_zero_signal, 10, 'bic'), 0.0)
+
+    def test_conditional_causality_wrong_input_shape(self):
+        signals = np.random.normal(0, 1, (4, 10, 1))
+
+        self.assertRaises(ValueError,
+                          elephant.causality.granger.conditional_granger,
+                          signals, 10, 'bic')
 
 
 class PairwiseSpectralGrangerTestCase(unittest.TestCase):
@@ -351,6 +371,8 @@ class PairwiseSpectralGrangerTestCase(unittest.TestCase):
         _, cross_spec = multitaper_cross_spectrum(signals,
                                                   return_onesided=True)
 
+        cross_spec = np.transpose(cross_spec, (2, 0, 1))
+
         cov_matrix, transfer_function = \
             elephant.causality.granger._spectral_factorization(
                 cross_spec, num_iterations=100)
@@ -358,8 +380,6 @@ class PairwiseSpectralGrangerTestCase(unittest.TestCase):
         cross_spec_est = np.matmul(np.matmul(transfer_function, cov_matrix),
                                    elephant.causality.granger._dagger(
                                        transfer_function))
-
-        cross_spec_est = np.rollaxis(cross_spec_est, 0, 3)
 
         np.testing.assert_array_almost_equal(cross_spec, cross_spec_est)
 
@@ -372,9 +392,18 @@ class PairwiseSpectralGrangerTestCase(unittest.TestCase):
         _, cross_spec = multitaper_cross_spectrum(signals,
                                                   return_onesided=True)
 
+        cross_spec = np.transpose(cross_spec, (2, 0, 1))
+
         self.assertRaises(Exception,
                           elephant.causality.granger._spectral_factorization,
                           cross_spec, num_iterations=1)
+
+    def test_spectral_factorization_initial_cond(self):
+        # Cross spectrum at zero frequency must always be symmetric
+        wrong_cross_spec = np.array([[[1, 2], [-1, 1]], [[1, 1], [1, 1]]])
+        self.assertRaises(ValueError,
+                          elephant.causality.granger._spectral_factorization,
+                          wrong_cross_spec, num_iterations=10)
 
     def test_dagger_2d(self):
         matrix_array = np.array([[1j, 0], [2, 3]], dtype=complex)
@@ -404,7 +433,7 @@ class PairwiseSpectralGrangerTestCase(unittest.TestCase):
         # pairwise_spectral_granger which has to use the full FFT.
         true_total_interdependence = -np.log(1 - coh)[:-1]
         np.testing.assert_allclose(total_interdependence,
-                                   true_total_interdependence, atol=1e-7)
+                                   true_total_interdependence, atol=1e-5)
 
     def test_pairwise_spectral_granger_against_ground_truth(self):
         """

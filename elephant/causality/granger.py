@@ -19,7 +19,7 @@ the influnece signals have onto each other in a frequency resolved manner. It
 relies on estimating the cross-spectrum of time series and decomposing them
 into a transfer function and a noise covariance matrix. The method to estimate
 the spectral Granger causality is non-parametric in the sense that it does not
-require to fit an autoregressive model (see :cite:`granger-Dhamala02_354`).
+require to fit an autoregressive model (see :cite:`granger-Dhamala08_354`).
 
 Limitations
 -----------
@@ -36,8 +36,8 @@ Implementation
 The mathematical implementation of Granger causality methods in this module
 closely follows :cite:`granger-Ding06_0608035`.
 The implementation of spectral Granger causality follows
-:cite:`granger-Dhamala02_354`, :cite:`granger-Wend13_20110610` and
-:cite:`granger-Wilson72` for the spectral matrix factorization.
+:cite:`granger-Dhamala08_354`, :cite:`granger-Wen13_20110610` and
+:cite:`granger-Wilson72_420` for the spectral matrix factorization.
 
 
 Overview of Functions
@@ -402,11 +402,11 @@ def _bracket_operator(spectrum, num_freqs, num_signals):
     """
     # Get coefficients from spectrum
     causal_part = np.fft.ifft(spectrum, axis=0)
-    # Version 1
-    # Throw away of acausal part
+
+    # Throw away acausal part
     causal_part[(num_freqs + 1) // 2:] = 0
 
-    # Treat zero frequency part
+    # Treat coefficient belonging to 0
     causal_part[0] /= 2
 
     # Back-transformation
@@ -446,7 +446,7 @@ def _dagger(matrix_array):
     return matrix_array_dagger
 
 
-def _spectral_factorization(cross_spectrum, num_iterations):
+def _spectral_factorization(cross_spectrum, num_iterations, term_crit=1e-12):
     r"""
     Determine the spectral matrix factorization of the cross-spectrum
     (denoted by S) of multiple time series:
@@ -467,6 +467,11 @@ def _spectral_factorization(cross_spectrum, num_iterations):
         function
     num_iterations : int
         Maximal number of iterations of iterative algorithm
+    term_crit : float
+        Termination criterion for iteration step in spectral matrix
+        factorization
+        Default: 1e-12
+
 
     Returns
     ------
@@ -475,8 +480,6 @@ def _spectral_factorization(cross_spectrum, num_iterations):
     transfer_function : np.ndarray
         Transfer function of spectral factorization
     """
-    cross_spectrum = np.transpose(cross_spectrum, axes=(2, 0, 1))
-
     # spectral_density_function = np.fft.ifft(cross_spectrum, axis=0)
     spectral_density_function = np.copy(cross_spectrum)
 
@@ -491,7 +494,7 @@ def _spectral_factorization(cross_spectrum, num_iterations):
 
     # Estimate initial conditions
     try:
-        initial_cond = np.linalg.cholesky(cross_spectrum[0].real).T
+        initial_cond = np.linalg.cholesky(cross_spectrum[0].real)
     except np.linalg.LinAlgError:
         raise ValueError('Could not calculate Cholesky decomposition of real'
                          + ' part of zero frequency estimate of cross-spectrum'
@@ -518,7 +521,7 @@ def _spectral_factorization(cross_spectrum, num_iterations):
 
         diff = factorization - factorization_old
         error = np.max(np.abs(diff))
-        if error < 1e-12:
+        if error < term_crit:
             print(f'Spectral factorization converged after {i} steps')
             converged=True
             break
@@ -526,7 +529,9 @@ def _spectral_factorization(cross_spectrum, num_iterations):
     if not converged:
         raise Exception("Spectral factorization did not converge after "
                         + f"{num_iterations} steps. Try to increase "
-                        + "'num_iterations'.")
+                        + "'num_iterations', or lower the allowed error "
+                        + " in the termination criterion, currently "
+                        + f"{term_crit}")
 
     cov_matrix = np.matmul(factorization[0],
                            _dagger(factorization[0]))
@@ -781,22 +786,23 @@ def conditional_granger(signals, max_order, information_criterion='aic'):
 def pairwise_spectral_granger(signal_i, signal_j, fs=1, nw=4, num_tapers=None,
                               peak_resolution=None, n_segments=1,
                               len_segment=None, frequency_resolution=None,
-                              overlap=0.5, num_iterations=300):
+                              overlap=0.5, num_iterations=300,
+                              term_crit=1e-12):
     r"""Determine spectral Granger Causality of two signals.
 
     The spectral Granger Causality is obtained through the following steps:
 
     1. Determine the cross spectrum of the two signals by applying
        :func:`segmented_multitaper_cross_spectrum` to the joint signal. See the
-       documentation of this function for the parameter hierarchy of the
-       used for the estimation of the cross spectrum.
+       documentation of this function for the hierarchy of the parameters used
+       for the estimation of the cross spectrum.
 
     2. Calculate the spectral factorization of the cross spectrum decomposing
-       the very same thing into the covariance matrix and the transfer
-       function.
+       the cross spectrum into the covariance matrix and the transfer function.
 
     3. Calculate the directional and instantaneous spectral Granger Causality
-       from the power spectra, the transfer function and the covariance matrix.
+       from the power spectra, the transfer function and the covariance matrix
+       (see e.g. Wen et al., 2013, Phil Trans R Soc, eq. 2.10 ff).
 
     Parameters
     ----------
@@ -850,6 +856,10 @@ def pairwise_spectral_granger(signal_i, signal_j, fs=1, nw=4, num_tapers=None,
     num_iterations : int
         Number of iterations for algorithm to estimate spectral factorization.
         Default: 300
+    term_crit : float
+        Termination criterion for iteration step in spectral matrix
+        factorization
+        Default: 1e-12
 
     Returns
     -------
@@ -858,20 +868,22 @@ def pairwise_spectral_granger(signal_i, signal_j, fs=1, nw=4, num_tapers=None,
     Causality
         A `namedtuple` with the following attributes:
             directional_causality_x_y : np.ndarray
-                Spectrally resolved Granger causality of X influence onto Y.
+                Spectrally resolved Granger causality influence of `signal_i`,
+                abbreviated by  X, onto `signal_j`, abbreviated by Y.
 
             directional_causality_y_x : np.ndarray
-                Spectrally resolved Granger causality of Y influence onto X.
+                Spectrally resolved Granger causality influence of `signal_j`,
+                abbreviated by  Y, onto `signal_i`, abbreviated by Y.
 
             instantaneous_causality : np.ndarray
                 The remaining spectrally resolved channel interdependence not
                 accounted for by the directional causalities (e.g. shared input
-                to X and Y).
+                to X, i.e. `signal_i`, and Y, i.e. `signal_j`).
 
             total_interdependence : np.ndarray
                 The sum of the former three metrics. It measures the dependence
-                of X and Y. If the total interdependence is positive, X and Y
-                are not independent.
+                of X, i.e. `signal_i` and Y, i.e. `signal_j`. If the total
+                interdependence is positive, X and Y are not independent.
     """
     if isinstance(signal_i, neo.core.AnalogSignal) and \
             isinstance(signal_j, neo.core.AnalogSignal):
@@ -895,6 +907,9 @@ def pairwise_spectral_granger(signal_i, signal_j, fs=1, nw=4, num_tapers=None,
     # Granger causality
     S = np.transpose(S, axes=(1, 0, 2))
 
+    # Move frequencies to first axis - Needed for _spectral_factorization
+    S = np.transpose(S, axes=(2, 0, 1))
+
     # Decompose cross spectrum into covariance and transfer function
     C, H = _spectral_factorization(S, num_iterations=num_iterations)
 
@@ -902,11 +917,11 @@ def pairwise_spectral_granger(signal_i, signal_j, fs=1, nw=4, num_tapers=None,
     mask = (freqs >= 0)
     freqs = freqs[mask]
 
-    S = np.transpose(S, axes=(2, 0, 1))[mask]
+    S = S[mask]
     H = H[mask]
 
     # Calculate spectral Granger Causality.
-    # Formulae follow Wen et al., 2012, Phil Trans R Soc
+    # Formulae follow Wen et al., 2013, Phil Trans R Soc
     H_tilde_xx = H[:, 0, 0] + C[0, 1]/C[0, 0]*H[:, 0, 1]
     H_tilde_yy = H[:, 1, 1] + C[0, 1]/C[1, 1]*H[:, 1, 0]
 
