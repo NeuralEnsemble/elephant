@@ -16,6 +16,7 @@ from numpy.testing import assert_array_almost_equal
 
 from elephant.spectral import multitaper_cross_spectrum, multitaper_coherence
 import elephant.causality.granger
+from elephant.datasets import download_datasets, ELEPHANT_TMP_DIR
 
 
 class PairwiseGrangerTestCase(unittest.TestCase):
@@ -287,43 +288,6 @@ class ConditionalGrangerTestCase(unittest.TestCase):
 
 
 class PairwiseSpectralGrangerTestCase(unittest.TestCase):
-
-    def setUp(self):
-        pass
-
-    @staticmethod
-    def _generate_ground_truth_spectral(length_2d=300000, return_coeffs=False,
-                                        return_cov=False):
-        order = 2
-        signal = np.zeros((2, length_2d + order))
-
-        weights_1 = np.array([[0.9, 0], [0.16, 0.8]])
-        weights_2 = np.array([[-0.5, 0], [-0.2, -0.5]])
-
-        weights = np.stack((weights_1, weights_2))
-
-        noise_covariance = np.array([[1., 0.4], [0.4, 0.7]])
-
-        for i in range(length_2d):
-            for lag in range(order):
-                signal[:, i + order] += np.dot(weights[lag],
-                                               signal[:, i + 1 - lag])
-            rnd_var = np.random.multivariate_normal([0, 0],
-                                                    noise_covariance)
-            signal[:, i+order] += rnd_var
-
-        signal = signal[:, 2:]
-
-        returns = [signal]
-
-        if return_coeffs:
-            returns.append(weights)
-
-        if return_cov:
-            returns.append(noise_covariance)
-
-        return returns
-
     def test_bracket_operator_one_signal(self):
         # Generate a spectrum from random dataset and test bracket operator
         np.random.seed(10)
@@ -443,10 +407,29 @@ class PairwiseSpectralGrangerTestCase(unittest.TestCase):
                                    true_total_interdependence, atol=1e-7)
 
     def test_pairwise_spectral_granger_against_ground_truth(self):
-        # Generate ground truth data following ARM(2)
-        # Example taken from Ding
-        signals, weights, cov = self._generate_ground_truth_spectral(
-            return_coeffs=True, return_cov=True)
+        """
+        Test pairwise_spectral_granger using an example from Ding et al. 2006
+
+        Please follow the link below for more details:
+        https://gin.g-node.org/NeuralEnsemble/elephant-data/src/master/unittest/causality/granger/pairwise_spectral_granger  # noqa
+
+        """
+
+        repo_path = \
+            r"unittest/causality/granger/pairwise_spectral_granger/data"
+
+        files_to_download = [
+            ("time_series.npy", "54e0b3fbd904ccb48c75228c070a1a2a"),
+            ("weights.npy", "eb1fc5590da5507293c63b25b1e3a7fc"),
+            ("noise_covariance.npy", "6f80ccff2b2aa9485dc9c01d81570bf5")
+        ]
+
+        for filename, checksum in files_to_download:
+            download_datasets(repo_path=f"{repo_path}/{filename}",
+                              checksum=checksum)
+        signals = np.load(ELEPHANT_TMP_DIR / 'time_series.npy')
+        weights = np.load(ELEPHANT_TMP_DIR / 'weights.npy')
+        cov = np.load(ELEPHANT_TMP_DIR / 'noise_covariance.npy')
 
         # Estimate spectral Granger Causality
         f, spectral_causality = \
@@ -502,6 +485,41 @@ class PairwiseSpectralGrangerTestCase(unittest.TestCase):
         np.testing.assert_allclose(
             spectral_causality.instantaneous_causality,
             true_instantaneous_causality, atol=0.06)
+
+    def test_pairwise_spectral_granger_against_r_grangers(self):
+        """
+        Test pairwise_spectral_granger against R grangers implementation
+
+        Please follow the link below for more details:
+        https://gin.g-node.org/NeuralEnsemble/elephant-data/src/master/unittest/causality/granger/pairwise_spectral_granger  # noqa
+
+        """
+
+        repo_path = \
+            r"unittest/causality/granger/pairwise_spectral_granger/data"
+
+        files_to_download = [
+            ("time_series_small.npy", "b33dc12d4291db7c2087dd8429f15ab4"),
+            ("gc_matrix.npy", "c57262145e74a178588ff0a1004879e2")
+        ]
+
+        for filename, checksum in files_to_download:
+            download_datasets(repo_path=f"{repo_path}/{filename}",
+                              checksum=checksum)
+        signal = np.load(ELEPHANT_TMP_DIR / 'time_series_small.npy')
+        gc_matrix = np.load(ELEPHANT_TMP_DIR / 'gc_matrix.npy')
+
+        denom = 20
+        f, spectral_causality = \
+            elephant.causality.granger.pairwise_spectral_granger(
+                signal[0], signal[1], len_segment=int(len(signal[0]) / denom),
+                num_tapers=80, fs=1, num_iterations=50)
+
+        np.testing.assert_allclose(gc_matrix[::denom, 0], f, atol=4e-5)
+        np.testing.assert_allclose(gc_matrix[::denom, 1],
+                                   spectral_causality[0], atol=0.08)
+        np.testing.assert_allclose(gc_matrix[::denom, 2],
+                                   spectral_causality[1], atol=0.005)
 
 
 if __name__ == '__main__':
