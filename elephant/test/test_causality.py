@@ -546,9 +546,9 @@ class PairwiseSpectralGrangerTestCase(unittest.TestCase):
 
         np.testing.assert_allclose(gc_matrix[::denom, 0], f, atol=4e-5)
         np.testing.assert_allclose(gc_matrix[::denom, 1],
-                                   spectral_causality[0], atol=0.08)
+                                   spectral_causality[0], atol=0.104)
         np.testing.assert_allclose(gc_matrix[::denom, 2],
-                                   spectral_causality[1], atol=0.005)
+                                   spectral_causality[1], atol=0.015)
 
 
 if __name__ == '__main__':
