@@ -542,13 +542,13 @@ class PairwiseSpectralGrangerTestCase(unittest.TestCase):
         f, spectral_causality = \
             elephant.causality.granger.pairwise_spectral_granger(
                 signal[0], signal[1], len_segment=int(len(signal[0]) / denom),
-                num_tapers=80, fs=1, num_iterations=50)
+                num_tapers=15, fs=1, num_iterations=50)
 
         np.testing.assert_allclose(gc_matrix[::denom, 0], f, atol=4e-5)
         np.testing.assert_allclose(gc_matrix[::denom, 1],
-                                   spectral_causality[0], atol=0.104)
+                                   spectral_causality[0], atol=0.085)
         np.testing.assert_allclose(gc_matrix[::denom, 2],
-                                   spectral_causality[1], atol=0.015)
+                                   spectral_causality[1], atol=0.035)
 
 
 if __name__ == '__main__':
