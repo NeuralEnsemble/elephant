@@ -1,11 +1,32 @@
 import itertools
-from typing import Iterable, List, NamedTuple, Union, Optional
+from typing import Iterable, List, NamedTuple, Union, Optional, Tuple
 
 import numpy as np
 from scipy.signal import oaconvolve
 
 from elephant.conversion import BinnedSpikeTrain
 
+def get_connectivity_matrix(tspe_matrix: np.ndarray) -> Tuple[np.ndarray,np.ndarray]:
+    """
+    Takes a tspe_matrix and computes the connectivity- and delay-matrix
+
+    Parameters
+    ----------
+    tspe_matrix: np.array
+
+    Returns
+    -------
+    connectivity_matrix
+    delay-matrix
+
+    """
+
+    # Take maxima of absolute of delays to get estimation for connectivity
+    connectivity_matrix_index = np.argmax(np.abs(tspe_matrix),axis=2,keepdims=True)
+    connectivity_matrix = np.take_along_axis(tspe_matrix,connectivity_matrix_index,axis=2).squeeze(axis=2)
+    delay_matrix = connectivity_matrix_index
+
+    return connectivity_matrix, delay_matrix
 
 def total_spiking_probability_edges(
     spike_trains: BinnedSpikeTrain,
@@ -20,11 +41,12 @@ def total_spiking_probability_edges(
 
     Parameters
     ----------
-    spiketrains: neo.spiketrains
+    spiketrains: BinnedSpikeTrain
 
     Returns
     -------
     tspe_matrix
+
     """
 
     if not surrounding_window_sizes:
