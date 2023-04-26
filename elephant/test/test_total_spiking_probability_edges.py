@@ -22,9 +22,9 @@ def test_generate_filter_pairs():
             edge_filter=np.array([-1.0, 0.0, 2.0, 0.0, -1.0]),
             running_total_filter=np.array([1.0]),
             needed_padding=2,
-            a=1,
-            b=1,
-            c=1,
+            surrounding_window_size=1,
+            observed_window_size=1,
+            crossover_window_size=1,
         )
     ]
 
@@ -39,9 +39,18 @@ def test_generate_filter_pairs():
             filter_pair_test.running_total_filter,
         )
         assert filter_pair_function.needed_padding == filter_pair_test.needed_padding
-        assert filter_pair_function.a == filter_pair_test.a
-        assert filter_pair_function.b == filter_pair_test.b
-        assert filter_pair_function.c == filter_pair_test.c
+        assert (
+            filter_pair_function.surrounding_window_size
+            == filter_pair_test.surrounding_window_size
+        )
+        assert (
+            filter_pair_function.observed_window_size
+            == filter_pair_test.observed_window_size
+        )
+        assert (
+            filter_pair_function.crossover_window_size
+            == filter_pair_test.crossover_window_size
+        )
 
 
 def test_normalized_cross_correlation():
@@ -64,4 +73,4 @@ def test_normalized_cross_correlation():
         spiketrains, [-delay_time, delay_time]
     )
 
-    assert np.allclose(function_output, test_output,0.1)
+    assert np.allclose(function_output, test_output, 0.1)

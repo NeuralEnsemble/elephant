@@ -9,12 +9,12 @@ from elephant.conversion import BinnedSpikeTrain
 
 def total_spiking_probability_edges(
     spike_trains: BinnedSpikeTrain,
-    a: Optional[List[int]] = None,
-    b: Optional[List[int]] = None,
-    c: Optional[List[int]] = None,
+    surrounding_window_sizes: Optional[List[int]] = None,
+    observed_window_sizes: Optional[List[int]] = None,
+    crossover_window_sizes: Optional[List[int]] = None,
     max_delay: int = 25,
-    normalize: bool = False
-        ):
+    normalize: bool = False,
+):
     """
     Performs the Total spiking probability edges (TSPE) :cite:`tspe-de_blasi2007_???` on spiketrains ...
 
@@ -27,40 +27,55 @@ def total_spiking_probability_edges(
     tspe_matrix
     """
 
-    if not a:
-        a = [3, 4, 5, 6, 7, 8]
+    if not surrounding_window_sizes:
+        surrounding_window_sizes = [3, 4, 5, 6, 7, 8]
 
-    if not b:
-        b = [2, 3, 4, 5, 6]
+    if not observed_window_sizes:
+        observed_window_sizes = [2, 3, 4, 5, 6]
 
-    if not c:
-        c = [0]
+    if not crossover_window_sizes:
+        crossover_window_sizes = [0]
 
     n_neurons, n_bins = spike_trains.shape
 
-    filter_pairs = generate_filter_pairs(a, b, c)
+    filter_pairs = generate_filter_pairs(
+        surrounding_window_sizes, observed_window_sizes, crossover_window_sizes
+    )
 
     # Calculate normalized cross corelation for different delays
     # The delay range ranges from 0 to max-delay and includes
     # padding for the filter convolution
-    max_padding = max(a) + max(c)
-    delay_times = list(range(-max_padding,max_delay + max_padding))
+    max_padding = max(surrounding_window_sizes) + max(crossover_window_sizes)
+    delay_times = list(range(-max_padding, max_delay + max_padding))
     NCC_d = normalized_cross_correlation(spike_trains, delay_times=delay_times)
 
     # Normalize to counter network-bursts
     if normalize:
         for delay_time in delay_times:
-            NCC_d[:,:,delay_time] /= np.sum(NCC_d[:,:,delay_time][~np.identity(NCC_d.shape[0],dtype=bool)])
+            NCC_d[:, :, delay_time] /= np.sum(
+                NCC_d[:, :, delay_time][~np.identity(NCC_d.shape[0], dtype=bool)]
+            )
 
     # Apply edge and running total filter
     tspe_matrix = np.zeros((n_neurons, n_neurons, max_delay))
     for filter in filter_pairs:
         # Select ncc_window based on needed filter padding
-        NCC_window = NCC_d[:,:,max_padding-filter.needed_padding:max_delay+max_padding+filter.needed_padding]
+        NCC_window = NCC_d[
+            :,
+            :,
+            max_padding
+            - filter.needed_padding : max_delay
+            + max_padding
+            + filter.needed_padding,
+        ]
 
         # Compute two convolutions with edge- and running total filter
-        x1 = oaconvolve(NCC_window, np.expand_dims(filter.edge_filter,(0,1)), mode="valid",axes=2)
-        x2 = oaconvolve(x1, np.expand_dims(filter.running_total_filter,(0,1)), mode="full",axes=2)
+        x1 = oaconvolve(
+            NCC_window, np.expand_dims(filter.edge_filter, (0, 1)), mode="valid", axes=2
+        )
+        x2 = oaconvolve(
+            x1, np.expand_dims(filter.running_total_filter, (0, 1)), mode="full", axes=2
+        )
 
         tspe_matrix += x2
 
@@ -135,13 +150,17 @@ def normalized_cross_correlation(
 
 
 def generate_edge_filter(
-    a: int,
-    b: int,
-    c: int,
+    surrounding_window_size: int,
+    observed_window_size: int,
+    crossover_window_size: int,
 ) -> np.ndarray:
     r"""Generate an edge filter
 
     The edge filter is generated using following piecewise defined function:
+
+    a = surrounding_window_size
+    b = observed_window_size
+    c = crossover_window_size
 
     .. math::
         g_{(i)} = \begin{cases}
@@ -151,46 +170,69 @@ def generate_edge_filter(
             \end{cases}
 
     """
-    filter_length = (2 * a) + b + (2 * c)
+    filter_length = (
+        (2 * surrounding_window_size)
+        + observed_window_size
+        + (2 * crossover_window_size)
+    )
     i = np.arange(1, filter_length + 1, dtype=np.float64)
 
     conditions = [
-        (i > 0) & (i <= a),
-        (i > (a + c)) & (i <= a + b + c),
-        (i > a + b + (2 * c)) & (i <= (2 * a) + b + (2 * c)),
+        (i > 0) & (i <= surrounding_window_size),
+        (i > (surrounding_window_size + crossover_window_size))
+        & (i <= surrounding_window_size + observed_window_size + crossover_window_size),
+        (
+            i
+            > surrounding_window_size
+            + observed_window_size
+            + (2 * crossover_window_size)
+        )
+        & (
+            i
+            <= (2 * surrounding_window_size)
+            + observed_window_size
+            + (2 * crossover_window_size)
+        ),
     ]
 
-    values = [-(1 / a), 2 / b, -(1 / a), 0]  # Default Value
+    values = [
+        -(1 / surrounding_window_size),
+        2 / observed_window_size,
+        -(1 / surrounding_window_size),
+        0,
+    ]  # Default Value
 
     filter = np.piecewise(i, conditions, values)
 
     return filter
 
 
-def generate_running_total_filter(b: int) -> np.ndarray:
-    return np.ones(b)
+def generate_running_total_filter(observed_window_size: int) -> np.ndarray:
+    return np.ones(observed_window_size)
 
 
 class tspe_filter_pair(NamedTuple):
     edge_filter: np.ndarray
     running_total_filter: np.ndarray
     needed_padding: int
-    a: int
-    b: int
-    c: int
+    surrounding_window_size: int
+    observed_window_size: int
+    crossover_window_size: int
 
 
 def generate_filter_pairs(
-    a: List[int],
-    b: List[int],
-    c: List[int],
+    surrounding_window_sizes: List[int],
+    observed_window_sizes: List[int],
+    crossover_window_sizes: List[int],
 ) -> List[tspe_filter_pair]:
     """Generates filter pairs of edge and running total filter using all
     permutations of given parameters
     """
     filter_pairs = []
 
-    for _a, _b, _c in itertools.product(a, b, c):
+    for _a, _b, _c in itertools.product(
+        surrounding_window_sizes, observed_window_sizes, crossover_window_sizes
+    ):
         edge_filter = generate_edge_filter(_a, _b, _c)
         running_total_filter = generate_running_total_filter(_b)
         needed_padding = _a + _c
