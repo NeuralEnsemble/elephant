@@ -1,10 +1,14 @@
 from typing import List
 
+from neo import SpikeTrain
 import numpy as np
 import pytest
+from quantities import millisecond as ms
 
+from elephant.conversion import BinnedSpikeTrain
 from elephant.functional_connectivity_src.total_spiking_probability_edges import (
     generate_filter_pairs,
+    normalized_cross_correlation,
     tspe_filter_pair,
 )
 
@@ -38,3 +42,26 @@ def test_generate_filter_pairs():
         assert filter_pair_function.a == filter_pair_test.a
         assert filter_pair_function.b == filter_pair_test.b
         assert filter_pair_function.c == filter_pair_test.c
+
+
+def test_normalized_cross_correlation():
+    # Generate Spiketrains
+    delay_time = 5
+    spike_times = [3, 4, 5] * ms
+    spike_times_delayed = spike_times + delay_time * ms
+
+    spiketrains = BinnedSpikeTrain(
+        [
+            SpikeTrain(spike_times, t_stop=20.0 * ms),
+            SpikeTrain(spike_times_delayed, t_stop=20.0 * ms),
+        ],
+        bin_size=1 * ms,
+    )
+
+    test_output = np.array([[[0.0, 0.0], [1.1, 0.0]], [[0.0, 1.1], [0.0, 0.0]]])
+
+    function_output = normalized_cross_correlation(
+        spiketrains, [-delay_time, delay_time]
+    )
+
+    assert np.allclose(function_output, test_output,0.1)
