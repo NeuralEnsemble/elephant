@@ -108,24 +108,6 @@ class Trials:
         pass
 
     @abstractmethod
-    def get_analogsignals_from_trial(self, trial_number: int
-                                   ) -> neo.core.AnalogSignal:
-        """
-        Get all analogsignals from a specific trial and return an analogsignal.
-
-        Parameters
-        ----------
-        trial_number : int
-            Trial number to get the analogsignals from, e.g. choose
-            0 for the first trial.
-
-        Returns
-        -------
-        list of analogsignals: neo.core.AnalogSignal
-        """
-        pass
-
-    @abstractmethod
     def get_analogsignals_from_trial_as_list(self, trial_number: int
                                    ) -> List[neo.core.AnalogSignal]:
         """
@@ -203,17 +185,18 @@ class TrialsFromBlock(Trials):
         return[len(trial.analogsignals) for trial in self.block.segments]
 
     def get_spiketrains_from_trial(self, trial_number: int
-                                   ) -> List[neo.core.spiketrainlist.SpikeTrainList]:
+                                   ) -> List[
+                                     neo.core.spiketrainlist.SpikeTrainList]:
         """Return a list of all spiketrains from a trial"""
         return self.block.segments[trial_number].spiketrains
 
-    def get_spiketrains_from_trial_as_list(self, trial_number: int =0
+    def get_spiketrains_from_trial_as_list(self, trial_number: int = 0
                                    ) -> List[neo.core.SpikeTrain]:
         """Return a list of all spiketrains from a trial"""
         return [spiketrain for spiketrain in
                 self.block.segments[trial_number].spiketrains]
 
-    def get_analogsignals_from_trial_as_list(self, trial_number: int =0
+    def get_analogsignals_from_trial_as_list(self, trial_number: int = 0
                                    ) -> List[neo.core.AnalogSignal]:
         """Return a list of all analogsignals from a trial"""
         return [analogsignal for analogsignal in
@@ -301,5 +284,6 @@ class TrialsFromLists(Trials):
     def get_analogsignals_from_trial_as_list(self, trial_number: int =0
                                    ) -> List[neo.core.AnalogSignal]:
         """Return a list of all analogsignals from a trial"""
-        return [analogsignal for analogsignal in self.list_of_trials[trial_number]
+        return [analogsignal for analogsignal in
+                self.list_of_trials[trial_number]
                 if isinstance(analogsignal, neo.core.AnalogSignal)]
