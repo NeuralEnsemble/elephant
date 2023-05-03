@@ -47,19 +47,19 @@ class Trials:
 
     @abstractmethod
     def n_spiketrains_trial_by_trial(self) -> List[int]:
-        """Get the number of spiketrains in each trial."""
+        """Get the number of spiketrains in each trial as a list."""
         pass
 
     @abstractmethod
     def n_analogsignals_trial_by_trial(self) -> List[int]:
-        """Get the number of analogsignals in each trial."""
+        """Get the number of analogsignals in each trial as a list."""
         pass
 
     @abstractmethod
-    def get_spiketrains_from_trial(self, trial_number: int
+    def get_spiketrains_from_trial_as_list(self, trial_number: int
                                    ) -> List[neo.core.SpikeTrain]:
         """
-        Get all spiketrains from a specific trial and return a list
+        Get all spiketrains from a specific trial and return a list.
 
         Parameters
         ----------
@@ -125,10 +125,11 @@ class TrialsFromLists(Trials):
         return [sum(map(lambda x: isinstance(x, neo.core.AnalogSignal), trial))
                 for trial in self.list_of_trials]
 
-    def get_spiketrains_from_trial(self, trial_number: int =0
+    def get_spiketrains_from_trial_as_list(self, trial_number: int =0
                                    ) -> List[neo.core.SpikeTrain]:
         """Return a list of all spiketrains from a trial"""
-        return self.list_of_trials[trial_number]
+        return [spiketrain for spiketrain in self.list_of_trials[trial_number]
+                if isinstance(spiketrain, neo.core.SpikeTrain)]
 
 
 class TrialsFromBlock(Trials):
@@ -174,7 +175,8 @@ class TrialsFromBlock(Trials):
         """Get the number of AnalogSignals instances in each trial."""
         return[len(trial.analogsignals) for trial in self.block.segments]
 
-    def get_spiketrains_from_trial(self, trial_number: int =0
+    def get_spiketrains_from_trial_as_list(self, trial_number: int =0
                                    ) -> List[neo.core.SpikeTrain]:
         """Return a list of all spiketrains from a trial"""
-        return self.block.segments[trial_number].spiketrains
+        return [spiketrain for spiketrain in
+                self.block.segments[trial_number].spiketrains]
