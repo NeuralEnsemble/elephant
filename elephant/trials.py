@@ -2,7 +2,7 @@
 This module defines :class:`Trials`, the abstract base class
 used by all :module:`elephant.trials` classes.
 
-:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2023 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -45,12 +45,12 @@ class Trials:
         pass
 
     @abstractmethod
-    def n_spiketrains(self) -> List[int]:
+    def n_spiketrains_trial_by_trial(self) -> List[int]:
         """Get the number of spiketrains in each trial."""
         pass
 
     @abstractmethod
-    def n_analogsignals(self) -> List[int]:
+    def n_analogsignals_trial_by_trial(self) -> List[int]:
         """Get the number of analogsignals in each trial."""
         pass
 
@@ -107,13 +107,13 @@ class TrialsFromLists(Trials):
         return len(self.list_of_trials)
 
     @property
-    def n_spiketrains(self) -> List[int]:
+    def n_spiketrains_trial_by_trial(self) -> List[int]:
         """Get the number of spiketrains in each trial."""
         return[sum(map(lambda x: isinstance(x,  neo.core.SpikeTrain), trial))
                for trial in self.list_of_trials]
 
     @property
-    def n_analogsignals(self) -> List[int]:
+    def n_analogsignals_trial_by_trial(self) -> List[int]:
         """Get the number of analogsignals in each trial."""
         return [sum(map(lambda x: isinstance(x, neo.core.AnalogSignal), trial))
                 for trial in self.list_of_trials]
@@ -158,12 +158,12 @@ class TrialsFromBlock(Trials):
         return len(self.block.segments)
 
     @property
-    def n_spiketrains(self) -> List[int]:
+    def n_spiketrains_trial_by_trial(self) -> List[int]:
         """Get the number of SpikeTrain instances in each trial."""
         return[len(trial.spiketrains) for trial in self.block.segments]
 
     @property
-    def n_analogsignals(self) -> List[int]:
+    def n_analogsignals_trial_by_trial(self) -> List[int]:
         """Get the number of AnalogSignals instances in each trial."""
         return[len(trial.analogsignals) for trial in self.block.segments]
 
