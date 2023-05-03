@@ -73,6 +73,24 @@ class Trials:
         """
         pass
 
+    @abstractmethod
+    def get_analogsignals_from_trial_as_list(self, trial_number: int
+                                   ) -> List[neo.core.AnalogSignal]:
+        """
+        Get all analogsignals from a specific trial and return a list.
+
+        Parameters
+        ----------
+        trial_number : int
+            Trial number to get the spiketrains from, e.g. choose
+            0 for the first trial.
+
+        Returns
+        -------
+        list of analogsignals: List[neo.core.AnalogSignal]
+        """
+        pass
+
 
 class TrialsFromLists(Trials):
     """
@@ -131,6 +149,12 @@ class TrialsFromLists(Trials):
         return [spiketrain for spiketrain in self.list_of_trials[trial_number]
                 if isinstance(spiketrain, neo.core.SpikeTrain)]
 
+    def get_analogsignals_from_trial_as_list(self, trial_number: int =0
+                                   ) -> List[neo.core.AnalogSignal]:
+        """Return a list of all analogsignals from a trial"""
+        return [analogsignal for analogsignal in self.list_of_trials[trial_number]
+                if isinstance(analogsignal, neo.core.AnalogSignal)]
+
 
 class TrialsFromBlock(Trials):
     """
@@ -180,3 +204,9 @@ class TrialsFromBlock(Trials):
         """Return a list of all spiketrains from a trial"""
         return [spiketrain for spiketrain in
                 self.block.segments[trial_number].spiketrains]
+
+    def get_analogsignals_from_trial_as_list(self, trial_number: int =0
+                                   ) -> List[neo.core.AnalogSignal]:
+        """Return a list of all analogsignals from a trial"""
+        return [analogsignal for analogsignal in
+                self.block.segments[trial_number].analogsignals]
