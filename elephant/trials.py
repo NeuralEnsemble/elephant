@@ -72,6 +72,24 @@ class Trials:
         pass
 
     @abstractmethod
+    def get_spiketrains_from_trial(self, trial_number: int
+                            ) -> List[neo.core.spiketrainlist.SpikeTrainList]:
+        """
+        Get all spiketrains from a specific trial and return a list.
+
+        Parameters
+        ----------
+        trial_number : int
+            Trial number to get the spiketrains from, e.g. choose
+            0 for the first trial.
+
+        Returns
+        -------
+        list of spiketrains: neo.core.SpikeTrainList
+        """
+        pass
+
+    @abstractmethod
     def get_spiketrains_from_trial_as_list(self, trial_number: int
                                    ) -> List[neo.core.SpikeTrain]:
         """
@@ -90,6 +108,24 @@ class Trials:
         pass
 
     @abstractmethod
+    def get_analogsignals_from_trial(self, trial_number: int
+                                   ) -> neo.core.AnalogSignal:
+        """
+        Get all analogsignals from a specific trial and return an analogsignal.
+
+        Parameters
+        ----------
+        trial_number : int
+            Trial number to get the analogsignals from, e.g. choose
+            0 for the first trial.
+
+        Returns
+        -------
+        list of analogsignals: neo.core.AnalogSignal
+        """
+        pass
+
+    @abstractmethod
     def get_analogsignals_from_trial_as_list(self, trial_number: int
                                    ) -> List[neo.core.AnalogSignal]:
         """
@@ -98,7 +134,7 @@ class Trials:
         Parameters
         ----------
         trial_number : int
-            Trial number to get the spiketrains from, e.g. choose
+            Trial number to get the analogsignals from, e.g. choose
             0 for the first trial.
 
         Returns
@@ -146,7 +182,8 @@ class TrialsFromBlock(Trials):
             block.segments.append(self.get_trial(trial_number))
         return block
 
-    def get_trials_as_list(self, trial_numbers: List[int]) -> List[neo.core.Segment]:
+    def get_trials_as_list(self,
+                           trial_numbers: List[int]) -> List[neo.core.Segment]:
         """Get a list of segments by trial numbers"""
         return [self.get_trial(trial_number) for trial_number in trial_numbers]
 
@@ -164,6 +201,11 @@ class TrialsFromBlock(Trials):
     def n_analogsignals_trial_by_trial(self) -> List[int]:
         """Get the number of AnalogSignals instances in each trial."""
         return[len(trial.analogsignals) for trial in self.block.segments]
+
+    def get_spiketrains_from_trial(self, trial_number: int
+                                   ) -> List[neo.core.spiketrainlist.SpikeTrainList]:
+        """Return a list of all spiketrains from a trial"""
+        return self.block.segments[trial_number].spiketrains
 
     def get_spiketrains_from_trial_as_list(self, trial_number: int =0
                                    ) -> List[neo.core.SpikeTrain]:
@@ -222,7 +264,8 @@ class TrialsFromLists(Trials):
             block.segments.append(self.get_trial(trial_number))
         return block
 
-    def get_trials_as_list(self, trial_numbers: List[int]) -> List[neo.core.Segment]:
+    def get_trials_as_list(self,
+                           trial_numbers: List[int]) -> List[neo.core.Segment]:
         """Get a list of segments by trial numbers"""
         return [self.get_trial(trial_number) for trial_number in trial_numbers]
 
@@ -242,6 +285,12 @@ class TrialsFromLists(Trials):
         """Get the number of analogsignals in each trial."""
         return [sum(map(lambda x: isinstance(x, neo.core.AnalogSignal), trial))
                 for trial in self.list_of_trials]
+
+    def get_spiketrains_from_trial(self, trial_number: int
+                                   ) -> List[
+                                    neo.core.spiketrainlist.SpikeTrainList]:
+        return neo.core.spiketrainlist.SpikeTrainList(
+            items=self.get_spiketrains_from_trial_as_list(trial_number))
 
     def get_spiketrains_from_trial_as_list(self, trial_number: int =0
                                    ) -> List[neo.core.SpikeTrain]:
