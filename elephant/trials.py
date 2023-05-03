@@ -9,6 +9,7 @@ used by all :module:`elephant.trials` classes.
 import neo.utils
 from abc import ABCMeta, abstractmethod
 from typing import List
+from neo.core import Segment
 
 class Trials:
     """
@@ -35,7 +36,7 @@ class Trials:
         self.description = description
 
     @abstractmethod
-    def __getitem__(self, trial_number: int):
+    def __getitem__(self, trial_number: int) -> neo.core.Segment:
         """Get a specific trial by number"""
         pass
 
@@ -97,9 +98,15 @@ class TrialsFromLists(Trials):
         self.list_of_trials = list_of_trials
         super().__init__(**kwargs)
 
-    def __getitem__(self, trial_number: int):
+    def __getitem__(self, trial_number: int) -> neo.core.Segment:
         """Get a specific trial by number"""
-        return self.list_of_trials[trial_number]
+        segment=Segment()
+        for element in self.list_of_trials[trial_number]:
+            if isinstance(element, neo.core.SpikeTrain):
+                segment.spiketrains.append(element)
+            if isinstance(element, neo.core.AnalogSignal):
+                segment.analogsignals.append(element)
+        return segment
 
     @property
     def n_trials(self) -> int:
@@ -149,7 +156,7 @@ class TrialsFromBlock(Trials):
         self.block = block
         super().__init__(**kwargs)
 
-    def __getitem__(self, trial_number) -> neo.core.segment:
+    def __getitem__(self, trial_number: int) -> neo.core.segment:
         return self.block.segments[trial_number]
 
     @property
