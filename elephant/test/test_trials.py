@@ -22,18 +22,19 @@ def _create_trials_block(n_trials: int = 0,
     block = neo.Block(name='test_block')
     for trial in range(n_trials):
         segment = neo.Segment(name=f'No. {trial}')
-        spiketrains = StationaryPoissonProcess(rate=50.*pq.Hz, t_start=0*pq.ms,
-                                               t_stop=1000*pq.ms
+        spiketrains = StationaryPoissonProcess(rate=50. * pq.Hz, t_start=0 * pq.ms,
+                                               t_stop=1000 * pq.ms
                                                ).generate_n_spiketrains(
-                                                n_spiketrains=n_spiketrains)
+            n_spiketrains=n_spiketrains)
         analogsignals = [AnalogSignal(signal=[.01, 3.3, 9.3], units='uV',
-                         sampling_rate=1*pq.Hz)] * n_analogsignals
+                                      sampling_rate=1 * pq.Hz)] * n_analogsignals
         for spiketrain in spiketrains:
             segment.spiketrains.append(spiketrain)
         for analogsignal in analogsignals:
             segment.analogsignals.append(analogsignal)
         block.segments.append(segment)
     return block
+
 
 #########
 # Tests #
@@ -42,6 +43,7 @@ def _create_trials_block(n_trials: int = 0,
 
 class TrialsFromBlockTestCase(unittest.TestCase):
     """Tests for elephant.trials.TrialsFromBlock class"""
+
     @classmethod
     def setUpClass(cls) -> None:
         """
@@ -64,11 +66,39 @@ class TrialsFromBlockTestCase(unittest.TestCase):
         """
         self.assertEqual(self.trial_object.description, 'trials are segments')
 
-    def test_trials_from_block_get_trial(self) -> None:
+    def test_trials_from_block_get_item(self) -> None:
         """
         Test get a trial from the trials.
         """
         self.assertIsInstance(self.trial_object[0], neo.core.Segment)
+
+    def test_trials_from_block_get_trial(self) -> None:
+        """
+        Test get a trial from the trials.
+        """
+        self.assertIsInstance(self.trial_object.get_trial(0),
+                              neo.core.Segment)
+        self.assertIsInstance(self.trial_object.get_trial(0).spiketrains[0],
+                              neo.core.SpikeTrain)
+        self.assertIsInstance(self.trial_object.get_trial(0).analogsignals[0],
+                              neo.core.AnalogSignal)
+
+    def test_trials_from_block_get_trials(self) -> None:
+        """
+        Test get a block from list of trials.
+        """
+        block = self.trial_object.get_trials([0,3,5])
+        self.assertIsInstance(block, neo.core.Block)
+        self.assertEqual(len(block.segments), 3)
+
+    def test_trials_from_block_get_trials_as_list(self) -> None:
+        """
+        Test get a list of segments from list of trials.
+        """
+        list_of_trials = self.trial_object.get_trials_as_list([0,3,5])
+        self.assertIsInstance(list_of_trials, list)
+        self.assertIsInstance(list_of_trials[0], neo.core.Segment)
+        self.assertEqual(len(list_of_trials), 3)
 
     def test_trials_from_block_n_trials(self) -> None:
         """
@@ -81,14 +111,14 @@ class TrialsFromBlockTestCase(unittest.TestCase):
         Test get number of spiketrains per trial.
         """
         self.assertEqual(self.trial_object.n_spiketrains_trial_by_trial,
-                    [len(trial.spiketrains) for trial in self.block.segments])
+                         [len(trial.spiketrains) for trial in self.block.segments])
 
     def test_trials_from_block_n_analogsignals_trial_by_trial(self) -> None:
         """
         Test get number of analogsignals per trial.
         """
         self.assertEqual(self.trial_object.n_analogsignals_trial_by_trial,
-                    [len(trial.analogsignals) for trial in self.block.segments])
+                         [len(trial.analogsignals) for trial in self.block.segments])
 
     def test_trials_from_block_get_spiketrains_from_trial_as_list(self) -> None:
         """
@@ -111,6 +141,7 @@ class TrialsFromBlockTestCase(unittest.TestCase):
 
 class TrialsFromListTestCase(unittest.TestCase):
     """Tests for elephant.trials.TrialsFromList class"""
+
     @classmethod
     def setUpClass(cls) -> None:
         """
@@ -143,7 +174,7 @@ class TrialsFromListTestCase(unittest.TestCase):
         """
         self.assertEqual(self.trial_object.description, 'trial is a list')
 
-    def test_trials_from_list_get_trial(self) -> None:
+    def test_trials_from_list_get_item(self) -> None:
         """
         Test get a trial from the trials.
         """
@@ -153,6 +184,35 @@ class TrialsFromListTestCase(unittest.TestCase):
                               neo.core.SpikeTrain)
         self.assertIsInstance(self.trial_object[0].analogsignals[0],
                               neo.core.AnalogSignal)
+
+    def test_trials_from_list_get_trial(self) -> None:
+        """
+        Test get a trial from the trials.
+        """
+        self.assertIsInstance(self.trial_object.get_trial(0),
+                              neo.core.Segment)
+        self.assertIsInstance(self.trial_object.get_trial(0).spiketrains[0],
+                              neo.core.SpikeTrain)
+        self.assertIsInstance(self.trial_object.get_trial(0).analogsignals[0],
+                              neo.core.AnalogSignal)
+
+    def test_trials_from_list_get_trials(self) -> None:
+        """
+        Test get a block from list of trials.
+        """
+        block = self.trial_object.get_trials([0,3,5])
+        self.assertIsInstance(block, neo.core.Block)
+        self.assertEqual(len(block.segments), 3)
+
+    def test_trials_from_list_get_trials_as_list(self) -> None:
+        """
+        Test get a list of segments from list of trials.
+        """
+        list_of_trials = self.trial_object.get_trials_as_list([0,3,5])
+        self.assertIsInstance(list_of_trials, list)
+        self.assertIsInstance(list_of_trials[0], neo.core.Segment)
+        self.assertEqual(len(list_of_trials), 3)
+
 
     def test_trials_from_list_n_trials(self) -> None:
         """
@@ -176,7 +236,6 @@ class TrialsFromListTestCase(unittest.TestCase):
                          [sum(map(lambda x: isinstance(x, neo.core.AnalogSignal),
                                   trial)) for trial in self.trial_list])
 
-
     def test_trials_from_list_get_spiketrains_from_trial_as_list(self) -> None:
         """
         Test get spiketrains from trial as list
@@ -194,6 +253,7 @@ class TrialsFromListTestCase(unittest.TestCase):
                               list)
         self.assertIsInstance(self.trial_object.get_analogsignals_from_trial_as_list(0)[0],
                               neo.core.AnalogSignal)
+
 
 if __name__ == '__main__':
     unittest.main()

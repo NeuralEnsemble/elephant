@@ -9,7 +9,7 @@ used by all :module:`elephant.trials` classes.
 import neo.utils
 from abc import ABCMeta, abstractmethod
 from typing import List
-from neo.core import Segment
+from neo.core import Segment, Block
 
 class Trials:
     """
@@ -56,6 +56,22 @@ class Trials:
         pass
 
     @abstractmethod
+    def get_trial(self, trial_number: int) -> neo.core.Segment:
+        """Get trial as segment"""
+        pass
+
+    @abstractmethod
+    def get_trials(self, trial_numbers: List[int]) -> neo.core.Block:
+        """Get trials as block"""
+        pass
+
+    @abstractmethod
+    def get_trials_as_list(self,
+                           trial_numbers: List[int]) -> List[neo.core.Segment]:
+        """Get trials as list of segments"""
+        pass
+
+    @abstractmethod
     def get_spiketrains_from_trial_as_list(self, trial_number: int
                                    ) -> List[neo.core.SpikeTrain]:
         """
@@ -91,6 +107,75 @@ class Trials:
         """
         pass
 
+class TrialsFromBlock(Trials):
+    """
+    This class implements support for handling trials from neo.Block
+
+    Parameters
+    ----------
+    block : neo.Block
+        An instance of neo.Block containing the trials.
+        The structure is assumed to follow the neo representation:
+        A block contains multiple segments which are considered to contain the
+        single trials.
+
+    Properties
+    ----------
+    See Trials Class
+
+    """
+    def __init__(self, block: neo.core.block, **kwargs):
+        """
+        Constructor
+        (actual documentation is in class documentation, see above!)
+        """
+        self.block = block
+        super().__init__(**kwargs)
+
+    def __getitem__(self, trial_number: int) -> neo.core.segment:
+        return self.block.segments[trial_number]
+
+    def get_trial(self, trial_number: int) -> neo.core.Segment:
+        """Get a specific trial by number as a segment"""
+        return self.__getitem__(trial_number)
+
+    def get_trials(self, trial_numbers: List[int]) -> neo.core.Block:
+        """Get a block of trials by trial numbers"""
+        block=Block()
+        for trial_number in trial_numbers:
+            block.segments.append(self.get_trial(trial_number))
+        return block
+
+    def get_trials_as_list(self, trial_numbers: List[int]) -> List[neo.core.Segment]:
+        """Get a list of segments by trial numbers"""
+        return [self.get_trial(trial_number) for trial_number in trial_numbers]
+
+    @property
+    def n_trials(self) -> int:
+        """Get the number of trials."""
+        return len(self.block.segments)
+
+    @property
+    def n_spiketrains_trial_by_trial(self) -> List[int]:
+        """Get the number of SpikeTrain instances in each trial."""
+        return[len(trial.spiketrains) for trial in self.block.segments]
+
+    @property
+    def n_analogsignals_trial_by_trial(self) -> List[int]:
+        """Get the number of AnalogSignals instances in each trial."""
+        return[len(trial.analogsignals) for trial in self.block.segments]
+
+    def get_spiketrains_from_trial_as_list(self, trial_number: int =0
+                                   ) -> List[neo.core.SpikeTrain]:
+        """Return a list of all spiketrains from a trial"""
+        return [spiketrain for spiketrain in
+                self.block.segments[trial_number].spiketrains]
+
+    def get_analogsignals_from_trial_as_list(self, trial_number: int =0
+                                   ) -> List[neo.core.AnalogSignal]:
+        """Return a list of all analogsignals from a trial"""
+        return [analogsignal for analogsignal in
+                self.block.segments[trial_number].analogsignals]
 
 class TrialsFromLists(Trials):
     """
@@ -126,6 +211,21 @@ class TrialsFromLists(Trials):
                 segment.analogsignals.append(element)
         return segment
 
+    def get_trial(self, trial_number: int) -> neo.core.Segment:
+        """Get a specific trial by number as a segment"""
+        return self.__getitem__(trial_number)
+
+    def get_trials(self, trial_numbers: List[int]) -> neo.core.Block:
+        """Get a block of trials by trial numbers"""
+        block=Block()
+        for trial_number in trial_numbers:
+            block.segments.append(self.get_trial(trial_number))
+        return block
+
+    def get_trials_as_list(self, trial_numbers: List[int]) -> List[neo.core.Segment]:
+        """Get a list of segments by trial numbers"""
+        return [self.get_trial(trial_number) for trial_number in trial_numbers]
+
     @property
     def n_trials(self) -> int:
         """Get the number of trials."""
@@ -154,59 +254,3 @@ class TrialsFromLists(Trials):
         """Return a list of all analogsignals from a trial"""
         return [analogsignal for analogsignal in self.list_of_trials[trial_number]
                 if isinstance(analogsignal, neo.core.AnalogSignal)]
-
-
-class TrialsFromBlock(Trials):
-    """
-    This class implements support for handling trials from neo.Block
-
-    Parameters
-    ----------
-    block : neo.Block
-        An instance of neo.Block containing the trials.
-        The structure is assumed to follow the neo representation:
-        A block contains multiple segments which are considered to contain the
-        single trials.
-
-    Properties
-    ----------
-    See Trials Class
-
-    """
-    def __init__(self, block: neo.core.block, **kwargs):
-        """
-        Constructor
-        (actual documentation is in class documentation, see above!)
-        """
-        self.block = block
-        super().__init__(**kwargs)
-
-    def __getitem__(self, trial_number: int) -> neo.core.segment:
-        return self.block.segments[trial_number]
-
-    @property
-    def n_trials(self) -> int:
-        """Get the number of trials."""
-        return len(self.block.segments)
-
-    @property
-    def n_spiketrains_trial_by_trial(self) -> List[int]:
-        """Get the number of SpikeTrain instances in each trial."""
-        return[len(trial.spiketrains) for trial in self.block.segments]
-
-    @property
-    def n_analogsignals_trial_by_trial(self) -> List[int]:
-        """Get the number of AnalogSignals instances in each trial."""
-        return[len(trial.analogsignals) for trial in self.block.segments]
-
-    def get_spiketrains_from_trial_as_list(self, trial_number: int =0
-                                   ) -> List[neo.core.SpikeTrain]:
-        """Return a list of all spiketrains from a trial"""
-        return [spiketrain for spiketrain in
-                self.block.segments[trial_number].spiketrains]
-
-    def get_analogsignals_from_trial_as_list(self, trial_number: int =0
-                                   ) -> List[neo.core.AnalogSignal]:
-        """Return a list of all analogsignals from a trial"""
-        return [analogsignal for analogsignal in
-                self.block.segments[trial_number].analogsignals]
