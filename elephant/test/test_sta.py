@@ -2,7 +2,7 @@
 """
 Tests for the function sta module
 
-:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2023 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -10,9 +10,7 @@ import unittest
 import math
 import numpy as np
 import scipy
-from numpy.testing import assert_array_equal
-from numpy.testing.utils import assert_array_almost_equal
-import neo
+from numpy.testing import assert_array_equal, assert_array_almost_equal
 from neo import AnalogSignal, SpikeTrain
 from elephant.conversion import BinnedSpikeTrain
 import quantities as pq

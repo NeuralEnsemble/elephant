@@ -2,31 +2,31 @@
 """
 Elephant is a package for the analysis of neurophysiology data, based on Neo.
 
-:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2023 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
-from . import (cell_assembly_detection,
-               change_point_detection,
-               conversion,
-               cubic,
-               current_source_density,
-               gpfa,
-               kernels,
-               neo_tools,
-               phase_analysis,
-               signal_processing,
-               spade,
-               spectral,
-               spike_train_correlation,
-               spike_train_dissimilarity,
+from . import (statistics,
                spike_train_generation,
-               spike_train_surrogates,
-               sta,
-               statistics,
-               trials,
+               spike_train_synchrony,
+               spike_train_correlation,
                unitary_event_analysis,
-               waveform_features)
+               cubic,
+               spectral,
+               kernels,
+               spike_train_dissimilarity,
+               spike_train_surrogates,
+               signal_processing,
+               current_source_density,
+               change_point_detection,
+               phase_analysis,
+               sta,
+               conversion,
+               neo_tools,
+               cell_assembly_detection,
+               spade,
+               waveform_features,
+               gpfa)
 
 # not included modules on purpose:
 #   parallel: avoid warns when elephant is imported

@@ -2,6 +2,91 @@
 Release Notes
 =============
 
+Elephant 0.12.0 release notes
+=============================
+
+New functionality and features
+------------------------------
+* ASSET: map pairwise distances matrix to disk while computing the cluster matrix to reduce memory usage. #498
+* multitaper cross spectrum: calculate the cross spectrum and the coherence as well as phase lag with the multitaper method. #525
+* weighted_phase_lag_index (WLPI), a measure of phase-synchronization based on the imaginary part of the complex-valued cross-spectrum of two signals. #411
+
+Bug fixes
+---------
+* fixed and included additional unit tests for the `multitaper_psd`. #529
+* replaced deprecated numpy types with builtins to ensure compatibility with numpy >=1.24.0. #535
+
+Documentation
+-------------
+* fixed math rendering with sphinx 5.3.0. #527
+* added documentation for `multitaper_psd`.  #531
+* updated the elephant logo to the current version. #534
+* removed version cap for sphinx extension sphinxcontrib-bibtex (previously set to ==1.0.0): citation style changed to name - year.  #523
+* fixed various formatting issues in docstrings, e.g. indentations, missing quotation marks or missing citation references. #478
+* fixed documentation code examples and test code by introducing a doctest runner to CI. #503
+* changed heading "Spike-triggered LFP phase" to "Phase Analysis", remove wrong reference to tutorial from function reference. #540
+* add launch on ebrains button for elephant tutorials. #538
+
+Validations
+-----------
+* WPLI  ‘ground-truth’-testing with: MATLABs package FieldTrip and its function ft_connectivity_wpli() and its wrapper ft_connectivity(); as well as with python package MNE and its function spectral_connectivity(). #411
+
+Other changes
+-------------
+* Fix/CI: update deprecated actions and commands for github actions workflow. #522
+* added codemeta.json file for automatic registration of elephant releases to ebrains knowledge graph. #541
+
+Selected dependency changes
+---------------------------
+* Python >= 3.8. #536
+* numpy > 1.20. #536
+* quantities > 0.14.0. #542
+
+
+Elephant 0.11.2 release notes
+=============================
+
+New functionality and features
+------------------------------
+*  new installation option to not compile c-extensions, e.g. `pip install elephant --install-option='--no-compile'`  (#494)
+
+Bug fixes
+---------
+* added CUDA/OpenCL sources for ASSET GPU acceleration to `manifest.in`, they are now included in the distribution package (#483)
+* fixed bug in `elephant.kernels` when passing a multi-dimensional kernel sigma, handling was added for 1-dimensional case (#499)
+* fixed bug in `unitary_event_analysis` that broke elephants build on arm based systems (#500)
+* fixed bug in `elephant/spade_src/include/FPGrowth.h` when using current versions of GCC for compilation (#508)
+* fixed bug in `welch_psd`, `welch_cohere`, replace 'hanning' with 'hann', to ensure compatibility with scipy=>1.9.0 (#511)
+
+Documentation
+-------------
+* fixed bug in CI documentation build (#492)
+* reformatted code examples to be used as doctests in the future (#502)
+* added specification and example for entries in the bibtex file to the "Contributing to Elephant" section (#504)
+* updated documentation on running unit tests from `nosetest` to `pytest` (#505)
+* fixed broken citation in `change_point_detection`, updated entry in bibtex file, added DOI (#513)
+
+Optimizations
+-------------
+* Include `spike_train_synchrony` in the `init` of elephant, now `spike_train_synchrony` module is imported automatically (#518)
+
+Validations
+-----------
+* added two validation tests for Victor-Purpura-distance to validate against original Matlab implementation in spike train dissimilarity (#482)
+
+Other changes
+-------------
+* re-added report to coveralls.io to github action CI (#480)
+* added OpenSSF (Open Source Security Foundations) best practices badge  (#495)
+* improved documentation by adding links to documentation, bug tracker and source code on pypi (#496) (see: https://pypi.org/project/elephant/)
+* CI workflows for macOS updated from version 10 to macOS 11 and 12 (#509)
+
+Selected dependency changes
+---------------------------
+* removed scipy version cap on GitHub actions runners "docs" and "test-conda", by updating to `libstdcxx-ng 12.1.0` from conda-forge (#490)
+* `nixio` added to test requirements, now nix files can be used in unit tests (#515)
+
+
 Elephant 0.11.1 release notes
 =============================
 

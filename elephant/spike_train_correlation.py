@@ -11,7 +11,7 @@ This modules provides functions to calculate correlations between spike trains.
     spike_time_tiling_coefficient
     spike_train_timescale
 
-:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2023 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 from __future__ import division, print_function, unicode_literals
@@ -329,7 +329,7 @@ def covariance(binned_spiketrain, binary=False, fast=True):
         When using `fast=True` and `binned_spiketrain` shape is large.
 
     Warns
-    --------
+    -----
     UserWarning
         If at least one row in `binned_spiketrain` is empty (has no spikes).
 
@@ -351,17 +351,20 @@ def covariance(binned_spiketrain, binary=False, fast=True):
     >>> import neo
     >>> import numpy as np
     >>> import quantities as pq
-    >>> from elephant.spike_train_generation import homogeneous_poisson_process
+    >>> from elephant.spike_train_generation import StationaryPoissonProcess
     >>> from elephant.conversion import BinnedSpikeTrain
     >>> from elephant.spike_train_correlation import covariance
 
     >>> np.random.seed(1)
-    >>> st1 = homogeneous_poisson_process(rate=10*pq.Hz, t_stop=10.0*pq.s)
-    >>> st2 = homogeneous_poisson_process(rate=10*pq.Hz, t_stop=10.0*pq.s)
+    >>> st1 = StationaryPoissonProcess(
+    ...                  rate=10*pq.Hz, t_stop=10.0*pq.s).generate_spiketrain()
+    >>> st2 = StationaryPoissonProcess(
+    ...                  rate=10*pq.Hz, t_stop=10.0*pq.s).generate_spiketrain()
     >>> cov_matrix = covariance(BinnedSpikeTrain([st1, st2], bin_size=5*pq.ms))
-    >>> cov_matrix
+    >>> cov_matrix # doctest: +SKIP
     array([[ 0.05432316, -0.00152276],
        [-0.00152276,  0.04917234]])
+
 
     """
     if binary:
@@ -435,7 +438,7 @@ def correlation_coefficient(binned_spiketrain, binary=False, fast=True):
         When using `fast=True` and `binned_spiketrain` shape is large.
 
     Warns
-    --------
+    -----
     UserWarning
         If at least one row in `binned_spiketrain` is empty (has no spikes).
 
@@ -457,18 +460,21 @@ def correlation_coefficient(binned_spiketrain, binary=False, fast=True):
     >>> import neo
     >>> import numpy as np
     >>> import quantities as pq
-    >>> from elephant.spike_train_generation import homogeneous_poisson_process
+    >>> from elephant.spike_train_generation import StationaryPoissonProcess
     >>> from elephant.conversion import BinnedSpikeTrain
     >>> from elephant.spike_train_correlation import correlation_coefficient
 
     >>> np.random.seed(1)
-    >>> st1 = homogeneous_poisson_process(rate=10*pq.Hz, t_stop=10.0*pq.s)
-    >>> st2 = homogeneous_poisson_process(rate=10*pq.Hz, t_stop=10.0*pq.s)
+    >>> st1 = StationaryPoissonProcess(
+    ...                  rate=10*pq.Hz, t_stop=10.0*pq.s).generate_spiketrain()
+    >>> st2 = StationaryPoissonProcess(
+    ...                  rate=10*pq.Hz, t_stop=10.0*pq.s).generate_spiketrain()
     >>> corrcoef = correlation_coefficient(BinnedSpikeTrain([st1, st2],
     ...     bin_size=5*pq.ms))
-    >>> corrcoef
+    >>> corrcoef # doctest: +SKIP
     array([[ 1.        , -0.02946313],
            [-0.02946313,  1.        ]])
+
     """
     if binary:
         binned_spiketrain = binned_spiketrain.binarize()
@@ -556,6 +562,7 @@ def cross_correlation_histogram(
     """
     Computes the cross-correlation histogram (CCH) between two binned spike
     trains `binned_spiketrain_i` and `binned_spiketrain_j`.
+    :cite:`correlation-Eggermont2010_77`
 
     Visualization of this function is covered in Viziphant:
     :func:`viziphant.spike_train_correlation.plot_cross_correlation_histogram`.
@@ -568,18 +575,18 @@ def cross_correlation_histogram(
         spike trains can have any `t_start` and `t_stop`.
     window : {'valid', 'full'} or list of int, optional
         ‘full’: This returns the cross-correlation at each point of overlap,
-                with an output shape of (N+M-1,). At the end-points of the
-                cross-correlogram, the signals do not overlap completely, and
-                boundary effects may be seen.
+              with an output shape of (N+M-1,). At the end-points of the
+              cross-correlogram, the signals do not overlap completely, and
+              boundary effects may be seen.
         ‘valid’: Mode valid returns output of length max(M, N) - min(M, N) + 1.
-                 The cross-correlation product is only given for points where
-                 the signals overlap completely.
-                 Values outside the signal boundary have no effect.
+              The cross-correlation product is only given for points where
+              the signals overlap completely.
+              Values outside the signal boundary have no effect.
         List of integers (min_lag, max_lag):
               The entries of window are two integers representing the left and
               right extremes (expressed as number of bins) where the
               cross-correlation is computed.
-        Default: 'full'
+    Default: 'full'
     border_correction : bool, optional
         whether to correct for the border effect. If True, the value of the
         CCH at bin :math:`b` (for :math:`b=-H,-H+1, ...,H`, where :math:`H` is
@@ -600,10 +607,12 @@ def cross_correlation_histogram(
         smoothing window. The smoothing window cannot be larger than the
         maximum lag of the CCH. The kernel is normalized to unit area before
         being applied to the resulting CCH. Popular choices for the kernel are
+
           * normalized boxcar kernel: `numpy.ones(N)`
           * hamming: `numpy.hamming(N)`
           * hanning: `numpy.hanning(N)`
           * bartlett: `numpy.bartlett(N)`
+
         If None, the CCH is not smoothed.
         Default: None
     method : {'speed', 'memory'}, optional
@@ -665,31 +674,32 @@ def cross_correlation_histogram(
     >>> import quantities as pq
     >>> import numpy as np
     >>> from elephant.conversion import BinnedSpikeTrain
-    >>> from elephant.spike_train_generation import homogeneous_poisson_process
-    >>> from elephant.spike_train_correlation import \
-    ... cross_correlation_histogram
+    >>> from elephant.spike_train_generation import StationaryPoissonProcess
+    >>> from elephant.spike_train_correlation import cross_correlation_histogram # noqa
 
     >>> np.random.seed(1)
     >>> binned_spiketrain_i = BinnedSpikeTrain(
-    ...        homogeneous_poisson_process(
-    ...            10. * pq.Hz, t_start=0 * pq.ms, t_stop=5000 * pq.ms),
+    ...        StationaryPoissonProcess(
+    ...            10. * pq.Hz, t_start=0 * pq.ms, t_stop=5000 * pq.ms).generate_spiketrain(),
     ...        bin_size=5. * pq.ms)
     >>> binned_spiketrain_j = BinnedSpikeTrain(
-    ...        homogeneous_poisson_process(
-    ...            10. * pq.Hz, t_start=0 * pq.ms, t_stop=5000 * pq.ms),
+    ...        StationaryPoissonProcess(
+    ...            10. * pq.Hz, t_start=0 * pq.ms, t_stop=5000 * pq.ms).generate_spiketrain(),
     ...        bin_size=5. * pq.ms)
 
     >>> cc_hist, lags = cross_correlation_histogram(
     ...        binned_spiketrain_i, binned_spiketrain_j, window=[-10, 10],
     ...        border_correction=False,
     ...        binary=False, kernel=None)
-    >>> print(cc_hist.flatten())
+    >>> print(cc_hist.flatten()) # doctest: +SKIP
     [ 5.  3.  3.  2.  4.  0.  1.  5.  3.  4.  2.  2.  2.  5.
       1.  2.  4.  2. -0.  3.  3.] dimensionless
-    >>> lags
+
+    >>> lags # doctest: +SKIP
     array([-10,  -9,  -8,  -7,  -6,  -5,  -4,  -3,  -2,  -1,
          0,   1,   2,   3,   4,   5,   6,   7,   8,   9,
         10], dtype=int32)
+
 
     """
 
@@ -871,8 +881,7 @@ def spike_time_tiling_coefficient(spiketrain_i, spiketrain_j, dt=0.005 * pq.s):
     --------
     >>> import neo
     >>> import quantities as pq
-    >>> from elephant.spike_train_correlation import \
-    ...    spike_time_tiling_coefficient
+    >>> from elephant.spike_train_correlation import spike_time_tiling_coefficient  # noqa
 
     >>> spiketrain1 = neo.SpikeTrain([1.3, 7.56, 15.87, 28.23, 30.9, 34.2,
     ...     38.2, 43.2], units='ms', t_stop=50)
