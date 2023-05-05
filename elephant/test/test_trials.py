@@ -147,6 +147,30 @@ class TrialsFromBlockTestCase(unittest.TestCase):
         self.assertIsInstance(self.trial_object.get_analogsignals_from_trial_as_list(0)[0],
                               neo.core.AnalogSignal)
 
+    def test_trials_from_block_set_common_t_start(self) -> None:
+        """
+        Test set common t_start for trials
+        """
+        self.trial_object.set_common_trial_start(1*pq.ms)
+        self.assertEqual(self.trial_object.block.segments[0].spiketrains[0].t_start,
+                         1*pq.ms)
+        self.trial_object.set_common_trial_start(5*pq.ms)
+        self.assertEqual(self.trial_object.block.segments[0].spiketrains[0].t_start,
+                         5*pq.ms)
+        self.assertRaises(TypeError, self.trial_object.set_common_trial_start, 1*pq.m)
+
+    def test_trials_from_block_set_common_t_stop(self) -> None:
+        """
+        Test set common t_stop for trials
+        """
+        self.trial_object.set_common_trial_stop(1*pq.ms)
+        self.assertEqual(self.trial_object.block.segments[0].spiketrains[0].t_stop,
+                         1*pq.ms)
+        self.trial_object.set_common_trial_stop(5*pq.ms)
+        self.assertEqual(self.trial_object.block.segments[0].spiketrains[0].t_stop,
+                         5*pq.ms)
+        self.assertRaises(TypeError, self.trial_object.set_common_trial_stop, 1*pq.m)
+
 
 class TrialsFromListTestCase(unittest.TestCase):
     """Tests for elephant.trials.TrialsFromList class"""
@@ -272,6 +296,29 @@ class TrialsFromListTestCase(unittest.TestCase):
         self.assertIsInstance(self.trial_object.get_analogsignals_from_trial_as_list(0)[0],
                               neo.core.AnalogSignal)
 
+    def test_trials_from_block_set_common_t_start(self) -> None:
+        """
+        Test set common t_start for trials
+        """
+        self.trial_object.set_common_trial_start(1*pq.ms)
+        self.assertEqual(self.trial_object.list_of_trials[0][0].t_start,
+                         1*pq.ms)
+        self.trial_object.set_common_trial_start(5*pq.ms)
+        self.assertEqual(self.trial_object.list_of_trials[0][0].t_start,
+                         5*pq.ms)
+        self.assertRaises(TypeError, self.trial_object.set_common_trial_start, 1*pq.m)
+
+    def test_trials_from_block_set_common_t_stop(self) -> None:
+        """
+        Test set common t_stop for trials
+        """
+        self.trial_object.set_common_trial_stop(1*pq.ms)
+        self.assertEqual(self.trial_object.list_of_trials[0][0].t_stop,
+                         1*pq.ms)
+        self.trial_object.set_common_trial_stop(5*pq.ms)
+        self.assertEqual(self.trial_object.list_of_trials[0][0].t_stop,
+                         5*pq.ms)
+        self.assertRaises(TypeError, self.trial_object.set_common_trial_stop, 1*pq.m)
 
 if __name__ == '__main__':
     unittest.main()
