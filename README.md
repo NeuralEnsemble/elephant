@@ -1,6 +1,5 @@
 # Elephant - Electrophysiology Analysis Toolkit
 
-[![Build Status](https://travis-ci.org/NeuralEnsemble/elephant.svg?branch=master)](https://travis-ci.org/NeuralEnsemble/elephant)
 [![Coverage Status](https://coveralls.io/repos/github/NeuralEnsemble/elephant/badge.svg?branch=master)](https://coveralls.io/github/NeuralEnsemble/elephant?branch=master)
 [![Documentation Status](https://readthedocs.org/projects/elephant/badge/?version=latest)](https://elephant.readthedocs.io/en/latest/?badge=latest)
 [![![PyPi]](https://img.shields.io/pypi/v/elephant)](https://pypi.org/project/elephant/)
