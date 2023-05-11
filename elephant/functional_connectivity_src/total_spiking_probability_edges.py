@@ -102,7 +102,7 @@ def total_spiking_probability_edges(
     # Take maxima of absolute of delays to get estimation for connectivity
     connectivity_matrix_index = np.argmax(np.abs(tspe_matrix),axis=2,keepdims=True)
     connectivity_matrix = np.take_along_axis(tspe_matrix,connectivity_matrix_index,axis=2).squeeze(axis=2)
-    delay_matrix = connectivity_matrix_index
+    delay_matrix = connectivity_matrix_index.squeeze()
 
     return connectivity_matrix, delay_matrix
 
