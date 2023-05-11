@@ -9,7 +9,7 @@ from elephant.conversion import BinnedSpikeTrain
 from elephant.functional_connectivity_src.total_spiking_probability_edges import (
     generate_filter_pairs,
     normalized_cross_correlation,
-    tspe_filter_pair,
+    TspeFilterPair,
 )
 
 
@@ -18,7 +18,7 @@ def test_generate_filter_pairs():
     b = [1]
     c = [1]
     test_output = [
-        tspe_filter_pair(
+        TspeFilterPair(
             edge_filter=np.array([-1.0, 0.0, 2.0, 0.0, -1.0]),
             running_total_filter=np.array([1.0]),
             needed_padding=2,

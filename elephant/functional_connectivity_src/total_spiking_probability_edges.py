@@ -230,16 +230,16 @@ def generate_edge_filter(
         0,
     ]  # Default Value
 
-    filter = np.piecewise(i, conditions, values)
+    edge_filter = np.piecewise(i, conditions, values)
 
-    return filter
+    return edge_filter
 
 
 def generate_running_total_filter(observed_window_size: int) -> np.ndarray:
     return np.ones(observed_window_size)
 
 
-class tspe_filter_pair(NamedTuple):
+class TspeFilterPair(NamedTuple):
     edge_filter: np.ndarray
     running_total_filter: np.ndarray
     needed_padding: int
@@ -252,7 +252,7 @@ def generate_filter_pairs(
     surrounding_window_sizes: List[int],
     observed_window_sizes: List[int],
     crossover_window_sizes: List[int],
-) -> List[tspe_filter_pair]:
+) -> List[TspeFilterPair]:
     """Generates filter pairs of edge and running total filter using all
     permutations of given parameters
     """
@@ -264,7 +264,7 @@ def generate_filter_pairs(
         edge_filter = generate_edge_filter(_a, _b, _c)
         running_total_filter = generate_running_total_filter(_b)
         needed_padding = _a + _c
-        filter_pair = tspe_filter_pair(
+        filter_pair = TspeFilterPair(
             edge_filter, running_total_filter, needed_padding, _a, _b, _c
         )
         filter_pairs.append(filter_pair)
