@@ -121,6 +121,9 @@ def normalized_cross_correlation(
     .. math::
         NCC_{X\arrY(d)} = \frac{1}{N_{bins}}\sum_{i=-\inf}^{\inf}{\frac{(y_{(i)} - \bar{y}) \cdot (x_{(i-d) - \bar{x})}{\sigma_x \cdot \sigma_y}}}
 
+    The subtraction of mean-values is omitted, since it offers little added
+    accuracy but increases the compute-time immensely.
+
     """
 
     n_neurons, n_bins = spike_trains.shape
