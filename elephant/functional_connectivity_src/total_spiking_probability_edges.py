@@ -6,28 +6,6 @@ from scipy.signal import oaconvolve
 
 from elephant.conversion import BinnedSpikeTrain
 
-def get_connectivity_matrix(tspe_matrix: np.ndarray) -> Tuple[np.ndarray,np.ndarray]:
-    """
-    Takes a tspe_matrix and computes the connectivity- and delay-matrix
-
-    Parameters
-    ----------
-    tspe_matrix: np.array
-
-    Returns
-    -------
-    connectivity_matrix
-    delay-matrix
-
-    """
-
-    # Take maxima of absolute of delays to get estimation for connectivity
-    connectivity_matrix_index = np.argmax(np.abs(tspe_matrix),axis=2,keepdims=True)
-    connectivity_matrix = np.take_along_axis(tspe_matrix,connectivity_matrix_index,axis=2).squeeze(axis=2)
-    delay_matrix = connectivity_matrix_index
-
-    return connectivity_matrix, delay_matrix
-
 def total_spiking_probability_edges(
     spike_trains: BinnedSpikeTrain,
     surrounding_window_sizes: Optional[List[int]] = None,
@@ -37,16 +15,36 @@ def total_spiking_probability_edges(
     normalize: bool = False,
 ):
     """
-    Performs the Total spiking probability edges (TSPE) :cite:`tspe-de_blasi2007_???` on spiketrains ...
+    Use total spiking probability edges (TSPE) to estimate
+    the funcitional connectivity and delay-times of a neural-network
+    given as a BinnedSpikeTrain containing the networks neurons.
+
+    This algorithm uses a normalized crosscorrelation between pairs of
+    spiketrains at different delay-times to get a cross-correlogram.
+    Afterwards a series of convolutions with multiple edge-filters
+    on the cross-correlogram are preformed, in order to estimate the
+    connectivity between neurons and thus allowing the discrimination
+    between inhibitory and excitatory effects.
+
+    :cite:`tspe-de_blasi2007_???`
 
     Parameters
     ----------
-    spiketrains: BinnedSpikeTrain
+    spiketrains: BinnedSpikeTrain containing all neurons for connectivity estimation
+    surrounding_window_sizes: Array of window-sizes for the surroundig area
+                              of the point of interesst
+    observed_window_sizes: Array of window-sizes for the observed area
+    crossover_window_sizes: Array of window-sizes for the crossover between
+                            surrounding and observed window
+    max_delay: Defines the max delay when performing the normalized crosscorrelations
+    normalize: Normalize the output [experimental]
 
     Returns
     -------
-    tspe_matrix
-
+    connectivity_matrix: Square Matrix of the connectivity estimation between neurons.
+                         Positive values describe an excitatory connection while
+                         negative values describe an inhibitory connection.
+    delay_matrix: Square Matrix of the delay_times between neuron-activity.
     """
 
     if not surrounding_window_sizes:
@@ -101,7 +99,12 @@ def total_spiking_probability_edges(
 
         tspe_matrix += x2
 
-    return tspe_matrix
+    # Take maxima of absolute of delays to get estimation for connectivity
+    connectivity_matrix_index = np.argmax(np.abs(tspe_matrix),axis=2,keepdims=True)
+    connectivity_matrix = np.take_along_axis(tspe_matrix,connectivity_matrix_index,axis=2).squeeze(axis=2)
+    delay_matrix = connectivity_matrix_index
+
+    return connectivity_matrix, delay_matrix
 
 
 def normalized_cross_correlation(
