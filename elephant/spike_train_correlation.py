@@ -20,6 +20,7 @@ import warnings
 
 import neo
 import numpy as np
+import quantities
 import quantities as pq
 import scipy.signal
 from scipy import integrate
@@ -824,7 +825,10 @@ cch = cross_correlation_histogram
 
 
 @deprecated_alias(spiketrain_1='spiketrain_i', spiketrain_2='spiketrain_j')
-def spike_time_tiling_coefficient(spiketrain_i, spiketrain_j, dt=0.005 * pq.s):
+def spike_time_tiling_coefficient(spiketrain_i : neo.core.SpikeTrain,
+                                  spiketrain_j : neo.core.SpikeTrain,
+                                  dt: quantities.Quantity
+                                  = 0.005 * pq.s) -> float:
     """
     Calculates the Spike Time Tiling Coefficient (STTC) as described in
     :cite:`correlation-Cutts2014_14288` following their implementation in C.
@@ -892,43 +896,23 @@ def spike_time_tiling_coefficient(spiketrain_i, spiketrain_j, dt=0.005 * pq.s):
 
     """
 
-    def run_P(spiketrain_i, spiketrain_j):
+    def run_P(spiketrain_i : neo.core.SpikeTrain,
+              spiketrain_j : neo.core.SpikeTrain,
+              dt : quantities.Quantity=dt) -> int:
         """
-        Check every spike in train 1 to see if there's a spike in train 2
+        Check every spike in train i to see if there's a spike in train j
         within dt
         """
-        N2 = len(spiketrain_j)
+        within_dt = 0
+        for spike_i in spiketrain_i.times:
+            for spike_j in spiketrain_j.times:
+                if abs(spike_i - spike_j) <= dt:
+                    within_dt += 1
+                    break
 
-        # Search spikes of spiketrain_i in spiketrain_j
-        # ind will contain index of
-        ind = np.searchsorted(spiketrain_j.times, spiketrain_i.times)
+        return within_dt
 
-        # To prevent IndexErrors
-        # If a spike of spiketrain_i is after the last spike of spiketrain_j,
-        # the index is N2, however spiketrain_j[N2] raises an IndexError.
-        # By shifting this index, the spike of spiketrain_i will be compared
-        # to the last 2 spikes of spiketrain_j (negligible overhead).
-        # Note: Not necessary for index 0 that will be shifted to -1,
-        # because spiketrain_j[-1] is valid (additional negligible comparison)
-        ind[ind == N2] = N2 - 1
-
-        # Compare to nearest spike in spiketrain_j BEFORE spike in spiketrain_i
-        close_left = np.abs(
-            spiketrain_j.times[ind - 1] - spiketrain_i.times) <= dt
-        # Compare to nearest spike in spiketrain_j AFTER (or simultaneous)
-        # spike in spiketrain_j
-        close_right = np.abs(
-            spiketrain_j.times[ind] - spiketrain_i.times) <= dt
-
-        # spiketrain_j spikes that are in [-dt, dt] range of spiketrain_i
-        # spikes are counted only ONCE (as per original implementation)
-        close = close_left + close_right
-
-        # Count how many spikes in spiketrain_i have a "partner" in
-        # spiketrain_j
-        return np.count_nonzero(close)
-
-    def run_T(spiketrain):
+    def run_T(spiketrain : neo.core.SpikeTrain) -> float:
         """
         Calculate the proportion of the total recording time 'tiled' by spikes.
         """
@@ -948,7 +932,7 @@ def spike_time_tiling_coefficient(spiketrain_i, spiketrain_j, dt=0.005 * pq.s):
         else:  # if more than a single spike in the train
 
             # Calculate difference between consecutive spikes
-            diff = np.diff(spiketrain)
+            diff = abs(np.diff(spiketrain))
 
             # Find spikes whose tiles overlap
             idx = np.where(diff < 2 * dt)[0]
