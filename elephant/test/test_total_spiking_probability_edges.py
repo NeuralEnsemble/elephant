@@ -199,7 +199,7 @@ def load_spike_train_simulated(
 )
 def test_total_spiking_probability_edges(datafile):
 
-    repo_base_path = 'unittest/total_spiking_probability_edges/data/'
+    repo_base_path = 'unittest/functional_connectivity/total_spiking_probability_edges/data/'
     downloaded_dataset_path = download_datasets(repo_base_path+datafile)
 
     spiketrains, original_data = load_spike_train_simulated(downloaded_dataset_path)
