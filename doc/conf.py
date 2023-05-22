@@ -349,8 +349,11 @@ epub_copyright = copyright
 
 # configuration for intersphinx: refer to Viziphant
 intersphinx_mapping = {
-    'viziphant': ('https://viziphant.readthedocs.io/en/latest/', None),
-    'numpy': ('https://numpy.org/doc/stable', None)
+    'viziphant': ('https://viziphant.readthedocs.io/en/stable/', None),
+    'numpy': ('https://numpy.org/doc/stable', None),
+    'neo': ('https://neo.readthedocs.io/en/stable/', None),
+    'quantities': ('https://python-quantities.readthedocs.io/en/stable/', None),
+    'python': ('https://docs.python.org/3/', None)
 }
 
 
