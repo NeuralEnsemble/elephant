@@ -893,7 +893,7 @@ def spike_time_tiling_coefficient(spiketrain_i: neo.core.SpikeTrain,
     0.4958601655933762
 
     """
-
+    spiketrain_j
     def run_P(spiketrain_j: neo.core.SpikeTrain,
               spiketrain_i: neo.core.SpikeTrain,
               dt: pq.Quantity = dt) -> float:
@@ -902,7 +902,6 @@ def spike_time_tiling_coefficient(spiketrain_i: neo.core.SpikeTrain,
         any spike from spiketrain_i, divided by the total number of spikes in
         spiketrain_j
         """
-
         tiled_spikes_j = np.isclose(
             spiketrain_j.times.simplified.magnitude[:, np.newaxis],
             spiketrain_i.times.simplified.magnitude,
@@ -911,59 +910,41 @@ def spike_time_tiling_coefficient(spiketrain_i: neo.core.SpikeTrain,
         tiled_spikes_j = spiketrain_j[tiled_spike_indices]
         return len(tiled_spikes_j)/len(spiketrain_j)
 
-    def run_T(spiketrain: neo.core.SpikeTrain) -> float:
+    def run_T(spiketrain: neo.core.SpikeTrain, dt: pq.Quantity = dt) -> float:
         """
         Calculate the proportion of the total recording time 'tiled' by spikes.
         """
-        N = len(spiketrain)
-        time_A = 2 * N * dt  # maximum possible time
+        dt = dt.simplified.item()
+        t_start = spiketrain.t_start.simplified.item()
+        t_stop = spiketrain.t_stop.simplified.item()
+        sorted_spikes = np.sort(spiketrain.times.simplified.magnitude)
 
-        if N == 1:  # for only a single spike in the train
+        diff_spikes = np.diff(sorted_spikes)
+        overlap_durations = diff_spikes[diff_spikes <= 2 * dt]
+        covered_time_overlap = np.sum(overlap_durations)
+        non_overlap_durations = diff_spikes[diff_spikes > 2 * dt]
+        covered_time_non_overlap = len(non_overlap_durations) * 2 * dt
 
-            # Check difference between start of recording and single spike
-            if spiketrain[0] - spiketrain.t_start < dt:
-                time_A += - dt + spiketrain[0] - spiketrain.t_start
+        # Check if spikes are within +/-dt of the start and/or end
+        # if so, subtract overlap of first and/or last spike
+        if (sorted_spikes[0] - t_start) < dt:
+            covered_time_overlap += sorted_spikes[0] - t_start
+        else:
+            covered_time_non_overlap+=dt
+        if (t_stop - sorted_spikes[- 1]) < dt:
+            covered_time_overlap += t_stop - sorted_spikes[-1]
+        else:
+            covered_time_non_overlap+=dt
 
-            # Check difference between single spike and end of recording
-            elif spiketrain[0] + dt > spiketrain.t_stop:
-                time_A += - dt - spiketrain[0] + spiketrain.t_stop
-
-        else:  # if more than a single spike in the train
-
-            # Calculate difference between consecutive spikes
-            diff = np.diff(spiketrain)
-
-            # Find spikes whose tiles overlap
-            idx = np.where(diff < 2 * dt)[0]
-            # Subtract overlapping "2*dt" tiles and add differences instead
-            time_A += - 2 * dt * len(idx) + diff[idx].sum()
-
-            # Check if spikes are within +/-dt of the start and/or end
-            # if so, subtract overlap of first and/or last spike
-            if (spiketrain[0] - spiketrain.t_start) < dt:
-                time_A += spiketrain[0] - dt - spiketrain.t_start
-            if (spiketrain.t_stop - spiketrain[N - 1]) < dt:
-                time_A += - spiketrain[-1] - dt + spiketrain.t_stop
-
-        # Calculate the proportion of total recorded time to "tiled" time
-        T = time_A / (spiketrain.t_stop - spiketrain.t_start)
-        return T.simplified.item()  # enforce simplification, strip units
-
-    # def calculate_covered_time(spikes, dt):
-    #     sorted_spikes = np.sort(spikes)
-    #     diff_spikes = np.diff(sorted_spikes)
-    #     valid_durations = diff_spikes[diff_spikes >= 2 * dt]
-    #     covered_time = np.sum(valid_durations) + 2 * dt * len(valid_durations)
-    #     overlap_time = np.sum(diff_spikes[diff_spikes <= 2 * dt]) - len(
-    #         valid_durations) * (2 * dt)
-    #     total_time = np.sum(diff_spikes) + 2 * dt * len(diff_spikes)
-    #     return covered_time, overlap_time, total_time
+        total_time_covered = covered_time_overlap + covered_time_non_overlap
+        total_time = t_stop - t_start
+        return total_time_covered / total_time
 
     if len(spiketrain_i) == 0 or len(spiketrain_j) == 0:
         index = np.nan
     else:
-        TA = run_T(spiketrain_j)
-        TB = run_T(spiketrain_i)
+        TA = run_T(spiketrain_j, dt)
+        TB = run_T(spiketrain_i, dt)
         PA = run_P(spiketrain_j, spiketrain_i, dt)
         PB = run_P(spiketrain_i, spiketrain_j, dt)
 
