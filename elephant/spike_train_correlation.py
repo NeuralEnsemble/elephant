@@ -861,7 +861,7 @@ def spike_time_tiling_coefficient(spiketrain_i: neo.core.SpikeTrain,
     ----------
     spiketrain_i, spiketrain_j : :class:`neo.core.SpikeTrain`
         Spike trains to cross-correlate. They must have the same `t_start` and
-        `t_stop`, further the spike times must be sorted.
+        `t_stop`.
     dt : pq.Quantity.
         The synchronicity window is used for both: the quantification of the
         proportion of total recording time that lies `[-dt, +dt]` of each spike
@@ -894,43 +894,22 @@ def spike_time_tiling_coefficient(spiketrain_i: neo.core.SpikeTrain,
 
     """
 
-    def run_P(spiketrain_i: neo.core.SpikeTrain,
-              spiketrain_j: neo.core.SpikeTrain,
-              dt: pq.Quantity = dt) -> int:
+    def run_P(spiketrain_j: neo.core.SpikeTrain,
+              spiketrain_i: neo.core.SpikeTrain,
+              dt: pq.Quantity = dt) -> float:
         """
-        Check every spike in train i to see if there's a spike in train j
-        within dt
+        Returns number of spikes in spiketrain_j which lie within +- dt of
+        any spike from spiketrain_i, divided by the total number of spikes in
+        spiketrain_j
         """
-        N2 = len(spiketrain_j)
 
-        # Search spikes of spiketrain_i in spiketrain_j
-        # ind will contain index of
-        ind = np.searchsorted(spiketrain_j.times, spiketrain_i.times)
-
-        # To prevent IndexErrors:
-        # If a spike of spiketrain_i is after the last spike of spiketrain_j,
-        # the index is N2, however spiketrain_j[N2] raises an IndexError.
-        # By shifting this index, the spike of spiketrain_i will be compared
-        # to the last 2 spikes of spiketrain_j (negligible overhead).
-        # Note: Not necessary for index 0 that will be shifted to -1,
-        # because spiketrain_j[-1] is valid (additional negligible comparison)
-        ind[ind == N2] = N2 - 1
-
-        # Compare to nearest spike in spiketrain_j BEFORE spike in spiketrain_i
-        close_left = np.abs(spiketrain_j.times[ind - 1] - spiketrain_i.times
-                            ) <= dt
-        # Compare to nearest spike in spiketrain_j AFTER (or simultaneous)
-        # spike in spiketrain_j
-        close_right = np.abs(spiketrain_j.times[ind] - spiketrain_i.times
-                             ) <= dt
-
-        # spiketrain_j spikes that are in [-dt, dt] range of spiketrain_i
-        # spikes are counted only ONCE (as per original implementation)
-        close = close_left + close_right
-
-        # Count how many spikes in spiketrain_i have a "partner" in
-        # spiketrain_j
-        return np.count_nonzero(close)
+        tiled_spikes_j = np.isclose(
+            spiketrain_j.times.simplified.magnitude[:, np.newaxis],
+            spiketrain_i.times.simplified.magnitude,
+            atol=dt.simplified.item())
+        tiled_spike_indices = np.any(tiled_spikes_j, axis=1)
+        tiled_spikes_j = spiketrain_j[tiled_spike_indices]
+        return len(tiled_spikes_j)/len(spiketrain_j)
 
     def run_T(spiketrain: neo.core.SpikeTrain) -> float:
         """
@@ -970,18 +949,24 @@ def spike_time_tiling_coefficient(spiketrain_i: neo.core.SpikeTrain,
         T = time_A / (spiketrain.t_stop - spiketrain.t_start)
         return T.simplified.item()  # enforce simplification, strip units
 
-    N1 = len(spiketrain_i)
-    N2 = len(spiketrain_j)
+    # def calculate_covered_time(spikes, dt):
+    #     sorted_spikes = np.sort(spikes)
+    #     diff_spikes = np.diff(sorted_spikes)
+    #     valid_durations = diff_spikes[diff_spikes >= 2 * dt]
+    #     covered_time = np.sum(valid_durations) + 2 * dt * len(valid_durations)
+    #     overlap_time = np.sum(diff_spikes[diff_spikes <= 2 * dt]) - len(
+    #         valid_durations) * (2 * dt)
+    #     total_time = np.sum(diff_spikes) + 2 * dt * len(diff_spikes)
+    #     return covered_time, overlap_time, total_time
 
-    if N1 == 0 or N2 == 0:
+    if len(spiketrain_i) == 0 or len(spiketrain_j) == 0:
         index = np.nan
     else:
-        TA = run_T(spiketrain_i)
-        TB = run_T(spiketrain_j)
-        PA = run_P(spiketrain_i, spiketrain_j, dt)
-        PA = PA / N1
-        PB = run_P(spiketrain_j, spiketrain_i, dt)
-        PB = PB / N2
+        TA = run_T(spiketrain_j)
+        TB = run_T(spiketrain_i)
+        PA = run_P(spiketrain_j, spiketrain_i, dt)
+        PB = run_P(spiketrain_i, spiketrain_j, dt)
+
         # check if the P and T values are 1 to avoid division by zero
         # This only happens for TA = PB = 1 and/or TB = PA = 1,
         # which leads to 0/0 in the calculation of the index.
