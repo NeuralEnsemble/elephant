@@ -793,12 +793,12 @@ class SpikeTimeTilingCoefficientTestCase(unittest.TestCase):
         spiketrain_E7 = neo.SpikeTrain(
             [1678., 23786.3, 34641.8, 71520.7, 73606.9, 78383.3,
              97387.9, 144313.4, 4607.6, 19275.1, 152894.2, 44240.1],
-            units='ms', t_stop=160000 * pq.ms)
+            units='ms', t_stop=300000 * pq.ms)
 
         spiketrain_E3 = neo.SpikeTrain(
             [1678., 23786.3, 34641.8, 71520.7, 73606.9, 78383.3,
              97387.9, 144313.4, 4607.6, 19275.1, 152894.2, 44240.1],
-            units='ms', t_stop=160000 * pq.ms)
+            units='ms', t_stop=300000 * pq.ms)
         sttc_unsorted_E7_E3 = sc.sttc(spiketrain_E7,
                                       spiketrain_E3, dt=0.10 * pq.s)
         self.assertAlmostEqual(sttc_unsorted_E7_E3, 1)
@@ -812,13 +812,13 @@ class SpikeTimeTilingCoefficientTestCase(unittest.TestCase):
             [20646.8, 25875.1, 26154.4, 35121., 55909.7, 79164.8,
              110849.8, 117484.1, 3731.5, 4213.9, 119995.1, 123748.1,
              171016.8, 172989., 185145.2, 12043.5, 185995.9, 186740.1,
-             12629.8, 23394.3, 34993.2], units='ms', t_stop=210000 * pq.ms)
+             12629.8, 23394.3, 34993.2], units='ms', t_stop=300000 * pq.ms)
 
         spiketrain_B3 = neo.SpikeTrain(
             [10600.7, 19699.6, 22803., 40769.3, 121385.7, 127402.9,
              130829.2, 134363.8, 1193.5, 8012.7, 142037.3, 146628.2,
              165925.3, 168489.3, 175194.3, 10339.8, 178676.4, 180807.2,
-             201431.3, 22231.1, 38113.4], units='ms', t_stop=210000 * pq.ms)
+             201431.3, 22231.1, 38113.4], units='ms', t_stop=300000 * pq.ms)
 
         self.assertTrue(
             sc.sttc(spiketrain_E8, spiketrain_B3, dt=0.10 * pq.s) < 1)
