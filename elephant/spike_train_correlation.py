@@ -25,7 +25,7 @@ import scipy.signal
 from scipy import integrate
 
 from elephant.conversion import BinnedSpikeTrain
-from elephant.utils import deprecated_alias
+from elephant.utils import deprecated_alias, check_neo_consistency
 
 __all__ = [
     "covariance",
@@ -893,6 +893,15 @@ def spike_time_tiling_coefficient(spiketrain_i: neo.core.SpikeTrain,
     0.4958601655933762
 
     """
+    # input checks
+    if dt <= 0 * pq.s:
+        raise ValueError(f"dt must be > 0, found: {dt}")
+
+    check_neo_consistency([spiketrain_j, spiketrain_i], neo.core.SpikeTrain)
+
+    if dt.units != spiketrain_i.units:
+        dt = dt.rescale(spiketrain_i.units)
+
     def run_p(spiketrain_j: neo.core.SpikeTrain,
               spiketrain_i: neo.core.SpikeTrain,
               dt: pq.Quantity = dt) -> float:
@@ -902,9 +911,9 @@ def spike_time_tiling_coefficient(spiketrain_i: neo.core.SpikeTrain,
         spiketrain_j
         """
         tiled_spikes_j = np.isclose(
-            spiketrain_j.times.simplified.magnitude[:, np.newaxis],
-            spiketrain_i.times.simplified.magnitude,
-            atol=dt.simplified.item())
+            spiketrain_j.times.magnitude[:, np.newaxis],
+            spiketrain_i.times.magnitude,
+            atol=dt.item())
         tiled_spike_indices = np.any(tiled_spikes_j, axis=1)
         tiled_spikes_j = spiketrain_j[tiled_spike_indices]
         return len(tiled_spikes_j)/len(spiketrain_j)
@@ -913,10 +922,10 @@ def spike_time_tiling_coefficient(spiketrain_i: neo.core.SpikeTrain,
         """
         Calculate the proportion of the total recording time 'tiled' by spikes.
         """
-        dt = dt.simplified.item()
-        t_start = spiketrain.t_start.simplified.item()
-        t_stop = spiketrain.t_stop.simplified.item()
-        sorted_spikes = np.sort(spiketrain.times.simplified.magnitude)
+        dt = dt.item()
+        t_start = spiketrain.t_start.item()
+        t_stop = spiketrain.t_stop.item()
+        sorted_spikes = np.sort(spiketrain.times.magnitude)
 
         diff_spikes = np.diff(sorted_spikes)
         overlap_durations = diff_spikes[diff_spikes <= 2 * dt]

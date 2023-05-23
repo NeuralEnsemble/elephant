@@ -727,7 +727,25 @@ class SpikeTimeTilingCoefficientTestCase(unittest.TestCase):
         self.st_2 = neo.SpikeTrain(
             self.test_array_1d_2, units='ms', t_stop=50.)
 
-    def test_sttc_different_units(self):
+    def test_sttc_dt_smaller_zero(self):
+        self.assertRaises(ValueError, sc.sttc, self.st_1, self.st_2,
+                          dt=0 * pq.s)
+        self.assertRaises(ValueError, sc.sttc, self.st_1, self.st_2,
+                          dt=-1 * pq.ms)
+
+    def test_sttc_different_t_stop(self):
+        st_1 = neo.SpikeTrain([1], units='ms', t_stop=10.)
+        st_2 = neo.SpikeTrain([5], units='ms', t_stop=10.)
+        st_2.t_stop = 1 * pq.ms
+        self.assertRaises(ValueError, sc.sttc, st_1, st_2)
+
+    def test_sttc_different_t_start(self):
+        st_1 = neo.SpikeTrain([1], units='ms', t_stop=10.)
+        st_2 = neo.SpikeTrain([5], units='ms', t_stop=10.)
+        st_2.t_start = 1 * pq.ms
+        self.assertRaises(ValueError, sc.sttc, st_1, st_2)
+
+    def test_sttc_different_units_dt(self):
         # test for result
         target = 0.495860165593
         self.assertAlmostEqual(target, sc.sttc(self.st_1, self.st_2,
@@ -737,17 +755,21 @@ class SpikeTimeTilingCoefficientTestCase(unittest.TestCase):
         self.assertAlmostEqual(target, sc.sttc(self.st_1, self.st_2,
                                                5.0 * pq.ms))
 
-    def test_sttc_not_enough_spiketrains(self):
+    def test_sttc_different_units_spiketrains(self):
+        st1 = neo.SpikeTrain([1], units='ms', t_stop=10.)
+        st2 = neo.SpikeTrain([5], units='s', t_stop=10.)
+        self.assertRaises(ValueError, sc.sttc, st1, st2)
 
+    def test_sttc_not_enough_spiketrains(self):
         # test no spiketrains
-        self.assertTrue(np.isnan(sc.sttc([], [])))
+        self.assertRaises(TypeError, sc.sttc, [], [])
 
         # test one spiketrain
-        self.assertTrue(np.isnan(sc.sttc(self.st_1, [])))
+        self.assertRaises(TypeError, sc.sttc, self.st_1, [])
 
     def test_sttc_one_spike(self):
         # test for one spike in a spiketrain
-        st1 = neo.SpikeTrain([1], units='ms', t_stop=1.)
+        st1 = neo.SpikeTrain([1], units='ms', t_stop=10.)
         st2 = neo.SpikeTrain([5], units='ms', t_stop=10.)
         self.assertEqual(sc.sttc(st1, st2), 1.0)
         self.assertTrue(bool(sc.sttc(st1, st2, 0.1 * pq.ms) < 0))
