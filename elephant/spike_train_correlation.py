@@ -893,8 +893,7 @@ def spike_time_tiling_coefficient(spiketrain_i: neo.core.SpikeTrain,
     0.4958601655933762
 
     """
-    spiketrain_j
-    def run_P(spiketrain_j: neo.core.SpikeTrain,
+    def run_p(spiketrain_j: neo.core.SpikeTrain,
               spiketrain_i: neo.core.SpikeTrain,
               dt: pq.Quantity = dt) -> float:
         """
@@ -910,7 +909,7 @@ def spike_time_tiling_coefficient(spiketrain_i: neo.core.SpikeTrain,
         tiled_spikes_j = spiketrain_j[tiled_spike_indices]
         return len(tiled_spikes_j)/len(spiketrain_j)
 
-    def run_T(spiketrain: neo.core.SpikeTrain, dt: pq.Quantity = dt) -> float:
+    def run_t(spiketrain: neo.core.SpikeTrain, dt: pq.Quantity = dt) -> float:
         """
         Calculate the proportion of the total recording time 'tiled' by spikes.
         """
@@ -926,15 +925,15 @@ def spike_time_tiling_coefficient(spiketrain_i: neo.core.SpikeTrain,
         covered_time_non_overlap = len(non_overlap_durations) * 2 * dt
 
         # Check if spikes are within +/-dt of the start and/or end
-        # if so, subtract overlap of first and/or last spike
-        if (sorted_spikes[0] - t_start) < dt:
+        # if so, add overlap of first and/or last spike
+        if sorted_spikes[0] - t_start < dt:
             covered_time_overlap += sorted_spikes[0] - t_start
         else:
-            covered_time_non_overlap+=dt
-        if (t_stop - sorted_spikes[- 1]) < dt:
+            covered_time_non_overlap += dt
+        if t_stop - sorted_spikes[- 1] < dt:
             covered_time_overlap += t_stop - sorted_spikes[-1]
         else:
-            covered_time_non_overlap+=dt
+            covered_time_non_overlap += dt
 
         total_time_covered = covered_time_overlap + covered_time_non_overlap
         total_time = t_stop - t_start
@@ -943,10 +942,10 @@ def spike_time_tiling_coefficient(spiketrain_i: neo.core.SpikeTrain,
     if len(spiketrain_i) == 0 or len(spiketrain_j) == 0:
         index = np.nan
     else:
-        TA = run_T(spiketrain_j, dt)
-        TB = run_T(spiketrain_i, dt)
-        PA = run_P(spiketrain_j, spiketrain_i, dt)
-        PB = run_P(spiketrain_i, spiketrain_j, dt)
+        TA = run_t(spiketrain_j, dt)
+        TB = run_t(spiketrain_i, dt)
+        PA = run_p(spiketrain_j, spiketrain_i, dt)
+        PB = run_p(spiketrain_i, spiketrain_j, dt)
 
         # check if the P and T values are 1 to avoid division by zero
         # This only happens for TA = PB = 1 and/or TB = PA = 1,
@@ -954,16 +953,15 @@ def spike_time_tiling_coefficient(spiketrain_i: neo.core.SpikeTrain,
         # In those cases, every spike in the train with P = 1
         # is within dt of a spike in the other train,
         # so we set the respective (partial) index to 1.
-        if PA * TB == 1:
-            if PB * TA == 1:
-                index = 1.
-            else:
-                index = 0.5 + 0.5 * (PB - TA) / (1 - PB * TA)
+        if PA * TB == 1 and PB * TA == 1:
+            index = 1.
+        elif PA * TB == 1:
+            index = 0.5 + 0.5 * (PB - TA) / (1 - PB * TA)
         elif PB * TA == 1:
             index = 0.5 + 0.5 * (PA - TB) / (1 - PA * TB)
         else:
-            index = 0.5 * (PA - TB) / (1 - PA * TB) + 0.5 * (PB - TA) / (
-                1 - PB * TA)
+            index = 0.5 * (PA - TB) / (1 - PA * TB) + \
+                    0.5 * (PB - TA) / (1 - PB * TA)
     return index
 
 
