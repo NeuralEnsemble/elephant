@@ -6,18 +6,20 @@ Unit tests for the spike_train_correlation module.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
+import math
 import unittest
 
 import neo
+from neo.io import NixIO
 import numpy as np
 import quantities as pq
-from numpy.testing.utils import assert_array_equal, assert_array_almost_equal
+from numpy.testing import assert_array_equal, assert_array_almost_equal
 
 import elephant.conversion as conv
 import elephant.spike_train_correlation as sc
+from elephant.datasets import download_datasets, ELEPHANT_TMP_DIR
 from elephant.spike_train_generation import homogeneous_poisson_process, \
     homogeneous_gamma_process
-import math
 
 
 class CovarianceTestCase(unittest.TestCase):
@@ -831,10 +833,38 @@ class SpikeTimeTilingCoefficientTestCase(unittest.TestCase):
                                     spiketrain_B3, dt=0.10 * pq.s)
         self.assertAlmostEqual(sttc_unsorted_E8_B3, sttc_sorted_E8_B3)
 
-    def test_exist_alias(self):
+    def test_sttc_validation_test(self):
+        """This test checks the results of elephants implementation of
+        the spike time tiling coefficient against the results of the
+        original c-implementation.
+        The c-code and the test data is located at
+        NeuralEnsemble/elephant-data/unittest/spike_train_correlation/
+        spike_time_tiling_coefficient"""
+
+        repo_path = r"unittest/spike_train_correlation/spike_time_tiling_coefficient/data" # noqa
+
+        files_to_download = [("spike_time_tiling_coefficient_results.nix ",
+                              "db4e81febc0ca48f1c125891a85c9a7a")]
+
+        for filename, checksum in files_to_download:
+            download_datasets(repo_path=f"{repo_path}/{filename}",
+                              checksum=checksum)
+
+        reader = NixIO(
+            ELEPHANT_TMP_DIR / 'spike_time_tiling_coefficient_results.nix',
+            mode='ro')
+        test_data_block = reader.read()
+
+        for segment in test_data_block[0].segments:
+            spiketrain_i = segment.spiketrains[0]
+            spiketrain_j = segment.spiketrains[1]
+            dt = segment.annotations['dt']
+            sttc_result = segment.annotations['sttc_result']
+            self.assertAlmostEqual(sc.sttc(spiketrain_i, spiketrain_j, dt),
+                                   sttc_result)
+    def test_sttc_exist_alias(self):
         # Test if alias cch still exists.
         self.assertEqual(sc.spike_time_tiling_coefficient, sc.sttc)
-
 
 class SpikeTrainTimescaleTestCase(unittest.TestCase):
 
