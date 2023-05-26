@@ -925,7 +925,10 @@ def spike_time_tiling_coefficient(spiketrain_i: neo.core.SpikeTrain,
         dt = dt.item()
         t_start = spiketrain.t_start.item()
         t_stop = spiketrain.t_stop.item()
-        sorted_spikes = np.sort(spiketrain.times.magnitude)
+        sorted_spikes = spiketrain.times.magnitude
+        # Check if spikes are sorted
+        if (np.diff(sorted_spikes) < 0).any():
+            sorted_spikes = np.sort(sorted_spikes)
 
         diff_spikes = np.diff(sorted_spikes)
         overlap_durations = diff_spikes[diff_spikes <= 2 * dt]
