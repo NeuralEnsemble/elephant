@@ -48,7 +48,7 @@ See :ref:`no-compile-spade` on how to install elephant without compiling the
 
 See Also
 --------
-:doc:`cell_assembly_detection`: another synchronous
+elephant.cell_assembly_detection.cell_assembly_detection : another synchronous
 patterns detection
 
 
@@ -98,7 +98,7 @@ Time for pvalue spectrum computation: ...
 
 Refer to Viziphant documentation to check how to visualzie such patterns.
 
-:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2023 by the Elephant team, see `doc/authors.rst`.
 :license: BSD, see LICENSE.txt for details.
 """
 from __future__ import division, print_function, unicode_literals
@@ -193,7 +193,7 @@ def spade(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
         pattern. If None, no maximal number of occurrences is considered.
         Default: None
     min_neu : int, optional
-        Minimum number of neurons in a sequence to considered a pattern.
+        Minimum number of neurons in a sequence to consider a pattern.
         Default: 1
     approx_stab_pars : dict or None, optional
         Parameter values for approximate stability computation.
@@ -282,12 +282,14 @@ def spade(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
 
             If `output_format` is 'concepts', then `output['patterns']` is a
             tuple of patterns which in turn are tuples of
+
                 1. spikes in the pattern
                 2. occurrences of the pattern
 
             For details see :func:`concepts_mining`.
 
             if stability is calculated, there are also:
+
                 3. intensional stability
                 4. extensional stability
 

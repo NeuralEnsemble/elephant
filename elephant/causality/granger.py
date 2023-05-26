@@ -55,7 +55,7 @@ Run tutorial interactively:
    :target: https://mybinder.org/v2/gh/NeuralEnsemble/elephant/master
             ?filepath=doc/tutorials/granger_causality.ipynb
 
-:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2023 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -370,8 +370,10 @@ def pairwise_granger(signals, max_order, information_criterion='aic'):
         Maximal order of autoregressive model.
     information_criterion : {'aic', 'bic'}, optional
         A function to compute the information criterion:
-            `bic` for Bayesian information_criterion,
-            `aic` for Akaike information criterion,
+
+        * `bic` for Bayesian information_criterion,
+        * `aic` for Akaike information criterion,
+
         Default: 'aic'
 
     Returns
@@ -538,8 +540,10 @@ def conditional_granger(signals, max_order, information_criterion='aic'):
         Maximal order of autoregressive model.
     information_criterion : {'aic', 'bic'}, optional
         A function to compute the information criterion:
-            `bic` for Bayesian information_criterion,
-            `aic` for Akaike information criterion,
+
+        * `bic` for Bayesian information_criterion,
+        * `aic` for Akaike information criterion,
+
         Default: 'aic'
 
     Returns
