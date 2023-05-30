@@ -14,10 +14,9 @@ def total_spiking_probability_edges(
     max_delay: int = 25,
     normalize: bool = False,
 ):
-    """
+    r"""
     Use total spiking probability edges (TSPE) to estimate
-    the funcitional connectivity and delay-times of a neural-network
-    given as a BinnedSpikeTrain containing the networks neurons.
+    the funcitional connectivity and delay-times of a neural-network.
 
     This algorithm uses a normalized crosscorrelation between pairs of
     spiketrains at different delay-times to get a cross-correlogram.
@@ -26,25 +25,68 @@ def total_spiking_probability_edges(
     connectivity between neurons and thus allowing the discrimination
     between inhibitory and excitatory effects.
 
-    :cite:`tspe-de_blasi2007_???`
+    The default window-sizes and max-delay were optimized using
+    in-silico generated spiketrains.
+
+    *Background:*
+
+    - On an excitatory connection the spikerate increases and decreases again due to the refractory period which results in lokal maxima in the cross-correlogram followed by downwards slope
+
+    - On an inhibitory connection the spikerate decreases and after refractory period, increases again which results in lokal minima surrounded by high values in the cross-correlogram.
+
+    - An Edge-Filter can be used to interpret the cross-correlogram and accentuate the lokal Maxima and Minima
+
+    *Procedure:*
+
+    1) Compute normalized cross-correlation :math:`NCC` of spiketrains of all Neuronpairs
+    2) Convolve :math:`NCC` with Edge-Filter :math:`g_{i}` to compute :math:`SPE`
+    3) Convolve :math:`SPE` with corresponding Running-Total-Filter :math:`h_{i}` to account for different lengths after convolution with Edge-Filter
+    4) Compute :math:`TSPE` using the sum of all :math:`SPE` for all different filterpairs
+    5) Compute connectivitymatrix by using the index of the tspe-values with the highest absolute values
+
+    *Normalized Cross-Correlation:*
+
+    .. math ::
+
+        NCC_{XY}(d) = \frac{1}{N} \sum_{i=-\infty}^{\infty}{ \frac{ (y_{(i)} - \bar{y}) \cdot (x_{(i-d)} - \bar{x}) }{ \sigma_x \cdot \sigma_y }}
+
+    *Spiking Probability Edges*
+
+    .. math ::
+        SPE_{X \rightarrow Y(d)} = NCC_{XY}(d) * g(i)
+
+    *Total Spiking Probability Edges:*
+
+    .. math ::
+        TSPE_{X \rightarrow Y}(d) = \sum_{n=1}^{N_a \cdot N_b \cdot N_c}{SPE_{X \rightarrow Y}^{(n)}(d) * h(i)^{(n)} }
+
+    :cite:`functional_connectivity-de_blasi19_169`
 
     Parameters
     ----------
-    spiketrains: BinnedSpikeTrain containing all neurons for connectivity estimation
-    surrounding_window_sizes: Array of window-sizes for the surroundig area
-                              of the point of interesst
-    observed_window_sizes: Array of window-sizes for the observed area
-    crossover_window_sizes: Array of window-sizes for the crossover between
-                            surrounding and observed window
-    max_delay: Defines the max delay when performing the normalized crosscorrelations
-    normalize: Normalize the output [experimental]
+    spiketrains : (N, ) elephant.conversion.BinnedSpikeTrain
+        A binned spike train containing all neurons for connectivity estimation
+    surrounding_window_sizes : List[int], default = [3, 4, 5, 6, 7, 8]
+        Array of window-sizes for the surroundig area of the point of interesst.
+    observed_window_sizes : List[int], default = [2, 3, 4, 5, 6]
+        Array of window-sizes for the observed area
+    crossover_window_sizes : List[int], default = [0]
+        Array of window-sizes for the crossover between surrounding and observed window.
+    max_delay : int, default = 25
+        Defines the max delay when performing the normalized crosscorrelations.
+        Value depends on the bin-size of the BinnedSpikeTrain.
+        On a bin-size of *1ms* a value of *25* corresponds to *25ms*
+    normalize : bool, optional
+        Normalize the output [experimental]
 
     Returns
     -------
-    connectivity_matrix: Square Matrix of the connectivity estimation between neurons.
-                         Positive values describe an excitatory connection while
-                         negative values describe an inhibitory connection.
-    delay_matrix: Square Matrix of the delay_times between neuron-activity.
+    connectivity_matrix : (N, N) np.ndarray
+        Square Matrix of the connectivity estimation between neurons.
+        Positive values describe an excitatory connection while
+        negative values describe an inhibitory connection.
+    delay_matrix : (N, N) np.ndarray
+        Square Matrix of the delay_times between neuron-activity.
     """
 
     if not surrounding_window_sizes:
