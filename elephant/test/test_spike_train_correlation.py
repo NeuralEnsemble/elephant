@@ -11,7 +11,7 @@ import unittest
 import neo
 import numpy as np
 import quantities as pq
-from numpy.testing.utils import assert_array_equal, assert_array_almost_equal
+from numpy.testing import assert_array_equal, assert_array_almost_equal
 
 import elephant.conversion as conv
 import elephant.spike_train_correlation as sc
