@@ -5,7 +5,7 @@ Coding Style Guide with Examples
 ********************************
 
 This guide follows mostly:
-https://github.com/numpy/numpy/blob/master/doc/example.py.
+https://github.com/numpy/numpy/blob/v1.23.5/doc/example.py.
 
 In the Python code blocks below, some remarks are included using JavaScript
 style notation <!-- comment -->. They provide additional information regarding

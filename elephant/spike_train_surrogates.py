@@ -28,7 +28,7 @@ Surrogate types
     bin_shuffling
     trial_shifting
 
-:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2023 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -171,17 +171,17 @@ def dither_spikes(spiketrain, dither, n_surrogates=1, decimals=None,
     >>> import quantities as pq
     >>> import neo
     ...
-    >>> st = neo.SpikeTrain([100, 250, 600, 800] * pq.ms, t_stop=1 * pq.s)
+    >>> st = neo.SpikeTrain([100, 250, 600, 800] * pq.ms, t_stop=1 * pq.s) # noqa
     >>> print(dither_spikes(st, dither = 20 * pq.ms))  # doctest: +SKIP
     [<SpikeTrain(array([  96.53801903,  248.57047376,  601.48865767,
      815.67209811]) * ms, [0.0 ms, 1000.0 ms])>]
-    >>> print(dither_spikes(st, dither = 20 * pq.ms, n_surrogates=2))
+    >>> print(dither_spikes(st, dither = 20 * pq.ms, n_surrogates=2)) # doctest: +SKIP
     [<SpikeTrain(array([ 104.24942044,  246.0317873 ,  584.55938657,
         818.84446913]) * ms, [0.0 ms, 1000.0 ms])>,
      <SpikeTrain(array([ 111.36693058,  235.15750163,  618.87388515,
         786.1807108 ]) * ms, [0.0 ms, 1000.0 ms])>]
     >>> print(dither_spikes(st, dither = 20 * pq.ms,
-                            decimals=0))  # doctest: +SKIP
+    ...                        decimals=0))  # doctest: +SKIP
     [<SpikeTrain(array([  81.,  242.,  595.,  799.]) * ms,
         [0.0 ms, 1000.0 ms])>]
 
@@ -423,17 +423,17 @@ def dither_spike_train(spiketrain, shift, n_surrogates=1, decimals=None,
     >>> import quantities as pq
     >>> import neo
     ...
-    >>> st = neo.SpikeTrain([100, 250, 600, 800] * pq.ms, t_stop=1 * pq.s)
+    >>> st = neo.SpikeTrain([100, 250, 600, 800] * pq.ms, t_stop=1 * pq.s)  # noqa
     >>> print(dither_spike_train(st, shift = 20*pq.ms))  # doctest: +SKIP
     [<SpikeTrain(array([  96.53801903,  248.57047376,  601.48865767,
      815.67209811]) * ms, [0.0 ms, 1000.0 ms])>]
-    >>> print(dither_spike_train(st, shift = 20*pq.ms, n_surrogates=2))
+    >>> print(dither_spike_train(st, shift = 20*pq.ms, n_surrogates=2)) # doctest: +SKIP
     [<SpikeTrain(array([  92.89084054,  242.89084054,  592.89084054,
         792.89084054]) * ms, [0.0 ms, 1000.0 ms])>,
      <SpikeTrain(array([  84.61079043,  234.61079043,  584.61079043,
         784.61079043]) * ms, [0.0 ms, 1000.0 ms])>]
     >>> print(dither_spike_train(st, shift = 20 * pq.ms,
-                                 decimals=0))  # doctest: +SKIP
+    ...                          decimals=0))  # doctest: +SKIP
     [<SpikeTrain(array([  82.,  232.,  582.,  782.]) * ms,
         [0.0 ms, 1000.0 ms])>]
 
@@ -509,11 +509,11 @@ def jitter_spikes(spiketrain, bin_size, n_surrogates=1):
     >>> import quantities as pq
     >>> import neo
     ...
-    >>> st = neo.SpikeTrain([80, 150, 320, 480] * pq.ms, t_stop=1 * pq.s)
+    >>> st = neo.SpikeTrain([80, 150, 320, 480] * pq.ms, t_stop=1 * pq.s)  # noqa
     >>> print(jitter_spikes(st, bin_size=100 * pq.ms))  # doctest: +SKIP
     [<SpikeTrain(array([  98.82898293,  178.45805954,  346.93993867,
         461.34268507]) * ms, [0.0 ms, 1000.0 ms])>]
-    >>> print(jitter_spikes(st, bin_size=100 * pq.ms, n_surrogates=2))
+    >>> print(jitter_spikes(st, bin_size=100 * pq.ms, n_surrogates=2)) # doctest: +SKIP
     [<SpikeTrain(array([  97.15720041,  199.06945744,  397.51928207,
         402.40065162]) * ms, [0.0 ms, 1000.0 ms])>,
      <SpikeTrain(array([  80.74513157,  173.69371317,  338.05860962,
@@ -768,7 +768,7 @@ class JointISI(object):
         Default: False
     method : {'fast', 'window'}, optional
         * 'fast': the spike can move in the whole range between the
-            previous and subsequent spikes (computationally efficient).
+           previous and subsequent spikes (computationally efficient).
         * 'window': the spike movement is limited to the parameter `dither`.
 
         Default: 'window'
@@ -1029,7 +1029,7 @@ class JointISI(object):
             Default: 1
 
         Returns
-        ----------
+        -------
         dithered_sts : list of neo.SpikeTrain
             Spike trains, that are dithered versions of the given
             :attr:`spiketrain`.
