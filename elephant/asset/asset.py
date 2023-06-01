@@ -1040,7 +1040,7 @@ class _JSFUniformOrderStat3D(_GPUBackend):
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             if self.verbose:
                 logger.info(compile_status.stdout.decode())
-                logger.info(compile_status.stderr.decode(), file=sys.stderr)
+                logger.info(compile_status.stderr.decode())
             compile_status.check_returncode()
             log_du_path = os.path.join(asset_tmp_folder, "log_du.dat")
             P_total_path = os.path.join(asset_tmp_folder, "P_total.dat")
@@ -1051,7 +1051,7 @@ class _JSFUniformOrderStat3D(_GPUBackend):
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             if self.verbose:
                 logger.info(run_status.stdout.decode())
-                logger.info(run_status.stderr.decode(), file=sys.stderr)
+                logger.info(run_status.stderr.decode())
             run_status.check_returncode()
             with open(P_total_path, 'rb') as f:
                 P_total = np.fromfile(f, dtype=self.dtype)
