@@ -86,6 +86,21 @@ class AssetTestCase(unittest.TestCase):
         # assert D == E
         assert_array_almost_equal(D, E, decimal=5)
 
+    def test_get_sse_start_and_end_time_bins(self):
+        sse = {(1, 2): set([1, 2, 3]),
+               (3, 4): set([5, 6]),
+               (6, 7): set([0, 1])}
+        start, end = asset.get_sse_start_and_end_time_bins(sse)
+        self.assertListEqual(start, [1, 2])
+        self.assertListEqual(end, [6, 7])
+
+    def test_get_neurons_in_sse(self):
+        sse = {(1, 2): set([1, 2, 3]),
+               (3, 4): set([5, 6]),
+               (6, 7): set([0, 1])}
+        neurons = asset.get_neurons_in_sse(sse)
+        self.assertListEqual(neurons, [0, 1, 2, 3, 5, 6])
+
     def test_sse_difference(self):
         a = {(1, 2): set([1, 2, 3]), (3, 4): set([5, 6]), (6, 7): set([0, 1])}
         b = {(1, 2): set([1, 2, 5]), (5, 6): set([0, 2]), (6, 7): set([0, 1])}
