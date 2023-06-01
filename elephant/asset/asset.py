@@ -299,6 +299,8 @@ def _transactions(spiketrains, bin_size, t_start, t_stop, ids=None):
         (id, `neo.SpikeTrain`).
     """
 
+    logger.debug("Finding transactions")
+    
     if all(isinstance(st, neo.SpikeTrain) for st in spiketrains):
         trains = spiketrains
         if ids is None:
@@ -454,6 +456,9 @@ def _stretched_metric_2d(x, y, stretch, ref_angle, working_memory=None,
         return _stretch_mat
 
     if working_memory is None:
+        if verbose:
+            logger.info("Finding distances without chunking")
+
         # Compute the matrix D[i, j] of euclidean distances among points
         # i and j
         D = pairwise_distances(points)
@@ -492,9 +497,9 @@ def _stretched_metric_2d(x, y, stretch, ref_angle, working_memory=None,
         if last_chunk > 0:
             it_todo += 1
         if verbose:
-            print(f"Estimated chunk size: {estimated_chunk}; "
-                  f"Dimension: ({len(x)}, {len(y)}), "
-                  f"Number of chunked iterations: {it_todo}")
+            logger.info(f"Estimated chunk size: {estimated_chunk}; "
+                        f"Dimension: ({len(x)}, {len(y)}), "
+                        f"Number of chunked iterations: {it_todo}")
 
         # x and y sizes are the same
         if mapped_array_file is None:
@@ -513,7 +518,7 @@ def _stretched_metric_2d(x, y, stretch, ref_angle, working_memory=None,
             # Using an array mapped to disk. Store in the file passed as
             # parameter
             if verbose:
-                print(f"Creating disk array at '{mapped_array_file.name}'.")
+                logger.info(f"Creating disk array at '{mapped_array_file.name}'.")
 
             stretch_mat = np.memmap(mapped_array_file, mode='w+',
                                     shape=(len(x), len(y)),
@@ -570,7 +575,7 @@ def _interpolate_signals(signals, sampling_times, verbose=False):
             raise ValueError('elements in fir_rates must have 2 dimensions')
 
     if verbose:
-        logger.info('create time slices of the rates...')
+        logger.info("Create time slices of the rates...")
 
     # Interpolate in the time bins
     interpolated_signal = np.vstack([_analog_signal_step_interp(
@@ -1035,7 +1040,7 @@ class _JSFUniformOrderStat3D(_GPUBackend):
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             if self.verbose:
                 logger.info(compile_status.stdout.decode())
-                logger.info(compile_status.stderr.decode(), file=sys.stderr)
+                logger.info(compile_status.stderr.decode())
             compile_status.check_returncode()
             log_du_path = os.path.join(asset_tmp_folder, "log_du.dat")
             P_total_path = os.path.join(asset_tmp_folder, "P_total.dat")
@@ -1046,7 +1051,7 @@ class _JSFUniformOrderStat3D(_GPUBackend):
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             if self.verbose:
                 logger.info(run_status.stdout.decode())
-                logger.info(run_status.stderr.decode(), file=sys.stderr)
+                logger.info(run_status.stderr.decode())
             run_status.check_returncode()
             with open(P_total_path, 'rb') as f:
                 P_total = np.fromfile(f, dtype=self.dtype)
@@ -1120,10 +1125,12 @@ class _PMatNeighbors(_GPUBackend):
         The number of largest neighbors to collect for each entry in `mat`.
     """
 
-    def __init__(self, filter_shape, n_largest, max_chunk_size=None):
+    def __init__(self, filter_shape, n_largest, max_chunk_size=None,
+                 verbose=False):
         super().__init__(max_chunk_size=max_chunk_size)
         self.n_largest = n_largest
         self.max_chunk_size = max_chunk_size
+        self.verbose = verbose
 
         filter_size, filter_width = filter_shape
         if filter_width >= filter_size:
@@ -1201,7 +1208,9 @@ class _PMatNeighbors(_GPUBackend):
             dtype=np.float32
         )
 
-        for i_start, i_end in split_idx:
+        for i_start, i_end in tqdm(split_idx, total=len(split_idx),
+                                   desc="Largest neighbors OpenCL",
+                                   disable=not self.verbose):
             mat_gpu = cl_array.to_device(queue,
                                          mat[i_start: i_end + filt_size],
                                          async_=True)
@@ -1269,6 +1278,7 @@ class _PMatNeighbors(_GPUBackend):
             lmat = lmat_padded[filt_size // 2: -filt_size // 2 + 1]
 
         free, total = drv.mem_get_info()
+        
         # 4 * size * n_cols * n_largest + 4 * (size + filt_size) * n_cols
         chunk_size = (free // 4 - filt_size * lmat.shape[1]) // (
                 lmat.shape[1] * (self.n_largest + 1))
@@ -1284,7 +1294,9 @@ class _PMatNeighbors(_GPUBackend):
 
         mat_gpu = drv.mem_alloc(4 * (chunk_size + filt_size) * mat.shape[1])
 
-        for i_start, i_end in split_idx:
+        for i_start, i_end in tqdm(split_idx, total=len(split_idx),
+                                   desc="Largest neighbors CUDA",
+                                   disable=not self.verbose):
             drv.memcpy_htod_async(dest=mat_gpu,
                                   src=mat[i_start: i_end + filt_size])
             lmat_gpu.fill(0)
@@ -1378,7 +1390,9 @@ class _PMatNeighbors(_GPUBackend):
             bin_range_x = range(N_bin_x - filter_size + 1)
 
         # compute matrix of largest values
-        for y in bin_range_y:
+        for y in tqdm(bin_range_y, total=len(bin_range_y),
+                      desc="Largest neighbors CPU",
+                      disable=not self.verbose):
             if symmetric:
                 # x range depends on y position
                 bin_range_x = range(y - filter_size + 1)
@@ -2235,8 +2249,8 @@ class ASSET(object):
 
         # For each neuron, compute the prob. that that neuron spikes in any bin
         if self.verbose:
-            logger.info('compute the prob. that each neuron fires in each '
-                        'pair of bins...')
+            logger.info("Compute the probability that each neuron fires in "
+                        "each pair of bins...")
 
         rate_bins_x = (fir_rate_x * self.bin_size).simplified.magnitude
         spike_probs_x = 1. - np.exp(-rate_bins_x)
@@ -2253,7 +2267,7 @@ class ASSET(object):
         # p_ijk is the probability that neuron k spikes in both bins i and j.
         # The sum of outer products is equivalent to a dot product.
         if self.verbose:
-            logger.info("compute the probability matrix by Le Cam's "
+            logger.info("Compute the probability matrix by Le Cam's "
                         "approximation...")
         Mu = spike_probs_x.T.dot(spike_probs_y)
         # A straightforward implementation is:
@@ -2269,7 +2283,7 @@ class ASSET(object):
         if symmetric:
             # Substitute 0.5 to the elements along the main diagonal
             if self.verbose:
-                logger.info("substitute 0.5 to elements along the main "
+                logger.info("Substitute 0.5 to elements along the main "
                             "diagonal...")
             np.fill_diagonal(pmat, 0.5)
 
@@ -2377,14 +2391,19 @@ class ASSET(object):
         l, w = filter_shape
 
         if self.verbose:
-            logger.info("finding neighbors in probability matrix")
+            logger.info("Finding neighbors in probability matrix...")
 
         # Find for each P_ij in the probability matrix its neighbors and
         # maximize them by the maximum value 1-p_value_min
         pmat = np.asarray(pmat, dtype=np.float32)
         pmat_neighb_obj = _PMatNeighbors(filter_shape=filter_shape,
-                                         n_largest=n_largest)
+                                         n_largest=n_largest,
+                                         verbose=self.verbose)
         pmat_neighb = pmat_neighb_obj.compute(pmat)
+
+
+        if self.verbose:
+            logger.info("Finding unique set of values...")
 
         pmat_neighb = np.minimum(pmat_neighb, 1. - min_p_value,
                                  out=pmat_neighb)
@@ -2600,10 +2619,16 @@ class ASSET(object):
                               "a temporary file to map the array to the disk."
                               ) from err
 
+        if verbose:
+            logger.info("Running DBSCAN")
+
         # Cluster positions of significant pixels via dbscan
         core_samples, config = dbscan(
             D, eps=max_distance, min_samples=min_neighbors,
             metric='precomputed')
+
+        if verbose:
+            logger.info("Building cluster matrix")
 
         # Construct the clustered matrix, where each element has value
         # * i = 1 to k if it belongs to a cluster i,
@@ -2673,7 +2698,9 @@ class ASSET(object):
 
         # Reconstruct each worm, link by link
         sse_dict = {}
-        for k in range(1, nr_worms + 1):  # for each worm
+        for k in tqdm(range(1, nr_worms + 1),
+                      total=nr_worms,
+                      desc="Extracting SSEs"):  # for each worm
             # worm k is a list of links (each link will be 1 sublist)
             worm_k = {}
             pos_worm_k = np.array(
@@ -2699,7 +2726,7 @@ class ASSET(object):
         a boxcar kernel.
         """
         if self.verbose:
-            logger.info('compute rates by boxcar-kernel convolution...')
+            logger.info("Compute rates by boxcar-kernel convolution...")
 
         # Create the boxcar kernel and convolve it with the binned spike trains
         k = int((kernel_width / self.bin_size).simplified.item())
