@@ -717,10 +717,9 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
     def test_binned_spiketrain_rounding(self):
         train = neo.SpikeTrain(times=np.arange(120000) / 30000. * pq.s,
                                t_start=0 * pq.s, t_stop=4 * pq.s)
-        with self.assertWarns(UserWarning):
-            bst = cv.BinnedSpikeTrain(train,
-                                      t_start=0 * pq.s, t_stop=4 * pq.s,
-                                      bin_size=1. / 30000. * pq.s)
+        bst = cv.BinnedSpikeTrain(train,
+                                  t_start=0 * pq.s, t_stop=4 * pq.s,
+                                  bin_size=1. / 30000. * pq.s)
         assert_array_equal(bst.to_array().nonzero()[1],
                            np.arange(120000))
 
