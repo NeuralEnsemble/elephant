@@ -16,9 +16,9 @@ def total_spiking_probability_edges(
 ):
     r"""
     Use total spiking probability edges (TSPE) to estimate
-    the funcitional connectivity and delay-times of a neural-network.
+    the functional connectivity and delay-times of a neural-network.
 
-    This algorithm uses a normalized crosscorrelation between pairs of
+    This algorithm uses a normalized cross correlation between pairs of
     spiketrains at different delay-times to get a cross-correlogram.
     Afterwards a series of convolutions with multiple edge-filters
     on the cross-correlogram are preformed, in order to estimate the
@@ -30,7 +30,7 @@ def total_spiking_probability_edges(
 
     *Background:*
 
-    - On an excitatory connection the spikerate increases and decreases again due to the refractory period which results in lokal maxima in the cross-correlogram followed by downwards slope
+    - On an excitatory connection the spikerate increases and decreases again due to the refractory period which results in local maxima in the cross-correlogram followed by downwards slope
 
     - On an inhibitory connection the spikerate decreases and after refractory period, increases again which results in lokal minima surrounded by high values in the cross-correlogram.
 
@@ -64,10 +64,10 @@ def total_spiking_probability_edges(
 
     Parameters
     ----------
-    spiketrains : (N, ) elephant.conversion.BinnedSpikeTrain
+    spike_trains : (N, ) elephant.conversion.BinnedSpikeTrain
         A binned spike train containing all neurons for connectivity estimation
     surrounding_window_sizes : List[int], default = [3, 4, 5, 6, 7, 8]
-        Array of window-sizes for the surroundig area of the point of interesst.
+        Array of window-sizes for the surrounding area of the point of interest.
     observed_window_sizes : List[int], default = [2, 3, 4, 5, 6]
         Array of window-sizes for the observed area
     crossover_window_sizes : List[int], default = [0]
