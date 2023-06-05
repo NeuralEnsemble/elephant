@@ -407,7 +407,7 @@ class MultitaperCrossSpectrumTestCase(unittest.TestCase):
         self.assertRaises(TypeError,
                           elephant.spectral.multitaper_cross_spectrum, signal,
                           fs=fs, num_tapers=-5.0)
-        
+
         # - peak resolution
         self.assertRaises(ValueError,
                           elephant.spectral.multitaper_cross_spectrum, signal,
@@ -863,8 +863,8 @@ class MultitaperCoherenceTestCase(unittest.TestCase):
             fs=1/sampling_period,
             n_segments=16)
 
-        self.assertTrue((coh == np.ones(coh.size)).all())
-        self.assertTrue((phase_lag == np.zeros(phase_lag.size)).all())
+        np.testing.assert_array_equal(phase_lag, np.zeros(phase_lag.size))
+        np.testing.assert_array_equal(coh, np.ones(coh.size))
 
     def test_multitaper_cohere_no_cohere(self):
         # Generate dummy data
