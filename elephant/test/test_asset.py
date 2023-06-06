@@ -533,7 +533,7 @@ class TestJSFUniformOrderStat3D(unittest.TestCase):
         u = np.empty((3, d + 1))
         self.assertRaises(ValueError, jsf.compute, u=u)
 
-    def test_depreaction_warning(self):
+    def test_JSFUniformOrderStat3D_deprecation_warning(self):
         with self.assertWarns(DeprecationWarning):
             asset._JSFUniformOrderStat3D(n=5, d=1, verbose=True)
 
