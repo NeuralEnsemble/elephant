@@ -172,14 +172,6 @@ log_handler.setFormatter(logging.Formatter("[%(asctime)s] asset -"
 logger.addHandler(log_handler)
 logger.propagate = False
 
-# deprecation message for verbose parameter
-deprecation_verbose_message = ("The 'verbose' parameter is deprecated and "
-                "will be removed in the future. Its functionality is still "
-                "available by using the logging module from Python. "
-                "We recommend transitioning to the logging module "
-                "for improved control and flexibility in handling "
-                "verbosity levels.")
-
 # =============================================================================
 # Some Utility Functions to be dealt with in some way or another
 # =============================================================================
@@ -429,7 +421,12 @@ def _stretched_metric_2d(x, y, stretch, ref_angle, working_memory=None,
 
     """
     if verbose is not None:
-        warnings.warn(deprecation_verbose_message, DeprecationWarning)
+        warnings.warn("The 'verbose' parameter is deprecated and will be "
+                      "removed in the future. Its functionality is still "
+                      "available by using the logging module from Python. "
+                      "We recommend transitioning to the logging module "
+                      "for improved control and flexibility in handling "
+                      "verbosity levels.", DeprecationWarning)
 
     alpha = np.deg2rad(ref_angle)  # reference angle in radians
 
@@ -571,7 +568,12 @@ def _interpolate_signals(signals, sampling_times, verbose=None):
     Interpolate signals at given sampling times.
     """
     if verbose is not None:
-        warnings.warn(deprecation_verbose_message, DeprecationWarning)
+        warnings.warn("The 'verbose' parameter is deprecated and will be "
+                      "removed in the future. Its functionality is still "
+                      "available by using the logging module from Python. "
+                      "We recommend transitioning to the logging module "
+                      "for improved control and flexibility in handling "
+                      "verbosity levels.", DeprecationWarning)
     # Reshape all signals to one-dimensional array object (e.g. AnalogSignal)
     for i, signal in enumerate(signals):
         if signal.ndim == 2:
@@ -669,7 +671,12 @@ class _JSFUniformOrderStat3D(_GPUBackend):
         if d > n:
             raise ValueError(f"d ({d}) must be less or equal n ({n})")
         if verbose is not None:
-            warnings.warn(deprecation_verbose_message, DeprecationWarning)
+            warnings.warn("The 'verbose' parameter is deprecated and will be "
+                          "removed in the future. Its functionality is still "
+                          "available by using the logging module from Python. "
+                          "We recommend transitioning to the logging module "
+                          "for improved control and flexibility in handling "
+                          "verbosity levels.", DeprecationWarning)
         self.n = n
         self.d = d
         self.precision = precision
@@ -1135,7 +1142,12 @@ class _PMatNeighbors(_GPUBackend):
         self.n_largest = n_largest
         self.max_chunk_size = max_chunk_size
         if verbose is not None:
-            warnings.warn(deprecation_verbose_message, DeprecationWarning)
+            warnings.warn("The 'verbose' parameter is deprecated and will be "
+                          "removed in the future. Its functionality is still "
+                          "available by using the logging module from Python. "
+                          "We recommend transitioning to the logging module "
+                          "for improved control and flexibility in handling "
+                          "verbosity levels.", DeprecationWarning)
         self.verbose = verbose
 
         filter_size, filter_width = filter_shape
@@ -1900,7 +1912,12 @@ class ASSET(object):
                  verbose=None):
 
         if verbose is not None:
-            warnings.warn(deprecation_verbose_message, DeprecationWarning)
+            warnings.warn("The 'verbose' parameter is deprecated and will be "
+                          "removed in the future. Its functionality is still "
+                          "available by using the logging module from Python. "
+                          "We recommend transitioning to the logging module "
+                          "for improved control and flexibility in handling "
+                          "verbosity levels.", DeprecationWarning)
 
         self.spiketrains_i = spiketrains_i
         if spiketrains_j is None:
@@ -2580,7 +2597,12 @@ class ASSET(object):
         """
 
         if verbose is not None:
-            warnings.warn(deprecation_verbose_message, DeprecationWarning)
+            warnings.warn("The 'verbose' parameter is deprecated and will be "
+                          "removed in the future. Its functionality is still "
+                          "available by using the logging module from Python. "
+                          "We recommend transitioning to the logging module "
+                          "for improved control and flexibility in handling "
+                          "verbosity levels.", DeprecationWarning)
         # Don't do anything if mat is identically zero
         if np.all(mask_matrix == 0):
             return mask_matrix
