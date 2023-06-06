@@ -824,7 +824,7 @@ class _JSFUniformOrderStat3D(_GPUBackend):
 
         context = cl.create_some_context(interactive=False)
         if self.verbose:
-            logger.info("Available OpenCL devices:\n", context.devices)
+            logger.info(f"Available OpenCL devices:\n {context.devices}")
         device = context.devices[device_id]
 
         # A queue bounded to the device
