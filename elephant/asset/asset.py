@@ -121,7 +121,6 @@ from __future__ import division, print_function, unicode_literals
 import math
 import os
 import subprocess
-import sys
 import tempfile
 import warnings
 from pathlib import Path
