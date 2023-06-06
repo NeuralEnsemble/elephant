@@ -46,7 +46,7 @@ In this example we
 
   * simulate two noisy synfire chains;
   * shuffle the neurons to destroy visual appearance;
-  * run ASSET analysis to recover the original neurons arrangement.
+  * run ASSET analysis to recover the original neurons' arrangement.
 
 1. Simulate two noise synfire chains, shuffle the neurons to destroy the
    pattern visually, and store shuffled activations in neo.SpikeTrains.
@@ -362,7 +362,7 @@ def _stretched_metric_2d(x, y, stretch, ref_angle, working_memory=None,
     and ordinate `y`, compute a stretched transformation of the Euclidean
     distance among each of them.
 
-    The classical euclidean distance `d` between points `(x1, y1)` and
+    The classical Euclidean distance `d` between points `(x1, y1)` and
     `(x2, y2)`, i.e., :math:`\sqrt((x1-x2)^2 + (y1-y2)^2)`, is multiplied by a
     factor
 
@@ -1358,10 +1358,10 @@ class _PMatNeighbors(_GPUBackend):
         `mat`.
 
         For each entry `mat[i, j]`, collects the `n_largest` elements with
-        largest values around `mat[i, j]`, say `z_i, i=1,2,...,n_largest`,
+        the largest values around `mat[i, j]`, say `z_i, i=1,2,...,n_largest`,
         and assigns them to `L[i, j, :]`.
-        The zone around `mat[i, j]` where largest neighbors are collected from
-        is a rectangular area (kernel) of shape `(l, w) = filter_shape`
+        The zone around `mat[i, j]` where the largest neighbors are collected
+        from is a rectangular area (kernel) of shape `(l, w) = filter_shape`
         centered around `mat[i, j]` and aligned along the diagonal.
 
         If `mat` is symmetric, only the triangle below the diagonal is
@@ -1715,7 +1715,7 @@ def synchronous_events_contained_in(sse1, sse2):
 
     # Return False if any pixel in sse1 is not contained in sse2, or if any
     # link of sse1 is not a subset of the corresponding link in sse2.
-    # Otherwise (if sse1 is a subset of sse2) continue
+    # Otherwise, if sse1 is a subset of sse2, continue
     for pixel1, link1 in sse11.items():
         if pixel1 not in sse22.keys():
             return False
@@ -1774,7 +1774,7 @@ def synchronous_events_overlap(sse1, sse2):
     (see below), determines whether the two SSEs overlap.
 
     The SSEs overlap if they are not equal and none of them is a superset of
-    the other one but they are also not disjoint.
+    the other one, but they are also not disjoint.
 
     Both `sse1` and `sse2` must be provided as dictionaries of the type
 
@@ -2373,7 +2373,7 @@ class ASSET(object):
             Tolerance is used to catch unexpected behavior of billions of
             floating point additions, when the number of iterations is huge
             or the data arrays are large. A warning is thrown when the
-            resulting joint prob. matrix values are outside of the acceptable
+            resulting joint prob. matrix values are outside the acceptable
             range ``[-tolerance, 1.0 + tolerance]``.
             Default: 1e-5
 
@@ -2387,7 +2387,7 @@ class ASSET(object):
         1. By default, if CUDA is detected, CUDA acceleration is used. CUDA
            backend is **~X1000** faster than the Python implementation.
            To turn off CUDA features, set the environment flag
-           ``ELEPHANT_USE_CUDA`` to ``0``. Otherwise
+           ``ELEPHANT_USE_CUDA`` to ``0``.
         2. If PyOpenCL is installed and detected, PyOpenCL backend is used.
            PyOpenCL backend is **~X100** faster than the Python implementation.
            To turn off OpenCL features, set the environment flag
@@ -2547,7 +2547,7 @@ class ASSET(object):
         min_neighbors : int
             The minimum number of elements to form a neighbourhood.
         stretch : float
-            The stretching factor of the euclidean metric for elements aligned
+            The stretching factor of the Euclidean metric for elements aligned
             along the 135 degree direction (anti-diagonal). The actual
             stretching increases from 1 to `stretch` as the direction of the
             two elements moves from the 45 to the 135 degree direction.
