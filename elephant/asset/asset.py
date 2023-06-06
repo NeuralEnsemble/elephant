@@ -166,8 +166,9 @@ __all__ = [
 # Create logger and set configuration
 logger = logging.getLogger(__file__)
 log_handler = logging.StreamHandler()
-log_handler.setFormatter(logging.Formatter("[%(asctime)s] asset -"
-                                           " %(levelname)s: %(message)s"))
+log_handler.setFormatter(
+    logging.Formatter(f"[%(asctime)s] {__name__[__name__.rfind('.')+1::]} -"
+                       " %(levelname)s: %(message)s"))
 logger.addHandler(log_handler)
 logger.propagate = False
 
