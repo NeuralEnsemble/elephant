@@ -172,6 +172,14 @@ log_handler.setFormatter(logging.Formatter("[%(asctime)s] asset -"
 logger.addHandler(log_handler)
 logger.propagate = False
 
+# deprecation message for verbose parameter
+deprecation_verbose_message = ("The 'verbose' parameter is deprecated and "
+                "will be removed in the future. Its functionality is still "
+                "available by using the logging module from Python. "
+                "We recommend transitioning to the logging module "
+                "for improved control and flexibility in handling "
+                "verbosity levels.")
+
 # =============================================================================
 # Some Utility Functions to be dealt with in some way or another
 # =============================================================================
@@ -295,7 +303,7 @@ def _transactions(spiketrains, bin_size, t_start, t_stop, ids=None):
     """
 
     logger.debug("Finding transactions")
-    
+
     if all(isinstance(st, neo.SpikeTrain) for st in spiketrains):
         trains = spiketrains
         if ids is None:
@@ -357,7 +365,7 @@ def _analog_signal_step_interp(signal, times):
 
 
 def _stretched_metric_2d(x, y, stretch, ref_angle, working_memory=None,
-                         mapped_array_file=None, verbose=False):
+                         mapped_array_file=None, verbose=None):
     r"""
     Given a list of points on the real plane, identified by their abscissa `x`
     and ordinate `y`, compute a stretched transformation of the Euclidean
@@ -407,9 +415,6 @@ def _stretched_metric_2d(x, y, stretch, ref_angle, working_memory=None,
         array). This option should be used when there is not enough memory to
         allocate the full stretched distance matrix needed before DBSCAN.
         Default: None
-    verbose : bool, optional
-        Display progress bars and log messages.
-        Default: False
 
     Returns
     -------
@@ -423,6 +428,9 @@ def _stretched_metric_2d(x, y, stretch, ref_angle, working_memory=None,
         pairwise distances when using chunked computations.
 
     """
+    if verbose is not None:
+        warnings.warn(deprecation_verbose_message, DeprecationWarning)
+
     alpha = np.deg2rad(ref_angle)  # reference angle in radians
 
     # Create the array of points (one per row) for which to compute the
@@ -451,10 +459,10 @@ def _stretched_metric_2d(x, y, stretch, ref_angle, working_memory=None,
         return _stretch_mat
 
     if working_memory is None:
-        if verbose:
-            logger.info("Finding distances without chunking")
 
-        # Compute the matrix D[i, j] of euclidean distances among points
+        logger.info("Finding distances without chunking")
+
+        # Compute the matrix D[i, j] of Euclidean distances among points
         # i and j
         D = pairwise_distances(points)
 
@@ -491,10 +499,10 @@ def _stretched_metric_2d(x, y, stretch, ref_angle, working_memory=None,
         last_chunk = len(x) % estimated_chunk
         if last_chunk > 0:
             it_todo += 1
-        if verbose:
-            logger.info(f"Estimated chunk size: {estimated_chunk}; "
-                        f"Dimension: ({len(x)}, {len(y)}), "
-                        f"Number of chunked iterations: {it_todo}")
+
+        logger.info(f"Estimated chunk size: {estimated_chunk}; "
+                    f"Dimension: ({len(x)}, {len(y)}), "
+                    f"Number of chunked iterations: {it_todo}")
 
         # x and y sizes are the same
         if mapped_array_file is None:
@@ -512,8 +520,8 @@ def _stretched_metric_2d(x, y, stretch, ref_angle, working_memory=None,
         else:
             # Using an array mapped to disk. Store in the file passed as
             # parameter
-            if verbose:
-                logger.info(f"Creating disk array at '{mapped_array_file.name}'.")
+
+            logger.info(f"Creating disk array at '{mapped_array_file.name}'.")
 
             stretch_mat = np.memmap(mapped_array_file, mode='w+',
                                     shape=(len(x), len(y)),
@@ -527,7 +535,7 @@ def _stretched_metric_2d(x, y, stretch, ref_angle, working_memory=None,
                 pairwise_distances_chunked(points,
                                            working_memory=working_memory),
                 desc='Pairwise distances chunked',
-                total=it_todo, disable=not verbose):
+                total=it_todo):
 
             chunk_size = D_chunk.shape[0]
 
@@ -558,10 +566,12 @@ def _stretched_metric_2d(x, y, stretch, ref_angle, working_memory=None,
     return stretch_mat
 
 
-def _interpolate_signals(signals, sampling_times, verbose=False):
+def _interpolate_signals(signals, sampling_times, verbose=None):
     """
     Interpolate signals at given sampling times.
     """
+    if verbose is not None:
+        warnings.warn(deprecation_verbose_message, DeprecationWarning)
     # Reshape all signals to one-dimensional array object (e.g. AnalogSignal)
     for i, signal in enumerate(signals):
         if signal.ndim == 2:
@@ -569,8 +579,8 @@ def _interpolate_signals(signals, sampling_times, verbose=False):
         elif signal.ndim > 2:
             raise ValueError('elements in fir_rates must have 2 dimensions')
 
-    if verbose:
-        logger.info("Create time slices of the rates...")
+
+    logger.info("Create time slices of the rates...")
 
     # Interpolate in the time bins
     interpolated_signal = np.vstack([_analog_signal_step_interp(
@@ -652,12 +662,14 @@ class _GPUBackend:
 
 
 class _JSFUniformOrderStat3D(_GPUBackend):
-    def __init__(self, n, d, precision='float', verbose=False,
+    def __init__(self, n, d, precision='float', verbose=None,
                  cuda_threads=64, cuda_cwr_loops=32, tolerance=1e-5,
                  max_chunk_size=None):
         super().__init__(max_chunk_size=max_chunk_size)
         if d > n:
             raise ValueError(f"d ({d}) must be less or equal n ({n})")
+        if verbose is not None:
+            warnings.warn(deprecation_verbose_message, DeprecationWarning)
         self.n = n
         self.d = d
         self.precision = precision
@@ -668,6 +680,7 @@ class _JSFUniformOrderStat3D(_GPUBackend):
         bits = 32 if precision == "float" else 64
         self.dtype = np.dtype(f"float{bits}")
         self.tolerance = tolerance
+
 
     @property
     def num_iterations(self):
@@ -754,8 +767,7 @@ class _JSFUniformOrderStat3D(_GPUBackend):
         for iter_id, matrix_entries in enumerate(
                 tqdm(self._combinations_with_replacement(),
                      total=self.num_iterations,
-                     desc="Joint survival function",
-                     disable=not self.verbose)):
+                     desc="Joint survival function")):
             # if we are running with MPI
             if mpi_accelerated and iter_id % size != rank:
                 continue
@@ -823,8 +835,8 @@ class _JSFUniformOrderStat3D(_GPUBackend):
         u_length = log_du.shape[0]
 
         context = cl.create_some_context(interactive=False)
-        if self.verbose:
-            logger.info(f"Available OpenCL devices:\n {context.devices}")
+
+        logger.info(f"Available OpenCL devices:\n {context.devices}")
         device = context.devices[device_id]
 
         # A queue bounded to the device
@@ -875,7 +887,6 @@ class _JSFUniformOrderStat3D(_GPUBackend):
                 # grid_size must be at least l_num_blocks
                 grid_size = l_num_blocks
 
-            if self.verbose:
                 logger.info(f"[Joint prob. matrix] it_todo={it_todo}, "
                             f"grid_size={grid_size}, L_BLOCK={l_block}, "
                             f"N_THREADS={n_threads}")
@@ -966,7 +977,6 @@ class _JSFUniformOrderStat3D(_GPUBackend):
                 # grid_size must be at least l_num_blocks
                 grid_size = l_num_blocks
 
-            if self.verbose:
                 logger.info(f"[Joint prob. matrix] it_todo={it_todo}, "
                             f"grid_size={grid_size}, L_BLOCK={l_block}, "
                             f"N_THREADS={n_threads}")
@@ -1014,8 +1024,7 @@ class _JSFUniformOrderStat3D(_GPUBackend):
             template_name="joint_pmat_old.cu",
             L=f"{log_du.shape[0]}LLU",
             N_THREADS=self.cuda_threads,
-            ITERATIONS_TODO=f"{self.num_iterations}LLU",
-            ASSET_DEBUG=int(self.verbose)
+            ITERATIONS_TODO=f"{self.num_iterations}LLU"
         )
         with tempfile.TemporaryDirectory() as asset_tmp_folder:
             asset_cu_path = os.path.join(asset_tmp_folder, 'asset.cu')
@@ -1033,9 +1042,9 @@ class _JSFUniformOrderStat3D(_GPUBackend):
             compile_status = subprocess.run(
                 compile_cmd,
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            if self.verbose:
-                logger.info(compile_status.stdout.decode())
-                logger.info(compile_status.stderr.decode())
+
+            logger.info(compile_status.stdout.decode())
+            logger.info(compile_status.stderr.decode())
             compile_status.check_returncode()
             log_du_path = os.path.join(asset_tmp_folder, "log_du.dat")
             P_total_path = os.path.join(asset_tmp_folder, "P_total.dat")
@@ -1044,9 +1053,9 @@ class _JSFUniformOrderStat3D(_GPUBackend):
             run_status = subprocess.run(
                 [asset_bin_path, log_du_path, P_total_path],
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            if self.verbose:
-                logger.info(run_status.stdout.decode())
-                logger.info(run_status.stderr.decode())
+
+            logger.info(run_status.stdout.decode())
+            logger.info(run_status.stderr.decode())
             run_status.check_returncode()
             with open(P_total_path, 'rb') as f:
                 P_total = np.fromfile(f, dtype=self.dtype)
@@ -1121,10 +1130,12 @@ class _PMatNeighbors(_GPUBackend):
     """
 
     def __init__(self, filter_shape, n_largest, max_chunk_size=None,
-                 verbose=False):
+                 verbose=None):
         super().__init__(max_chunk_size=max_chunk_size)
         self.n_largest = n_largest
         self.max_chunk_size = max_chunk_size
+        if verbose is not None:
+            warnings.warn(deprecation_verbose_message, DeprecationWarning)
         self.verbose = verbose
 
         filter_size, filter_width = filter_shape
@@ -1204,8 +1215,7 @@ class _PMatNeighbors(_GPUBackend):
         )
 
         for i_start, i_end in tqdm(split_idx, total=len(split_idx),
-                                   desc="Largest neighbors OpenCL",
-                                   disable=not self.verbose):
+                                   desc="Largest neighbors OpenCL"):
             mat_gpu = cl_array.to_device(queue,
                                          mat[i_start: i_end + filt_size],
                                          async_=True)
@@ -1273,7 +1283,7 @@ class _PMatNeighbors(_GPUBackend):
             lmat = lmat_padded[filt_size // 2: -filt_size // 2 + 1]
 
         free, total = drv.mem_get_info()
-        
+
         # 4 * size * n_cols * n_largest + 4 * (size + filt_size) * n_cols
         chunk_size = (free // 4 - filt_size * lmat.shape[1]) // (
                 lmat.shape[1] * (self.n_largest + 1))
@@ -1290,8 +1300,7 @@ class _PMatNeighbors(_GPUBackend):
         mat_gpu = drv.mem_alloc(4 * (chunk_size + filt_size) * mat.shape[1])
 
         for i_start, i_end in tqdm(split_idx, total=len(split_idx),
-                                   desc="Largest neighbors CUDA",
-                                   disable=not self.verbose):
+                                   desc="Largest neighbors CUDA"):
             drv.memcpy_htod_async(dest=mat_gpu,
                                   src=mat[i_start: i_end + filt_size])
             lmat_gpu.fill(0)
@@ -1386,8 +1395,7 @@ class _PMatNeighbors(_GPUBackend):
 
         # compute matrix of largest values
         for y in tqdm(bin_range_y, total=len(bin_range_y),
-                      desc="Largest neighbors CPU",
-                      disable=not self.verbose):
+                      desc="Largest neighbors CPU"):
             if symmetric:
                 # x range depends on y position
                 bin_range_x = range(y - filter_size + 1)
@@ -1875,9 +1883,6 @@ class ASSET(object):
         If None, the attribute `t_stop` of the spike trains is used
         (if the same for all spike trains).
         Default: None
-    verbose : bool, optional
-        If True, print messages and show progress bar.
-        Default: True
 
 
     Raises
@@ -1892,7 +1897,11 @@ class ASSET(object):
 
     def __init__(self, spiketrains_i, spiketrains_j=None, bin_size=3 * pq.ms,
                  t_start_i=None, t_start_j=None, t_stop_i=None, t_stop_j=None,
-                 verbose=True):
+                 verbose=None):
+
+        if verbose is not None:
+            warnings.warn(deprecation_verbose_message, DeprecationWarning)
+
         self.spiketrains_i = spiketrains_i
         if spiketrains_j is None:
             spiketrains_j = spiketrains_i
@@ -2098,8 +2107,7 @@ class ASSET(object):
         # equal to that of the original data
         pmat = np.zeros(imat.shape, dtype=np.int32)
 
-        for surr_id in trange(n_surrogates, desc="pmat_bootstrap",
-                              disable=not self.verbose):
+        for surr_id in trange(n_surrogates, desc="pmat_bootstrap"):
             if mpi_accelerated and surr_id % size != rank:
                 continue
             surrogates = [spike_train_surrogates.surrogates(
@@ -2220,8 +2228,7 @@ class ASSET(object):
             # for both axes, interpolate in the time bins of interest and
             # convert to Quantity
             fir_rate_x = _interpolate_signals(
-                firing_rates_x, self.spiketrains_binned_i.bin_edges[:-1],
-                self.verbose)
+                firing_rates_x, self.spiketrains_binned_i.bin_edges[:-1])
         else:
             raise ValueError(
                 'fir_rates_x must be a list or the string "estimate"')
@@ -2236,15 +2243,13 @@ class ASSET(object):
             # for both axes, interpolate in the time bins of interest and
             # convert to Quantity
             fir_rate_y = _interpolate_signals(
-                firing_rates_y, self.spiketrains_binned_j.bin_edges[:-1],
-                self.verbose)
+                firing_rates_y, self.spiketrains_binned_j.bin_edges[:-1])
         else:
             raise ValueError(
                 'fir_rates_y must be a list or the string "estimate"')
 
         # For each neuron, compute the prob. that that neuron spikes in any bin
-        if self.verbose:
-            logger.info("Compute the probability that each neuron fires in "
+        logger.info("Compute the probability that each neuron fires in "
                         "each pair of bins...")
 
         rate_bins_x = (fir_rate_x * self.bin_size).simplified.magnitude
@@ -2261,9 +2266,8 @@ class ASSET(object):
         # matrices p_ijk computed for each neuron k:
         # p_ijk is the probability that neuron k spikes in both bins i and j.
         # The sum of outer products is equivalent to a dot product.
-        if self.verbose:
-            logger.info("Compute the probability matrix by Le Cam's "
-                        "approximation...")
+        logger.info("Compute the probability matrix by Le Cam's "
+                    "approximation...")
         Mu = spike_probs_x.T.dot(spike_probs_y)
         # A straightforward implementation is:
         # pmat_shape = spike_probs_x.shape[1], spike_probs_y.shape[1]
@@ -2277,8 +2281,7 @@ class ASSET(object):
 
         if symmetric:
             # Substitute 0.5 to the elements along the main diagonal
-            if self.verbose:
-                logger.info("Substitute 0.5 to elements along the main "
+            logger.info("Substitute 0.5 to elements along the main "
                             "diagonal...")
             np.fill_diagonal(pmat, 0.5)
 
@@ -2385,20 +2388,17 @@ class ASSET(object):
         """
         l, w = filter_shape
 
-        if self.verbose:
-            logger.info("Finding neighbors in probability matrix...")
+        logger.info("Finding neighbors in probability matrix...")
 
         # Find for each P_ij in the probability matrix its neighbors and
         # maximize them by the maximum value 1-p_value_min
         pmat = np.asarray(pmat, dtype=np.float32)
         pmat_neighb_obj = _PMatNeighbors(filter_shape=filter_shape,
-                                         n_largest=n_largest,
-                                         verbose=self.verbose)
+                                         n_largest=n_largest)
         pmat_neighb = pmat_neighb_obj.compute(pmat)
 
 
-        if self.verbose:
-            logger.info("Finding unique set of values...")
+        logger.info("Finding unique set of values...")
 
         pmat_neighb = np.minimum(pmat_neighb, 1. - min_p_value,
                                  out=pmat_neighb)
@@ -2416,7 +2416,6 @@ class ASSET(object):
                 w + 1)  # number of entries covered by kernel
         jsf = _JSFUniformOrderStat3D(n=n, d=pmat_neighb.shape[1],
                                      precision=precision,
-                                     verbose=self.verbose,
                                      cuda_threads=cuda_threads,
                                      cuda_cwr_loops=cuda_cwr_loops,
                                      tolerance=tolerance)
@@ -2485,7 +2484,7 @@ class ASSET(object):
     @staticmethod
     def cluster_matrix_entries(mask_matrix, max_distance, min_neighbors,
                                stretch, working_memory=None, array_file=None,
-                               keep_file=False, verbose=False):
+                               keep_file=False, verbose=None):
         r"""
         Given a matrix `mask_matrix`, replaces its positive elements with
         integers representing different cluster IDs. Each cluster comprises
@@ -2561,9 +2560,6 @@ class ASSET(object):
             This option can be used to access the distance matrix after the
             clustering.
             Default: False
-        verbose : bool, optional
-            Display log messages and progress bars.
-            Default: False
 
         Returns
         -------
@@ -2582,6 +2578,9 @@ class ASSET(object):
         sklearn.cluster.DBSCAN
 
         """
+
+        if verbose is not None:
+            warnings.warn(deprecation_verbose_message, DeprecationWarning)
         # Don't do anything if mat is identically zero
         if np.all(mask_matrix == 0):
             return mask_matrix
@@ -2606,7 +2605,7 @@ class ASSET(object):
             D = _stretched_metric_2d(
                 xpos_sgnf, ypos_sgnf, stretch=stretch, ref_angle=45,
                 working_memory=working_memory,
-                mapped_array_file=mapped_array_file, verbose=verbose)
+                mapped_array_file=mapped_array_file)
         except MemoryError as err:
             raise MemoryError("Set 'working_memory=100' or another value to "
                               "chunk the data. If this does not solve, use the"
@@ -2614,16 +2613,14 @@ class ASSET(object):
                               "a temporary file to map the array to the disk."
                               ) from err
 
-        if verbose:
-            logger.info("Running DBSCAN")
+        logger.info("Running DBSCAN")
 
         # Cluster positions of significant pixels via dbscan
         core_samples, config = dbscan(
             D, eps=max_distance, min_samples=min_neighbors,
             metric='precomputed')
 
-        if verbose:
-            logger.info("Building cluster matrix")
+        logger.info("Building cluster matrix")
 
         # Construct the clustered matrix, where each element has value
         # * i = 1 to k if it belongs to a cluster i,
@@ -2720,8 +2717,8 @@ class ASSET(object):
         Calculate the rate of binned spiketrains using convolution with
         a boxcar kernel.
         """
-        if self.verbose:
-            logger.info("Compute rates by boxcar-kernel convolution...")
+
+        logger.info("Compute rates by boxcar-kernel convolution...")
 
         # Create the boxcar kernel and convolve it with the binned spike trains
         k = int((kernel_width / self.bin_size).simplified.item())

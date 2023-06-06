@@ -58,6 +58,12 @@ class AssetTestCase(unittest.TestCase):
         D = stretchedmetric2d(x, x, stretch=1, ref_angle=45)
         self.assertEqual(D.shape, (nr_points, nr_points))
 
+    def test_stretched_metric_2d_deprecation_warning(self):
+        nr_points = 4
+        x = np.arange(nr_points)
+        with self.assertWarns(DeprecationWarning):
+            stretchedmetric2d(x, x, stretch=1, ref_angle=45, verbose=True)
+
     def test_stretched_metric_2d_correct_stretching(self):
         x = (0, 1, 0)
         y = (0, 0, 1)
@@ -83,7 +89,7 @@ class AssetTestCase(unittest.TestCase):
         # Compute Euclidean distance matrix
         points = np.vstack([x, y]).T
         E = scipy.spatial.distance_matrix(points, points)
-        # assert D == E
+        #  assert if D is equal E
         assert_array_almost_equal(D, E, decimal=5)
 
     def test_sse_difference(self):
@@ -302,6 +308,11 @@ class AssetTestCase(unittest.TestCase):
             lmat_cuda = pmat_neigh.pycuda(pmat)
             assert_array_almost_equal(lmat_cuda, lmat_true)
 
+    def test_pmat_neighbors_deprecation_warning(self):
+        with self.assertWarns(DeprecationWarning):
+            asset._PMatNeighbors(filter_shape=(11, 5), n_largest=3,
+                                 max_chunk_size=12, verbose=True)
+
     def test_pmat_neighbors_invalid_input(self):
         np.random.seed(12)
         pmat = np.random.random_sample((20, 20))
@@ -446,7 +457,13 @@ class AssetTestCase(unittest.TestCase):
             self.assertEqual(backend_obj.backend(), 'cpu')
 
         os.environ['ELEPHANT_USE_OPENCL'] = '0'
-
+    def test_asset_deprecation_warning(self):
+        st1 = neo.SpikeTrain([1, 2, 4] * pq.ms, t_stop=6 * pq.ms)
+        st2 = neo.SpikeTrain([1, 3, 4] * pq.ms, t_stop=6 * pq.ms)
+        bin_size = 1 * pq.ms
+        with self.assertWarns(DeprecationWarning):
+            asset.ASSET([st1, st2], bin_size=bin_size, t_stop_i=5 * pq.ms,
+            t_stop_j=5 * pq.ms, verbose=True)
 
 @unittest.skipUnless(HAVE_SKLEARN, 'requires sklearn')
 class TestJSFUniformOrderStat3D(unittest.TestCase):
@@ -515,6 +532,11 @@ class TestJSFUniformOrderStat3D(unittest.TestCase):
         jsf = asset._JSFUniformOrderStat3D(n=5, d=d)
         u = np.empty((3, d + 1))
         self.assertRaises(ValueError, jsf.compute, u=u)
+
+    def test_depreaction_warning(self):
+        with self.assertWarns(DeprecationWarning):
+            asset._JSFUniformOrderStat3D(n=5, d=1, verbose=True)
+
 
     def test_point_mass_output(self):
         # When N >> D, the expected output is [1, 0]
