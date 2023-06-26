@@ -621,8 +621,8 @@ class StationaryPoissonProcess(RenewalProcess):
     def __init__(
             self,
             rate: pq.Quantity,
+            t_start: pq.Quantity = 0.0 * pq.ms,
             t_stop: pq.Quantity = 1000.0*pq.ms,
-            t_start: pq.Quantity = 0.0*pq.ms,
             refractory_period: Optional[pq.Quantity] = None,
             equilibrium: bool = True
     ):
@@ -1105,7 +1105,7 @@ def homogeneous_poisson_process(rate, t_start=0.0 * pq.ms,
     ...     t_stop=1000*pq.ms).generate_spiketrain()
     >>> spikes = StationaryPoissonProcess(
     ...     20*pq.Hz, t_start=5000*pq.ms,
-    ... t_stop=10000*pq.ms, as_array=True).generate_spiketrain()
+    ... t_stop=10000*pq.ms).generate_spiketrain(as_array=True)
     >>> spikes = StationaryPoissonProcess(50*pq.Hz, t_start=0*pq.ms,
     ...     t_stop=1000*pq.ms,
     ...     refractory_period = 3*pq.ms).generate_spiketrain()
@@ -1209,11 +1209,10 @@ def homogeneous_gamma_process(a, b, t_start=0.0 * pq.ms, t_stop=1000.0 * pq.ms,
     Examples
     --------
     >>> import quantities as pq
-    >>> spikes = StationaryPoissonProcess(2.0, 50*pq.Hz, 0*pq.ms,
-    ...                                       1000*pq.ms).generate_spiketrain()
-    >>> spikes = StationaryPoissonProcess(
-    ...        5.0, 20*pq.Hz, 5000*pq.ms,
-    ... 10000*pq.ms, as_array=True).generate_spiketrain()
+    >>> spikes = StationaryPoissonProcess(50*pq.Hz, 0*pq.ms, 1000*pq.ms
+    ...                                   ).generate_spiketrain()
+    >>> spikes = StationaryPoissonProcess(20*pq.Hz, 5000*pq.ms,
+    ... 10000*pq.ms).generate_spiketrain(as_array=True)
 
     """
     warnings.warn(
