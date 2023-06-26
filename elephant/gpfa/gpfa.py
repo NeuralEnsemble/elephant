@@ -210,10 +210,9 @@ class GPFA(sklearn.base.BaseEstimator):
     ...     n_channels = 20
     ...     firing_rates = np.random.randint(low=1, high=100,
     ...                                      size=n_channels) * pq.Hz
-    >>>     spike_times = [
-    ...       StationaryPoissonProcess(rate=firing_rates).generate_spiketrain()
-    ...       for rate in firing_rates]
-    >>>     data.append((trial, spike_times))
+    >>> spike_times = [StationaryPoissonProcess(rate
+    ...                ).generate_spiketrain() for rate in firing_rates]
+    >>> data.append((trial, spike_times))
     ...
     >>> gpfa = GPFA(bin_size=20*pq.ms, x_dim=8)
     >>> gpfa.fit(data)  # doctest: +SKIP
