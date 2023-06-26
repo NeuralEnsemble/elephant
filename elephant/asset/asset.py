@@ -26,6 +26,8 @@ Patterns post-exploration
     synchronous_events_contained_in
     synchronous_events_contains_all
     synchronous_events_overlap
+    get_neurons_in_sse
+    get_sse_start_and_end_time_bins
 
 
 Tutorial
@@ -165,7 +167,9 @@ __all__ = [
     "synchronous_events_no_overlap",
     "synchronous_events_contained_in",
     "synchronous_events_contains_all",
-    "synchronous_events_overlap"
+    "synchronous_events_overlap",
+    "get_neurons_in_sse",
+    "get_sse_start_and_end_time_bins"
 ]
 
 
@@ -351,7 +355,8 @@ def _analog_signal_step_interp(signal, times):
 # =============================================================================
 
 
-def _stretched_metric_2d(x, y, stretch, ref_angle, working_memory=None):
+def _stretched_metric_2d(x, y, stretch, ref_angle, working_memory=None,
+                         mapped_array_file=None, verbose=False):
     r"""
     Given a list of points on the real plane, identified by their abscissa `x`
     and ordinate `y`, compute a stretched transformation of the Euclidean
@@ -385,11 +390,36 @@ def _stretched_metric_2d(x, y, stretch, ref_angle, working_memory=None):
     ref_angle : float
         Reference angle in degrees (i.e., the inclination along which the
         stretching factor is 1).
+    working_memory : int, optional
+        The sought maximum memory in MiB for temporary distance matrix chunks.
+        When None (default), no chunking is performed. This parameter is passed
+        directly to `sklearn.metrics.pairwise_distances_chunked` function, and
+        it has no influence on the outcome matrix. Instead, it controls the
+        memory VS speed trade-off.
+        Default: None
+    mapped_array_file : file-like, optional
+        Temporary file, that should be used to store the matrix  of stretched
+        distances when chunking the computations. This is achieved  using
+        `np.memmap`. If `working_memory` is None (no chunking), this parameter
+        is ignored. This will not impact the results, but the  operations will
+        be slower (than chunking and storing the final matrix  in a memory
+        array). This option should be used when there is not enough memory to
+        allocate the full stretched distance matrix needed before DBSCAN.
+        Default: None
+    verbose : bool, optional
+        Display progress bars and log messages.
+        Default: False
 
     Returns
     -------
     D : (n,n) np.ndarray
         Square matrix of distances between all pairs of points.
+
+    Raises
+    ------
+    MemoryError
+        If there is not enough memory to allocate the matrix to store the
+        pairwise distances when using chunked computations.
 
     """
     alpha = np.deg2rad(ref_angle)  # reference angle in radians
@@ -438,19 +468,85 @@ def _stretched_metric_2d(x, y, stretch, ref_angle, working_memory=None):
         stretch_mat = calculate_stretch_mat(theta, D)
     else:
         start = 0
+
+        # Depending on the memory size requested, check how many rows can be
+        # processed per iteration. Mininum is 1. Working memory size is in MB.
+        # Size is computed for a float32 matrix. The function
+        # `pairwise_distances_chunked` returns half of the possible size.
+        estimated_chunk = max(
+            ((working_memory * 1024 * 1024) // (len(y) * 4)) // 2, 1)
+
+        # The number of rows in a chunk cannot be larger than the maximum
+        estimated_chunk = min(len(x), estimated_chunk)
+
+        # Compute the number of iterations needed
+        it_todo = len(x) // estimated_chunk
+
+        # If size is not a multiple, an extra iteration with smaller size
+        # is needed
+        last_chunk = len(x) % estimated_chunk
+        if last_chunk > 0:
+            it_todo += 1
+        if verbose:
+            print(f"Estimated chunk size: {estimated_chunk}; "
+                  f"Dimension: ({len(x)}, {len(y)}), "
+                  f"Number of chunked iterations: {it_todo}")
+
         # x and y sizes are the same
-        stretch_mat = np.empty((len(x), len(y)), dtype=np.float32)
-        for D_chunk in pairwise_distances_chunked(
-                points, working_memory=working_memory):
+        if mapped_array_file is None:
+            # Create the distance matrix in memory. Raise exception if
+            # it is not possible due to insufficient memory.
+            try:
+                stretch_mat = np.empty((len(x), len(y)), dtype=np.float32)
+            except MemoryError:
+                required_size = (len(x) * len(y) * 4) / (1024 ** 3)
+                raise MemoryError("Can't allocate array in memory. Specify "
+                                  "a temporary disk file to map the array "
+                                  "to the disk. Operations will be slower. "
+                                  f"The required size is {required_size} GiB")
+
+        else:
+            # Using an array mapped to disk. Store in the file passed as
+            # parameter
+            if verbose:
+                print(f"Creating disk array at '{mapped_array_file.name}'.")
+
+            stretch_mat = np.memmap(mapped_array_file, mode='w+',
+                                    shape=(len(x), len(y)),
+                                    dtype=np.float32)
+
+            # Buffer to store the computations per iteration, to avoid
+            # writing to the file after every single operation
+            chunk_mat = np.empty((estimated_chunk, len(y)), dtype=np.float32)
+
+        for D_chunk in tqdm(
+                pairwise_distances_chunked(points,
+                                           working_memory=working_memory),
+                desc='Pairwise distances chunked',
+                total=it_todo, disable=not verbose):
+
             chunk_size = D_chunk.shape[0]
+
+            assert (chunk_size == estimated_chunk or
+                    chunk_size == last_chunk)           # Safety check
+
             dX = x_array[:, start: start + chunk_size].T - x_array
             dY = y_array[:, start: start + chunk_size].T - y_array
 
-            theta_chunk = np.arctan2(
-                dY, dX, out=stretch_mat[start: start + chunk_size, :])
+            # If not using an array mapped to the disk, the output of
+            # the theta computations are written directly to the
+            # stretch_mat. Otherwise, write to the buffer
+            out = stretch_mat[start: start + chunk_size, :] \
+                if mapped_array_file is None else chunk_mat[:chunk_size, :]
+
+            theta_chunk = np.arctan2(dY, dX, out=out)
 
             # stretch_mat (theta_chunk) is updated in-place here
             calculate_stretch_mat(theta_chunk, D_chunk)
+
+            # If mapping to file, transfer from the buffer to stretch_mat
+            if mapped_array_file is not None:
+                stretch_mat[start: start + chunk_size, :] = theta_chunk
 
             start += chunk_size
 
@@ -1348,6 +1444,7 @@ def synchronous_events_intersection(sse1, sse2, intersection='linkwise'):
             if len(sse_new[pixel1]) == 0:
                 del sse_new[pixel1]
     elif intersection == 'pixelwise':
+        # no action required
         pass
     else:
         raise ValueError(
@@ -1676,6 +1773,108 @@ def synchronous_events_overlap(sse1, sse2):
     return not (contained_in or contains_all or identical or is_disjoint)
 
 
+def get_neurons_in_sse(sse):
+    """
+    Returns the IDs of all neurons present in the SSE pattern.
+
+    This ignores repetitions (i.e., if a neuron is present in more than one
+    pixel, it is returned only once).
+
+    Parameters
+    ----------
+    sse : dict
+        Dictionary of pixel positions `(i, j)` as keys and sets `S` of
+        synchronous events as values, as returned by
+        :func:`ASSET.extract_synchronous_events`.
+
+    Returns
+    -------
+    list
+        All neuron IDs present in the SSE, sorted in ascending order.
+
+    Examples
+    --------
+    >>> sse = {(268, 51): {22, 27},
+    ...        (274, 54): {26},
+    ...        (274, 56): {77},
+    ...        (274, 58): {26},
+    ...        (275, 58): {92},
+    ...        (276, 59): {9},
+    ...        (277, 58): {26},
+    ...        (277, 61): {26}}
+    >>> neurons = get_neurons_in_sse(sse)
+    >>> print(neurons)
+    [9, 22, 26, 27, 77, 92]
+
+    See Also
+    --------
+    ASSET.extract_synchronous_events
+    """
+    all_neurons = []
+    for neurons in sse.values():
+        all_neurons.extend(neurons)
+    neuron_ids = np.unique(all_neurons).tolist()
+    return neuron_ids
+
+
+def get_sse_start_and_end_time_bins(sse):
+    """
+    For each repeated sequence in the SSE pattern, returns the start and end
+    time bin IDs.
+
+    For an SSE consisting of several pixels `(i, j)`, the `i` and `j` elements
+    represent the time bin IDs in the cluster matrix used to extract the SSE.
+    The combination of all `i` and `j` elements in the SSE pixels defines the
+    temporal profile of each repeated sequence in the SSE pattern. Therefore,
+    the minimum and maximum values for each `i` and `j` will define when each
+    repeated sequence occured in time.
+
+    Parameters
+    ----------
+    sse : dict
+        Dictionary of pixel positions `(i, j)` as keys and sets `S` of
+        synchronous events as values, as returned by
+        :func:`ASSET.extract_synchronous_events`.
+
+    Returns
+    -------
+    start, end: list
+        Two-element list containing the first bins (`start`) or the last bins
+        (`end`) in each repeated sequence. In each list, the first element
+        corresponds to the first sequence (elements `i` in the SSE pixel), and
+        the second element corresponds to the second sequence (elements `j`
+        in the SSE pixel).
+
+    Examples
+    --------
+    >>> sse = {(268, 51): {22, 27},
+    ...        (274, 54): {26},
+    ...        (274, 56): {77},
+    ...        (274, 58): {26},
+    ...        (275, 58): {92},
+    ...        (276, 59): {9},
+    ...        (277, 58): {26},
+    ...        (277, 61): {26}}
+    >>> start, end = get_sse_start_and_end_time_bins(sse)
+    >>> print(start)
+    [268, 51]
+    >>> print(end)
+    [277, 61]
+
+    See Also
+    --------
+    ASSET.extract_synchronous_events
+    """
+    pixels = list(sse.keys())
+    start = list(pixels[0])
+    end = list(pixels[0])
+    for pixel in pixels[1:]:
+        for seq in (0, 1):
+            start[seq] = min(start[seq], pixel[seq])
+            end[seq] = max(end[seq], pixel[seq])
+    return start, end
+
+
 def _signals_t_start_stop(signals, t_start=None, t_stop=None):
     if t_start is None:
         t_start = _signals_same_attribute(signals, 't_start')
@@ -1882,6 +2081,7 @@ class ASSET(object):
                 * 'intersection': `len(intersection(s_i, s_j))`
                 * 'mean': `sqrt(len(s_1) * len(s_2))`
                 * 'union': `len(union(s_i, s_j))`
+
             Default: None
 
         Returns
@@ -1936,9 +2136,9 @@ class ASSET(object):
             If None, the output of :func:`ASSET.intersection_matrix` is used.
             Default: None
         surrogate_method : {'dither_spike_train', 'dither_spikes',
-                            'jitter_spikes',
-                            'randomise_spikes', 'shuffle_isis',
-                            'joint_isi_dithering'}, optional
+            'jitter_spikes', 'randomise_spikes', 'shuffle_isis',
+            'joint_isi_dithering'}, optional
+
             The method to generate surrogate spike trains. Refer to the
             :func:`spike_train_surrogates.surrogates` documentation for more
             information about each surrogate method. Note that some of these
@@ -2212,9 +2412,10 @@ class ASSET(object):
         precision : {'float', 'double'}, optional
             Single or double floating-point precision for the resulting `jmat`
             matrix.
-              * `'float'`: 32 bits; the tolerance error is ``≲1e-3``.
 
+              * `'float'`: 32 bits; the tolerance error is ``≲1e-3``.
               * `'double'`: 64 bits; the tolerance error is ``<1e-5``.
+
             Double floating-point precision is typically x4 times slower than
             the single floating-point equivalent.
             Default: 'float'
@@ -2363,7 +2564,8 @@ class ASSET(object):
 
     @staticmethod
     def cluster_matrix_entries(mask_matrix, max_distance, min_neighbors,
-                               stretch, working_memory=None):
+                               stretch, working_memory=None, array_file=None,
+                               keep_file=False, verbose=False):
         r"""
         Given a matrix `mask_matrix`, replaces its positive elements with
         integers representing different cluster IDs. Each cluster comprises
@@ -2419,10 +2621,29 @@ class ASSET(object):
             The sought maximum memory in MiB for temporary distance matrix
             chunks. When None (default), no chunking is performed. This
             parameter is passed directly to
-            ``sklearn.metrics.pairwise_distances_chunked`` function and it
-            has no influence on the outcome matrix. Instead, it control the
+            ``sklearn.metrics.pairwise_distances_chunked`` function, and it
+            has no influence on the outcome matrix. Instead, it controls the
             memory VS speed trade-off.
             Default: None
+        array_file : str or path-like, optional
+            Path to a location of a temporary file, that should be used to
+            store the matrix of stretched  distances when chunking the
+            computations. This is achieved using `np.memmap`. If
+            `working_memory` is None (no chunking), this parameter is ignored.
+            This will not impact the results, but the  operations will  be
+            slower (than chunking and storing the final matrix in a memory
+            array). This option should be used when there is not enough memory
+            to allocate the full stretched distance matrix needed before
+            DBSCAN.
+            Default: None
+        keep_file : bool, optional
+            Delete the temporary file specified in `array_file` automatically.
+            This option can be used to access the distance matrix after the
+            clustering.
+            Default: False
+        verbose : bool, optional
+            Display log messages and progress bars.
+            Default: False
 
         Returns
         -------
@@ -2448,16 +2669,30 @@ class ASSET(object):
         # List the significant pixels of mat in a 2-columns array
         xpos_sgnf, ypos_sgnf = np.where(mask_matrix > 0)
 
+        # Allocate temporary file if requested
+        mapped_array_file = None
+        if array_file:
+            file_path = Path(array_file) if isinstance(array_file, str) \
+                else array_file
+            file_dir = file_path.parent
+            file_name = file_path.stem
+            mapped_array_file = tempfile.NamedTemporaryFile(
+                                    prefix=file_name, dir=file_dir,
+                                    delete=not keep_file)
+
         # Compute the matrix D[i, j] of euclidean distances between pixels i
         # and j
         try:
             D = _stretched_metric_2d(
                 xpos_sgnf, ypos_sgnf, stretch=stretch, ref_angle=45,
-                working_memory=working_memory
-            )
+                working_memory=working_memory,
+                mapped_array_file=mapped_array_file, verbose=verbose)
         except MemoryError as err:
             raise MemoryError("Set 'working_memory=100' or another value to "
-                              "chunk the data") from err
+                              "chunk the data. If this does not solve, use the"
+                              " 'array_file' parameter to pass a location for "
+                              "a temporary file to map the array to the disk."
+                              ) from err
 
         # Cluster positions of significant pixels via dbscan
         core_samples, config = dbscan(
@@ -2521,18 +2756,14 @@ class ASSET(object):
             t_stop=self.t_stop_i,
             ids=ids)
 
-        if self.spiketrains_j is self.spiketrains_i:
+        if self.spiketrains_j is self.spiketrains_i or self.is_symmetric():
             diag_id = 0
             tracts_y = tracts_x
         else:
-            if self.is_symmetric():
-                diag_id = 0
-                tracts_y = tracts_x
-            else:
-                diag_id = None
-                tracts_y = _transactions(
-                    self.spiketrains_j, bin_size=self.bin_size,
-                    t_start=self.t_start_j, t_stop=self.t_stop_j, ids=ids)
+            diag_id = None
+            tracts_y = _transactions(
+                self.spiketrains_j, bin_size=self.bin_size,
+                t_start=self.t_start_j, t_stop=self.t_stop_j, ids=ids)
 
         # Reconstruct each worm, link by link
         sse_dict = {}

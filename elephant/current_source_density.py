@@ -12,9 +12,9 @@ Neuroscience.)
 CSD is also called as Source Localization or Source Imaging in the EEG circles.
 Here are CSD methods for different types of electrode configurations.
 
-- 1D - laminar probe like electrodes.
-- 2D - Microelectrode Array like
-- 3D - UtahArray or multiple laminar probes.
+- 1D -laminar probe like electrodes.
+- 2D -Microelectrode Array like
+- 3D -UtahArray or multiple laminar probes.
 
 The following methods have been implemented so far
 
@@ -83,7 +83,7 @@ def estimate_csd(lfp, coordinates='coordinates', method=None,
     method : string
         Pick a method corresponding to the setup, in this implementation
         For Laminar probe style (1D), use 'KCSD1D' or 'StandardCSD',
-         or 'DeltaiCSD' or 'StepiCSD' or 'SplineiCSD'
+        or 'DeltaiCSD' or 'StepiCSD' or 'SplineiCSD'
         For MEA probe style (2D),  use 'KCSD2D', or 'MoIKCSD'
         For array of laminar probes (3D), use 'KCSD3D'
         Defaults to None
@@ -312,9 +312,9 @@ def generate_lfp(csd_profile, x_positions, y_positions=None, z_positions=None,
         y = np.linspace(y_limits[0], y_limits[1], resolution)
         z = np.linspace(z_limits[0], z_limits[1], resolution)
         chrg_x, chrg_y, chrg_z = np.mgrid[
-            x_limits[0]: x_limits[1]: np.complex(0, resolution),
-            y_limits[0]: y_limits[1]: np.complex(0, resolution),
-            z_limits[0]: z_limits[1]: np.complex(0, resolution)
+            x_limits[0]: x_limits[1]: complex(0, resolution),
+            y_limits[0]: y_limits[1]: complex(0, resolution),
+            z_limits[0]: z_limits[1]: complex(0, resolution)
         ]
 
         csd = csd_profile(chrg_x, chrg_y, chrg_z)

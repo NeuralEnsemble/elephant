@@ -71,23 +71,28 @@ from __future__ import division, print_function, unicode_literals
 import copy
 import math
 import time
+import warnings
 
 import numpy as np
 from scipy.stats import f
 
 import elephant.conversion as conv
+from elephant.utils import deprecated_alias
 
 __all__ = [
     "cell_assembly_detection"
 ]
 
 
+@deprecated_alias(data='binned_spiketrain', maxlag='max_lag',
+                  min_occ='min_occurrences',
+                  same_config_cut='same_configuration_pruning')
 def cell_assembly_detection(binned_spiketrain, max_lag, reference_lag=2,
                             alpha=0.05, min_occurrences=1, size_chunks=100,
                             max_spikes=np.inf, significance_pruning=True,
                             subgroup_pruning=True,
                             same_configuration_pruning=False,
-                            verbose=False):
+                            bool_times_format=None, verbose=False):
     """
     Perform the CAD analysis :cite:`cad-Russo2017_e19428` for the binned
     (discretized) spike trains given in the input. The method looks for
@@ -151,6 +156,14 @@ def cell_assembly_detection(binned_spiketrain, max_lag, reference_lag=2,
         efficient), not testing assemblies already formed
         if they appear in the very same configuration.
         Default: False
+    bool_times_format : bool, optional
+
+    .. deprecated:: 0.10.0
+
+       Has no effect, the returning 'times' are always a quantity array
+       specifying the pattern spike times.
+       Default: None
+
     verbose : bool, optional
         Regulates the number of prints given by the method. If true all prints
         are given, otherwise the method does give any prints.
@@ -203,6 +216,12 @@ def cell_assembly_detection(binned_spiketrain, max_lag, reference_lag=2,
                   size_chunks=size_chunks,
                   max_spikes=max_spikes)
 
+    if bool_times_format is not None:
+        warnings.warn("'bool_times_format' is deprecated and has no effect; "
+                      "the returning 'times' are always a quantity array "
+                      "specifying the pattern spike times. Set this parameter "
+                      "to None.", DeprecationWarning)
+
     bin_size = binned_spiketrain.bin_size
     t_start = binned_spiketrain.t_start
 
@@ -241,7 +260,7 @@ def cell_assembly_detection(binned_spiketrain, max_lag, reference_lag=2,
         print('actual significance_level', alpha)
 
     # sign_pairs_matrix is the matrix with entry as 1 for the significant pairs
-    sign_pairs_matrix = np.zeros((n_neurons, n_neurons), dtype=np.int)
+    sign_pairs_matrix = np.zeros((n_neurons, n_neurons), dtype=int)
     assembly = []
     if verbose:
         print('Testing on pairs...')
@@ -424,7 +443,7 @@ def cell_assembly_detection(binned_spiketrain, max_lag, reference_lag=2,
         times = np.where(pattern['times'] > 0)[0] * bin_size + t_start
         pattern['times'] = times
         pattern['lags'] = pattern['lags'] * bin_size
-        pattern['signature'] = np.array(pattern['signature'], dtype=np.int32)
+        pattern['signature'] = np.array(pattern['signature'], dtype=int)
 
     # Give as output only the maximal groups
     if verbose:
@@ -473,15 +492,15 @@ def _chunking(binned_pair, size_chunks, max_lag, best_lag):
     # new chunk size, this is to have all chunks of roughly the same size
     size_chunks = math.floor((length - max_lag) / n_chunks)
 
-    n_chunks = np.int(n_chunks)
-    size_chunks = np.int(size_chunks)
+    n_chunks = int(n_chunks)
+    size_chunks = int(size_chunks)
 
     chunked = [[[], []] for _ in range(n_chunks)]
 
     # cut the time series according to best_lag
 
-    binned_pair_cut = np.array([np.zeros(length - max_lag, dtype=np.int),
-                                np.zeros(length - max_lag, dtype=np.int)])
+    binned_pair_cut = np.array([np.zeros(length - max_lag, dtype=int),
+                                np.zeros(length - max_lag, dtype=int)])
 
     # choose which entries to consider according to the best lag chosen
     if best_lag == 0:
@@ -614,15 +633,15 @@ def _test_pair(ensemble, spiketrain2, n2, max_lag, size_chunks, reference_lag,
 
     # Divide in parallel trials with 0/1 elements
     # max number of spikes in one bin for both neurons
-    maxrate = np.int(max(max(binned_pair[0]), max(binned_pair[1])))
+    maxrate = int(max(max(binned_pair[0]), max(binned_pair[1])))
 
     # creation of the parallel processes, one for each rate up to maxrate
     # and computation of the coincidence count for both neurons
-    par_processes = np.zeros((maxrate, 2, ntp), dtype=np.int)
-    par_proc_expectation = np.zeros(maxrate, dtype=np.int)
+    par_processes = np.zeros((maxrate, 2, ntp), dtype=int)
+    par_proc_expectation = np.zeros(maxrate, dtype=int)
 
     for i in range(maxrate):
-        par_processes[i] = np.array(binned_pair > i, dtype=np.int)
+        par_processes[i] = np.array(binned_pair > i, dtype=int)
         par_proc_expectation[i] = (np.sum(par_processes[i][0]) * np.sum(
             par_processes[i][1])) / float(ntp)
 
@@ -833,16 +852,16 @@ def _test_pair(ensemble, spiketrain2, n2, max_lag, size_chunks, reference_lag,
                                  max_lag=max_lag,
                                  best_lag=best_lag)
 
-        marginal_counts = np.zeros((nch, maxrate, 2), dtype=np.int)
+        marginal_counts = np.zeros((nch, maxrate, 2), dtype=int)
 
         # for every chunk, a vector with in each entry the sum of elements
         # in each parallel binary process, for each unit
 
         # maxrate_t : contains the maxrates for both neurons in each chunk
-        maxrate_t = np.zeros(nch, dtype=np.int)
+        maxrate_t = np.zeros(nch, dtype=int)
 
         # ch_nn : contains the length of the different chunks
-        ch_nn = np.zeros(nch, dtype=np.int)
+        ch_nn = np.zeros(nch, dtype=int)
         count_sum = 0
         # for every chunk build the parallel processes
         # and the coincidence counts
@@ -853,19 +872,19 @@ def _test_pair(ensemble, spiketrain2, n2, max_lag, size_chunks, reference_lag,
                                  max(binned_pair_chunked[1]))
             ch_nn[iii] = len(chunked[iii][0])
             par_processes_chunked = [None for _ in range(
-                np.int(maxrate_t[iii]))]
+                int(maxrate_t[iii]))]
 
-            for i in range(np.int(maxrate_t[iii])):
+            for i in range(int(maxrate_t[iii])):
                 par_processes_chunked[i] = np.zeros(
-                    (2, len(binned_pair_chunked[0])), dtype=np.int)
+                    (2, len(binned_pair_chunked[0])), dtype=int)
                 par_processes_chunked[i] = np.array(binned_pair_chunked > i,
-                                                    dtype=np.int)
+                                                    dtype=int)
 
-            for i in range(np.int(maxrate_t[iii])):
+            for i in range(int(maxrate_t[iii])):
                 par_processes_a = par_processes_chunked[i][0]
                 par_processes_b = par_processes_chunked[i][1]
-                marginal_counts[iii][i][0] = np.int(np.sum(par_processes_a))
-                marginal_counts[iii][i][1] = np.int(np.sum(par_processes_b))
+                marginal_counts[iii][i][0] = int(np.sum(par_processes_a))
+                marginal_counts[iii][i][1] = int(np.sum(par_processes_b))
                 count_sum = count_sum + min(marginal_counts[iii][i][0],
                                             marginal_counts[iii][i][1])
 
