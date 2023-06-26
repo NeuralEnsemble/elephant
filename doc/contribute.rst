@@ -88,6 +88,11 @@ your local machine.
             pip install -r requirements/requirements-extras.txt  # optional
             pip install -r requirements/requirements-tests.txt
 
+Install elephant development version:
+
+.. code-block:: sh
+
+    pip install -e .
 
 3. Before you make any changes, run the test suite to make sure all the tests
    pass on your system::
