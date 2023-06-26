@@ -26,7 +26,7 @@ Given a list of spike trains, the analysis comprises the following steps:
 
 >>> np.random.seed(10)
 >>> spiketrains = [StationaryPoissonProcess(rate=10*pq.Hz,
-...                t_stop=10 * pq.s).generate_spiketrain() for _ in range(20).]
+...                t_stop=10 * pq.s).generate_spiketrain() for _ in range(20)]
 >>> pop_count = statistics.time_histogram(spiketrains, bin_size=0.1 * pq.s)
 
 2) apply CuBIC to the population count
