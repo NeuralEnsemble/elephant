@@ -669,8 +669,7 @@ def cross_correlation_histogram(
     >>> import numpy as np
     >>> from elephant.conversion import BinnedSpikeTrain
     >>> from elephant.spike_train_generation import StationaryPoissonProcess
-    >>> from elephant.spike_train_correlation import \
-    ... cross_correlation_histogram
+    >>> from elephant.spike_train_correlation import cross_correlation_histogram  # noqa
     >>> np.random.seed(1)
     >>> binned_spiketrain_i = BinnedSpikeTrain(
     ...        StationaryPoissonProcess(
