@@ -700,8 +700,10 @@ def multitaper_cross_spectrum(signals, fs=1.0, nw=4.0, num_tapers=None,
         # Determine full Fourier transform of tapered signal
         spectrum_estimates = np.fft.fft(tapered_signals, axis=-1)
 
+    spectrum_estimates=spectrum_estimates.astype(np.complex256)
     temp = (spectrum_estimates[np.newaxis, :, :, :]
             * np.conjugate(spectrum_estimates[:, np.newaxis, :, :]))
+    temp=temp.astype(np.complex128)
 
     # Average Fourier transform windowed signal
     cross_spec = np.mean(temp, axis=-2, dtype=np.complex64) / fs
@@ -1363,4 +1365,3 @@ def welch_cohere(*args, **kwargs):
     warnings.warn("'welch_cohere' is deprecated; use 'welch_coherence'",
                   DeprecationWarning)
     return welch_coherence(*args, **kwargs)
-
