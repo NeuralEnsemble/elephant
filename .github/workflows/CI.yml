@@ -1,4 +1,4 @@
-# This workflow will setup GitHub-hosted runners and install the required dependencies for elephant tests.
+# This workflow will set up GitHub-hosted runners and install the required dependencies for elephant tests.
 # On a pull requests and on pushes to master it will run different tests for elephant.
 
 name: tests
@@ -57,8 +57,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        # python versions for elephant: [3.7, 3.8, 3.9, "3.10"]
-        python-version: [3.7, 3.8, 3.9, "3.10"]
+        # python versions for elephant: [3.8, 3.9, "3.10", 3.11]
+        python-version: [3.8, 3.9, "3.10", 3.11]
         # OS [ubuntu-latest, macos-latest, windows-latest]
         os: [ubuntu-latest]
       # do not cancel all in-progress jobs if any matrix job fails
@@ -68,7 +68,7 @@ jobs:
       # used to reset cache every month
       - name: Get current year-month
         id: date
-        run: echo "::set-output name=date::$(date +'%Y-%m')"
+        run: echo "date=$(date +'%Y-%m')" >> $GITHUB_OUTPUT
 
       - uses: actions/checkout@v3
 
@@ -82,7 +82,7 @@ jobs:
       - name: Cache test_env
         uses: actions/cache@v3
         with:
-          path: ~/test_env
+          path: /home/runner/.cache/pip
           # Look to see if there is a cache hit for the corresponding requirements files
           # cache will be reset on changes to any requirements or every month
           key: ${{ runner.os }}-venv-${{ hashFiles('**/requirements.txt') }}-${{ hashFiles('**/requirements-tests.txt') }}
@@ -129,7 +129,7 @@ jobs:
     steps:
       - name: Get current year-month
         id: date
-        run: echo "::set-output name=date::$(date +'%Y-%m')"
+        run: echo "date=$(date +'%Y-%m')" >> $GITHUB_OUTPUT
 
       - uses: actions/checkout@v3
 
@@ -139,7 +139,7 @@ jobs:
           path: ~/conda_pkgs_dir
           key: ${{ runner.os }}-conda-${{hashFiles('requirements/environment.yml') }}-${{ hashFiles('**/CI.yml') }}-${{ steps.date.outputs.date }}
 
-      - uses: conda-incubator/setup-miniconda@v2
+      - uses: conda-incubator/setup-miniconda@3b0f2504dd76ef23b6d31f291f4913fb60ab5ff3 # corresponds to v2.2.0
         with:
           auto-update-conda: true
           python-version: ${{ matrix.python-version }}
@@ -181,7 +181,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        # python versions for elephant: [3.6, 3.7, 3.8, 3.9]
+        # python versions for elephant: [3.8, 3.9, 3.10, 3.11]
         python-version: [3.8,]
         # OS [ubuntu-latest, macos-latest, windows-latest]
         os: [windows-latest]
@@ -198,7 +198,7 @@ jobs:
     steps:
       - name: Get current year-month
         id: date
-        run: echo "::set-output name=date::$(date +'%Y-%m')"
+        run: echo "date=$(date +'%Y-%m')" >> $GITHUB_OUTPUT
 
       - uses: actions/checkout@v3
       - name: Set up Python ${{ matrix.python-version }}
@@ -243,7 +243,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        # python versions for elephant: [3.6, 3.7, 3.8, 3.9]
+        # python versions for elephant: [3.8, 3.9, 3.10, 3.11]
         python-version: [3.9]
         # OS [ubuntu-latest, macos-latest, windows-latest]
         os: [ubuntu-latest]
@@ -254,7 +254,7 @@ jobs:
     steps:
       - name: Get current year-month
         id: date
-        run: echo "::set-output name=date::$(date +'%Y-%m')"
+        run: echo "date=$(date +'%Y-%m')" >> $GITHUB_OUTPUT
       - uses: actions/checkout@v3
 
       - name: Set up Python ${{ matrix.python-version }}
@@ -273,6 +273,7 @@ jobs:
 
       - name: Setup environment
         run: |
+          sudo apt-get update
           sudo apt install -y libopenmpi-dev openmpi-bin
 
           python -m pip install --upgrade pip
@@ -331,6 +332,7 @@ jobs:
         run: |
           conda config --add channels conda-forge # bugfix with scipy==1.8.1: libstdcxx-ng 12.1.0 required
           conda update conda
+          conda install -c conda-forge libstdcxx-ng=12 # fix libstdc++.so.6: version for new scipy versions > 1.9.1
           conda env update --file requirements/environment-tests.yml --name base
           activate base
           conda install -c conda-forge openmpi
@@ -368,7 +370,7 @@ jobs:
 
       - name: Get current year-month
         id: date
-        run: echo "::set-output name=date::$(date +'%Y-%m')"
+        run: echo "date=$(date +'%Y-%m')" >> $GITHUB_OUTPUT
 
       - uses: actions/checkout@v3
 
@@ -387,26 +389,91 @@ jobs:
 
       - name: Install dependencies
         run: |
+          conda config --add channels conda-forge # bugfix with scipy==1.8.1: libstdcxx-ng 12.1.0 required
+          sudo apt-get update
           sudo apt install -y libopenmpi-dev openmpi-bin
+          conda update conda
+          conda install -c conda-forge openmpi pandoc libstdcxx-ng # fix libstdc++.so.6: version for new scipy versions > 1.9.1
+          conda env update --file requirements/environment-docs.yml --name base
+          activate base
           python -m pip install --upgrade pip
           pip install -r requirements/requirements-docs.txt
           pip install -r requirements/requirements-tutorials.txt
-          conda config --add channels conda-forge # bugfix with scipy==1.8.1: libstdcxx-ng 12.1.0 required
-          conda update conda
-          conda env update --file requirements/environment-docs.yml --name base
-          conda install -c conda-forge openmpi
-          conda install -c conda-forge pandoc
           pip install -e .[extras]
           # run notebooks
           sed -i -E "s/nbsphinx_execute *=.*/nbsphinx_execute = 'always'/g" doc/conf.py
 
       - name: List packages
         run: |
+          activate base
           pip list
           conda list
           python --version
 
       - name: make html
         run: |
+          activate base
           cd doc
           make html
+
+  # install dependencies and elephant with pip and run tests with pytest
+  doctests:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        # python versions for elephant: [3.7, 3.8, 3.9, "3.10"]
+        python-version: ["3.10"]
+
+        # OS [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest]
+
+      # do not cancel all in-progress jobs if any matrix job fails
+      fail-fast: false
+
+    steps:
+      # used to reset cache every month
+      - name: Get current year-month
+        id: date
+        run: echo "::set-output name=date::$(date +'%Y-%m')"
+      - uses: actions/checkout@v3
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Cache test_env
+        uses: actions/cache@v3
+        with:
+          path: ~/test_env
+          # Look to see if there is a cache hit for the corresponding requirements files
+          # cache will be reset on changes to any requirements or every month
+          key: ${{ runner.os }}-venv-${{ hashFiles('**/requirements.txt') }}-${{ hashFiles('**/requirements-tests.txt') }}
+            -${{ hashFiles('**/requirements-extras.txt') }}-${{ hashFiles('**/CI.yml') }}-${{ hashFiles('setup.py') }}
+            -${{ steps.date.outputs.date }}
+
+      - name: Install dependencies
+        run: |
+          # create an environment and install everything
+          python -m venv ~/test_env
+          source ~/test_env/bin/activate
+          sudo apt install -y libopenmpi-dev openmpi-bin
+
+          python -m pip install --upgrade pip
+          pip install mpi4py
+          pip install -r requirements/requirements-tests.txt
+          pip install -r requirements/requirements.txt
+          pip install -r requirements/requirements-extras.txt
+          pip install pytest-cov coveralls
+          pip install -e .
+
+      - name: List packages
+        run: |
+          source ~/test_env/bin/activate
+          pip list
+          python --version
+
+      - name: Run doctests
+        run: |
+          source ~/test_env/bin/activate
+          pytest elephant --doctest-modules --ignore=elephant/test/

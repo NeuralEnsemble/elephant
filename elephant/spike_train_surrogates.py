@@ -28,7 +28,7 @@ Surrogate types
     bin_shuffling
     trial_shifting
 
-:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2023 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -768,7 +768,7 @@ class JointISI(object):
         Default: False
     method : {'fast', 'window'}, optional
         * 'fast': the spike can move in the whole range between the
-            previous and subsequent spikes (computationally efficient).
+           previous and subsequent spikes (computationally efficient).
         * 'window': the spike movement is limited to the parameter `dither`.
 
         Default: 'window'
@@ -1029,7 +1029,7 @@ class JointISI(object):
             Default: 1
 
         Returns
-        ----------
+        -------
         dithered_sts : list of neo.SpikeTrain
             Spike trains, that are dithered versions of the given
             :attr:`spiketrain`.

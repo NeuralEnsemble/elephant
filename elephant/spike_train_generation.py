@@ -17,6 +17,7 @@ Random spike train processes
 ****************************
 .. autosummary::
     :toctree: _toctree/spike_train_generation
+    :template: spike_train_generation_class.rst
 
     StationaryPoissonProcess
     StationaryGammaProcess
@@ -41,13 +42,10 @@ written by Eilif Muller, or from the NeuroTools signals.analogs module.
 References
 ----------
 
-.. bibliography:: ../bib/elephant.bib
-   :labelprefix: gen
+.. bibliography::
    :keyprefix: generation-
-   :style: unsrt
 
-
-:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2023 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -563,8 +561,8 @@ class StationaryPoissonProcess(RenewalProcess):
     """
     Generates spike trains whose spikes are realizations of a stationary
     Poisson process with the given rate, starting at time `t_start` and
-    stopping at time `t_stop`. Optionally, a absolute refractory period /
-    dead time can be specified.
+    stopping at time `t_stop` :cite:`generation-Deger12_443`. Optionally,
+    an absolute refractory period / dead time can be specified.
 
     Parameters
     ----------
@@ -1328,11 +1326,13 @@ def single_interaction_process(
         Overall mean rate of the time series to be generated (coincidence
         rate `coincidence_rate` is subtracted to determine the background
         rate). Can be:
+
         * a float, representing the overall mean rate of each process. If
           so, it must be higher than `coincidence_rate`.
         * an iterable of floats (one float per process), each float
           representing the overall mean rate of a process. If so, all the
           entries must be larger than `coincidence_rate`.
+
     coincidence_rate : pq.Quantity
         Coincidence rate (rate of coincidences for the n-dimensional SIP).
         The SIP spike trains will have coincident events with rate
@@ -1354,9 +1354,10 @@ def single_interaction_process(
         istic (i.e. rate_coincidence is the actual rate with which coincidences
         are generated) or stochastic (i.e. rate_coincidence is the mean rate of
         coincidences):
-          * 'deterministic': deterministic rate
 
+          * 'deterministic': deterministic rate
           * 'stochastic': stochastic rate
+
         Default: 'deterministic'
     t_start : pq.Quantity, optional
         Starting time of the series. If specified, it must be lower than

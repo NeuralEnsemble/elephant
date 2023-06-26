@@ -2,7 +2,7 @@
 """
 Unit tests for the ASSET analysis.
 
-:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2023 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -11,6 +11,8 @@ import os
 import random
 import unittest
 import warnings
+import tempfile
+from pathlib import Path
 
 import neo
 import numpy as np
@@ -83,6 +85,21 @@ class AssetTestCase(unittest.TestCase):
         E = scipy.spatial.distance_matrix(points, points)
         # assert D == E
         assert_array_almost_equal(D, E, decimal=5)
+
+    def test_get_sse_start_and_end_time_bins(self):
+        sse = {(1, 2): set([1, 2, 3]),
+               (3, 4): set([5, 6]),
+               (6, 7): set([0, 1])}
+        start, end = asset.get_sse_start_and_end_time_bins(sse)
+        self.assertListEqual(start, [1, 2])
+        self.assertListEqual(end, [6, 7])
+
+    def test_get_neurons_in_sse(self):
+        sse = {(1, 2): set([1, 2, 3]),
+               (3, 4): set([5, 6]),
+               (6, 7): set([0, 1])}
+        neurons = asset.get_neurons_in_sse(sse)
+        self.assertListEqual(neurons, [0, 1, 2, 3, 5, 6])
 
     def test_sse_difference(self):
         a = {(1, 2): set([1, 2, 3]), (3, 4): set([5, 6]), (6, 7): set([0, 1])}
@@ -220,6 +237,25 @@ class AssetTestCase(unittest.TestCase):
                 mmat, max_distance=max_distance, min_neighbors=min_neighbors,
                 stretch=stretch, working_memory=working_memory)
             assert_array_equal(cmat, cmat_true)
+
+    def test_cluster_matrix_entries_chunked_array_file(self):
+        np.random.seed(12)
+        mmat = np.random.randn(100, 100) > 0
+        max_distance = 2
+        min_neighbors = 2
+        stretch = 2
+        cmat_true = asset.ASSET.cluster_matrix_entries(
+            mmat, max_distance=max_distance, min_neighbors=min_neighbors,
+            stretch=stretch)
+
+        for working_memory in [1, 10, 100, 1000]:
+            with tempfile.TemporaryDirectory() as tmpdir:
+                cmat = asset.ASSET.cluster_matrix_entries(
+                    mmat, max_distance=max_distance,
+                    min_neighbors=min_neighbors, stretch=stretch,
+                    working_memory=working_memory,
+                    array_file=Path(tmpdir) / f"test_dist_{working_memory}")
+                assert_array_equal(cmat, cmat_true)
 
     def test_pmat_neighbors_gpu(self):
         np.random.seed(12)
