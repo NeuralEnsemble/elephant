@@ -378,7 +378,7 @@ class SpadeTestCase(unittest.TestCase):
         assert len(patterns) == 1
         pattern = patterns[0]
         assert len(np.unique(pattern['neurons'])) == n_spiketrains
-        assert_array_equal(pattern['itemset'], [2, 5, 1])
+        assert_array_equal(sorted(pattern['itemset']), [1, 2, 5])
         assert_array_equal(pattern['windows_ids'], [36, 134, 856])
         assert_array_equal(pattern['neurons'], [1, 2, 0])
         assert_array_equal(pattern['signature'], [3, 3, 1])
