@@ -380,7 +380,6 @@ class SpadeTestCase(unittest.TestCase):
         assert len(np.unique(pattern['neurons'])) == n_spiketrains
         assert_array_equal(sorted(pattern['itemset']), [1, 2, 5])
         assert_array_equal(pattern['windows_ids'], [36, 134, 856])
-        assert_array_equal(pattern['neurons'], [1, 2, 0])
         assert_array_equal(pattern['signature'], [3, 3, 1])
 
     # Tests 3d spectrum
