@@ -110,11 +110,13 @@ from collections import defaultdict
 from functools import reduce
 from itertools import chain, combinations
 
+import numpy as np
+from scipy import sparse
+
+import quantities as pq
+
 import neo
 from neo.core.spiketrainlist import SpikeTrainList
-import numpy as np
-import quantities as pq
-from scipy import sparse
 
 import elephant.conversion as conv
 import elephant.spike_train_surrogates as surr
@@ -355,7 +357,7 @@ def spade(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
             min_occ=min_occ, max_spikes=max_spikes, max_occ=max_occ,
             min_neu=min_neu, report='a')
         time_mining = time.time() - time_mining
-        print("Time for data mining: {}".format(time_mining))
+        print(f"Time for data mining: {time_mining}")
 
     # Decide if compute the approximated stability
     if compute_stability:
@@ -368,7 +370,7 @@ def spade(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
         concepts = approximate_stability(
             concepts, rel_matrix, **approx_stab_pars)
         time_stability = time.time() - time_stability
-        print("Time for stability computation: {}".format(time_stability))
+        print(f"Time for stability computation: {time_stability}")
         # Filtering the concepts using stability thresholds
         if stability_thresh is not None:
             concepts = [concept for concept in concepts
@@ -386,8 +388,7 @@ def spade(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
             max_occ=max_occ, min_neu=min_neu, spectrum=spectrum,
             surr_method=surr_method, **surr_kwargs)
         time_pvalue_spectrum = time.time() - time_pvalue_spectrum
-        print("Time for pvalue spectrum computation: {}".format(
-            time_pvalue_spectrum))
+        print(f"Time for pvalue spectrum computation: {time_pvalue_spectrum}")
         # Storing pvalue spectrum
         output['pvalue_spectrum'] = pv_spec
 
@@ -639,7 +640,7 @@ def concepts_mining(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
     if report not in ('a', '#', '3d#'):
         raise ValueError(
             "report has to assume of the following values:" +
-            "  'a', '#' and '3d#,' got {} instead".format(report))
+            f"  'a', '#' and '3d#,' got {report} instead")
     # if spiketrains is list of neo.SpikeTrain convert to conv.BinnedSpikeTrain
     if isinstance(spiketrains, (list, SpikeTrainList)) and \
             isinstance(spiketrains[0], neo.SpikeTrain):
@@ -912,6 +913,7 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
                 report='a',
                 algo='s',
                 winlen=winlen,
+                min_neu=min_neu,
                 threads=0,
                 verbose=4)
             break
@@ -965,20 +967,6 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
     elif report == '3d#':
         spectrum = np.zeros(shape=(0, 4))
     return spectrum
-
-
-# def _fpgrowth_filter(concept, winlen, max_c, min_neu):
-#     """
-#     Filter for selecting closed frequent items set with a minimum number of
-#     neurons and a maximum number of occurrences and first spike in the first
-#     bin position
-#     """
-#     intent = np.array(concept[0])
-#     keep_concept = (min(intent % winlen) == 0
-#                     and concept[1] <= max_c
-#                     and np.unique(intent // winlen).shape[0] >= min_neu
-#                     )
-#     return keep_concept
 
 
 def _rereference_to_last_spike(transactions, winlen):
@@ -1310,7 +1298,7 @@ def pvalue_spectrum(
         raise ValueError(
             'specified surr_method (=%s) not valid' % surr_method)
     if spectrum not in ('#', '3d#'):
-        raise ValueError("Invalid spectrum: '{}'".format(spectrum))
+        raise ValueError(f"Invalid spectrum: '{spectrum}'")
 
     len_partition = n_surr // size  # length of each MPI task
     len_remainder = n_surr % size
@@ -1448,7 +1436,7 @@ def _get_pvalue_spec(max_occs, min_spikes, max_spikes, min_occ, n_surr, winlen,
         [pattern_size, pattern_occ, pattern_dur, p_value]
     """
     if spectrum not in ('#', '3d#'):
-        raise ValueError("Invalid spectrum: '{}'".format(spectrum))
+        raise ValueError(f"Invalid spectrum: '{spectrum}'")
 
     pv_spec = []
     if spectrum == '#':
@@ -1663,12 +1651,12 @@ def test_signature_significance(pv_spec, concepts, alpha, winlen,
         return []
 
     if spectrum not in ('#', '3d#'):
-        raise ValueError("spectrum must be either '#' or '3d#', "
-                         "got {} instead".format(spectrum))
+        raise ValueError("spectrum must be either '#' or '3d#', " +
+                         f"got {spectrum} instead")
     if report not in ('spectrum', 'significant', 'non_significant'):
         raise ValueError("report must be either 'spectrum'," +
                          "  'significant' or 'non_significant'," +
-                         "got {} instead".format(report))
+                         f"got {report} instead")
     if corr not in ('bonferroni', 'sidak', 'holm-sidak', 'holm',
                     'simes-hochberg', 'hommel', 'fdr_bh', 'fdr_by',
                     'fdr_tsbh', 'fdr_tsbky', '', 'no'):

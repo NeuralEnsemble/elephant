@@ -348,6 +348,41 @@ class SpadeTestCase(unittest.TestCase):
         assert_array_equal(sorted(mining_results_ffca[0][1]), sorted(
             mining_results_fpg[0][1]))
 
+    def test_spade_output(self):
+
+        np.random.seed(0)
+
+        n_spiketrains = 3
+
+        poisson_process = stg.StationaryPoissonProcess(
+            rate=20 * pq.Hz, t_stop=5 * pq.s)
+        spiketrains = poisson_process.generate_n_spiketrains(
+            n_spiketrains=n_spiketrains)
+        bin_size = 5 * pq.ms
+
+        spade_output = spade.spade(
+            spiketrains,
+            bin_size=bin_size,
+
+            # +1 to pattern length to be able to find it again
+            winlen=2,
+            min_spikes=n_spiketrains,
+            max_spikes=n_spiketrains,
+
+            # This should avoid to get auto-patterns.
+            # But apparently it doesn't work.
+            min_neu=n_spiketrains,
+            spectrum='3d#')
+
+        patterns = spade_output['patterns']
+        assert len(patterns) == 1
+        pattern = patterns[0]
+        assert len(np.unique(pattern['neurons'])) == n_spiketrains
+        assert_array_equal(pattern['itemset'], [2, 5, 1])
+        assert_array_equal(pattern['windows_ids'], [36, 134, 856])
+        assert_array_equal(pattern['neurons'], [1, 2, 0])
+        assert_array_equal(pattern['signature'], [3, 3, 1])
+
     # Tests 3d spectrum
     # Testing with multiple patterns input
     def test_spade_msip_3d(self):
