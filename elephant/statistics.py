@@ -78,6 +78,7 @@ from typing import List, Union
 
 import elephant.conversion as conv
 import elephant.kernels as kernels
+import elephant.trials
 from elephant.conversion import BinnedSpikeTrain
 from elephant.utils import deprecated_alias, check_neo_consistency, \
     is_time_quantity, round_binning_errors
@@ -611,7 +612,8 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
 
     Parameters
     ----------
-    spiketrains : neo.SpikeTrain or list of neo.SpikeTrain
+    spiketrains : neo.SpikeTrain, list of neo.SpikeTrain or
+    elephant.trials.Trials
         Neo object(s) that contains spike times, the unit of the time stamps,
         and `t_start` and `t_stop` of the spike train.
     sampling_period : pq.Quantity
@@ -789,6 +791,30 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
            [0.05842767]])
 
     """
+    if isinstance(spiketrains, elephant.trials.Trials):
+        function_args = locals()
+        del function_args['spiketrains']
+
+        list_of_rates_for_each_trial=[
+            instantaneous_rate(spiketrains.get_spiketrains_from_trial_as_list(
+            trial_number=trial_no), **function_args)
+        for trial_no in range(spiketrains.n_trials)]
+
+        average_rate_for_each_trial=[
+            np.mean(rates, axis=1) for rates in list_of_rates_for_each_trial]
+
+        list_of_average_rates_for_each_trial = [
+            neo.AnalogSignal(signal=average_rate,
+                             sampling_period=analog_signal.sampling_period,
+                             units=analog_signal.units,
+                             t_start=analog_signal.t_start,
+                             t_stop=analog_signal.t_stop,
+                             kernel=analog_signal.annotations)
+            for average_rate, analog_signal in
+            zip(average_rate_for_each_trial, list_of_rates_for_each_trial)]
+
+        return list_of_average_rates_for_each_trial
+
     def optimal_kernel(st):
         width_sigma = None
         if len(st) > 0:
