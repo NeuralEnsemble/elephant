@@ -360,12 +360,9 @@ class SpadeTestCase(unittest.TestCase):
         spade_output = spade.spade(
             spiketrains,
             bin_size=bin_size,
-            # +1 to pattern length to be able to find it again
             winlen=2,
             min_spikes=3,
             max_spikes=3,
-            # This should avoid to get auto-patterns.
-            # But apparently it doesn't work.
             min_neu=n_spiketrains,
             spectrum='3d#')
 
