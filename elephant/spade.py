@@ -202,7 +202,7 @@ def spade(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
 
         'n_subsets': int
             Number of subsets of a concept used to approximate its stability.
-            If `n_subsets` is 0, it is calculated according to to the formula
+            If `n_subsets` is 0, it is calculated according to the formula
             given in Babin, Kuznetsov (2012), proposition 6:
 
             .. math::
@@ -306,7 +306,7 @@ def spade(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
             * p-value
 
         'non_sgnf_sgnt': list
-            Non significant signatures of 'pvalue_spectrum'.
+            Non-significant signatures of 'pvalue_spectrum'.
 
     Notes
     -----
@@ -535,7 +535,7 @@ def _check_input(
     # Check surr_method
     if surr_method not in surr.SURR_METHODS:
         raise ValueError(
-            'specified surr_method (=%s) not valid' % surr_method)
+            f'specified surr_method (={surr_method}) not valid')
 
     # Check psr_param
     if psr_param is not None:
@@ -591,7 +591,7 @@ def concepts_mining(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
         pattern. If None, no maximal number of occurrences is considered.
         Default: None
     min_neu : int, optional
-        Minimum number of neurons in a sequence to considered a pattern.
+        Minimum number of neurons in a sequence to be considered a pattern.
         Default: 1
     report : {'a', '#', '3d#'}, optional
         Indicates the output of the function.
@@ -631,7 +631,7 @@ def concepts_mining(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
         A binary matrix of shape (number of windows, winlen*len(spiketrains)).
         Each row corresponds to a window (order
         according to their position in time). Each column corresponds to one
-        bin and one neuron and it is 0 if no spikes or 1 if one or more spikes
+        bin and one neuron, and it is 0 if no spikes or 1 if one or more spikes
         occurred in that bin for that particular neuron. For example, the entry
         [0,0] of this matrix corresponds to the first bin of the first window
         position for the first neuron, the entry `[0,winlen]` to the first
@@ -721,7 +721,7 @@ def _build_context(binary_matrix, winlen):
         A binary matrix with shape (number of windows,
         winlen*len(spiketrains)). Each row corresponds to a window (order
         according to their position in time).
-        Each column corresponds to one bin and one neuron and it is 0 if no
+        Each column corresponds to one bin and one neuron, and it is 0 if no
         spikes or 1 if one or more spikes occurred in that bin for that
         particular neuron.
         E.g. the entry [0,0] of this matrix corresponds to the first bin of the
@@ -837,7 +837,7 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
         A binary matrix with shape (number of windows,
         winlen*len(spiketrains)). Each row corresponds to a window (order
         according to their position in time).
-        Each column corresponds to one bin and one neuron and it is 0 if no
+        Each column corresponds to one bin and one neuron, and it is 0 if no
         spikes or 1 if one or more spikes occurred in that bin for that
         particular neuron.
         E.g. the entry [0,0] of this matrix corresponds to the first bin of the
@@ -853,7 +853,7 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
         last spike) is then given by winlen*bin_size
         Default: 1
     min_neu: int
-         Minimum number of neurons in a sequence to considered a
+         Minimum number of neurons in a sequence to be considered a
          potential pattern.
          Default: 1
 
@@ -883,7 +883,7 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
     # By default, set the maximum pattern size to the number of spiketrains
     if max_z is None:
         max_z = max(max(map(len, transactions)), min_z + 1)
-    # By default set maximum number of data to number of bins
+    # By default, set maximum number of data to number of bins
     if max_c is None:
         max_c = len(transactions)
 
@@ -922,7 +922,7 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
     # Applying min/max conditions and computing extent (window positions)
     # fpgrowth_output = [concept for concept in fpgrowth_output
     #                    if _fpgrowth_filter(concept, winlen, max_c, min_neu)]
-    # filter out subsets of patterns that are found as a side-effect
+    # filter out subsets of patterns that are found as a side effect
     # of using the moving window strategy
     fpgrowth_output = _filter_for_moving_window_subsets(
         fpgrowth_output, winlen)
@@ -996,7 +996,7 @@ def _rereference_to_last_spike(transactions, winlen):
 
 def _filter_for_moving_window_subsets(concepts, winlen):
     """
-    Since we're using a moving window subpatterns starting from
+    Since we're using a moving window, sub patterns starting from
     subsequent spikes after the first pattern spike will also be found.
     This filter removes them if they do not occur on their own in
     addition to the occurrences explained by their superset.
@@ -1094,7 +1094,7 @@ def _fast_fca(context, min_c=2, min_z=2, max_z=None,
         last spike) is then given by winlen*bin_size
         Default: 1
     min_neu: int
-         Minimum number of neurons in a sequence to considered a
+         Minimum number of neurons in a sequence to be considered a
          potential pattern.
          Default: 1
 
@@ -1122,10 +1122,10 @@ def _fast_fca(context, min_c=2, min_z=2, max_z=None,
     # Check parameters
     if min_neu < 1:
         raise ValueError('min_neu must be an integer >=1')
-    # By default set maximum number of attributes
+    # By default, set maximum number of attributes
     if max_z is None:
         max_z = len(context)
-    # By default set maximum number of data to number of bins
+    # By default, set maximum number of data to number of bins
     if max_c is None:
         max_c = len(context)
     if report == '#':
@@ -1247,7 +1247,7 @@ def pvalue_spectrum(
         pattern. If None, no maximal number of occurrences is considered.
         Default: None
     min_neu : int, optional
-        Minimum number of neurons in a sequence to considered a pattern.
+        Minimum number of neurons in a sequence to be considered a pattern.
         Default: 1
     spectrum : {'#', '3d#'}, optional
         Defines the signature of the patterns.
@@ -1296,7 +1296,7 @@ def pvalue_spectrum(
         raise ValueError('n_surr has to be >0')
     if surr_method not in surr.SURR_METHODS:
         raise ValueError(
-            'specified surr_method (=%s) not valid' % surr_method)
+            f'specified surr_method (={surr_method}) not valid')
     if spectrum not in ('#', '3d#'):
         raise ValueError(f"Invalid spectrum: '{spectrum}'")
 
@@ -1344,7 +1344,7 @@ def pvalue_spectrum(
             return []
 
         # The gather operator gives a list out. This is rearranged as a 2 resp.
-        # 3 dimensional numpy-array.
+        # 3-dimensional numpy-array.
         max_occs = np.vstack(max_occs)
 
     # Compute the p-value spectrum, and return it
@@ -1475,9 +1475,9 @@ def _get_max_occ(surr_concepts, min_spikes, max_spikes, winlen, spectrum):
     Returns
     -------
     np.ndarray
-        Two-dimensional array. Each element corresponds to a highest occurrence
-        for a specific pattern size (which range from min_spikes to max_spikes)
-        and pattern duration (which range from 0 to winlen-1).
+        Two-dimensional array. Each element corresponds to the highest
+        occurrence for a specific pattern size (which range from min_spikes to
+        max_spikes) and pattern duration (which range from 0 to winlen-1).
         The first axis corresponds to the pattern size the second to the
         duration.
     """
@@ -1505,7 +1505,7 @@ def _get_max_occ(surr_concepts, min_spikes, max_spikes, winlen, spectrum):
 
 def _stability_filter(concept, stability_thresh):
     """Criteria by which to filter concepts from the lattice"""
-    # stabilities larger then stability_thresh
+    # stabilities larger than stability_thresh
     keep_concept = \
         concept[2] > stability_thresh[0]\
         or concept[3] > stability_thresh[1]
@@ -1673,7 +1673,7 @@ def test_signature_significance(pv_spec, concepts, alpha, winlen,
 
     if len(pvalues_totest) > 0:
 
-        # Compute significance for only the non trivial tests
+        # Compute significance for only the non-trivial tests
         if corr in ['', 'no']:  # ...without statistical correction
             tests_selected = pvalues_totest <= alpha
         else:
@@ -1754,7 +1754,7 @@ def approximate_stability(concepts, rel_matrix, n_subsets=0,
         A binary matrix with shape (number of windows,
         winlen*len(spiketrains)). Each row corresponds to a window (order
         according to their position in time).
-        Each column corresponds to one bin and one neuron and it is 0 if
+        Each column corresponds to one bin and one neuron, and it is 0 if
         no spikes or 1 if one or more spikes occurred in that bin for that
         particular neuron. For example, the entry [0,0] of this matrix
         corresponds to the first bin of the first window position for the first
@@ -1855,7 +1855,7 @@ def _calculate_single_stability_parameter(intent, extent,
     """
     Calculates the stability parameter for extent or intent.
 
-    For detailed describtion see approximate_stabilty
+    For detailed description see approximate_stabilty
 
     Parameters
     ----------
