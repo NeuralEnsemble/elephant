@@ -171,7 +171,7 @@ def spade(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
 
     Parameters
     ----------
-    spiketrains : list of neo.SpikeTrain
+    spiketrains : list of :class:`neo.core.SpikeTrain`
         List containing the parallel spike trains to analyze
     bin_size : pq.Quantity
         The time precision used to discretize the spiketrains (binning).
@@ -566,7 +566,8 @@ def concepts_mining(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
 
     Parameters
     ----------
-    spiketrains : list of neo.SpikeTrain or conv.BinnedSpikeTrain
+    spiketrains : list of :class:`neo.core.SpikeTrain` or
+     :class:`elephant.conversion.BinnedSpikeTrain`
         Either list of the spiketrains to analyze or
         BinningSpikeTrain object containing the binned spiketrains to analyze
     bin_size : pq.Quantity
@@ -612,7 +613,7 @@ def concepts_mining(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
 
     Returns
     -------
-    mining_results : np.ndarray
+    mining_results : :class:`numpy.ndarray`
         If report == 'a':
             Numpy array of all the pattern candidates (concepts) found in the
             `spiketrains`. Each pattern is represented as a tuple containing
@@ -627,7 +628,7 @@ def concepts_mining(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
              The pattern spectrum is represented as a numpy array of
              quadruplets (pattern size, number of occurrences, difference
              between last and first spike of the pattern, number of patterns)
-    rel_matrix : sparse.coo_matrix
+    rel_matrix : :class:`scipy.sparse.coo_matrix`
         A binary matrix of shape (number of windows, winlen*len(spiketrains)).
         Each row corresponds to a window (order
         according to their position in time). Each column corresponds to one
@@ -1211,7 +1212,7 @@ def pvalue_spectrum(
 
     Parameters
     ----------
-    spiketrains : list of neo.SpikeTrain
+    spiketrains : list of :class:`neo.core.SpikeTrain`
         List containing the parallel spike trains to analyze
     bin_size : pq.Quantity
         The time precision used to discretize the `spiketrains` (binning).
@@ -1750,7 +1751,7 @@ def approximate_stability(concepts, rel_matrix, n_subsets=0,
         of the  occurrences of the pattern). The spike IDs are defined as:
         `spike_id=neuron_id*bin_id` with `neuron_id` in `[0, len(spiketrains)]`
         and `bin_id` in `[0, winlen]`.
-    rel_matrix : sparse.coo_matrix
+    rel_matrix : :class:`scipy.sparse.coo_matrix`
         A binary matrix with shape (number of windows,
         winlen*len(spiketrains)). Each row corresponds to a window (order
         according to their position in time).
