@@ -691,10 +691,10 @@ class SplineiCSD(CSD):
         for j in range(self.num_steps):
             if out_zs[j] >= z_js[i + 1]:
                 i += 1
-            csd[j, ] = a_mat0[i, :] + a_mat1[i, :] * \
-                             (out_zs[j] - z_js[i]) + \
-                a_mat2[i, :] * (out_zs[j] - z_js[i])**2 + \
-                a_mat3[i, :] * (out_zs[j] - z_js[i])**3
+            csd[j] = (a_mat0[i, :] + a_mat1[i, :] *
+                      (out_zs[j] - z_js[i]) +
+                      a_mat2[i, :] * (out_zs[j] - z_js[i])**2 +
+                      a_mat3[i, :] * (out_zs[j] - z_js[i])**3).item()
 
         csd_unit = (self.f_matrix.units**-1 * self.lfp.units).simplified
 

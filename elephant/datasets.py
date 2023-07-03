@@ -81,11 +81,11 @@ def download_datasets(repo_path, filepath=None, checksum=None,
         Different versions of the elephant package may require different
         versions of elephant-data.
         e.g. the follwoing URLs:
-        -  https://web.gin.g-node.org/INM-6/elephant-data/raw/0.0.1
+        -  https://web.gin.g-node.org/NeuralEnsemble/elephant-data/raw/0.0.1
            points to release v0.0.1.
-        -  https://we.gin.g-node.org/INM-6/elephant-data/raw/master
+        -  https://web.gin.g-node.org/NeuralEnsemble/elephant-data/raw/master
            always points to the latest state of elephant-data.
-        -  http://datasets.python-elephant.org/
+        -  https://datasets.python-elephant.org/
            points to the root of elephant data
 
         To change this URL, use the environment variable `ELEPHANT_DATA_URL`.
@@ -94,7 +94,7 @@ def download_datasets(repo_path, filepath=None, checksum=None,
         be used to change the default URL.
         For example to use data on branch `multitaper`, change the
         `ELEPHANT_DATA_URL` to
-        https://web.gin.g-node.org/INM-6/elephant-data/raw/multitaper.
+        https://web.gin.g-node.org/NeuralEnsemble/elephant-data/raw/multitaper.
         For a complete example, see Examples section.
 
         Parameters
@@ -129,13 +129,13 @@ def download_datasets(repo_path, filepath=None, checksum=None,
 
         >>> import os
         >>> from elephant.datasets import download_datasets
-        >>> os.environ["ELEPHANT_DATA_URL"] = "https://web.gin.g-node.org/INM-6/elephant-data/raw/multitaper" # noqa
-        >>> download_datasets("unittest/spectral/multitaper_psd/data/time_series.npy")
+        >>> os.environ["ELEPHANT_DATA_URL"] = "https://web.gin.g-node.org/NeuralEnsemble/elephant-data/raw/multitaper" # noqa
+        >>> download_datasets("unittest/spectral/multitaper_psd/data/time_series.npy") # doctest: +SKIP
         PosixPath('/tmp/elephant/time_series.npy')
         """
 
     # this url redirects to the current location of elephant-data
-    url_to_root = "http://datasets.python-elephant.org/"
+    url_to_root = "https://datasets.python-elephant.org/"
 
     # get URL to corresponding version of elephant data
     # (version elephant is equal to version elephant-data)

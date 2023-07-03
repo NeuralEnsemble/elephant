@@ -353,7 +353,8 @@ intersphinx_mapping = {
     'numpy': ('https://numpy.org/doc/stable', None),
     'neo': ('https://neo.readthedocs.io/en/stable/', None),
     'quantities': ('https://python-quantities.readthedocs.io/en/stable/', None),
-    'python': ('https://docs.python.org/3/', None)
+    'python': ('https://docs.python.org/3/', None),
+    'scipy': ('https://docs.scipy.org/doc/scipy/', None)
 }
 
 
