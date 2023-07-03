@@ -15,7 +15,7 @@ import quantities as pq
 import scipy.signal as spsig
 import scipy.stats
 from numpy.ma.testutils import assert_array_equal, assert_allclose
-from numpy.testing.utils import assert_array_almost_equal
+from numpy.testing import assert_array_almost_equal
 
 import elephant.signal_processing
 
