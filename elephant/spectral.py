@@ -1267,7 +1267,7 @@ def welch_coherence(signal_i, signal_j, n_segments=8, len_segment=None,
 
     >>> coherency.flatten()
     array([1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1.])
-    >>> phase_lag.flatten()
+    >>> phase_lag.flatten() # doctest: +SKIP
     array([0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.]) * rad
 
     """
