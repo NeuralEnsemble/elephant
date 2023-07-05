@@ -9,12 +9,13 @@ Unit tests for the spectral module.
 import unittest
 
 import neo.core
-import numpy as np
-import scipy.signal as spsig
-import scipy.fft
-import quantities as pq
 import neo.core as n
+import numpy as np
+import pytest
+import quantities as pq
 import scipy
+import scipy.fft
+import scipy.signal as spsig
 from numpy.testing import assert_array_almost_equal, assert_array_equal
 
 import elephant.spectral
@@ -953,6 +954,10 @@ class MultitaperCoherenceTestCase(unittest.TestCase):
                                    signal_freq*np.ones(len(peak_freqs)),
                                    rtol=0.05)
 
+    @pytest.mark.skipif(np.__version__ == '1.25.0' ,
+                        reason="This test will fail with numpy version"
+                               "1.25.0, see issue #24000"
+                               "https://github.com/numpy/numpy/issues/24000 ")
     def test_multitaper_cohere_perfect_cohere(self):
         # Generate dummy data
         data_length = 10000
