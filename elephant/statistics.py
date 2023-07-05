@@ -603,7 +603,8 @@ def lvr(time_intervals, R=5*pq.ms, with_nan=False):
 @deprecated_alias(spiketrain='spiketrains')
 def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
                        cutoff=5.0, t_start=None, t_stop=None, trim=False,
-                       center_kernel=True, border_correction=False):
+                       center_kernel=True, border_correction=False,
+                       cross_trial=False, cross_spiketrain=False):
     r"""
     Estimates instantaneous firing rate by kernel convolution.
 
@@ -683,6 +684,17 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
         these spike train borders under the assumption that the rate does not
         change strongly.
         Only possible in the case of a Gaussian kernel.
+
+        Default: False
+    cross_trial: bool, optional
+        If true: Calculate firing rates averaged over trials if spiketrains is
+        of type elephant.trials.Trials
+
+        Default: False
+    cross_spiketrain: bool, optional
+        If true: Calculate firing rates averaged over spiketrains if
+        spiketrains is of type elephant.trials.Trials
+
         Default: False
 
     Returns
@@ -795,25 +807,58 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
         function_args = locals()
         del function_args['spiketrains']
 
-        list_of_rates_for_each_trial=[
-            instantaneous_rate(spiketrains.get_spiketrains_from_trial_as_list(
-            trial_number=trial_no), **function_args)
-        for trial_no in range(spiketrains.n_trials)]
+        if cross_trial and not cross_spiketrain:
+            list_of_lists_of_spiketrains = [
+                spiketrains.get_spiketrains_from_trial_as_list(
+                    trial_number=trial_no)
+                for trial_no in range(spiketrains.n_trials)]
 
-        average_rate_for_each_trial=[
-            np.mean(rates, axis=1) for rates in list_of_rates_for_each_trial]
+            spiketrains_cross_trials = (
+                [list_of_lists_of_spiketrains[trial_no][spiketrain_idx]
+                 for trial_no in range(spiketrains.n_trials)]
+                for spiketrain_idx, spiketrain in
+                enumerate(list_of_lists_of_spiketrains[0]))
 
-        list_of_average_rates_for_each_trial = [
-            neo.AnalogSignal(signal=average_rate,
-                             sampling_period=analog_signal.sampling_period,
-                             units=analog_signal.units,
-                             t_start=analog_signal.t_start,
-                             t_stop=analog_signal.t_stop,
-                             kernel=analog_signal.annotations)
-            for average_rate, analog_signal in
-            zip(average_rate_for_each_trial, list_of_rates_for_each_trial)]
+            rates_cross_trials = (instantaneous_rate(spiketrains,
+                                                     **function_args)
+                                  for spiketrains in spiketrains_cross_trials)
 
-        return list_of_average_rates_for_each_trial
+            average_rate_cross_trials = (
+                np.mean(rates, axis=1) for rates in rates_cross_trials)
+
+            list_of_average_rates_cross_trial = [
+                neo.AnalogSignal(signal=average_rate,
+                                 sampling_period=analog_signal.sampling_period,
+                                 units=analog_signal.units,
+                                 t_start=analog_signal.t_start,
+                                 t_stop=analog_signal.t_stop,
+                                 kernel=analog_signal.annotations)
+                for average_rate, analog_signal in
+                zip(average_rate_cross_trials, rates_cross_trials)]
+
+            return list_of_average_rates_cross_trial
+
+        if not cross_trial and not cross_spiketrain:
+            return [instantaneous_rate(
+                        spiketrains.get_spiketrains_from_trial_as_list(
+                        trial_number=trial_no), **function_args)
+                    for trial_no in range(spiketrains.n_trials)]
+
+        #
+        # average_rate_for_each_trial=[
+        #     np.mean(rates, axis=1) for rates in list_of_rates_for_each_trial]
+
+        # list_of_average_rates_for_each_trial = [
+        #     neo.AnalogSignal(signal=average_rate,
+        #                      sampling_period=analog_signal.sampling_period,
+        #                      units=analog_signal.units,
+        #                      t_start=analog_signal.t_start,
+        #                      t_stop=analog_signal.t_stop,
+        #                      kernel=analog_signal.annotations)
+        #     for average_rate, analog_signal in
+        #     zip(average_rate_for_each_trial, list_of_rates_for_each_trial)]
+
+       # return list_of_average_rates_for_each_trial
 
     def optimal_kernel(st):
         width_sigma = None
