@@ -9,14 +9,14 @@ Unit tests for the spectral module.
 import unittest
 
 import neo.core
-import neo.core as n
 import numpy as np
 import pytest
 import quantities as pq
 import scipy
 import scipy.fft
 import scipy.signal as spsig
-from numpy.testing import assert_array_almost_equal, assert_array_equal
+from neo import AnalogSignal
+from numpy.testing import assert_array_equal
 
 import elephant.spectral
 from elephant.datasets import download_datasets, ELEPHANT_TMP_DIR
@@ -25,8 +25,8 @@ from elephant.datasets import download_datasets, ELEPHANT_TMP_DIR
 class WelchPSDTestCase(unittest.TestCase):
     def test_welch_psd_errors(self):
         # generate a dummy data
-        data = n.AnalogSignal(np.zeros(5000), sampling_period=0.001 * pq.s,
-                              units='mV')
+        data = AnalogSignal(np.zeros(5000), sampling_period=0.001 * pq.s,
+                            units='mV')
 
         # check for invalid parameter values
         # - length of segments
@@ -52,8 +52,8 @@ class WelchPSDTestCase(unittest.TestCase):
 
     def test_welch_psd_warnings(self):
         # generate a dummy data
-        data = n.AnalogSignal(np.zeros(5000), sampling_period=0.001 * pq.s,
-                              units='mV')
+        data = AnalogSignal(np.zeros(5000), sampling_period=0.001 * pq.s,
+                            units='mV')
         # Test deprecation warning for 'hanning' window
         self.assertWarns(DeprecationWarning, elephant.spectral.welch_psd,
                          data, window='hanning')
@@ -67,9 +67,9 @@ class WelchPSDTestCase(unittest.TestCase):
         signal = [np.sin(2 * np.pi * signal_freq * t)
                   for t in np.arange(0, data_length * sampling_period,
                                      sampling_period)]
-        data = n.AnalogSignal(np.array(signal + noise),
-                              sampling_period=sampling_period * pq.s,
-                              units='mV')
+        data = AnalogSignal(np.array(signal + noise),
+                            sampling_period=sampling_period * pq.s,
+                            units='mV')
 
         # consistency between different ways of specifying segment length
         freqs1, psd1 = elephant.spectral.welch_psd(
@@ -114,9 +114,9 @@ class WelchPSDTestCase(unittest.TestCase):
     def test_welch_psd_input_types(self):
         # generate a test data
         sampling_period = 0.001
-        data = n.AnalogSignal(np.array(np.random.normal(size=5000)),
-                              sampling_period=sampling_period * pq.s,
-                              units='mV')
+        data = AnalogSignal(np.array(np.random.normal(size=5000)),
+                            sampling_period=sampling_period * pq.s,
+                            units='mV')
 
         # outputs from AnalogSignal input are of Quantity type (standard usage)
         freqs_neo, psd_neo = elephant.spectral.welch_psd(data)
@@ -153,12 +153,12 @@ class WelchPSDTestCase(unittest.TestCase):
         # Since row-column order in AnalogSignal is different from the
         # conventional one, `data_np` needs to be transposed when it's used to
         # define an AnalogSignal
-        data_neo = n.AnalogSignal(data_np.T,
-                                  sampling_period=sampling_period * pq.s,
-                                  units='mV')
-        data_neo_1dim = n.AnalogSignal(data_np[0],
-                                       sampling_period=sampling_period * pq.s,
-                                       units='mV')
+        data_neo = AnalogSignal(data_np.T,
+                                sampling_period=sampling_period * pq.s,
+                                units='mV')
+        data_neo_1dim = AnalogSignal(data_np[0],
+                                     sampling_period=sampling_period * pq.s,
+                                     units='mV')
 
         # check if the results from different input types are identical
         freqs_np, psd_np = elephant.spectral.welch_psd(data_np,
@@ -175,10 +175,11 @@ class MultitaperPSDTestCase(unittest.TestCase):
     def test_multitaper_psd_errors(self):
         # generate dummy data
         data_length = 5000
-        signal = n.AnalogSignal(np.zeros(data_length),
-                                sampling_period=0.001 * pq.s,
-                                units='mV')
+        signal = AnalogSignal(np.zeros(data_length),
+                              sampling_period=0.001 * pq.s,
+                              units='mV')
         fs = signal.sampling_rate
+        self.assertIsInstance(fs, pq.Quantity)
 
         # check for invalid parameter values
         # - number of tapers
@@ -201,8 +202,8 @@ class MultitaperPSDTestCase(unittest.TestCase):
         freqs = scipy.fft.rfftfreq(len(fake_ts), d=sampling_period)
         signal_freq = freqs[r.argmax()]
 
-        data = n.AnalogSignal(fake_ts, sampling_period=sampling_period * pq.s,
-                              units='mV')
+        data = AnalogSignal(fake_ts, sampling_period=sampling_period * pq.s,
+                            units='mV')
 
         # consistency between different ways of specifying number of tapers
         freqs1, psd1 = elephant.spectral.multitaper_psd(data,
@@ -233,9 +234,9 @@ class MultitaperPSDTestCase(unittest.TestCase):
         signal = [np.sin(2 * np.pi * signal_freq * t)
                   for t in np.arange(0, data_length * sampling_period,
                                      sampling_period)]
-        data = n.AnalogSignal(np.array(signal + noise),
-                              sampling_period=sampling_period * pq.s,
-                              units='mV')
+        data = AnalogSignal(np.array(signal + noise),
+                            sampling_period=sampling_period * pq.s,
+                            units='mV')
 
         # Test num_tapers vs nw
         freqs1, psd1 = elephant.spectral.multitaper_psd(data,
@@ -291,9 +292,9 @@ class MultitaperPSDTestCase(unittest.TestCase):
     def test_multitaper_psd_input_types(self):
         # generate a test data
         sampling_period = 0.001
-        data = n.AnalogSignal(np.array(np.random.normal(size=5000)),
-                              sampling_period=sampling_period * pq.s,
-                              units='mV')
+        data = AnalogSignal(np.array(np.random.normal(size=5000)),
+                            sampling_period=sampling_period * pq.s,
+                            units='mV')
 
         # outputs from AnalogSignal input are of Quantity type (standard usage)
         freqs_neo, psd_neo = elephant.spectral.multitaper_psd(data)
@@ -340,9 +341,9 @@ class SegmentedMultitaperPSDTestCase(unittest.TestCase):
     def test_segmented_multitaper_psd_errors(self):
         # generate dummy data
         data_length = 5000
-        signal = n.AnalogSignal(np.zeros(data_length),
-                                sampling_period=0.001 * pq.s,
-                                units='mV')
+        signal = AnalogSignal(np.zeros(data_length),
+                              sampling_period=0.001 * pq.s,
+                              units='mV')
         fs = signal.sampling_rate
 
         # check for invalid parameter values
@@ -389,8 +390,8 @@ class SegmentedMultitaperPSDTestCase(unittest.TestCase):
         freqs = scipy.fft.rfftfreq(len(fake_ts), d=sampling_period)
         signal_freq = freqs[r.argmax()]
 
-        data = n.AnalogSignal(fake_ts, sampling_period=sampling_period * pq.s,
-                              units='mV')
+        data = AnalogSignal(fake_ts, sampling_period=sampling_period * pq.s,
+                            units='mV')
 
         # consistency between different ways of specifying n_per_seg
         # n_per_seg = int(fs/dF) and n_per_seg = len_segment
@@ -415,9 +416,9 @@ class SegmentedMultitaperPSDTestCase(unittest.TestCase):
         signal = [np.sin(2 * np.pi * signal_freq * t)
                   for t in np.arange(0, data_length * sampling_period,
                                      sampling_period)]
-        data = n.AnalogSignal(np.array(signal + noise),
-                              sampling_period=sampling_period * pq.s,
-                              units='mV')
+        data = AnalogSignal(np.array(signal + noise),
+                            sampling_period=sampling_period * pq.s,
+                            units='mV')
 
         # test frequency_resolution vs len_segment vs n_segments
         n_segments = 5
@@ -440,13 +441,12 @@ class SegmentedMultitaperPSDTestCase(unittest.TestCase):
         self.assertTrue(freqs_ns.shape < freqs_ls.shape < freqs_fr.shape)
         self.assertTrue(psd_ns.shape < psd_ls.shape < psd_fr.shape)
 
-
     def test_segmented_multitaper_psd_input_types(self):
         # generate a test data
         sampling_period = 0.001
-        data = n.AnalogSignal(np.array(np.random.normal(size=5000)),
-                              sampling_period=sampling_period * pq.s,
-                              units='mV')
+        data = AnalogSignal(np.array(np.random.normal(size=5000)),
+                            sampling_period=sampling_period * pq.s,
+                            units='mV')
 
         # outputs from AnalogSignal input are of Quantity type (standard usage)
         freqs_neo, psd_neo = elephant.spectral.segmented_multitaper_psd(data)
@@ -502,9 +502,9 @@ class MultitaperCrossSpectrumTestCase(unittest.TestCase):
     def test_multitaper_cross_spectrum_errors(self):
         # generate dummy data
         data_length = 5000
-        signal = n.AnalogSignal(np.zeros(data_length),
-                                sampling_period=0.001 * pq.s,
-                                units='mV')
+        signal = AnalogSignal(np.zeros(data_length),
+                              sampling_period=0.001 * pq.s,
+                              units='mV')
         fs = signal.sampling_rate
 
         # check for invalid parameter values
@@ -534,18 +534,18 @@ class MultitaperCrossSpectrumTestCase(unittest.TestCase):
         sampling_period = 0.001
         freqs = scipy.fft.rfftfreq(len(signal_x), d=sampling_period)
         signal_freq = freqs[r.argmax()]
-        data = n.AnalogSignal(np.vstack([signal_x, signal_y]).T,
-                              sampling_period=sampling_period * pq.s,
-                              units='mV')
+        data = AnalogSignal(np.vstack([signal_x, signal_y]).T,
+                            sampling_period=sampling_period * pq.s,
+                            units='mV')
 
         # consistency between different ways of specifying number of tapers
         freqs1, cross_spec1 = \
-                elephant.spectral.multitaper_cross_spectrum(
+            elephant.spectral.multitaper_cross_spectrum(
                     data,
                     fs=data.sampling_rate,
                     nw=3.5)
         freqs2, cross_spec2 = \
-                elephant.spectral.multitaper_cross_spectrum(
+            elephant.spectral.multitaper_cross_spectrum(
                     data,
                     fs=data.sampling_rate,
                     nw=3.5,
@@ -556,12 +556,12 @@ class MultitaperCrossSpectrumTestCase(unittest.TestCase):
         # peak resolution and consistency with data
         peak_res = 1.0 * pq.Hz
         freqs, cross_spec = \
-                elephant.spectral.multitaper_cross_spectrum(
+            elephant.spectral.multitaper_cross_spectrum(
                     data, peak_resolution=peak_res)
 
         self.assertEqual(freqs[cross_spec[0, 0].argmax()], signal_freq)
         freqs_np, cross_spec_np = \
-                elephant.spectral.multitaper_cross_spectrum(
+            elephant.spectral.multitaper_cross_spectrum(
                     data.magnitude.T, fs=1 / sampling_period,
                     peak_resolution=peak_res)
         self.assertTrue((freqs == freqs_np).all()
@@ -602,9 +602,9 @@ class MultitaperCrossSpectrumTestCase(unittest.TestCase):
                                 sampling_period)
         signal_x = np.sin(2 * np.pi * signal_freq * time_points) + noise[0]
         signal_y = np.cos(2 * np.pi * signal_freq * time_points) + noise[1]
-        data = n.AnalogSignal(np.vstack([signal_x, signal_y]).T,
-                              sampling_period=sampling_period * pq.s,
-                              units='mV')
+        data = AnalogSignal(np.vstack([signal_x, signal_y]).T,
+                            sampling_period=sampling_period * pq.s,
+                            units='mV')
 
         # Test num_tapers vs nw
         freqs1, cross_spec1 = elephant.spectral.multitaper_cross_spectrum(
@@ -634,19 +634,19 @@ class MultitaperCrossSpectrumTestCase(unittest.TestCase):
                                 sampling_period)
         signal_x = np.sin(2 * np.pi * signal_freq * time_points) + noise[0]
         signal_y = np.cos(2 * np.pi * signal_freq * time_points) + noise[1]
-        data = n.AnalogSignal(np.vstack([signal_x, signal_y]).T,
-                              sampling_period=sampling_period * pq.s,
-                              units='mV')
+        data = AnalogSignal(np.vstack([signal_x, signal_y]).T,
+                            sampling_period=sampling_period * pq.s,
+                            units='mV')
 
         # outputs from AnalogSignal input are of Quantity type (standard usage)
         freqs_neo, cross_spec_neo \
-                = elephant.spectral.multitaper_cross_spectrum(data)
+            = elephant.spectral.multitaper_cross_spectrum(data)
         self.assertTrue(isinstance(freqs_neo, pq.quantity.Quantity))
         self.assertTrue(isinstance(cross_spec_neo, pq.quantity.Quantity))
 
         # outputs from Quantity array input are of Quantity type
         freqs_pq, cross_spec_pq \
-                = elephant.spectral.multitaper_cross_spectrum(
+            = elephant.spectral.multitaper_cross_spectrum(
                     data.magnitude.T * data.units,
                     fs=1 / (sampling_period * pq.s))
         self.assertTrue(isinstance(freqs_pq, pq.quantity.Quantity))
@@ -654,7 +654,7 @@ class MultitaperCrossSpectrumTestCase(unittest.TestCase):
 
         # outputs from Numpy ndarray input are NOT of Quantity type
         freqs_np, cross_spec_np \
-                = elephant.spectral.multitaper_cross_spectrum(
+            = elephant.spectral.multitaper_cross_spectrum(
                     data.magnitude.T,
                     fs=1 / (sampling_period * pq.s))
         self.assertFalse(isinstance(freqs_np, pq.quantity.Quantity))
@@ -673,9 +673,9 @@ class SegmentedMultitaperCrossSpectrumTestCase(unittest.TestCase):
     def test_segmented_multitaper_cross_spectrum_errors(self):
         # generate dummy data
         data_length = 5000
-        signal = n.AnalogSignal(np.zeros(data_length),
-                                sampling_period=0.001 * pq.s,
-                                units='mV')
+        signal = AnalogSignal(np.zeros(data_length),
+                              sampling_period=0.001 * pq.s,
+                              units='mV')
         fs = signal.sampling_rate
 
         # - frequency resolution
@@ -723,9 +723,9 @@ class SegmentedMultitaperCrossSpectrumTestCase(unittest.TestCase):
         sampling_period = 0.001
         freqs = scipy.fft.rfftfreq(len(signal_x), d=sampling_period)
         signal_freq = freqs[r.argmax()]
-        data = n.AnalogSignal(np.vstack([signal_x, signal_y]).T,
-                              sampling_period=sampling_period * pq.s,
-                              units='mV')
+        data = AnalogSignal(np.vstack([signal_x, signal_y]).T,
+                            sampling_period=sampling_period * pq.s,
+                            units='mV')
 
         # consistency between different ways of specifying n_per_seg
         # n_per_seg = int(fs/dF) and n_per_seg = len_segment
@@ -804,9 +804,9 @@ class SegmentedMultitaperCrossSpectrumTestCase(unittest.TestCase):
         sampling_period = 0.001
         freqs = scipy.fft.rfftfreq(len(signal_x), d=sampling_period)
         signal_freq = freqs[r.argmax()]
-        data = n.AnalogSignal(np.vstack([signal_x, signal_y]).T,
-                              sampling_period=sampling_period * pq.s,
-                              units='mV')
+        data = AnalogSignal(np.vstack([signal_x, signal_y]).T,
+                            sampling_period=sampling_period * pq.s,
+                            units='mV')
 
         n_segments = 5
         len_segment = 2000
@@ -841,9 +841,9 @@ class SegmentedMultitaperCrossSpectrumTestCase(unittest.TestCase):
                                 sampling_period)
         signal_x = np.sin(2 * np.pi * signal_freq * time_points) + noise[0]
         signal_y = np.cos(2 * np.pi * signal_freq * time_points) + noise[1]
-        data = n.AnalogSignal(np.vstack([signal_x, signal_y]).T,
-                              sampling_period=sampling_period * pq.s,
-                              units='mV')
+        data = AnalogSignal(np.vstack([signal_x, signal_y]).T,
+                            sampling_period=sampling_period * pq.s,
+                            units='mV')
 
         freqs1, psd_multitaper = elephant.spectral.multitaper_psd(
             signal=data, fs=data.sampling_rate, nw=4, num_tapers=8)
@@ -875,9 +875,9 @@ class SegmentedMultitaperCrossSpectrumTestCase(unittest.TestCase):
                                 sampling_period)
         signal_x = np.sin(2 * np.pi * signal_freq * time_points) + noise[0]
         signal_y = np.cos(2 * np.pi * signal_freq * time_points) + noise[1]
-        data = n.AnalogSignal(np.vstack([signal_x, signal_y]).T,
-                              sampling_period=sampling_period * pq.s,
-                              units='mV')
+        data = AnalogSignal(np.vstack([signal_x, signal_y]).T,
+                            sampling_period=sampling_period * pq.s,
+                            units='mV')
 
         # frequency resolution as an integer
         freq_res_int = 1
@@ -954,7 +954,7 @@ class MultitaperCoherenceTestCase(unittest.TestCase):
                                    signal_freq*np.ones(len(peak_freqs)),
                                    rtol=0.05)
 
-    @pytest.mark.skipif(np.__version__ == '1.25.0' ,
+    @pytest.mark.skipif(np.__version__ == '1.25.0',
                         reason="This test will fail with numpy version"
                                "1.25.0, see issue #24000"
                                "https://github.com/numpy/numpy/issues/24000 ")
@@ -1036,10 +1036,10 @@ class MultitaperCoherenceTestCase(unittest.TestCase):
 class WelchCohereTestCase(unittest.TestCase):
     def test_welch_cohere_errors(self):
         # generate a dummy data
-        x = n.AnalogSignal(np.zeros(5000), sampling_period=0.001 * pq.s,
-                           units='mV')
-        y = n.AnalogSignal(np.zeros(5000), sampling_period=0.001 * pq.s,
-                           units='mV')
+        x = AnalogSignal(np.zeros(5000), sampling_period=0.001 * pq.s,
+                         units='mV')
+        y = AnalogSignal(np.zeros(5000), sampling_period=0.001 * pq.s,
+                         units='mV')
 
         # check for invalid parameter values
         # - length of segments
@@ -1065,10 +1065,10 @@ class WelchCohereTestCase(unittest.TestCase):
 
     def test_welch_cohere_warnings(self):
         # generate a dummy data
-        x = n.AnalogSignal(np.zeros(5000), sampling_period=0.001 * pq.s,
-                           units='mV')
-        y = n.AnalogSignal(np.zeros(5000), sampling_period=0.001 * pq.s,
-                           units='mV')
+        x = AnalogSignal(np.zeros(5000), sampling_period=0.001 * pq.s,
+                         units='mV')
+        y = AnalogSignal(np.zeros(5000), sampling_period=0.001 * pq.s,
+                         units='mV')
         # Test deprecation warning for 'hanning' window
         self.assertWarns(DeprecationWarning, elephant.spectral.welch_coherence,
                          x, y, window='hanning')
@@ -1086,10 +1086,10 @@ class WelchCohereTestCase(unittest.TestCase):
         signal2 = [np.sin(2 * np.pi * signal_freq * t)
                    for t in np.arange(0, data_length * sampling_period,
                                       sampling_period)]
-        x = n.AnalogSignal(np.array(signal1 + noise1), units='mV',
-                           sampling_period=sampling_period * pq.s)
-        y = n.AnalogSignal(np.array(signal2 + noise2), units='mV',
-                           sampling_period=sampling_period * pq.s)
+        x = AnalogSignal(np.array(signal1 + noise1), units='mV',
+                         sampling_period=sampling_period * pq.s)
+        y = AnalogSignal(np.array(signal2 + noise2), units='mV',
+                         sampling_period=sampling_period * pq.s)
 
         # consistency between different ways of specifying segment length
         freqs1, coherency1, phase_lag1 = elephant.spectral.welch_coherence(
@@ -1134,12 +1134,12 @@ class WelchCohereTestCase(unittest.TestCase):
     def test_welch_cohere_input_types(self):
         # generate a test data
         sampling_period = 0.001
-        x = n.AnalogSignal(np.array(np.random.normal(size=5000)),
-                           sampling_period=sampling_period * pq.s,
-                           units='mV')
-        y = n.AnalogSignal(np.array(np.random.normal(size=5000)),
-                           sampling_period=sampling_period * pq.s,
-                           units='mV')
+        x = AnalogSignal(np.array(np.random.normal(size=5000)),
+                         sampling_period=sampling_period * pq.s,
+                         units='mV')
+        y = AnalogSignal(np.array(np.random.normal(size=5000)),
+                         sampling_period=sampling_period * pq.s,
+                         units='mV')
 
         # outputs from AnalogSignal input are of Quantity type
         # (standard usage)
@@ -1182,14 +1182,14 @@ class WelchCohereTestCase(unittest.TestCase):
         # Since row-column order in AnalogSignal is different from the
         # convention in NumPy/SciPy, `data_np` needs to be transposed when it's
         # used to define an AnalogSignal
-        x_neo = n.AnalogSignal(x_np.T, units='mV',
-                               sampling_period=sampling_period * pq.s)
-        y_neo = n.AnalogSignal(y_np.T, units='mV',
-                               sampling_period=sampling_period * pq.s)
-        x_neo_1dim = n.AnalogSignal(x_np[0], units='mV',
-                                    sampling_period=sampling_period * pq.s)
-        y_neo_1dim = n.AnalogSignal(y_np[0], units='mV',
-                                    sampling_period=sampling_period * pq.s)
+        x_neo = AnalogSignal(x_np.T, units='mV',
+                             sampling_period=sampling_period * pq.s)
+        y_neo = AnalogSignal(y_np.T, units='mV',
+                             sampling_period=sampling_period * pq.s)
+        x_neo_1dim = AnalogSignal(x_np[0], units='mV',
+                                  sampling_period=sampling_period * pq.s)
+        y_neo_1dim = AnalogSignal(y_np[0], units='mV',
+                                  sampling_period=sampling_period * pq.s)
 
         # check if the results from different input types are identical
         freqs_np, coherency_np, phase_lag_np = elephant.spectral \
