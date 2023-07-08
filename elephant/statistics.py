@@ -1362,12 +1362,9 @@ class Complexity(object):
                                    binary=self.binary)
 
         time_hist_magnitude = time_hist.magnitude.flatten()
-        max_hist_entry = max(time_hist_magnitude)
 
         # Computing the histogram of the entries of pophist
-        complexity_hist = np.histogram(
-            time_hist_magnitude,
-            bins=range(0, max_hist_entry + 2))[0]
+        complexity_hist = np.bincount(time_hist_magnitude)
 
         return time_hist, complexity_hist
 
