@@ -64,6 +64,7 @@ References
 
 from __future__ import division, print_function
 
+import inspect
 import math
 import warnings
 
@@ -804,10 +805,19 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
 
     """
     if isinstance(spiketrains, elephant.trials.Trials):
-        function_args = locals()
-        del function_args['spiketrains']
+        kwargs = {
+            'kernel': kernel,
+            'cutoff': cutoff,
+            't_start': t_start,
+            't_stop': t_stop,
+            'trim': trim,
+            'center_kernel': center_kernel,
+            'border_correction': border_correction,
+            'cross_trial': cross_trial,
+            'cross_spiketrain': cross_spiketrain
+        }
 
-        if cross_trial and not cross_spiketrain:
+        if cross_trial:
             list_of_lists_of_spiketrains = [
                 spiketrains.get_spiketrains_from_trial_as_list(
                     trial_number=trial_no)
@@ -819,12 +829,25 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
                 for spiketrain_idx, spiketrain in
                 enumerate(list_of_lists_of_spiketrains[0]))
 
-            rates_cross_trials = (instantaneous_rate(spiketrains,
-                                                     **function_args)
-                                  for spiketrains in spiketrains_cross_trials)
+            rates_cross_trials = [instantaneous_rate(spiketrain,
+                                                     sampling_period,
+                                                     **kwargs)
+                                  for spiketrain in spiketrains_cross_trials]
 
             average_rate_cross_trials = (
                 np.mean(rates, axis=1) for rates in rates_cross_trials)
+            if cross_spiketrain:
+                average_rate = np.mean(list(average_rate_cross_trials), axis=0)
+                analog_signal = rates_cross_trials[0]
+
+                return [
+                    neo.AnalogSignal(signal=average_rate,
+                                     sampling_period=analog_signal.sampling_period,
+                                     units=analog_signal.units,
+                                     t_start=analog_signal.t_start,
+                                     t_stop=analog_signal.t_stop,
+                                     kernel=analog_signal.annotations)
+                ]
 
             list_of_average_rates_cross_trial = [
                 neo.AnalogSignal(signal=average_rate,
@@ -841,24 +864,27 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
         if not cross_trial and not cross_spiketrain:
             return [instantaneous_rate(
                         spiketrains.get_spiketrains_from_trial_as_list(
-                        trial_number=trial_no), **function_args)
+                        trial_number=trial_no), sampling_period, **kwargs)
                     for trial_no in range(spiketrains.n_trials)]
 
-        #
-        # average_rate_for_each_trial=[
-        #     np.mean(rates, axis=1) for rates in list_of_rates_for_each_trial]
+        if not cross_trial and cross_spiketrain:
+            rates = [instantaneous_rate(
+                        spiketrains.get_spiketrains_from_trial_as_list(
+                        trial_number=trial_no), sampling_period, **kwargs)
+                    for trial_no in range(spiketrains.n_trials)]
 
-        # list_of_average_rates_for_each_trial = [
-        #     neo.AnalogSignal(signal=average_rate,
-        #                      sampling_period=analog_signal.sampling_period,
-        #                      units=analog_signal.units,
-        #                      t_start=analog_signal.t_start,
-        #                      t_stop=analog_signal.t_stop,
-        #                      kernel=analog_signal.annotations)
-        #     for average_rate, analog_signal in
-        #     zip(average_rate_for_each_trial, list_of_rates_for_each_trial)]
+            average_rates = (np.mean(rate, axis=1) for rate in rates)
 
-       # return list_of_average_rates_for_each_trial
+            list_of_average_rates_over_spiketrains = [
+                neo.AnalogSignal(signal=average_rate,
+                                 sampling_period=analog_signal.sampling_period,
+                                 units=analog_signal.units,
+                                 t_start=analog_signal.t_start,
+                                 t_stop=analog_signal.t_stop,
+                                 kernel=analog_signal.annotations)
+                for average_rate, analog_signal in zip(average_rates, rates)]
+
+            return list_of_average_rates_over_spiketrains
 
     def optimal_kernel(st):
         width_sigma = None
