@@ -64,7 +64,6 @@ References
 
 from __future__ import division, print_function
 
-import inspect
 import math
 import warnings
 
@@ -841,12 +840,13 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
                 analog_signal = rates_cross_trials[0]
 
                 return [
-                    neo.AnalogSignal(signal=average_rate,
-                                     sampling_period=analog_signal.sampling_period,
-                                     units=analog_signal.units,
-                                     t_start=analog_signal.t_start,
-                                     t_stop=analog_signal.t_stop,
-                                     kernel=analog_signal.annotations)
+                    neo.AnalogSignal(
+                        signal=average_rate,
+                        sampling_period=analog_signal.sampling_period,
+                        units=analog_signal.units,
+                        t_start=analog_signal.t_start,
+                        t_stop=analog_signal.t_stop,
+                        kernel=analog_signal.annotations)
                 ]
 
             list_of_average_rates_cross_trial = [
@@ -864,13 +864,13 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
         if not cross_trial and not cross_spiketrain:
             return [instantaneous_rate(
                         spiketrains.get_spiketrains_from_trial_as_list(
-                        trial_number=trial_no), sampling_period, **kwargs)
+                            trial_number=trial_no), sampling_period, **kwargs)
                     for trial_no in range(spiketrains.n_trials)]
 
         if not cross_trial and cross_spiketrain:
             rates = [instantaneous_rate(
                         spiketrains.get_spiketrains_from_trial_as_list(
-                        trial_number=trial_no), sampling_period, **kwargs)
+                            trial_number=trial_no), sampling_period, **kwargs)
                     for trial_no in range(spiketrains.n_trials)]
 
             average_rates = (np.mean(rate, axis=1) for rate in rates)
