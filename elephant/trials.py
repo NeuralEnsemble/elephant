@@ -13,6 +13,7 @@ from typing import List
 import quantities
 from neo.core import Segment, Block
 
+
 class Trials:
     """
     Base class for handling trials.
@@ -93,7 +94,7 @@ class Trials:
 
     @abstractmethod
     def get_spiketrains_from_trial_as_list(self, trial_number: int
-                                   ) -> List[neo.core.SpikeTrain]:
+                                           ) -> List[neo.core.SpikeTrain]:
         """
         Get all spiketrains from a specific trial and return a list.
 
@@ -111,7 +112,7 @@ class Trials:
 
     @abstractmethod
     def get_spiketrains_from_trial_as_segment(self, trial_number: int
-                                   ) -> neo.core.Segment:
+                                              ) -> neo.core.Segment:
         """
         Get all spiketrains from a specific trial and return a Segment.
 
@@ -129,7 +130,7 @@ class Trials:
 
     @abstractmethod
     def get_analogsignals_from_trial_as_list(self, trial_number: int
-                                   ) -> List[neo.core.AnalogSignal]:
+                                             ) -> List[neo.core.AnalogSignal]:
         """
         Get all analogsignals from a specific trial and return a list.
 
@@ -146,8 +147,7 @@ class Trials:
         pass
 
     @abstractmethod
-    def set_common_trial_start(self, t_start: quantities.Quantity
-                                             ) -> None:
+    def set_common_trial_start(self, t_start: quantities.Quantity) -> None:
         """
         Set common trial start time for all trials
 
@@ -159,8 +159,7 @@ class Trials:
         pass
 
     @abstractmethod
-    def set_common_trial_stop(self, t_stop: quantities.Quantity
-                                             ) -> None:
+    def set_common_trial_stop(self, t_stop: quantities.Quantity) -> None:
         """
         Set common trial stop time for all trials
 
@@ -170,6 +169,7 @@ class Trials:
 
         """
         pass
+
 
 class TrialsFromBlock(Trials):
     """
@@ -205,7 +205,7 @@ class TrialsFromBlock(Trials):
 
     def get_trials(self, trial_numbers: List[int]) -> neo.core.Block:
         """Get a block of trials by trial numbers"""
-        block=Block()
+        block = Block()
         for trial_number in trial_numbers:
             block.segments.append(self.get_trial(trial_number))
         return block
@@ -223,12 +223,12 @@ class TrialsFromBlock(Trials):
     @property
     def n_spiketrains_trial_by_trial(self) -> List[int]:
         """Get the number of SpikeTrain instances in each trial."""
-        return[len(trial.spiketrains) for trial in self.block.segments]
+        return [len(trial.spiketrains) for trial in self.block.segments]
 
     @property
     def n_analogsignals_trial_by_trial(self) -> List[int]:
         """Get the number of AnalogSignals instances in each trial."""
-        return[len(trial.analogsignals) for trial in self.block.segments]
+        return [len(trial.analogsignals) for trial in self.block.segments]
 
     def get_spiketrains_from_trial(self, trial_number: int
                                    ) -> List[
@@ -237,28 +237,30 @@ class TrialsFromBlock(Trials):
         return self.block.segments[trial_number].spiketrains
 
     def get_spiketrains_from_trial_as_list(self, trial_number: int = 0
-                                   ) -> List[neo.core.SpikeTrain]:
+                                           ) -> List[neo.core.SpikeTrain]:
         """Return a list of all spiketrains from a trial"""
         return [spiketrain for spiketrain in
                 self.block.segments[trial_number].spiketrains]
 
-    def get_spiketrains_from_trial_as_segment(self, trial_number: int =0
-                                   ) -> neo.core.Segment:
+    def get_spiketrains_from_trial_as_segment(self, trial_number: int = 0
+                                              ) -> neo.core.Segment:
         """Return a segment with all spiketrains from a trial"""
-        segment=neo.core.Segment()
-        for spiketrain in self.get_spiketrains_from_trial_as_list(trial_number):
+        segment = neo.core.Segment()
+        for spiketrain in self.get_spiketrains_from_trial_as_list(trial_number
+                                                                  ):
             segment.spiketrains.append(spiketrain)
         return segment
 
     def get_analogsignals_from_trial_as_list(self, trial_number: int = 0
-                                   ) -> List[neo.core.AnalogSignal]:
+                                             ) -> List[neo.core.AnalogSignal]:
         """Return a list of all analogsignals from a trial"""
         return [analogsignal for analogsignal in
                 self.block.segments[trial_number].analogsignals]
 
     def set_common_trial_start(self, t_start: quantities.Quantity) -> None:
         """Set the start for all trials to t_start"""
-        if t_start.simplified.dimensionality != (1*quantities.s).dimensionality:
+        if t_start.simplified.dimensionality != (1*quantities.s
+                                                 ).dimensionality:
             raise TypeError("t_start must be a time quantity")
         for segment in self.block.segments:
             for spiketrain in segment.spiketrains:
@@ -273,6 +275,7 @@ class TrialsFromBlock(Trials):
             for spiketrain in segment.spiketrains:
                 if hasattr(spiketrain, 't_stop'):
                     spiketrain.t_stop = t_stop
+
 
 class TrialsFromLists(Trials):
     """
@@ -300,7 +303,7 @@ class TrialsFromLists(Trials):
 
     def __getitem__(self, trial_number: int) -> neo.core.Segment:
         """Get a specific trial by number"""
-        segment=Segment()
+        segment = Segment()
         for element in self.list_of_trials[trial_number]:
             if isinstance(element, neo.core.SpikeTrain):
                 segment.spiketrains.append(element)
@@ -314,7 +317,7 @@ class TrialsFromLists(Trials):
 
     def get_trials(self, trial_numbers: List[int]) -> neo.core.Block:
         """Get a block of trials by trial numbers"""
-        block=Block()
+        block = Block()
         for trial_number in trial_numbers:
             block.segments.append(self.get_trial(trial_number))
         return block
@@ -332,8 +335,8 @@ class TrialsFromLists(Trials):
     @property
     def n_spiketrains_trial_by_trial(self) -> List[int]:
         """Get the number of spiketrains in each trial."""
-        return[sum(map(lambda x: isinstance(x,  neo.core.SpikeTrain), trial))
-               for trial in self.list_of_trials]
+        return [sum(map(lambda x: isinstance(x,  neo.core.SpikeTrain), trial))
+                for trial in self.list_of_trials]
 
     @property
     def n_analogsignals_trial_by_trial(self) -> List[int]:
@@ -347,22 +350,23 @@ class TrialsFromLists(Trials):
         return neo.core.spiketrainlist.SpikeTrainList(
             items=self.get_spiketrains_from_trial_as_list(trial_number))
 
-    def get_spiketrains_from_trial_as_list(self, trial_number: int =0
-                                   ) -> List[neo.core.SpikeTrain]:
+    def get_spiketrains_from_trial_as_list(self, trial_number: int = 0
+                                           ) -> List[neo.core.SpikeTrain]:
         """Return a list of all spiketrains from a trial"""
         return [spiketrain for spiketrain in self.list_of_trials[trial_number]
                 if isinstance(spiketrain, neo.core.SpikeTrain)]
 
-    def get_spiketrains_from_trial_as_segment(self, trial_number: int =0
-                                   ) -> neo.core.Segment:
+    def get_spiketrains_from_trial_as_segment(self, trial_number: int = 0
+                                              ) -> neo.core.Segment:
         """Return a segment with all spiketrains from a trial"""
-        segment=neo.core.Segment()
-        for spiketrain in self.get_spiketrains_from_trial_as_list(trial_number):
+        segment = neo.core.Segment()
+        for spiketrain in self.get_spiketrains_from_trial_as_list(trial_number
+                                                                  ):
             segment.spiketrains.append(spiketrain)
         return segment
 
-    def get_analogsignals_from_trial_as_list(self, trial_number: int =0
-                                   ) -> List[neo.core.AnalogSignal]:
+    def get_analogsignals_from_trial_as_list(self, trial_number: int = 0
+                                             ) -> List[neo.core.AnalogSignal]:
         """Return a list of all analogsignals from a trial"""
         return [analogsignal for analogsignal in
                 self.list_of_trials[trial_number]
@@ -370,7 +374,8 @@ class TrialsFromLists(Trials):
 
     def set_common_trial_start(self, t_start: quantities.Quantity) -> None:
         """Set the start for all trials to t_start"""
-        if t_start.simplified.dimensionality != (1 * quantities.s).dimensionality:
+        if t_start.simplified.dimensionality != (1 * quantities.s
+                                                 ).dimensionality:
             raise TypeError("t_start must be a time quantity")
         for segment in self.list_of_trials:
             for spiketrain in segment:
@@ -380,7 +385,8 @@ class TrialsFromLists(Trials):
 
     def set_common_trial_stop(self, t_stop: quantities.Quantity) -> None:
         """Set the stop for all trials to t_start"""
-        if t_stop.simplified.dimensionality != (1 * quantities.s).dimensionality:
+        if t_stop.simplified.dimensionality != (1 * quantities.s
+                                                ).dimensionality:
             raise TypeError("t_stop must be a time quantity")
         for segment in self.list_of_trials:
             for spiketrain in segment:
