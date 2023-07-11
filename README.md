@@ -10,7 +10,7 @@
 [![tests](https://github.com/NeuralEnsemble/elephant/actions/workflows/CI.yml/badge.svg)](https://github.com/NeuralEnsemble/elephant/actions/workflows/CI.yml)
 [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/6191/badge)](https://bestpractices.coreinfrastructure.org/projects/6191)
 [![Twitter](https://img.shields.io/twitter/follow/PyElephant?style=social)](https://twitter.com/pyelephant)
-
+[![Fosstodon](https://img.shields.io/badge/@elephant-6364FF?logo=mastodon&logoColor=fff&style=flat)](https://fosstodon.org/@elephant)
 
 *Elephant* package analyses all sorts of neurophysiological data:
 spike trains, LFP, analog signals. The input-output data format is either
