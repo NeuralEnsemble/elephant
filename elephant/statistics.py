@@ -40,7 +40,7 @@ Statistics across spike trains
 
 
 Tutorial
-********
+========
 
 :doc:`View tutorial <../tutorials/statistics>`
 
@@ -54,13 +54,11 @@ Run tutorial interactively:
 References
 ----------
 
-.. bibliography:: ../bib/elephant.bib
-   :labelprefix: st
+.. bibliography::
    :keyprefix: statistics-
-   :style: unsrt
 
 
-:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2023 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 

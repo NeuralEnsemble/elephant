@@ -70,7 +70,7 @@ Rescale the units of a binned spike train without changing the data.
 >>> bst # doctest: +ELLIPSIS
 BinnedSpikeTrain(t_start=0.0 ms, t_stop=9000.0 ms, bin_size=1000.0 ms; ...
 
-:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2023 by the Elephant team, see `doc/authors.rst`.
 :license: BSD, see LICENSE.txt for details.
 """
 
@@ -317,6 +317,7 @@ class BinnedSpikeTrain(object):
     -----
     There are four minimal configurations of the optional parameters which have
     to be provided, otherwise a `ValueError` will be raised:
+
       * t_start, n_bins, bin_size
       * t_start, n_bins, t_stop
       * t_start, bin_size, t_stop
@@ -325,7 +326,7 @@ class BinnedSpikeTrain(object):
     If `spiketrains` is a `neo.SpikeTrain` or a list thereof, it is enough to
     explicitly provide only one parameter: `n_bins` or `bin_size`. The
     `t_start` and `t_stop` will be calculated from given `spiketrains` (max
-    `t_start` and min `t_stop` of `neo.SpikeTrain`s).
+    `t_start` and min `t_stop` of `neo.SpikeTrain`s`).
     Missing parameter will be calculated automatically.
     All parameters will be checked for consistency. A corresponding error will
     be raised, if one of the four parameters does not match the consistency
@@ -831,7 +832,7 @@ class BinnedSpikeTrain(object):
 
         .. code-block:: python
 
-            BinnedSpikeTrain(binned_st.to_spike_trains()) == binned_st
+           BinnedSpikeTrain(binned_st.to_spike_trains()) == binned_st
 
         The object bin size is stored in resulting
         ``spiketrain.annotations['bin_size']``.
@@ -842,13 +843,12 @@ class BinnedSpikeTrain(object):
             Specifies how to generate spikes inside bins.
 
               * "left": align spikes from left to right to have equal inter-
-              spike interval;
-
+                spike interval;
               * "center": align spikes around center to have equal inter-spike
-              interval;
-
+                interval;
               * "random": generate spikes from a homogenous Poisson process;
-              it's the fastest mode.
+                it's the fastest mode.
+
             Default: "random"
         as_array : bool, optional
             If True, numpy arrays are returned; otherwise, wrap the arrays in
