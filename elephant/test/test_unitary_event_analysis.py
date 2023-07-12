@@ -1,7 +1,7 @@
 """
 Unit tests for the Unitary Events analysis
 
-:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2023 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -319,9 +319,14 @@ class UETestCase(unittest.TestCase):
                         item1))
 
     def test_jointJ_window_analysis(self):
+
         sts1 = self.sts1_neo
         sts2 = self.sts2_neo
-        data = np.vstack((sts1, sts2)).T
+
+        # joinJ_window_analysis requires the following:
+        # A list of spike trains(neo.SpikeTrain objects) in different trials:
+        data = list(zip(*[sts1,sts2]))
+
         win_size = 100 * pq.ms
         bin_size = 5 * pq.ms
         win_step = 20 * pq.ms
@@ -423,7 +428,9 @@ class UETestCase(unittest.TestCase):
                         [] * pq.ms, t_start=0 * pq.ms,
                         t_stop=t_pre + t_post))
             data_tr.append(data_sel_units)
+
         data_tr.reverse()
+        data_tr=np.asarray(data_tr, dtype=object)
         spiketrain = np.vstack([i for i in data_tr]).T
         return spiketrain
 
@@ -492,12 +499,14 @@ class UETestCase(unittest.TestCase):
 
     def test_multiple_neurons(self):
         np.random.seed(12)
+
+        # Create a list of lists containing 3 Trials with 5 spiketrains
         spiketrains = \
             [StationaryPoissonProcess(
                 rate=50 * pq.Hz, t_stop=1 * pq.s).generate_n_spiketrains(5)
-             for neuron in range(3)]
+             for _ in range(3)]
 
-        spiketrains = np.stack(spiketrains, axis=1)
+        spiketrains = list(zip(*spiketrains))
         UE_dic = ue.jointJ_window_analysis(spiketrains, bin_size=5 * pq.ms,
                                            win_size=300 * pq.ms,
                                            win_step=100 * pq.ms)

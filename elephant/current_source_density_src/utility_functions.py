@@ -71,7 +71,7 @@ def distribute_srcs_1D(X, n_src, ext_x, R_init):
         effective radius of the basis element
     """
     X_src = np.mgrid[(np.min(X) - ext_x):(np.max(X) + ext_x):
-                     np.complex(0, n_src)]
+                     complex(0, n_src)]
     R = R_init
     return X_src, R
 
@@ -106,9 +106,9 @@ def distribute_srcs_2D(X, Y, n_src, ext_x, ext_y, R_init):
     ext_x_n = (Lx_nn - Lx) / 2
     ext_y_n = (Ly_nn - Ly) / 2
     X_src, Y_src = np.mgrid[(np.min(X) - ext_x_n):(np.max(X) + ext_x_n):
-                            np.complex(0, nx),
+                            complex(0, nx),
                             (np.min(Y) - ext_y_n):(np.max(Y) + ext_y_n):
-                            np.complex(0, ny)]
+                            complex(0, ny)]
     # d = round(R_init / ds)
     R = R_init  # R = d * ds
     return X_src, Y_src, R
@@ -186,11 +186,11 @@ def distribute_srcs_3D(X, Y, Z, n_src, ext_x, ext_y, ext_z, R_init):
     ext_y_n = (Ly_nn - Ly) / 2
     ext_z_n = (Lz_nn - Lz) / 2
     X_src, Y_src, Z_src = np.mgrid[(np.min(X) - ext_x_n):(np.max(X) + ext_x_n):
-                                   np.complex(0, nx),
+                                   complex(0, nx),
                                    (np.min(Y) - ext_y_n):(np.max(Y) + ext_y_n):
-                                   np.complex(0, ny),
+                                   complex(0, ny),
                                    (np.min(Z) - ext_z_n):(np.max(Z) + ext_z_n):
-                                   np.complex(0, nz)]
+                                   complex(0, nz)]
     # d = np.round(R_init / ds)
     R = R_init
     return (X_src, Y_src, Z_src, R)
@@ -250,19 +250,19 @@ def generate_electrodes(dim, xlims=[0.1, 0.9], ylims=[0.1, 0.9],
 
     """
     if dim == 1:
-        ele_x = np.mgrid[xlims[0]: xlims[1]: np.complex(0, res)]
+        ele_x = np.mgrid[xlims[0]: xlims[1]: complex(0, res)]
         ele_x = ele_x.flatten()
         return ele_x
     elif dim == 2:
-        ele_x, ele_y = np.mgrid[xlims[0]: xlims[1]: np.complex(0, res),
-                                ylims[0]: ylims[1]: np.complex(0, res)]
+        ele_x, ele_y = np.mgrid[xlims[0]: xlims[1]: complex(0, res),
+                                ylims[0]: ylims[1]: complex(0, res)]
         ele_x = ele_x.flatten()
         ele_y = ele_y.flatten()
         return ele_x, ele_y
     elif dim == 3:
-        ele_x, ele_y, ele_z = np.mgrid[xlims[0]: xlims[1]: np.complex(0, res),
-                                       ylims[0]: ylims[1]: np.complex(0, res),
-                                       zlims[0]: zlims[1]: np.complex(0, res)]
+        ele_x, ele_y, ele_z = np.mgrid[xlims[0]: xlims[1]: complex(0, res),
+                                       ylims[0]: ylims[1]: complex(0, res),
+                                       zlims[0]: zlims[1]: complex(0, res)]
         ele_x = ele_x.flatten()
         ele_y = ele_y.flatten()
         ele_z = ele_z.flatten()

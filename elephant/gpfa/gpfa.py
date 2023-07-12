@@ -36,6 +36,7 @@ visualization purposes: (c.f., `gpfa_core.orthonormalize()`)
 
 .. autosummary::
     :toctree: _toctree/gpfa
+    :template: gpfa_class.rst
 
     GPFA
 
@@ -54,7 +55,7 @@ Tutorial
 Run tutorial interactively:
 
 .. image:: https://mybinder.org/badge.svg
-   :target: https://mybinder.org/v2/gh/NeuralEnsemble/elephant/master
+    :target: https://mybinder.org/v2/gh/NeuralEnsemble/elephant/master
             ?filepath=doc/tutorials/gpfa.ipynb
 
 
@@ -64,7 +65,7 @@ The code was ported from the MATLAB code based on Byron Yu's implementation.
 The original MATLAB code is available at Byron Yu's website:
 https://users.ece.cmu.edu/~byronyu/software.shtml
 
-:copyright: Copyright 2014-2022 by the Elephant team, see AUTHORS.txt.
+:copyright: Copyright 2014-2023 by the Elephant team, see AUTHORS.txt.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -86,7 +87,7 @@ __all__ = [
 
 
 class GPFA(sklearn.base.BaseEstimator):
-    """
+    r"""
     Apply Gaussian process factor analysis (GPFA) to spike train data
 
     There are two principle scenarios of using the GPFA analysis, both of which
@@ -161,7 +162,7 @@ class GPFA(sklearn.base.BaseEstimator):
             Currently, only 'rbf' is supported.
         gamma : (1, #latent_vars) np.ndarray
             related to GP timescales of latent variables before
-            orthonormalization by :math:`bin_size / sqrt(gamma)`
+            orthonormalization by :math:`\frac{bin\_size}{\sqrt{gamma}}`
         eps : (1, #latent_vars) np.ndarray
             GP noise variances
         d : (#units, 1) np.ndarray
@@ -190,13 +191,6 @@ class GPFA(sklearn.base.BaseEstimator):
         Corth : (#units, #latent_vars) np.ndarray
             mapping between the neuronal data space and the orthonormal
             latent variable space
-
-    Methods
-    -------
-    fit
-    transform
-    fit_transform
-    score
 
     Raises
     ------
@@ -242,6 +236,7 @@ class GPFA(sklearn.base.BaseEstimator):
     def __init__(self, bin_size=20 * pq.ms, x_dim=3, min_var_frac=0.01,
                  tau_init=100.0 * pq.ms, eps_init=1.0E-3, em_tol=1.0E-8,
                  em_max_iters=500, freq_ll=5, verbose=False):
+        # Initialize object
         self.bin_size = bin_size
         self.x_dim = x_dim
         self.min_var_frac = min_var_frac

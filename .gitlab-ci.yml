@@ -1,0 +1,11 @@
+# This workflow will be executed on gitlab and trigger the spack build process
+# on commit to master branch on github NeuralEnsemble master branch.
+stages:          # List of stages for jobs, and their order of execution
+  - build
+
+build-job:       # This job runs in the build stage, which runs first.
+  stage: build
+  script:
+    - curl -X POST --fail -F "token=$EBRAINS_SPACK_BUILD_TRIGGER" -F "ref=feature/dev_version" https://gitlab.ebrains.eu/api/v4/projects/322/trigger/pipeline
+  tags:
+    - shell-runner
