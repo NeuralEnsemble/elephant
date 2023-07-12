@@ -81,7 +81,7 @@ setup_kwargs = {
             "Documentation": "https://elephant.readthedocs.io/en/latest/",
             "Source Code": "https://github.com/NeuralEnsemble/elephant",
         },
-    "python_requires": ">=3.8",
+    "python_requires": ">=3.9",
     "classifiers": [
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Science/Research',
@@ -89,7 +89,6 @@ setup_kwargs = {
         'Natural Language :: English',
         'Operating System :: OS Independent',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: 3.11',
