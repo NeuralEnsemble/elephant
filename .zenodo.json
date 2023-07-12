@@ -16,11 +16,6 @@
             "name": "Jurkus, Regimantas"
         },
         {
-            "orcid": "0000-0002-9302-5893",
-            "affiliation": "Institute of Neuroscience and Medicine (INM-6) and Institute for Advanced Simulation (IAS-6) and JARA-Institute Brain Structure-Function Relationships (INM-10), Jülich Research Centre, Jülich, Germany",
-            "name": "Kramer, Maximilian"
-        },
-        {
             "orcid": "0000-0001-7292-1982",
             "affiliation": "Institute of Neuroscience and Medicine (INM-6) and Institute for Advanced Simulation (IAS-6) and JARA-Institute Brain Structure-Function Relationships (INM-10), Jülich Research Centre, Jülich, Germany",
             "name": "Kern, Moritz"
@@ -31,13 +26,23 @@
             "name": "Kurth, Anno Christopher"
         },
         {
-            "orcid": "0000-0001-9170-4422",
+            "orcid": "0000-0003-3776-4226",
             "affiliation": "Institute of Neuroscience and Medicine (INM-6) and Institute for Advanced Simulation (IAS-6) and JARA-Institute Brain Structure-Function Relationships (INM-10), Jülich Research Centre, Jülich, Germany",
-            "name": "Ito, Junji"
+            "name": "Kleinjohann, Alexander"
+        },
+        {
+            "orcid": "0000-0003-2498-0536",
+            "affiliation": "Institute of Neuroscience and Medicine (INM-6) and Institute for Advanced Simulation (IAS-6) and JARA-Institute Brain Structure-Function Relationships (INM-10), Jülich Research Centre, Jülich, Germany",
+            "name": "Bouss, Peter"
+        },
+        {
+            "orcid": "0000-0002-4793-7541",
+            "affiliation": "Institut des Neurosciences Paris-Saclay (NeuroPSI), Département de Neurosciences Intégratives et Computationnelles (ICN), Université Paris-Saclay, France",
+            "name": "Andrew, Davison"
         }
     ],
 
-    "title": "Elephant 0.12.0",
+    "title": "Elephant 0.13.0",
 
     "keywords": [
     "neuroscience",
