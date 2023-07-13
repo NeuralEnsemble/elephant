@@ -39,8 +39,7 @@ Other changes
 
 Selected dependency changes
 ---------------------------
-* Python >= 3.9. (#578)
-* numpy > 1.22. (#578)
+* no changes
 
 
 Elephant 0.12.0 release notes
