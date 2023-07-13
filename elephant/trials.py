@@ -146,30 +146,6 @@ class Trials:
         """
         pass
 
-    @abstractmethod
-    def set_common_trial_start(self, t_start: quantities.Quantity) -> None:
-        """
-        Set common trial start time for all trials
-
-        Parameters
-        ----------
-        t_start: quantities.Quantity
-
-        """
-        pass
-
-    @abstractmethod
-    def set_common_trial_stop(self, t_stop: quantities.Quantity) -> None:
-        """
-        Set common trial stop time for all trials
-
-        Parameters
-        ----------
-        t_stop: quantities.Quantity
-
-        """
-        pass
-
 
 class TrialsFromBlock(Trials):
     """
@@ -256,25 +232,6 @@ class TrialsFromBlock(Trials):
         """Return a list of all analogsignals from a trial"""
         return [analogsignal for analogsignal in
                 self.block.segments[trial_number].analogsignals]
-
-    def set_common_trial_start(self, t_start: quantities.Quantity) -> None:
-        """Set the start for all trials to t_start"""
-        if t_start.simplified.dimensionality != (1*quantities.s
-                                                 ).dimensionality:
-            raise TypeError("t_start must be a time quantity")
-        for segment in self.block.segments:
-            for spiketrain in segment.spiketrains:
-                if hasattr(spiketrain, 't_start'):
-                    spiketrain.t_start = t_start
-
-    def set_common_trial_stop(self, t_stop: quantities.Quantity) -> None:
-        """Set the start for all trials to t_stop"""
-        if t_stop.simplified.dimensionality != (1*quantities.s).dimensionality:
-            raise TypeError("t_stop must be a time quantity")
-        for segment in self.block.segments:
-            for spiketrain in segment.spiketrains:
-                if hasattr(spiketrain, 't_stop'):
-                    spiketrain.t_stop = t_stop
 
 
 class TrialsFromLists(Trials):
@@ -371,25 +328,3 @@ class TrialsFromLists(Trials):
         return [analogsignal for analogsignal in
                 self.list_of_trials[trial_number]
                 if isinstance(analogsignal, neo.core.AnalogSignal)]
-
-    def set_common_trial_start(self, t_start: quantities.Quantity) -> None:
-        """Set the start for all trials to t_start"""
-        if t_start.simplified.dimensionality != (1 * quantities.s
-                                                 ).dimensionality:
-            raise TypeError("t_start must be a time quantity")
-        for segment in self.list_of_trials:
-            for spiketrain in segment:
-                if hasattr(spiketrain, 't_start') and \
-                        isinstance(spiketrain, neo.core.SpikeTrain):
-                    spiketrain.t_start = t_start
-
-    def set_common_trial_stop(self, t_stop: quantities.Quantity) -> None:
-        """Set the stop for all trials to t_start"""
-        if t_stop.simplified.dimensionality != (1 * quantities.s
-                                                ).dimensionality:
-            raise TypeError("t_stop must be a time quantity")
-        for segment in self.list_of_trials:
-            for spiketrain in segment:
-                if hasattr(spiketrain, 't_stop') and \
-                        isinstance(spiketrain, neo.core.SpikeTrain):
-                    spiketrain.t_stop = t_stop
