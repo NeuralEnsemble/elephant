@@ -292,7 +292,7 @@ class TrialsFromLists(Trials):
     @property
     def n_spiketrains_trial_by_trial(self) -> List[int]:
         """Get the number of spiketrains in each trial."""
-        return [sum(map(lambda x: isinstance(x,  neo.core.SpikeTrain), trial))
+        return [sum(map(lambda x: isinstance(x, neo.core.SpikeTrain), trial))
                 for trial in self.list_of_trials]
 
     @property
