@@ -130,6 +130,26 @@
                 "@type": "Organization",
                 "name": "Institut des Neurosciences Paris-Saclay (NeuroPSI), Département de Neurosciences Intégratives et Computationnelles (ICN), Université Paris-Saclay, France"
             }
+        },
+        {
+            "@type": "Person",
+            "@id": "https://orcid.org/0000-0002-2403-928X",
+            "givenName": "Aitor",
+            "familyName": "Morales-Gregorio",
+            "affiliation": {
+                "@type": "Organization",
+                "name": "Institute of Neuroscience and Medicine (INM-6) and Institute for Advanced Simulation (IAS-6) and JARA-Institute Brain Structure-Function Relationships (INM-10), Jülich Research Centre, Jülich, Germany"
+            }
+        },
+        {
+            "@type": "Person",
+            "@id": "https://orcid.org/0000-0002-9302-5893",
+            "givenName": "Maximilian",
+            "familyName": "Kramer",
+            "affiliation": {
+                "@type": "Organization",
+                "name": "Institute of Neuroscience and Medicine (INM-6) and Institute for Advanced Simulation (IAS-6) and JARA-Institute Brain Structure-Function Relationships (INM-10), Jülich Research Centre, Jülich, Germany"
+            }
         }
     ]
 }
