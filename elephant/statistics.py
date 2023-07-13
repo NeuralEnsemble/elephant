@@ -1133,7 +1133,7 @@ def time_histogram(list_of_spiketrains: List[neo.core.SpikeTrain],
     >>> import neo
     >>> import quantities as pq
     >>> from elephant import statistics
-    >>> spiketrains = [
+    >>> list_of_spiketrains = [
     ...     neo.SpikeTrain([0.3, 4.5, 6.7, 9.3], t_stop=10, units='s'),
     ...     neo.SpikeTrain([0.7, 4.3, 8.2], t_stop=10, units='s')
     ... ]
