@@ -604,7 +604,7 @@ def lvr(time_intervals, R=5*pq.ms, with_nan=False):
 def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
                        cutoff=5.0, t_start=None, t_stop=None, trim=False,
                        center_kernel=True, border_correction=False,
-                       cross_trial=False, cross_spiketrain=False):
+                       pool_trials=False, pool_spiketrains=False):
     r"""
     Estimates instantaneous firing rate by kernel convolution.
 
@@ -686,12 +686,12 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
         Only possible in the case of a Gaussian kernel.
 
         Default: False
-    cross_trial: bool, optional
+    pool_trials: bool, optional
         If true: Calculate firing rates averaged over trials if spiketrains is
         of type elephant.trials.Trials
 
         Default: False
-    cross_spiketrain: bool, optional
+    pool_spiketrains: bool, optional
         If true: Calculate firing rates averaged over spiketrains if
         spiketrains is of type elephant.trials.Trials
 
@@ -812,11 +812,11 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
             'trim': trim,
             'center_kernel': center_kernel,
             'border_correction': border_correction,
-            'cross_trial': cross_trial,
-            'cross_spiketrain': cross_spiketrain
+            'pool_trials': pool_trials,
+            'pool_spiketrains': pool_spiketrains
         }
 
-        if cross_trial:
+        if pool_trials:
             list_of_lists_of_spiketrains = [
                 spiketrains.get_spiketrains_from_trial_as_list(
                     trial_number=trial_no)
@@ -835,7 +835,7 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
 
             average_rate_cross_trials = (
                 np.mean(rates, axis=1) for rates in rates_cross_trials)
-            if cross_spiketrain:
+            if pool_spiketrains:
                 average_rate = np.mean(list(average_rate_cross_trials), axis=0)
                 analog_signal = rates_cross_trials[0]
 
@@ -861,17 +861,17 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
 
             return list_of_average_rates_cross_trial
 
-        if not cross_trial and not cross_spiketrain:
+        if not pool_trials and not pool_spiketrains:
             return [instantaneous_rate(
                         spiketrains.get_spiketrains_from_trial_as_list(
                             trial_number=trial_no), sampling_period, **kwargs)
                     for trial_no in range(spiketrains.n_trials)]
 
-        if not cross_trial and cross_spiketrain:
+        if not pool_trials and pool_spiketrains:
             rates = [instantaneous_rate(
                         spiketrains.get_spiketrains_from_trial_as_list(
                             trial_number=trial_no), sampling_period, **kwargs)
-                    for trial_no in range(spiketrains.n_trials)]
+                     for trial_no in range(spiketrains.n_trials)]
 
             average_rates = (np.mean(rate, axis=1) for rate in rates)
 
