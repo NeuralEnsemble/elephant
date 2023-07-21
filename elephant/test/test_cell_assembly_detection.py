@@ -1,4 +1,3 @@
-
 """
 Unit test for cell_assembly_detection
 """
@@ -56,14 +55,14 @@ class CadTestCase(unittest.TestCase):
 
         # Patterns
         patt1 = [patt1_times] + [neo.SpikeTrain(
-            patt1_times + l * pq.s, t_start=t_start * pq.s,
-            t_stop=t_stop * pq.s) for l in lags1]
+            patt1_times + lag * pq.s, t_start=t_start * pq.s,
+            t_stop=t_stop * pq.s) for lag in lags1]
         patt2 = [patt2_times] + [neo.SpikeTrain(
-            patt2_times + l * pq.s, t_start=t_start * pq.s,
-            t_stop=t_stop * pq.s) for l in lags2]
+            patt2_times + lag * pq.s, t_start=t_start * pq.s,
+            t_stop=t_stop * pq.s) for lag in lags2]
         patt3 = [patt3_times] + [neo.SpikeTrain(
-            patt3_times + l * pq.s, t_start=t_start * pq.s,
-            t_stop=t_stop * pq.s) for l in lags3]
+            patt3_times + lag * pq.s, t_start=t_start * pq.s,
+            t_stop=t_stop * pq.s) for lag in lags3]
 
         # Binning spiketrains
         cls.bin_patt1 = conv.BinnedSpikeTrain(patt1, bin_size=bin_size)
