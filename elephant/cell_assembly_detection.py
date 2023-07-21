@@ -111,7 +111,7 @@ def cell_assembly_detection(binned_spiketrain, max_lag, reference_lag=2,
     the most significant one. This pruning is optional and the choice is
     identified by the parameter 'significance_pruning'.
     Assemblies already included in a bigger assembly are eliminated in a final
-    pruning step. Also this pruning is optional, and the choice is identified
+    pruning step. Also, this pruning is optional, and the choice is identified
     by the parameter `subgroup_pruning`.
 
     Parameters
