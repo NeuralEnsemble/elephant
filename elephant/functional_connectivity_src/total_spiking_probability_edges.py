@@ -231,6 +231,8 @@ def normalized_cross_correlation(
                 @ spike_trains_array[:, -delay_time:].transpose()
             )
 
+        # Convert CC to dense matrix before performing the division
+        CC = CC.toarray()
         # Normalize using std deviation
         NCC = CC / std_factors / n_bins
 
