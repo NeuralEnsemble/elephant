@@ -158,7 +158,6 @@ except ImportError:
     size = 1
     rank = 0
 
-
 __all__ = [
     "ASSET",
     "synchronous_events_intersection",
@@ -528,7 +527,7 @@ def _stretched_metric_2d(x, y, stretch, ref_angle, working_memory=None,
             chunk_size = D_chunk.shape[0]
 
             assert (chunk_size == estimated_chunk or
-                    chunk_size == last_chunk)           # Safety check
+                    chunk_size == last_chunk)  # Safety check
 
             dX = x_array[:, start: start + chunk_size].T - x_array
             dY = y_array[:, start: start + chunk_size].T - y_array
@@ -605,6 +604,7 @@ class _GPUBackend:
        Python objects, PyOpenCL and PyCUDA clean up and free allocated memory
        automatically when garbage collection is executed.
     """
+
     def __init__(self, max_chunk_size=None):
         self.max_chunk_size = max_chunk_size
 
@@ -925,7 +925,7 @@ class _JSFUniformOrderStat3D(_GPUBackend):
         device = pycuda.autoinit.device
 
         max_l_block = device.MAX_SHARED_MEMORY_PER_BLOCK // (
-                    self.dtype.itemsize * (self.d + 2))
+                self.dtype.itemsize * (self.d + 2))
         n_threads = min(self.cuda_threads, max_l_block,
                         device.MAX_THREADS_PER_BLOCK)
         if n_threads > device.WARP_SIZE:
@@ -1964,6 +1964,12 @@ class ASSET(object):
         If None, the attribute `t_stop` of the spike trains is used
         (if the same for all spike trains).
         Default: None
+    bin_tolerance : float or 'default' or None, optional
+        Defines the tolerance value for rounding errors when binning the
+        spike trains. If 'default', the value is the default as defined in
+        :class:`conv.BinnedSpikeTrain`. If None, no correction for binning
+        errors is performed. If a number, the binning will consider this value.
+        Default: 'default'
     verbose : bool, optional
         If True, print messages and show progress bar.
         Default: True
@@ -1977,11 +1983,15 @@ class ASSET(object):
 
           fully disjoint.
 
+    See Also
+    --------
+    conv.BinnedSpikeTrain
+
     """
 
     def __init__(self, spiketrains_i, spiketrains_j=None, bin_size=3 * pq.ms,
                  t_start_i=None, t_start_j=None, t_stop_i=None, t_stop_j=None,
-                 verbose=True):
+                 bin_tolerance='default', verbose=True):
         self.spiketrains_i = spiketrains_i
         if spiketrains_j is None:
             spiketrains_j = spiketrains_i
@@ -2013,13 +2023,21 @@ class ASSET(object):
                 or (self.t_start_i < self.t_stop_j < self.t_stop_i):
             raise ValueError(msg)
 
+        # Define the tolerance parameter for binning.
+        # If `bin_tolerance` is 'default', `conv.BinnedSpikeTrain will be
+        # called without passing the parameter, and it will take what is
+        # defined by the behavior of that class. Otherwise, set to the value
+        # specified by `bin_tolerance`
+        tolerance_param = {'tolerance': bin_tolerance} if \
+            bin_tolerance != 'default' else {}
+
         # Compute the binned spike train matrices, along both time axes
         self.spiketrains_binned_i = conv.BinnedSpikeTrain(
             self.spiketrains_i, bin_size=self.bin_size,
-            t_start=self.t_start_i, t_stop=self.t_stop_i)
+            t_start=self.t_start_i, t_stop=self.t_stop_i, **tolerance_param)
         self.spiketrains_binned_j = conv.BinnedSpikeTrain(
             self.spiketrains_j, bin_size=self.bin_size,
-            t_start=self.t_start_j, t_stop=self.t_stop_j)
+            t_start=self.t_start_j, t_stop=self.t_stop_j, **tolerance_param)
 
     @property
     def x_edges(self):
@@ -2677,8 +2695,8 @@ class ASSET(object):
             file_dir = file_path.parent
             file_name = file_path.stem
             mapped_array_file = tempfile.NamedTemporaryFile(
-                                    prefix=file_name, dir=file_dir,
-                                    delete=not keep_file)
+                prefix=file_name, dir=file_dir,
+                delete=not keep_file)
 
         # Compute the matrix D[i, j] of euclidean distances between pixels i
         # and j
