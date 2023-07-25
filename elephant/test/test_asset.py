@@ -46,6 +46,55 @@ except ImportError:
     HAVE_CUDA = False
 
 
+class AssetBinningTestCase(unittest.TestCase):
+
+    def setUp(self):
+        spiketrain_1 = neo.SpikeTrain(
+            [1.3, 2.1, 3.9999999999, 4.9999], units=pq.ms, t_stop=6*pq.ms)
+
+        spiketrain_2 = neo.SpikeTrain(
+            [0.9999999999, 1.9999, 4, 5], units=pq.ms, t_stop=6*pq.ms)
+
+        self.spiketrains = [spiketrain_1, spiketrain_2]
+
+    def test_bin_tolerance_default(self):
+        asset_obj = asset.ASSET(self.spiketrains, bin_size=1*pq.ms)
+        bins = asset_obj.spiketrains_binned_i.to_array()
+
+        # Should shift spikes closer than 1e-8 to the right bin edge.
+        # This is the current default tolerance for `BinnedSpikeTrain`.
+        expected_bins = np.array(
+            [[0, 1, 1, 0, 2, 0],
+             [0, 2, 0, 0, 1, 1]])
+
+        self.assertTrue(np.array_equal(bins, expected_bins))
+
+    def test_bin_tolerance_none(self):
+        asset_obj = asset.ASSET(self.spiketrains, bin_size=1*pq.ms,
+                                bin_tolerance=None)
+        bins = asset_obj.spiketrains_binned_i.to_array()
+
+        # Should not shift any spikes. Bin should be the same as the integer
+        # part of the time.
+        expected_bins = np.array(
+            [[0, 1, 1, 1, 1, 0],
+             [1, 1, 0, 0, 1, 1]])
+
+        self.assertTrue(np.array_equal(bins, expected_bins))
+
+    def test_bin_tolerance_float(self):
+        asset_obj = asset.ASSET(self.spiketrains, bin_size=1*pq.ms,
+                                bin_tolerance=1e-3)
+        bins = asset_obj.spiketrains_binned_i.to_array()
+
+        # Should shift spikes closer than 1e-3 to the right bin edge.
+        expected_bins = np.array(
+            [[0, 1, 1, 0, 1, 1],
+             [0, 1, 1, 0, 1, 1]])
+
+        self.assertTrue(np.array_equal(bins, expected_bins))
+
+
 @unittest.skipUnless(HAVE_SKLEARN, 'requires sklearn')
 class AssetTestCase(unittest.TestCase):
 
