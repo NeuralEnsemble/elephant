@@ -1967,8 +1967,9 @@ class ASSET(object):
     bin_tolerance : float or 'default' or None, optional
         Defines the tolerance value for rounding errors when binning the
         spike trains. If 'default', the value is the default as defined in
-        :class:`conv.BinnedSpikeTrain`. If None, no correction for binning
-        errors is performed. If a number, the binning will consider this value.
+        :class:`~.conversion.BinnedSpikeTrain`. If None, no correction for
+        binning errors is performed. If a number, the binning will consider
+        this value.
         Default: 'default'
     verbose : bool, optional
         If True, print messages and show progress bar.
@@ -1985,7 +1986,7 @@ class ASSET(object):
 
     See Also
     --------
-    conv.BinnedSpikeTrain
+    :class:`elephant.conversion.BinnedSpikeTrain`
 
     """
 
