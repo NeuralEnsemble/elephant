@@ -55,44 +55,66 @@ class AssetBinningTestCase(unittest.TestCase):
         spiketrain_2 = neo.SpikeTrain(
             [0.9999999999, 1.9999, 4, 5], units=pq.ms, t_stop=6*pq.ms)
 
-        self.spiketrains = [spiketrain_1, spiketrain_2]
+        self.spiketrains_i = [spiketrain_1, spiketrain_2]
+        self.spiketrains_j = [spiketrain_2, spiketrain_1]
 
     def test_bin_tolerance_default(self):
-        asset_obj = asset.ASSET(self.spiketrains, bin_size=1*pq.ms)
-        bins = asset_obj.spiketrains_binned_i.to_array()
+        asset_obj = asset.ASSET(spiketrains_i=self.spiketrains_i,
+                                spiketrains_j=self.spiketrains_j,
+                                bin_size=1*pq.ms)
+        bins_i = asset_obj.spiketrains_binned_i.to_array()
+        bins_j = asset_obj.spiketrains_binned_j.to_array()
 
         # Should shift spikes closer than 1e-8 to the right bin edge.
         # This is the current default tolerance for `BinnedSpikeTrain`.
-        expected_bins = np.array(
+        expected_bins_i = np.array(
             [[0, 1, 1, 0, 2, 0],
              [0, 2, 0, 0, 1, 1]])
+        expected_bins_j = np.array(
+            [[0, 2, 0, 0, 1, 1],
+             [0, 1, 1, 0, 2, 0]])
 
-        self.assertTrue(np.array_equal(bins, expected_bins))
+        self.assertTrue(np.array_equal(bins_i, expected_bins_i))
+        self.assertTrue(np.array_equal(bins_j, expected_bins_j))
 
     def test_bin_tolerance_none(self):
-        asset_obj = asset.ASSET(self.spiketrains, bin_size=1*pq.ms,
+        asset_obj = asset.ASSET(spiketrains_i=self.spiketrains_i,
+                                spiketrains_j=self.spiketrains_j,
+                                bin_size=1*pq.ms,
                                 bin_tolerance=None)
-        bins = asset_obj.spiketrains_binned_i.to_array()
+        bins_i = asset_obj.spiketrains_binned_i.to_array()
+        bins_j = asset_obj.spiketrains_binned_j.to_array()
 
         # Should not shift any spikes. Bin should be the same as the integer
         # part of the time.
-        expected_bins = np.array(
+        expected_bins_i = np.array(
             [[0, 1, 1, 1, 1, 0],
              [1, 1, 0, 0, 1, 1]])
+        expected_bins_j = np.array(
+            [[1, 1, 0, 0, 1, 1],
+             [0, 1, 1, 1, 1, 0]])
 
-        self.assertTrue(np.array_equal(bins, expected_bins))
+        self.assertTrue(np.array_equal(bins_i, expected_bins_i))
+        self.assertTrue(np.array_equal(bins_j, expected_bins_j))
 
     def test_bin_tolerance_float(self):
-        asset_obj = asset.ASSET(self.spiketrains, bin_size=1*pq.ms,
+        asset_obj = asset.ASSET(spiketrains_i=self.spiketrains_i,
+                                spiketrains_j=self.spiketrains_j,
+                                bin_size=1*pq.ms,
                                 bin_tolerance=1e-3)
-        bins = asset_obj.spiketrains_binned_i.to_array()
+        bins_i = asset_obj.spiketrains_binned_i.to_array()
+        bins_j = asset_obj.spiketrains_binned_j.to_array()
 
         # Should shift spikes closer than 1e-3 to the right bin edge.
-        expected_bins = np.array(
+        expected_bins_i = np.array(
+            [[0, 1, 1, 0, 1, 1],
+             [0, 1, 1, 0, 1, 1]])
+        expected_bins_j = np.array(
             [[0, 1, 1, 0, 1, 1],
              [0, 1, 1, 0, 1, 1]])
 
-        self.assertTrue(np.array_equal(bins, expected_bins))
+        self.assertTrue(np.array_equal(bins_i, expected_bins_i))
+        self.assertTrue(np.array_equal(bins_j, expected_bins_j))
 
 
 @unittest.skipUnless(HAVE_SKLEARN, 'requires sklearn')
