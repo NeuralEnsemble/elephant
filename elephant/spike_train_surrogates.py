@@ -67,8 +67,11 @@ SURR_METHODS = ('dither_spike_train', 'dither_spikes', 'jitter_spikes',
                 'bin_shuffling', 'isi_dithering')
 
 
-def _dither_spikes_with_refractory_period(spiketrain, dither, n_surrogates,
-                                          refractory_period):
+def _dither_spikes_with_refractory_period(spiketrain: neo.SpikeTrain,
+                                          dither: pq.Quantity,
+                                          n_surrogates: int,
+                                          refractory_period: pq.Quantity
+                                          ) -> pq.Quantity:
     units = spiketrain.units
     t_start = spiketrain.t_start.rescale(units).magnitude
     t_stop = spiketrain.t_stop.rescale(units).magnitude
