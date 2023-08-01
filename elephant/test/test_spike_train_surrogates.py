@@ -144,6 +144,33 @@ class SurrogatesTestCase(unittest.TestCase):
             refractory_period=4 * pq.ms)[0]
         self.assertEqual(len(surrogate_train), 0)
 
+    def test_dither_spikes_regression_issue_586(self):
+        """
+        When using the dither_spikes surrogate generation function, with the
+        edges=True option, there is an exception when spikes are removed due
+        to being dithered outside the spiketrain duration.
+
+        Since the arrays in the list will have different dimensions, the
+        multiplication operator fails.
+        However, this worked with numpy==1.23 and fails with numpy>=1.24.
+        See: https://github.com/NeuralEnsemble/elephant/issues/586
+        """
+        # Generate one spiketrain with a spike close to t_stop
+        t_stop = 2 * pq.s
+        st = stg.StationaryPoissonProcess(
+            rate=10 * pq.Hz, t_stop=t_stop).generate_spiketrain()
+        st = neo.SpikeTrain(np.hstack([st.magnitude, [1.9999999]]),
+                            units=st.units, t_stop=t_stop)
+
+        # Dither
+        np.random.seed(5)
+        surrogate_trains = surr.dither_spikes(
+            st, dither=15 * pq.ms, n_surrogates=30, edges=True, decimals=2)
+        for surrogate in surrogate_trains:
+            with self.subTest(surrogate):
+                self.assertLess(surrogate[-1], surrogate.t_stop)
+                self.assertGreater(surrogate[0], surrogate.t_start)
+
     def test_randomise_spikes_output_format(self):
         n_surrogates = 2
         surrogate_trains = surr.randomise_spikes(
