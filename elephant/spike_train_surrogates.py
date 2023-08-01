@@ -37,7 +37,7 @@ from __future__ import division, print_function, unicode_literals
 import random
 import warnings
 import copy
-from typing import Union, Optional
+from typing import Union, Optional, List
 
 import neo
 import numpy as np
@@ -148,7 +148,7 @@ def dither_spikes(spiketrain: neo.SpikeTrain,
                   decimals: Optional[int] = None,
                   edges: Optional[bool] = True,
                   refractory_period: Optional[Union[pq.Quantity, None]] = None
-                  ) -> list[neo.SpikeTrain]:
+                  ) -> List[neo.SpikeTrain]:
     """
     Generates surrogates of a spike train by spike dithering.
 
