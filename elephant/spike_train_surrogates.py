@@ -166,7 +166,7 @@ def dither_spikes(spiketrain: neo.SpikeTrain,
 
     Returns
     -------
-    list of neo.SpikeTrain
+    list of :class:`neo.core.SpikeTrain`
         Each surrogate spike train obtained independently of `spiketrain` by
         randomly dithering its spikes. The range of the surrogate spike trains
         is the same as of `spiketrain`.
