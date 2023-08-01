@@ -114,8 +114,13 @@ def _dither_spikes_with_refractory_period(spiketrain, dither, n_surrogates,
 
 
 @deprecated_alias(n='n_surrogates')
-def dither_spikes(spiketrain, dither, n_surrogates=1, decimals=None,
-                  edges=True, refractory_period=None):
+def dither_spikes(spiketrain: neo.SpikeTrain,
+                  dither: pq.Quantity,
+                  n_surrogates: int = 1,
+                  decimals: int = None,
+                  edges: bool = True,
+                  refractory_period: pq.Quantity = None
+                  ) -> list[neo.SpikeTrain]:
     """
     Generates surrogates of a spike train by spike dithering.
 
