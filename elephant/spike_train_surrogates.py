@@ -129,7 +129,7 @@ def dither_spikes(spiketrain, dither, n_surrogates=1, decimals=None,
 
     Parameters
     ----------
-    spiketrain : neo.SpikeTrain
+    spiketrain : :class:`neo.core.SpikeTrain`
         The spike train from which to generate the surrogates.
     dither : pq.Quantity
         Amount of dithering. A spike at time `t` is placed randomly within
@@ -162,7 +162,7 @@ def dither_spikes(spiketrain, dither, n_surrogates=1, decimals=None,
     Returns
     -------
     list of neo.SpikeTrain
-        Each surrogate spike train obtained independently from `spiketrain` by
+        Each surrogate spike train obtained independently of `spiketrain` by
         randomly dithering its spikes. The range of the surrogate spike trains
         is the same as of `spiketrain`.
 
