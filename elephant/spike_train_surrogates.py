@@ -37,6 +37,7 @@ from __future__ import division, print_function, unicode_literals
 import random
 import warnings
 import copy
+from typing import Union, Optional
 
 import neo
 import numpy as np
@@ -116,10 +117,10 @@ def _dither_spikes_with_refractory_period(spiketrain, dither, n_surrogates,
 @deprecated_alias(n='n_surrogates')
 def dither_spikes(spiketrain: neo.SpikeTrain,
                   dither: pq.Quantity,
-                  n_surrogates: int = 1,
-                  decimals: int = None,
-                  edges: bool = True,
-                  refractory_period: pq.Quantity = None
+                  n_surrogates: Optional[int] = 1,
+                  decimals: Optional[int] = None,
+                  edges: Optional[bool] = True,
+                  refractory_period: Optional[Union[pq.Quantity, None]] = None
                   ) -> list[neo.SpikeTrain]:
     """
     Generates surrogates of a spike train by spike dithering.
@@ -199,7 +200,7 @@ def dither_spikes(spiketrain: neo.SpikeTrain,
     t_start = spiketrain.t_start.rescale(units).magnitude
     t_stop = spiketrain.t_stop.rescale(units).magnitude
 
-    if refractory_period is None or refractory_period == 0:
+    if not refractory_period:
         # Main: generate the surrogates
         dither = dither.rescale(units).magnitude
         dithered_spiketrains = \
