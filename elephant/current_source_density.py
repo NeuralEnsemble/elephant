@@ -264,7 +264,7 @@ def generate_lfp(csd_profile, x_positions, y_positions=None, z_positions=None,
     >>> from elephant.current_source_density import generate_lfp, estimate_csd
     >>> from elephant.current_source_density_src.utility_functions import gauss_1d_dipole  # noqa
     >>> # 1. Define an array xs to x coordinate values with a length of 2304
-    >>> xs=np.linspace(0, 10, 2304).reshape(2304,1)
+    >>> xs=np.linspace(0, 10, 2304)
 
     >>> # 2. Run generate_lfp(gauss_1d_dipole, xs)
     >>> lfp = generate_lfp(gauss_1d_dipole, xs)
@@ -319,6 +319,10 @@ def generate_lfp(csd_profile, x_positions, y_positions=None, z_positions=None,
     sigma = 1.0
     h = 50.
     if dim == 1:
+        # Handle 1 dimensional case,
+        # see https://github.com/NeuralEnsemble/elephant/issues/546
+        if len(x_positions.shape) == 1:
+            x_positions = np.expand_dims(x_positions, axis=1)
         chrg_x = x
         csd = csd_profile(chrg_x)
         pots = integrate_1D(x_positions, chrg_x, csd, h)
