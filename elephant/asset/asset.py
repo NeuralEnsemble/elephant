@@ -9,6 +9,7 @@ ASSET analysis class object of finding patterns
 
 .. autosummary::
     :toctree: _toctree/asset/
+    :template: class.rst
 
     ASSET
 
