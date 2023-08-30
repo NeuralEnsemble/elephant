@@ -79,8 +79,8 @@ def estimate_csd(lfp, coordinates='coordinates', method=None,
         with dimension of space, where M is the number of signals in 'lfp',
         and N is equal to the dimensionality of the method.
         Alternatively, if coordinates is a string, the function will fetch the
-        coordinates, supplied in the same format, as annotation of 'lfp' by that
-        name.
+        coordinates, supplied in the same format, as annotation of 'lfp' by
+        that name.
         Default: 'coordinates'
     method : string
         Pick a method corresponding to the setup, in this implementation
@@ -253,10 +253,32 @@ def generate_lfp(csd_profile, x_positions, y_positions=None, z_positions=None,
 
     Returns
     -------
-    LFP : neo.AnalogSignal
+    LFP : :class:`neo.core.AnalogSignal`
        The potentials created by the csd profile at the electrode positions.
        The electrode positions are attached as an annotation named
        'coordinates'.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from elephant.current_source_density import generate_lfp, estimate_csd
+    >>> from elephant.current_source_density_src.utility_functions import gauss_1d_dipole  # noqa
+    >>> # 1. Define an array xs to x coordinate values with a length of 2304
+    >>> xs=np.linspace(0, 10, 2304).reshape(2304,1)
+
+    >>> # 2. Run generate_lfp(gauss_1d_dipole, xs)
+    >>> lfp = generate_lfp(gauss_1d_dipole, xs)
+
+    >>> # 3. Run estimate_csd(lfp, method="StandardCSD")
+    >>> csd = estimate_csd(lfp, method="StandardCSD")  #doctest: +ELLIPSIS
+    discrete ...
+    >>> # 4. Print the results
+    >>> print(f"LFPs: {lfp}")
+    LFPs: [[-0.01483716 -0.01483396 -0.01483075 ...  0.01219233  0.0121911
+       0.01218986]] mV
+    >>> print(f"CSD estimate: {csd}")
+    CSD estimate: [[-1.00025592e-04 -6.06684588e-05  2.30042086e-10 ... -4.07008302e-09
+      -2.33715292e-05 -3.85293808e-05]] A/m**2
     """
 
     def integrate_1D(x0, csd_x, csd, h):
