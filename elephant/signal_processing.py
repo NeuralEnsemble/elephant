@@ -167,7 +167,7 @@ def zscore(signal, inplace=True):
     for sig in signal:
         # Perform inplace operation only if array is of dtype float.
         # Otherwise, raise an error.
-        if inplace and not np.issubdtype(float, sig.dtype):
+        if inplace and not np.issubdtype(sig.dtype, np.floating):
             raise ValueError(f"Cannot perform inplace operation as the "
                              f"signal dtype is not float. Source: {sig.name}")
 
