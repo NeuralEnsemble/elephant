@@ -319,7 +319,7 @@ def generate_lfp(csd_profile, x_positions, y_positions=None, z_positions=None,
     sigma = 1.0
     h = 50.
     if dim == 1:
-        # Handle 1 dimensional case,
+        # Handle one dimensional case,
         # see https://github.com/NeuralEnsemble/elephant/issues/546
         if len(x_positions.shape) == 1:
             x_positions = np.expand_dims(x_positions, axis=1)
