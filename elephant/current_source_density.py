@@ -182,14 +182,14 @@ def estimate_csd(lfp, coordinates='coordinates', method=None,
                 # All iCSD methods explicitly assume a source
                 # diameter in contrast to the stdCSD  that
                 # implicitly assume infinite source radius
-                raise ValueError("Parameter diam must be specified for iCSD \
-                                  methods: {}".format(", ".join(icsd_methods)))
+                raise ValueError(f"Parameter diam must be specified for iCSD "
+                                 f"methods: {', '.join(icsd_methods)}")
 
         if 'f_type' in kwargs:
             if (kwargs['f_type'] != 'identity') and  \
                (kwargs['f_order'] is None):
-                raise ValueError("The order of {} filter must be \
-                                  specified".format(kwargs['f_type']))
+                raise ValueError(f"The order of {kwargs['f_type']} filter must"
+                                 f" be specified")
 
         csd_method = getattr(icsd, method)  # fetch class from icsd.py file
         csd_estimator = csd_method(lfp=lfp.T.magnitude * lfp.units,
