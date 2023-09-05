@@ -415,7 +415,7 @@ class ZscoreTestCase(unittest.TestCase):
         """
         Regression test: Inplace operations for z_score failed when using
         np.float32 or np.float64 types.
-        See Issue #591
+        See Issue #591.
         https://github.com/NeuralEnsemble/elephant/issues/591
         """
         test_types = (np.float32, np.float64)
