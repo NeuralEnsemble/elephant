@@ -954,9 +954,9 @@ class MultitaperCoherenceTestCase(unittest.TestCase):
                                    signal_freq*np.ones(len(peak_freqs)),
                                    rtol=0.05)
 
-    @pytest.mark.skipif(np.__version__ in ['1.25.0', '1.25.1'],
+    @pytest.mark.skipif(np.__version__ in ['1.25.0', '1.25.1', '1.25.2'],
                         reason="This test will fail with numpy version"
-                               "1.25.0, 1.25.1 see issue #24000"
+                               "1.25.0 - 1.25.2,  see issue #24000"
                                "https://github.com/numpy/numpy/issues/24000 ")
     def test_multitaper_cohere_perfect_cohere(self):
         # Generate dummy data
