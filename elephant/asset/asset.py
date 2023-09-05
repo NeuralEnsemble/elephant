@@ -9,6 +9,7 @@ ASSET analysis class object of finding patterns
 
 .. autosummary::
     :toctree: _toctree/asset/
+    :template: class.rst
 
     ASSET
 
@@ -2041,6 +2042,8 @@ class ASSET(object):
 
     def is_symmetric(self):
         """
+        Checks if intersection matrix is symmetric or not.
+
         Returns
         -------
         bool
