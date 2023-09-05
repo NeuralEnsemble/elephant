@@ -127,8 +127,7 @@ def _dither_spikes(spiketrain: neo.SpikeTrain, dither: float,
     dithered_spiketrains.sort(axis=1)
 
     if edges:
-        # Leave out all spikes outside
-        # [spiketrain.t_start, spiketrain.t_stop]
+        # Leave out all spikes outside [spiketrain.t_start, spiketrain.t_stop]
         dithered_spiketrains = [
             train[np.all([t_start < train, train < t_stop], axis=0)]
             for train in dithered_spiketrains]
