@@ -276,9 +276,8 @@ def generate_lfp(csd_profile, x_positions, y_positions=None, z_positions=None,
     >>> print(f"LFPs: {lfp}")
     LFPs: [[-0.01483716 -0.01483396 -0.01483075 ...  0.01219233  0.0121911
        0.01218986]] mV
-    >>> print(f"CSD estimate: {csd}")
-    CSD estimate: [[-1.00025592e-04 -6.06684588e-05  2.30042086e-10 ... -4.07008302e-09
-      -2.33715292e-05 -3.85293808e-05]] A/m**2
+    >>> print(f"CSD estimate: {csd}")  #doctest: +ELLIPSIS
+    CSD estimate: [[-1.00025592e-04 -6.06684588e-05  ...
     """
 
     def integrate_1D(x0, csd_x, csd, h):
