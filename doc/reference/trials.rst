@@ -1,0 +1,5 @@
+======
+Trials
+======
+
+.. automodule:: elephant.trials

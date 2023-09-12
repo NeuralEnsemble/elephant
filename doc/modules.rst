@@ -46,7 +46,7 @@ Spike trains
     :maxdepth: 2
 
     reference/spike_train_generation
-    
+
 
 ********************************
 LFPs and spike trains (combined)
@@ -97,3 +97,4 @@ Miscellaneous
     reference/utils
     reference/pandas_bridge
     reference/parallel
+    reference/trials
