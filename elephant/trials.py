@@ -1,6 +1,7 @@
 """
-This module defines the basic classes that represent trials in elephant, such
-as :class:`TrialsFromBlock`, TrialsFromLists. These classes provide an unified
+This module defines the basic classes that represent trials in elephant.
+
+Classes :class:`TrialsFromBlock`, :class:`TrialsFromLists` provide an unified
 way to access trial data.
 
 .. autosummary::
@@ -40,15 +41,12 @@ class Trials:
     __metaclass__ = ABCMeta
 
     def __init__(self, description: str = "Trials"):
-        """
-        Constructor
-        (actual documentation is in class documentation, see above!)
-        """
+        """Create an instance of the trials class."""
         self.description = description
 
     @abstractmethod
     def __getitem__(self, trial_number: int) -> neo.core.Segment:
-        """Get a specific trial by number"""
+        """Get a specific trial by number."""
         pass
 
     @abstractmethod
@@ -68,18 +66,18 @@ class Trials:
 
     @abstractmethod
     def get_trial(self, trial_number: int) -> neo.core.Segment:
-        """Get trial as segment"""
+        """Get trial as segment."""
         pass
 
     @abstractmethod
     def get_trials(self, trial_numbers: List[int]) -> neo.core.Block:
-        """Get trials as block"""
+        """Get trials as block."""
         pass
 
     @abstractmethod
     def get_trials_as_list(self,
                            trial_numbers: List[int]) -> List[neo.core.Segment]:
-        """Get trials as list of segments"""
+        """Get trials as list of segments."""
         pass
 
     @abstractmethod
@@ -157,7 +155,7 @@ class Trials:
 
 class TrialsFromBlock(Trials):
     """
-    This class implements support for handling trials from neo.Block
+    This class implements support for handling trials from neo.Block.
 
     Parameters
     ----------
@@ -172,6 +170,7 @@ class TrialsFromBlock(Trials):
     See Trials Class
 
     """
+
     def __init__(self, block: neo.core.block, **kwargs):
         self.block = block
         super().__init__(**kwargs)
@@ -250,9 +249,8 @@ class TrialsFromLists(Trials):
     Properties
     ----------
     see Trials class
-
-
     """
+
     def __init__(self, list_of_trials: list, **kwargs):
         # Constructor
         # (actual documentation is in class documentation, see above!)
