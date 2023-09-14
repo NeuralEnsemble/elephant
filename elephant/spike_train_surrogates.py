@@ -241,7 +241,7 @@ def dither_spikes(spiketrain: neo.SpikeTrain,
     # Round the surrogate data to decimal position, if requested
     if decimals:
         return [neo.SpikeTrain(
-                train * units.rescale(pq.ms).round(decimals).rescale(units),
+                (train * units).rescale(pq.ms).round(decimals).rescale(units),
                 t_start=spiketrain.t_start, t_stop=spiketrain.t_stop,
                 sampling_rate=spiketrain.sampling_rate)
                 for train in dithered_spiketrains]
