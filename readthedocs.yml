@@ -10,8 +10,8 @@ sphinx:
   builder: html
   configuration: doc/conf.py
 
-conda:
-  environment: requirements/environment-docs.yml
+# conda:
+#   environment: requirements/environment-docs.yml
 
 python:
     install:
