@@ -11,7 +11,7 @@ sphinx:
   configuration: doc/conf.py
 
 conda:
-   environment: requirements/environment-docs.yml
+  environment: requirements/environment-docs.yml
 
 python:
     install:

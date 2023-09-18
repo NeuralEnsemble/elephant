@@ -117,7 +117,7 @@ nbsphinx_execute = 'auto'
 # Kernel to use for execution
 nbsphinx_kernel_name = 'python3'
 # Cancel compile on errors in notebooks
-nbsphinx_allow_errors = True
+nbsphinx_allow_errors = False
 
 # Required to automatically create a summary page for each function listed in
 # the autosummary fields of each module.
