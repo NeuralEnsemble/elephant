@@ -2,7 +2,7 @@
 version: 2
 
 build:
-    os: latest
+    os: ubuntu-22.04
 
 sphinx:
   builder: html
