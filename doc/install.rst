@@ -14,7 +14,7 @@ Below is the explanation of how to proceed with these two steps.
 Prerequisites
 *************
 
-Elephant requires `Python <http://python.org/>`_ 3.7, 3.8, 3.9 or 3.10.
+Elephant requires `Python <http://python.org/>`_ 3.8, 3.9, 3.10 or 3.11.
 
 .. tabs::
 
@@ -25,7 +25,7 @@ Elephant requires `Python <http://python.org/>`_ 3.7, 3.8, 3.9 or 3.10.
 
            .. code-block:: sh
 
-              conda create --name elephant python=3.7 numpy scipy tqdm
+              conda create --name elephant python=3.8 numpy scipy tqdm
 
         2. Activate your environment:
 
@@ -41,7 +41,6 @@ Elephant requires `Python <http://python.org/>`_ 3.7, 3.8, 3.9 or 3.10.
         .. code-block:: sh
 
            sudo apt-get install python-pip python-numpy python-scipy python-pip python-six python-tqdm
-
 
 ************
 Installation
@@ -64,7 +63,6 @@ Installation
            .. code-block:: sh
 
               pip install elephant[extras]
-
 
         To upgrade to a newer release use the ``--upgrade`` flag:
 
@@ -210,6 +208,38 @@ You can have one, both, or none installed in your system.
             using your graphics card to perform computations may make the system
             unresponsive until the compute program terminates.
 
+.. _no-compile-spade:
+
+****************************
+Resolving compilation issues
+****************************
+
+Some modules in Elephant make use of C extensions to speed up computation.
+However, those extensions need to be compiled before use. In some cases, this
+causes problems. For example, the compiler on the current machine does not
+fulfill the requirements for the extension, certain libraries are missing,
+or no compiler is available at all.
+
+In order to circumvent this problem, the following commands allow to avoid the
+compilation for specific or for all C extensions.
+
+.. tabs::
+
+    .. tab:: general
+        Use the following to install elephant without C extensions:
+
+        .. code-block:: sh
+
+            pip install elephant --install-option='--no-compile'
+
+    .. tab:: spade
+        To avoid compilation of the c++ extension ``fim.cpp`` used in :ref:`spade`, install the package with:
+
+        .. code-block:: sh
+
+            pip install elephant --install-option='--no-compile-spade'
+
+        In this case the pure python implementation of :ref:`spade` is still available.
 
 ************
 Dependencies

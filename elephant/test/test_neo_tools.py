@@ -2,7 +2,7 @@
 """
 Unit tests for the neo_tools module.
 
-:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2023 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 import random
@@ -21,7 +21,7 @@ from neo.test.generate_datasets import generate_one_simple_block, \
     random_event, random_epoch, random_spiketrain
 from neo.test.tools import assert_same_sub_schema
 
-from numpy.testing.utils import assert_array_equal
+from numpy.testing import assert_array_equal
 
 import elephant.neo_tools as nt
 

@@ -2,7 +2,7 @@
 """
 Unit tests for the signal_processing module.
 
-:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2023 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 from __future__ import division, print_function
@@ -15,7 +15,7 @@ import quantities as pq
 import scipy.signal as spsig
 import scipy.stats
 from numpy.ma.testutils import assert_array_equal, assert_allclose
-from numpy.testing.utils import assert_array_almost_equal
+from numpy.testing import assert_array_almost_equal
 
 import elephant.signal_processing
 

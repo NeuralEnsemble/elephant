@@ -88,16 +88,21 @@ your local machine.
             pip install -r requirements/requirements-extras.txt  # optional
             pip install -r requirements/requirements-tests.txt
 
+Install elephant development version:
+
+.. code-block:: sh
+
+    pip install -e .
 
 3. Before you make any changes, run the test suite to make sure all the tests
    pass on your system::
 
-    $ nosetests .
+    $ pytest .
 
    You can specify a particular module to test, for example
    ``test_statistics.py``::
 
-    $ nosetests elephant/test/test_statistics.py
+    $ pytest elephant/test/test_statistics.py
 
    At the end, if you see "OK", then all the tests passed (or were skipped
    because certain dependencies are not installed), otherwise it will report
@@ -307,7 +312,31 @@ Citations
 The citations are in BibTeX format, stored in `doc/bib/elephant.bib
 <https://github.com/NeuralEnsemble/elephant/blob/master/doc/bib/elephant.bib>`_.
 
-To cite Elephant, refer to :doc:`citation`.
+Entries in the .bib are built according to the following specification:
+
+``{Last name of first author}+{last two digits of publication year}+"_"+{first page of article}``
+
+
+.. admonition:: Example
+
+    According to this specification, the following article:
+
+    S. Grün. Data-driven significance estimation of precise spike correlation. J. Neurophysiol., pages 1126–1140, 2009. doi:10.1152/jn.00093.2008.
+
+    is added to the .bib-file as ``Gruen09_1126``. The complete entry for this example is:
+
+    .. code-block:: rst
+
+        @article{Gruen09_1126,
+          title={Data-driven significance estimation of precise spike correlation},
+          author={Gr\"{u}n, S.},
+          year={2009},
+          journal={J. Neurophysiol.},
+          number={101},
+          pages={1126--1140},
+          doi={10.1152/jn.00093.2008}
+        }
+
 
 Each module in ``doc/reference`` folder ends with the reference section:
 
@@ -316,10 +345,8 @@ Each module in ``doc/reference`` folder ends with the reference section:
     References
     ----------
 
-    .. bibliography:: ../bib/elephant.bib
-       :labelprefix: <module name shortcut>
-       :keyprefix: <module name>-
-       :style: unsrt
+    .. bibliography::
+        :keyprefix: <module name>-
 
 where ``<module name>`` is (by convention) the Python source file name, and
 ``<module name shortcut>`` is what will be displayed to the users.
@@ -327,5 +354,7 @@ where ``<module name>`` is (by convention) the Python source file name, and
 For example, ``:cite:'spade-Torre2013_132'`` will be rendered as ``sp1`` in
 the built HTML documentation, if ``<module name shortcut>`` is set to ``sp``
 and ``<module name>`` - to ``spade``.
+
+To cite Elephant itself, refer to :doc:`citation`.
 
 .. _Issue tracker: https://github.com/NeuralEnsemble/elephant/issues

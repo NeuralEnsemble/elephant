@@ -2,7 +2,7 @@
 """
 Unit tests for the statistics module.
 
-:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2023 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 from __future__ import division
@@ -410,7 +410,7 @@ class LVRTestCase(unittest.TestCase):
     def test_lvr_with_quantities(self):
         seq = pq.Quantity(self.test_seq, units='ms')
         assert_array_almost_equal(statistics.lvr(seq), self.target, decimal=9)
-        seq = pq.Quantity(self.test_seq, units='ms').rescale('s')
+        seq = pq.Quantity(self.test_seq, units='ms').rescale('s', dtype=float)
         assert_array_almost_equal(statistics.lvr(seq), self.target, decimal=9)
 
     def test_lvr_with_plain_array(self):
@@ -1118,6 +1118,31 @@ class ComplexityTestCase(unittest.TestCase):
             complexity_obj.time_histogram.magnitude.flatten().astype(int),
             correct_time_histogram)
 
+    def test_complexity_histogram_spread_0_nonbinary(self):
+        sampling_rate = 1 / pq.s
+
+        spiketrains = [neo.SpikeTrain([1, 5, 5, 9, 11, 16, 19] * pq.s,
+                                      t_stop=20 * pq.s),
+                       neo.SpikeTrain([1, 4, 8, 12, 16, 16, 18] * pq.s,
+                                      t_stop=20 * pq.s)]
+
+        correct_histogram = np.array([10, 7, 2, 1])
+
+        correct_time_histogram = np.array([0, 2, 0, 0, 1, 2, 0, 0, 1, 1,
+                                           0, 1, 1, 0, 0, 0, 3, 0, 1, 1])
+
+        complexity_obj = statistics.Complexity(spiketrains,
+                                               sampling_rate=sampling_rate,
+                                               binary=False,
+                                               spread=0)
+
+        assert_array_equal(complexity_obj.complexity_histogram,
+                           correct_histogram)
+
+        assert_array_equal(
+            complexity_obj.time_histogram.magnitude.flatten().astype(int),
+            correct_time_histogram)
+
     def test_complexity_epoch_spread_0(self):
         sampling_rate = 1 / pq.s
 
@@ -1157,6 +1182,31 @@ class ComplexityTestCase(unittest.TestCase):
             complexity_obj.time_histogram.magnitude.flatten().astype(int),
             correct_time_histogram)
 
+    def test_complexity_histogram_spread_1_nonbinary(self):
+        sampling_rate = 1 / pq.s
+
+        spiketrains = [neo.SpikeTrain([0, 1, 5, 5, 9, 11, 13, 20] * pq.s,
+                                      t_stop=21 * pq.s),
+                       neo.SpikeTrain([1, 4, 7, 12, 16, 16, 18] * pq.s,
+                                      t_stop=21 * pq.s)]
+
+        correct_histogram = np.array([9, 4, 1, 3])
+
+        correct_time_histogram = np.array([3, 3, 0, 0, 3, 3, 0, 1, 0, 1, 0,
+                                           3, 3, 3, 0, 0, 2, 0, 1, 0, 1])
+
+        complexity_obj = statistics.Complexity(spiketrains,
+                                               sampling_rate=sampling_rate,
+                                               binary=False,
+                                               spread=1)
+
+        assert_array_equal(complexity_obj.complexity_histogram,
+                           correct_histogram)
+
+        assert_array_equal(
+            complexity_obj.time_histogram.magnitude.flatten().astype(int),
+            correct_time_histogram)
+
     def test_complexity_histogram_spread_2(self):
         sampling_rate = 1 / pq.s
 
@@ -1172,6 +1222,31 @@ class ComplexityTestCase(unittest.TestCase):
 
         complexity_obj = statistics.Complexity(spiketrains,
                                                sampling_rate=sampling_rate,
+                                               spread=2)
+
+        assert_array_equal(complexity_obj.complexity_histogram,
+                           correct_histogram)
+
+        assert_array_equal(
+            complexity_obj.time_histogram.magnitude.flatten().astype(int),
+            correct_time_histogram)
+
+    def test_complexity_histogram_spread_2_nonbinary(self):
+        sampling_rate = 1 / pq.s
+
+        spiketrains = [neo.SpikeTrain([1, 5, 5, 9, 11, 13, 20] * pq.s,
+                                      t_stop=21 * pq.s),
+                       neo.SpikeTrain([1, 4, 7, 12, 16, 16, 18] * pq.s,
+                                      t_stop=21 * pq.s)]
+
+        correct_histogram = np.array([5, 0, 1, 0, 1, 0, 0, 0, 1])
+
+        correct_time_histogram = np.array([0, 2, 0, 0, 8, 8, 8, 8, 8, 8, 8,
+                                           8, 8, 8, 0, 0, 4, 4, 4, 4, 4])
+
+        complexity_obj = statistics.Complexity(spiketrains,
+                                               sampling_rate=sampling_rate,
+                                               binary=False,
                                                spread=2)
 
         assert_array_equal(complexity_obj.complexity_histogram,

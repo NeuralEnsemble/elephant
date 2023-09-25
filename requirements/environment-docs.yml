@@ -4,16 +4,16 @@ channels:
   - conda-forge  # required for MPI
 
 dependencies:
-  - python>=3.7
+  - python>=3.8
 
   - mpi4py
-  - numpy
+  - numpy>=1.19.5
   - scipy
   - tqdm
   - pandas
   - scikit-learn
   - statsmodels
-  - jinja2==3.0.3 # prevent bug happening in 3.1.0 for docs
+  - jinja2
   - pip:
     - neo>=0.10.0
     - viziphant
