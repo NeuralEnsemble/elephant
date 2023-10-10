@@ -20,7 +20,6 @@ from neo.core.spiketrainlist import SpikeTrainList
 import numpy as np
 import quantities as pq
 
-
 __all__ = [
     "deprecated_alias",
     "is_binary",
