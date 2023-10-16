@@ -450,7 +450,8 @@ def cross_correlation_histogram(
     # Rescale units
     if type(signal_i) is not np.ndarray:
         if bin_size is not None:
-            raise ValueError('Bin size should only be defined when the input signals are np.ndarray')
+            raise ValueError('bin_size should only be defined'
+                             'when the input signals are np.ndarray')
         signal_j.rescale(signal_i.units)
         units = signal_i.units
     else:
@@ -546,7 +547,8 @@ def cross_correlation_histogram(
         # Compute the CCH at lags in left_edge,...,right_edge only
         for idx, i in enumerate(st1_bin_idx_unique):
             il = np.searchsorted(st2_bin_idx_unique, left_edge + i)
-            ir = np.searchsorted(st2_bin_idx_unique, right_edge + i, side='right')
+            ir = np.searchsorted(st2_bin_idx_unique, right_edge + i,
+                                 side='right')
             timediff = st2_bin_idx_unique[il:ir] - i
             assert ((timediff >= left_edge) & (
                 timediff <= right_edge)).all(), \
