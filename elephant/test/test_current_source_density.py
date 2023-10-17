@@ -166,7 +166,7 @@ class GenerateLfpTestCase(unittest.TestCase):
         Regression test for Issue #546,
         see: https://github.com/NeuralEnsemble/elephant/issues/546
         """
-        # this should raise an error
+        # this should raise NOT an error
         generate_lfp(utils.gauss_1d_dipole, self.one_dimensional)
 
     def test_generate_lfp_two_dimensional_array(self):
