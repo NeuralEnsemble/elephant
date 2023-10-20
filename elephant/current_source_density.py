@@ -227,13 +227,16 @@ def generate_lfp(csd_profile, x_positions, y_positions=None, z_positions=None,
         1D : gauss_1d_dipole
         2D : large_source_2D and small_source_2D
         3D : gauss_3d_dipole
-    x_positions : np.ndarray # TODO: add dimensionality for x-y-z_positions
-        Positions of the x coordinates of the electrodes
+    x_positions : np.ndarray
+        A 2D column vector (N x 1 array) containing the positions of the x
+        coordinates of the electrodes
     y_positions : np.ndarray, optional
-        Positions of the y coordinates of the electrodes
+        A 2D column vector (N x 1 array) containing the positions of the y
+        coordinates of the electrodes
         Defaults to None, use in 2D or 3D cases only
     z_positions : np.ndarray, optional
-        Positions of the z coordinates of the electrodes
+        A 2D column vector (N x 1 array) containing the positions of the z
+        coordinates of the electrodes
         Defaults to None, use in 3D case only
     x_limits : list, optional
         A list of [start, end].
