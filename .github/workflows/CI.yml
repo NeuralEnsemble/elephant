@@ -339,7 +339,7 @@ jobs:
           pip install -r requirements/requirements-tests.txt
           pip install pytest
           pip install pytest-cov coveralls
-          pip install .
+          pip install -e .
       - name: List packages
         run: |
           activate base
@@ -349,7 +349,7 @@ jobs:
       - name: Test with pytest
         run: |
           activate base
-          pytest --cov=elephant --import-mode=importlib
+          pytest --cov=elephant
 
   #  ____
   # |  _ \  ___   ___ ___
