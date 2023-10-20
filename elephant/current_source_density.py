@@ -71,7 +71,7 @@ def estimate_csd(lfp, coordinates='coordinates', method=None,
 
     Parameters
     ----------
-    lfp : neo.AnalogSignal
+    lfp : :class:`neo.core.AnalogSignal`
         Positions of electrodes can be added as an array annotation
     coordinates : array-like Quantity or string
         Specifies the corresponding spatial coordinates of the electrodes.
