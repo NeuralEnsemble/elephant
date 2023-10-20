@@ -17,6 +17,7 @@ import scipy.fft
 import scipy.signal as spsig
 from neo import AnalogSignal
 from numpy.testing import assert_array_equal
+from packaging import version
 
 import elephant.spectral
 from elephant.datasets import download_datasets, ELEPHANT_TMP_DIR
@@ -954,9 +955,9 @@ class MultitaperCoherenceTestCase(unittest.TestCase):
                                    signal_freq*np.ones(len(peak_freqs)),
                                    rtol=0.05)
 
-    @pytest.mark.skipif(np.__version__ in ['1.25.0', '1.25.1'],
+    @pytest.mark.skipif(version.parse(np.__version__)>version.parse("1.25.0"),
                         reason="This test will fail with numpy version"
-                               "1.25.0, 1.25.1 see issue #24000"
+                               "1.25.0 - 1.25.2,  see issue #24000"
                                "https://github.com/numpy/numpy/issues/24000 ")
     def test_multitaper_cohere_perfect_cohere(self):
         # Generate dummy data
