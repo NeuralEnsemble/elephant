@@ -298,7 +298,7 @@ def round_binning_errors(values, tolerance=1e-8):
     if isinstance(values, np.ndarray):
         num_corrections = correction_mask.sum()
         if num_corrections > 0:
-            logger.info(f'Correcting {num_corrections} rounding errors by '
+            logger.warning(f'Correcting {num_corrections} rounding errors by '
                          'shifting the affected spikes into the following '
                          'bin. You can set tolerance=None to disable this '
                          'behaviour.')
