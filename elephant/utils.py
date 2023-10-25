@@ -306,7 +306,7 @@ def round_binning_errors(values, tolerance=1e-8):
         return values.astype(np.int32)
 
     if correction_mask:
-        logger.info('Correcting a rounding error in the calculation '
+        logger.warning('Correcting a rounding error in the calculation '
                     'of the number of bins by incrementing the value by 1. '
                     'You can set tolerance=None to disable this '
                     'behaviour.')
