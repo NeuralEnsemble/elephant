@@ -9,6 +9,7 @@ ASSET analysis class object of finding patterns
 
 .. autosummary::
     :toctree: _toctree/asset/
+    :template: class.rst
 
     ASSET
 
@@ -26,6 +27,8 @@ Patterns post-exploration
     synchronous_events_contained_in
     synchronous_events_contains_all
     synchronous_events_overlap
+    get_neurons_in_sse
+    get_sse_start_and_end_time_bins
 
 
 Tutorial
@@ -151,7 +154,6 @@ except ImportError:
     size = 1
     rank = 0
 
-
 __all__ = [
     "ASSET",
     "synchronous_events_intersection",
@@ -160,7 +162,9 @@ __all__ = [
     "synchronous_events_no_overlap",
     "synchronous_events_contained_in",
     "synchronous_events_contains_all",
-    "synchronous_events_overlap"
+    "synchronous_events_overlap",
+    "get_neurons_in_sse",
+    "get_sse_start_and_end_time_bins"
 ]
 
 # Create logger and set configuration
@@ -537,7 +541,7 @@ def _stretched_metric_2d(x, y, stretch, ref_angle, working_memory=None,
             chunk_size = D_chunk.shape[0]
 
             assert (chunk_size == estimated_chunk or
-                    chunk_size == last_chunk)           # Safety check
+                    chunk_size == last_chunk)  # Safety check
 
             dX = x_array[:, start: start + chunk_size].T - x_array
             dY = y_array[:, start: start + chunk_size].T - y_array
@@ -621,6 +625,7 @@ class _GPUBackend:
        Python objects, PyOpenCL and PyCUDA clean up and free allocated memory
        automatically when garbage collection is executed.
     """
+
     def __init__(self, max_chunk_size=None):
         self.max_chunk_size = max_chunk_size
 
@@ -947,7 +952,7 @@ class _JSFUniformOrderStat3D(_GPUBackend):
         device = pycuda.autoinit.device
 
         max_l_block = device.MAX_SHARED_MEMORY_PER_BLOCK // (
-                    self.dtype.itemsize * (self.d + 2))
+                self.dtype.itemsize * (self.d + 2))
         n_threads = min(self.cuda_threads, max_l_block,
                         device.MAX_THREADS_PER_BLOCK)
         if n_threads > device.WARP_SIZE:
@@ -1806,6 +1811,108 @@ def synchronous_events_overlap(sse1, sse2):
     return not (contained_in or contains_all or identical or is_disjoint)
 
 
+def get_neurons_in_sse(sse):
+    """
+    Returns the IDs of all neurons present in the SSE pattern.
+
+    This ignores repetitions (i.e., if a neuron is present in more than one
+    pixel, it is returned only once).
+
+    Parameters
+    ----------
+    sse : dict
+        Dictionary of pixel positions `(i, j)` as keys and sets `S` of
+        synchronous events as values, as returned by
+        :func:`ASSET.extract_synchronous_events`.
+
+    Returns
+    -------
+    list
+        All neuron IDs present in the SSE, sorted in ascending order.
+
+    Examples
+    --------
+    >>> sse = {(268, 51): {22, 27},
+    ...        (274, 54): {26},
+    ...        (274, 56): {77},
+    ...        (274, 58): {26},
+    ...        (275, 58): {92},
+    ...        (276, 59): {9},
+    ...        (277, 58): {26},
+    ...        (277, 61): {26}}
+    >>> neurons = get_neurons_in_sse(sse)
+    >>> print(neurons)
+    [9, 22, 26, 27, 77, 92]
+
+    See Also
+    --------
+    ASSET.extract_synchronous_events
+    """
+    all_neurons = []
+    for neurons in sse.values():
+        all_neurons.extend(neurons)
+    neuron_ids = np.unique(all_neurons).tolist()
+    return neuron_ids
+
+
+def get_sse_start_and_end_time_bins(sse):
+    """
+    For each repeated sequence in the SSE pattern, returns the start and end
+    time bin IDs.
+
+    For an SSE consisting of several pixels `(i, j)`, the `i` and `j` elements
+    represent the time bin IDs in the cluster matrix used to extract the SSE.
+    The combination of all `i` and `j` elements in the SSE pixels defines the
+    temporal profile of each repeated sequence in the SSE pattern. Therefore,
+    the minimum and maximum values for each `i` and `j` will define when each
+    repeated sequence occured in time.
+
+    Parameters
+    ----------
+    sse : dict
+        Dictionary of pixel positions `(i, j)` as keys and sets `S` of
+        synchronous events as values, as returned by
+        :func:`ASSET.extract_synchronous_events`.
+
+    Returns
+    -------
+    start, end: list
+        Two-element list containing the first bins (`start`) or the last bins
+        (`end`) in each repeated sequence. In each list, the first element
+        corresponds to the first sequence (elements `i` in the SSE pixel), and
+        the second element corresponds to the second sequence (elements `j`
+        in the SSE pixel).
+
+    Examples
+    --------
+    >>> sse = {(268, 51): {22, 27},
+    ...        (274, 54): {26},
+    ...        (274, 56): {77},
+    ...        (274, 58): {26},
+    ...        (275, 58): {92},
+    ...        (276, 59): {9},
+    ...        (277, 58): {26},
+    ...        (277, 61): {26}}
+    >>> start, end = get_sse_start_and_end_time_bins(sse)
+    >>> print(start)
+    [268, 51]
+    >>> print(end)
+    [277, 61]
+
+    See Also
+    --------
+    ASSET.extract_synchronous_events
+    """
+    pixels = list(sse.keys())
+    start = list(pixels[0])
+    end = list(pixels[0])
+    for pixel in pixels[1:]:
+        for seq in (0, 1):
+            start[seq] = min(start[seq], pixel[seq])
+            end[seq] = max(end[seq], pixel[seq])
+    return start, end
+
+
 def _signals_t_start_stop(signals, t_start=None, t_stop=None):
     if t_start is None:
         t_start = _signals_same_attribute(signals, 't_start')
@@ -1895,6 +2002,13 @@ class ASSET(object):
         If None, the attribute `t_stop` of the spike trains is used
         (if the same for all spike trains).
         Default: None
+    bin_tolerance : float or 'default' or None, optional
+        Defines the tolerance value for rounding errors when binning the
+        spike trains. If 'default', the value is the default as defined in
+        :class:`~.conversion.BinnedSpikeTrain`. If None, no correction for
+        binning errors is performed. If a number, the binning will consider
+        this value.
+        Default: 'default'
 
 
     Raises
@@ -1905,11 +2019,15 @@ class ASSET(object):
 
           fully disjoint.
 
+    See Also
+    --------
+    :class:`elephant.conversion.BinnedSpikeTrain`
+
     """
 
     def __init__(self, spiketrains_i, spiketrains_j=None, bin_size=3 * pq.ms,
                  t_start_i=None, t_start_j=None, t_stop_i=None, t_stop_j=None,
-                 verbose=None):
+                 bin_tolerance='default', verbose=None):
 
         if verbose is not None:
             warnings.warn("The 'verbose' parameter is deprecated and will be "
@@ -1950,13 +2068,21 @@ class ASSET(object):
                 or (self.t_start_i < self.t_stop_j < self.t_stop_i):
             raise ValueError(msg)
 
+        # Define the tolerance parameter for binning.
+        # If `bin_tolerance` is 'default', `conv.BinnedSpikeTrain will be
+        # called without passing the parameter, and it will take what is
+        # defined by the behavior of that class. Otherwise, set to the value
+        # specified by `bin_tolerance`
+        tolerance_param = {'tolerance': bin_tolerance} if \
+            bin_tolerance != 'default' else {}
+
         # Compute the binned spike train matrices, along both time axes
         self.spiketrains_binned_i = conv.BinnedSpikeTrain(
             self.spiketrains_i, bin_size=self.bin_size,
-            t_start=self.t_start_i, t_stop=self.t_stop_i)
+            t_start=self.t_start_i, t_stop=self.t_stop_i, **tolerance_param)
         self.spiketrains_binned_j = conv.BinnedSpikeTrain(
             self.spiketrains_j, bin_size=self.bin_size,
-            t_start=self.t_start_j, t_stop=self.t_stop_j)
+            t_start=self.t_start_j, t_stop=self.t_stop_j, **tolerance_param)
 
     @property
     def x_edges(self):
@@ -1978,6 +2104,8 @@ class ASSET(object):
 
     def is_symmetric(self):
         """
+        Checks if intersection matrix is symmetric or not.
+
         Returns
         -------
         bool
@@ -2618,8 +2746,8 @@ class ASSET(object):
             file_dir = file_path.parent
             file_name = file_path.stem
             mapped_array_file = tempfile.NamedTemporaryFile(
-                                    prefix=file_name, dir=file_dir,
-                                    delete=not keep_file)
+                prefix=file_name, dir=file_dir,
+                delete=not keep_file)
 
         # Compute the matrix D[i, j] of euclidean distances between pixels i
         # and j

@@ -15,6 +15,7 @@ import numpy as np
 import quantities as pq
 from elephant import current_source_density as csd
 import elephant.current_source_density_src.utility_functions as utils
+from elephant.current_source_density import generate_lfp
 
 available_1d = ['StandardCSD', 'DeltaiCSD', 'StepiCSD', 'SplineiCSD', 'KCSD1D']
 available_2d = ['KCSD2D', 'MoIKCSD']
@@ -151,6 +152,30 @@ class CSD3D_TestCase(unittest.TestCase):
         self.assertEqual(result.t_start, 0.0 * pq.s)
         self.assertEqual(result.sampling_rate, 1000 * pq.Hz)
         self.assertEqual(len(result.times), 1)
+
+
+class GenerateLfpTestCase(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.one_dimensional = np.linspace(0, 10, 2304)
+        cls.two_dimensional = np.linspace(0, 10, 2304
+                                          ).reshape(2304, 1)
+
+    def test_generate_lfp_one_dimensional_array(self):
+        """
+        Regression test for Issue #546,
+        see: https://github.com/NeuralEnsemble/elephant/issues/546
+        """
+        # this should raise NOT an error
+        generate_lfp(utils.gauss_1d_dipole, self.one_dimensional)
+
+    def test_generate_lfp_two_dimensional_array(self):
+        """
+        Regression test for Issue #546,
+        see: https://github.com/NeuralEnsemble/elephant/issues/546
+        """
+        # this should NOT raise an error
+        generate_lfp(utils.gauss_1d_dipole, self.two_dimensional)
 
 
 if __name__ == '__main__':
