@@ -749,6 +749,7 @@ class SpikeTimeTilingCoefficientTestCase(unittest.TestCase):
 
     def test_sttc_different_units_dt(self):
         # test for result
+        # target obtained with pencil and paper according to original paper.
         target = 0.495860165593
         self.assertAlmostEqual(target, sc.sttc(self.st_1, self.st_2,
                                                0.005 * pq.s))
