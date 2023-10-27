@@ -172,7 +172,7 @@ logger = logging.getLogger(__file__)
 log_handler = logging.StreamHandler()
 log_handler.setFormatter(
     logging.Formatter(f"[%(asctime)s] {__name__[__name__.rfind('.')+1::]} -"
-                       " %(levelname)s: %(message)s"))
+                      " %(levelname)s: %(message)s"))
 logger.addHandler(log_handler)
 logger.propagate = False
 
@@ -593,7 +593,6 @@ def _interpolate_signals(signals, sampling_times, verbose=None):
         elif signal.ndim > 2:
             raise ValueError('elements in fir_rates must have 2 dimensions')
 
-
     logger.info("Create time slices of the rates...")
 
     # Interpolate in the time bins
@@ -700,7 +699,6 @@ class _JSFUniformOrderStat3D(_GPUBackend):
         bits = 32 if precision == "float" else 64
         self.dtype = np.dtype(f"float{bits}")
         self.tolerance = tolerance
-
 
     @property
     def num_iterations(self):
@@ -2403,7 +2401,7 @@ class ASSET(object):
 
         # For each neuron, compute the prob. that that neuron spikes in any bin
         logger.info("Compute the probability that each neuron fires in "
-                        "each pair of bins...")
+                    "each pair of bins...")
 
         rate_bins_x = (fir_rate_x * self.bin_size).simplified.magnitude
         spike_probs_x = 1. - np.exp(-rate_bins_x)
@@ -2435,7 +2433,7 @@ class ASSET(object):
         if symmetric:
             # Substitute 0.5 to the elements along the main diagonal
             logger.info("Substitute 0.5 to elements along the main "
-                            "diagonal...")
+                        "diagonal...")
             np.fill_diagonal(pmat, 0.5)
 
         return pmat
@@ -2549,7 +2547,6 @@ class ASSET(object):
         pmat_neighb_obj = _PMatNeighbors(filter_shape=filter_shape,
                                          n_largest=n_largest)
         pmat_neighb = pmat_neighb_obj.compute(pmat)
-
 
         logger.info("Finding unique set of values...")
 
