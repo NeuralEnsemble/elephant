@@ -298,8 +298,6 @@ def _transactions(spiketrains, bin_size, t_start, t_stop, ids=None):
         (id, `neo.SpikeTrain`).
     """
 
-    logger.debug("Finding transactions")
-
     if all(isinstance(st, neo.SpikeTrain) for st in spiketrains):
         trains = spiketrains
         if ids is None:
@@ -2830,6 +2828,7 @@ class ASSET(object):
             return {}
 
         # Compute the transactions associated to the two binnings
+        logger.info("Finding transactions")
         tracts_x = _transactions(
             self.spiketrains_i, bin_size=self.bin_size, t_start=self.t_start_i,
             t_stop=self.t_stop_i,
