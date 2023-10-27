@@ -411,7 +411,7 @@ def _stretched_metric_2d(x, y, stretch, ref_angle, working_memory=None,
         array). This option should be used when there is not enough memory to
         allocate the full stretched distance matrix needed before DBSCAN.
         Default: None
-    verbose : None , .. deprecated:: 0.14.0
+    verbose : bool, optional, .. deprecated:: 0.14.0
         This parameter is no longer functional. To control the verbosity
         of log messages, please use the module's logger that is based on the
         standard logging module.
@@ -419,6 +419,7 @@ def _stretched_metric_2d(x, y, stretch, ref_angle, working_memory=None,
         To restrict logging messages, use a higher logging level to WARNING or
         ERROR, e.g., import logging from elephant.asset.asset import logger as
         asset_logger asset_logger.set_level(logging.WARNING).
+        Default: None
 
     Returns
     -------
