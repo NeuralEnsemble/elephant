@@ -543,13 +543,15 @@ class AssetTestCase(unittest.TestCase):
             self.assertEqual(backend_obj.backend(), 'cpu')
 
         os.environ['ELEPHANT_USE_OPENCL'] = '0'
+
     def test_asset_deprecation_warning(self):
         st1 = neo.SpikeTrain([1, 2, 4] * pq.ms, t_stop=6 * pq.ms)
         st2 = neo.SpikeTrain([1, 3, 4] * pq.ms, t_stop=6 * pq.ms)
         bin_size = 1 * pq.ms
         with self.assertWarns(DeprecationWarning):
             asset.ASSET([st1, st2], bin_size=bin_size, t_stop_i=5 * pq.ms,
-            t_stop_j=5 * pq.ms, verbose=True)
+                        t_stop_j=5 * pq.ms, verbose=True)
+
 
 @unittest.skipUnless(HAVE_SKLEARN, 'requires sklearn')
 class TestJSFUniformOrderStat3D(unittest.TestCase):
@@ -622,7 +624,6 @@ class TestJSFUniformOrderStat3D(unittest.TestCase):
     def test_JSFUniformOrderStat3D_deprecation_warning(self):
         with self.assertWarns(DeprecationWarning):
             asset._JSFUniformOrderStat3D(n=5, d=1, verbose=True)
-
 
     def test_point_mass_output(self):
         # When N >> D, the expected output is [1, 0]
