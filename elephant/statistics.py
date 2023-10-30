@@ -74,7 +74,7 @@ import scipy.stats
 import scipy.signal
 from numpy import ndarray
 from scipy.special import erf
-from typing import List, Union
+from typing import Union
 
 import elephant.conversion as conv
 import elephant.kernels as kernels
@@ -604,7 +604,7 @@ def lvr(time_intervals, R=5*pq.ms, with_nan=False):
 def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
                        cutoff=5.0, t_start=None, t_stop=None, trim=False,
                        center_kernel=True, border_correction=False,
-                       pool_trials=False, pool_spiketrains=False):
+                       pool_trials=False, pool_spike_trains=False):
     r"""
     Estimates instantaneous firing rate by kernel convolution.
 
@@ -613,10 +613,12 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
 
     Parameters
     ----------
-    spiketrains : neo.SpikeTrain, list of neo.SpikeTrain or
-    elephant.trials.Trials
-        Neo object(s) that contains spike times, the unit of the time stamps,
-        and `t_start` and `t_stop` of the spike train.
+    spiketrains : neo.SpikeTrain, list of neo.SpikeTrain or elephant.trials.Trials  # noqa
+        Input spike train(s) for which the instantaneous firing rate is
+        calculated. If a list of spike trains is supplied, the parameter
+        pool_spike_trains determines the behavior of the function. If a Trials
+        object is supplied, the behavior is determined by the parameters
+        pool_spike_trains (within a trial) and pool_trials (across trials).
     sampling_period : pq.Quantity
         Time stamp resolution of the spike times. The same resolution will
         be assumed for the kernel.
@@ -687,13 +689,17 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
 
         Default: False
     pool_trials: bool, optional
-        If true: Calculate firing rates averaged over trials if spiketrains is
+        If true, calculate firing rates averaged over trials if spiketrains is
         of type elephant.trials.Trials
+        Has no effect for single spike train or lists of spike trains.
 
         Default: False
-    pool_spiketrains: bool, optional
-        If true: Calculate firing rates averaged over spiketrains if
-        spiketrains is of type elephant.trials.Trials
+    pool_spike_trains: bool, optional
+        If true, calculate firing rates averaged over spike trains. If the
+        input is a Trials object, spike trains are pooled across spike trains
+        within each trial, and pool_trials determines whether spike trains are
+        additionally pooled across trials.
+        Has no effect for a single spike train.
 
         Default: False
 
@@ -813,7 +819,7 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
             'center_kernel': center_kernel,
             'border_correction': border_correction,
             'pool_trials': pool_trials,
-            'pool_spiketrains': pool_spiketrains
+            'pool_spike_trains': pool_spike_trains
         }
 
         if pool_trials:
@@ -835,7 +841,7 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
 
             average_rate_cross_trials = (
                 np.mean(rates, axis=1) for rates in rates_cross_trials)
-            if pool_spiketrains:
+            if pool_spike_trains:
                 average_rate = np.mean(list(average_rate_cross_trials), axis=0)
                 analog_signal = rates_cross_trials[0]
 
@@ -849,25 +855,23 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
                         kernel=analog_signal.annotations)
                 ]
 
-            list_of_average_rates_cross_trial = [
-                neo.AnalogSignal(signal=average_rate,
-                                 sampling_period=analog_signal.sampling_period,
-                                 units=analog_signal.units,
-                                 t_start=analog_signal.t_start,
-                                 t_stop=analog_signal.t_stop,
-                                 kernel=analog_signal.annotations)
-                for average_rate, analog_signal in
-                zip(average_rate_cross_trials, rates_cross_trials)]
+            list_of_average_rates_cross_trial = neo.AnalogSignal(
+                signal=list(average_rate_cross_trials),
+                sampling_period=rates_cross_trials[0].sampling_period,
+                units=rates_cross_trials[0].units,
+                t_start=rates_cross_trials[0].t_start,
+                t_stop=rates_cross_trials[0].t_stop,
+                kernel=rates_cross_trials[0].annotations)
 
             return list_of_average_rates_cross_trial
 
-        if not pool_trials and not pool_spiketrains:
+        if not pool_trials and not pool_spike_trains:
             return [instantaneous_rate(
                         spiketrains.get_spiketrains_from_trial_as_list(
                             trial_number=trial_no), sampling_period, **kwargs)
                     for trial_no in range(spiketrains.n_trials)]
 
-        if not pool_trials and pool_spiketrains:
+        if not pool_trials and pool_spike_trains:
             rates = [instantaneous_rate(
                         spiketrains.get_spiketrains_from_trial_as_list(
                             trial_number=trial_no), sampling_period, **kwargs)
@@ -1055,12 +1059,8 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
 
 
 @deprecated_alias(binsize='bin_size')
-def time_histogram(list_of_spiketrains: List[neo.core.SpikeTrain],
-                   bin_size: pq.Quantity,
-                   t_start: pq.Quantity = None,
-                   t_stop: pq.Quantity = None,
-                   output: str = 'counts',
-                   binary: bool = False) -> neo.core.AnalogSignal:
+def time_histogram(spiketrains, bin_size, t_start=None, t_stop=None,
+                   output='counts', binary=False):
     """
     Time Histogram of a list of `neo.SpikeTrain` objects.
 
@@ -1069,7 +1069,7 @@ def time_histogram(list_of_spiketrains: List[neo.core.SpikeTrain],
 
     Parameters
     ----------
-    list_of_spiketrains : list of neo.SpikeTrain
+    spiketrains : list of neo.SpikeTrain
         `neo.SpikeTrain`s with a common time axis (same `t_start` and `t_stop`)
     bin_size : pq.Quantity
         Width of the histogram's time bins.
@@ -1133,11 +1133,11 @@ def time_histogram(list_of_spiketrains: List[neo.core.SpikeTrain],
     >>> import neo
     >>> import quantities as pq
     >>> from elephant import statistics
-    >>> list_of_spiketrains = [
+    >>> spiketrains = [
     ...     neo.SpikeTrain([0.3, 4.5, 6.7, 9.3], t_stop=10, units='s'),
     ...     neo.SpikeTrain([0.7, 4.3, 8.2], t_stop=10, units='s')
     ... ]
-    >>> hist = statistics.time_histogram(list_of_spiketrains,
+    >>> hist = statistics.time_histogram(spiketrains,
     ...                                  bin_size=1 * pq.s)
     >>> hist
     <AnalogSignal(array([[2],
@@ -1157,12 +1157,12 @@ def time_histogram(list_of_spiketrains: List[neo.core.SpikeTrain],
     """
     # Bin the spike trains and sum across columns
     if binary:
-        binned_spiketrain = BinnedSpikeTrain(list_of_spiketrains,
+        binned_spiketrain = BinnedSpikeTrain(spiketrains,
                                              t_start=t_start,
                                              t_stop=t_stop, bin_size=bin_size
                                              ).binarize(copy=False)
     else:
-        binned_spiketrain = BinnedSpikeTrain(list_of_spiketrains,
+        binned_spiketrain = BinnedSpikeTrain(spiketrains,
                                              t_start=t_start,
                                              t_stop=t_stop, bin_size=bin_size
                                              )
@@ -1179,13 +1179,13 @@ def time_histogram(list_of_spiketrains: List[neo.core.SpikeTrain],
 
     def _mean() -> pq.Quantity:
         # 'mean': mean spike counts per spike train.
-        return pq.Quantity(bin_hist / len(list_of_spiketrains),
+        return pq.Quantity(bin_hist / len(spiketrains),
                            units=pq.dimensionless, copy=False)
 
     def _rate() -> pq.Quantity:
         # 'rate': mean spike rate per spike train. Like 'mean', but the
         #         counts are additionally normalized by the bin width.
-        return bin_hist / (len(list_of_spiketrains) * bin_size)
+        return bin_hist / (len(spiketrains) * bin_size)
 
     output_mapping = {"counts": _counts, "mean": _mean, "rate": _rate}
     try:
