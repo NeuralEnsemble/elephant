@@ -845,7 +845,7 @@ class SpikeTimeTilingCoefficientTestCase(unittest.TestCase):
         repo_path = r"unittest/spike_train_correlation/spike_time_tiling_coefficient/data"  # noqa
 
         files_to_download = [("spike_time_tiling_coefficient_results.nix ",
-                              "db4e81febc0ca48f1c125891a85c9a7a")]
+                              "e3749d79046622494660a03e89950f51")]
 
         for filename, checksum in files_to_download:
             download_datasets(repo_path=f"{repo_path}/{filename}",
