@@ -863,9 +863,11 @@ class SpikeTimeTilingCoefficientTestCase(unittest.TestCase):
             sttc_result = segment.annotations['sttc_result']
             self.assertAlmostEqual(sc.sttc(spiketrain_i, spiketrain_j, dt),
                                    sttc_result)
+
     def test_sttc_exist_alias(self):
         # Test if alias cch still exists.
         self.assertEqual(sc.spike_time_tiling_coefficient, sc.sttc)
+
 
 class SpikeTrainTimescaleTestCase(unittest.TestCase):
 
