@@ -124,9 +124,8 @@ class Trials:
         pass
 
     @abstractmethod
-    def get_spiketrains_from_trial_as_list(self, trial_number: int
-                                           ) \
-            -> neo.core.spiketrainlist.SpikeTrainList:
+    def get_spiketrains_from_trial_as_list(self, trial_number: int) -> (
+                                       neo.core.spiketrainlist.SpikeTrainList):
         """
         Get all spiketrains from a specific trial and return a SpikeTrainList.
 
@@ -368,11 +367,12 @@ class TrialsFromLists(Trials):
         return neo.core.spiketrainlist.SpikeTrainList(
             items=self.get_spiketrains_from_trial_as_list(trial_number))
 
-    def get_spiketrains_from_trial_as_list(self, trial_number: int = 0
-                                           ) -> List[neo.core.SpikeTrain]:
+    def get_spiketrains_from_trial_as_list(self, trial_number: int = 0) -> (
+                                       neo.core.spiketrainlist.SpikeTrainList):
         # Return a list of all spiketrains from a trial
-        return [spiketrain for spiketrain in self.list_of_trials[trial_number]
-                if isinstance(spiketrain, neo.core.SpikeTrain)]
+        return SpikeTrainList(items=[
+            spiketrain for spiketrain in self.list_of_trials[trial_number]
+            if isinstance(spiketrain, neo.core.SpikeTrain)])
 
     def get_spiketrains_from_trial_as_segment(self, trial_number: int = 0
                                               ) -> neo.core.Segment:
