@@ -604,7 +604,7 @@ def lvr(time_intervals, R=5*pq.ms, with_nan=False):
 def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
                        cutoff=5.0, t_start=None, t_stop=None, trim=False,
                        center_kernel=True, border_correction=False,
-                       pool_trials=False, pool_spiketrains=False):
+                       pool_trials=False, pool_spike_trains=False):
     r"""
     Estimates instantaneous firing rate by kernel convolution.
 
@@ -691,7 +691,7 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
         of type elephant.trials.Trials
 
         Default: False
-    pool_spiketrains: bool, optional
+    pool_spike_trains: bool, optional
         If true: Calculate firing rates averaged over spiketrains if
         spiketrains is of type elephant.trials.Trials
 
@@ -813,7 +813,7 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
             'center_kernel': center_kernel,
             'border_correction': border_correction,
             'pool_trials': pool_trials,
-            'pool_spiketrains': pool_spiketrains
+            'pool_spike_trains': pool_spike_trains
         }
 
         if pool_trials:
@@ -835,7 +835,7 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
 
             average_rate_cross_trials = (
                 np.mean(rates, axis=1) for rates in rates_cross_trials)
-            if pool_spiketrains:
+            if pool_spike_trains:
                 average_rate = np.mean(list(average_rate_cross_trials), axis=0)
                 analog_signal = rates_cross_trials[0]
 
@@ -861,13 +861,13 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
 
             return list_of_average_rates_cross_trial
 
-        if not pool_trials and not pool_spiketrains:
+        if not pool_trials and not pool_spike_trains:
             return [instantaneous_rate(
                         spiketrains.get_spiketrains_from_trial_as_list(
                             trial_number=trial_no), sampling_period, **kwargs)
                     for trial_no in range(spiketrains.n_trials)]
 
-        if not pool_trials and pool_spiketrains:
+        if not pool_trials and pool_spike_trains:
             rates = [instantaneous_rate(
                         spiketrains.get_spiketrains_from_trial_as_list(
                             trial_number=trial_no), sampling_period, **kwargs)
