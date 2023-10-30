@@ -70,7 +70,7 @@ class Trials:
         pass
 
     @abstractmethod
-    def get_trials(self, trial_numbers: List[int]) -> neo.core.Block:
+    def get_trials_as_block(self, trial_numbers: List[int]) -> neo.core.Block:
         """Get trials as block."""
         pass
 
@@ -182,7 +182,7 @@ class TrialsFromBlock(Trials):
         # Get a specific trial by number as a segment
         return self.__getitem__(trial_number)
 
-    def get_trials(self, trial_numbers: List[int]) -> neo.core.Block:
+    def get_trials_as_block(self, trial_numbers: List[int]) -> neo.core.Block:
         # Get a block of trials by trial numbers
         block = Block()
         for trial_number in trial_numbers:
@@ -271,7 +271,7 @@ class TrialsFromLists(Trials):
         # Get a specific trial by number as a segment
         return self.__getitem__(trial_number)
 
-    def get_trials(self, trial_numbers: List[int]) -> neo.core.Block:
+    def get_trials_as_block(self, trial_numbers: List[int]) -> neo.core.Block:
         # Get a block of trials by trial numbers
         block = Block()
         for trial_number in trial_numbers:

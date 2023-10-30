@@ -89,7 +89,7 @@ class TrialsFromBlockTestCase(unittest.TestCase):
         """
         Test get a block from list of trials.
         """
-        block = self.trial_object.get_trials([0, 3, 5])
+        block = self.trial_object.get_trials_as_block([0, 3, 5])
         self.assertIsInstance(block, neo.core.Block)
         self.assertEqual(len(block.segments), 3)
 
@@ -230,7 +230,7 @@ class TrialsFromListTestCase(unittest.TestCase):
         """
         Test get a block from list of trials.
         """
-        block = self.trial_object.get_trials([0, 3, 5])
+        block = self.trial_object.get_trials_as_block([0, 3, 5])
         self.assertIsInstance(block, neo.core.Block)
         self.assertEqual(len(block.segments), 3)
 
