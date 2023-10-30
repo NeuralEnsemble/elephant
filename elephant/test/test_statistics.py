@@ -495,32 +495,29 @@ class InstantaneousRateTest(unittest.TestCase):
         cls.trial_object = TrialsFromBlock(block,
                                            description='trials are segments')
 
-    def setUp(self):
         # create a poisson spike train:
-        self.st_tr = (0, 20.0)  # seconds
-        self.st_dur = self.st_tr[1] - self.st_tr[0]  # seconds
-        self.st_margin = 5.0  # seconds
-        self.st_rate = 10.0  # Hertz
-
+        cls.st_tr = (0, 20.0)  # seconds
+        cls.st_dur = cls.st_tr[1] - cls.st_tr[0]  # seconds
+        cls.st_margin = 5.0  # seconds
+        cls.st_rate = 10.0  # Hertz
         np.random.seed(19)
-        duration_effective = self.st_dur - 2 * self.st_margin
-        st_num_spikes = np.random.poisson(self.st_rate * duration_effective)
+        duration_effective = cls.st_dur - 2 * cls.st_margin
+        st_num_spikes = np.random.poisson(
+            cls.st_rate * duration_effective)
         spike_train = sorted(
             np.random.rand(st_num_spikes) *
             duration_effective +
-            self.st_margin)
-
+            cls.st_margin)
         # convert spike train into neo objects
-        self.spike_train = neo.SpikeTrain(spike_train * pq.s,
-                                          t_start=self.st_tr[0] * pq.s,
-                                          t_stop=self.st_tr[1] * pq.s)
-
+        cls.spike_train = neo.SpikeTrain(spike_train * pq.s,
+                                         t_start=cls.st_tr[0] * pq.s,
+                                         t_stop=cls.st_tr[1] * pq.s)
         # generation of a multiply used specific kernel
-        self.kernel = kernels.TriangularKernel(sigma=0.03 * pq.s)
+        cls.kernel = kernels.TriangularKernel(sigma=0.03 * pq.s)
         # calculate instantaneous rate
-        self.sampling_period = 0.01 * pq.s
-        self.inst_rate = statistics.instantaneous_rate(
-                self.spike_train, self.sampling_period, self.kernel, cutoff=0)
+        cls.sampling_period = 0.01 * pq.s
+        cls.inst_rate = statistics.instantaneous_rate(
+            cls.spike_train, cls.sampling_period, cls.kernel, cutoff=0)
 
     def test_instantaneous_rate_warnings(self):
         with self.assertWarns(UserWarning):
