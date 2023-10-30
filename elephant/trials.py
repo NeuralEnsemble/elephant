@@ -331,8 +331,7 @@ class TrialsFromLists(Trials):
                 for trial in self.list_of_trials]
 
     def get_spiketrains_from_trial(self, trial_number: int
-                                   ) -> List[
-                                    neo.core.spiketrainlist.SpikeTrainList]:
+                                   ) -> neo.core.spiketrainlist.SpikeTrainList:
         return neo.core.spiketrainlist.SpikeTrainList(
             items=self.get_spiketrains_from_trial_as_list(trial_number))
 
@@ -359,7 +358,7 @@ class TrialsFromLists(Trials):
                 if isinstance(analogsignal, neo.core.AnalogSignal)]
 
     def get_analogsignals_from_trial_as_segment(self, trial_number: int = 0
-                                              ) -> neo.core.Segment:
+                                                ) -> neo.core.Segment:
         # Return a segment with all analogsignals from a trial
         segment = neo.core.Segment()
         for analogsignal in self.get_analogsignals_from_trial_as_list(
