@@ -172,6 +172,18 @@ class TrialsFromBlockTestCase(unittest.TestCase):
             self.trial_object.get_analogsignals_from_trial_as_list(0)[0],
             neo.core.AnalogSignal)
 
+    def test_trials_from_list_get_analogsignals_from_trial_as_segment(self) \
+            -> None:
+        """
+        Test get spiketrains from trial as segment
+        """
+        self.assertIsInstance(
+            self.trial_object.get_analogsignals_from_trial_as_segment(0),
+            neo.core.Segment)
+        self.assertIsInstance(
+            self.trial_object.get_analogsignals_from_trial_as_segment(
+                0).analogsignals[0], neo.core.AnalogSignal)
+
 
 class TrialsFromListTestCase(unittest.TestCase):
     """Tests for elephant.trials.TrialsFromList class"""
@@ -315,6 +327,19 @@ class TrialsFromListTestCase(unittest.TestCase):
         self.assertIsInstance(
             self.trial_object.get_analogsignals_from_trial_as_list(0)[0],
             neo.core.AnalogSignal)
+
+    def test_trials_from_list_get_analogsignals_from_trial_as_segment(self
+                                                                      ) \
+            -> None:
+        """
+        Test get spiketrains from trial as segment
+        """
+        self.assertIsInstance(
+            self.trial_object.get_analogsignals_from_trial_as_segment(0),
+            neo.core.Segment)
+        self.assertIsInstance(
+            self.trial_object.get_analogsignals_from_trial_as_segment(
+                0).analogsignals[0], neo.core.AnalogSignal)
 
 
 if __name__ == '__main__':

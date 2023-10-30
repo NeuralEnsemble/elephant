@@ -154,6 +154,23 @@ class Trials:
         """
         pass
 
+    @abstractmethod
+    def get_analogsignals_from_trial_as_segment(self, trial_number: int = 0
+                                                ) -> neo.core.Segment:
+        """
+        Get all analogsignals from a specific trial and return a Segment.
+
+        Parameters
+        ----------
+        trial_number : int
+            Trial number to get the analogsignals from, e.g. choose
+            0 for the first trial.
+
+        Returns
+        -------
+        neo.core.Segment
+        """
+
 
 class TrialsFromBlock(Trials):
     """
@@ -237,6 +254,15 @@ class TrialsFromBlock(Trials):
         # Return a list of all analogsignals from a trial
         return [analogsignal for analogsignal in
                 self.block.segments[trial_number].analogsignals]
+
+    def get_analogsignals_from_trial_as_segment(self, trial_number: int = 0
+                                                ) -> neo.core.Segment:
+        # Return a segment with all analogsignals from a trial
+        segment = neo.core.Segment()
+        for analogsignal in self.get_analogsignals_from_trial_as_list(
+                trial_number):
+            segment.analogsignals.append(analogsignal)
+        return segment
 
 
 class TrialsFromLists(Trials):
@@ -331,3 +357,12 @@ class TrialsFromLists(Trials):
         return [analogsignal for analogsignal in
                 self.list_of_trials[trial_number]
                 if isinstance(analogsignal, neo.core.AnalogSignal)]
+
+    def get_analogsignals_from_trial_as_segment(self, trial_number: int = 0
+                                              ) -> neo.core.Segment:
+        # Return a segment with all analogsignals from a trial
+        segment = neo.core.Segment()
+        for analogsignal in self.get_analogsignals_from_trial_as_list(
+                trial_number):
+            segment.analogsignals.append(analogsignal)
+        return segment
