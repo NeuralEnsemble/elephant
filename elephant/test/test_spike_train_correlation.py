@@ -848,12 +848,10 @@ class SpikeTimeTilingCoefficientTestCase(unittest.TestCase):
                               "e3749d79046622494660a03e89950f51")]
 
         for filename, checksum in files_to_download:
-            download_datasets(repo_path=f"{repo_path}/{filename}",
-                              checksum=checksum)
+            filepath = download_datasets(repo_path=f"{repo_path}/{filename}",
+                                         checksum=checksum)
 
-        reader = NixIO(
-            ELEPHANT_TMP_DIR / 'spike_time_tiling_coefficient_results.nix',
-            mode='ro')
+        reader = NixIO(filepath, mode='ro')
         test_data_block = reader.read()
 
         for segment in test_data_block[0].segments:
