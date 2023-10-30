@@ -842,7 +842,7 @@ class SpikeTimeTilingCoefficientTestCase(unittest.TestCase):
         NeuralEnsemble/elephant-data/unittest/spike_train_correlation/
         spike_time_tiling_coefficient"""
 
-        repo_path = r"unittest/spike_train_correlation/spike_time_tiling_coefficient/data" # noqa
+        repo_path = r"unittest/spike_train_correlation/spike_time_tiling_coefficient/data"  # noqa
 
         files_to_download = [("spike_time_tiling_coefficient_results.nix ",
                               "db4e81febc0ca48f1c125891a85c9a7a")]
