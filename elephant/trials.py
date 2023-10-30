@@ -15,11 +15,10 @@ way to access trial data.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
-import neo.utils
 from abc import ABCMeta, abstractmethod
 from typing import List
 
-import quantities
+import neo.utils
 from neo.core import Segment, Block
 
 
@@ -65,7 +64,7 @@ class Trials:
         pass
 
     @abstractmethod
-    def get_trial(self, trial_number: int) -> neo.core.Segment:
+    def get_trial_as_segment(self, trial_number: int) -> neo.core.Segment:
         """Get trial as segment."""
         pass
 
@@ -82,7 +81,8 @@ class Trials:
 
     @abstractmethod
     def get_spiketrains_from_trial(self, trial_number: int
-                            ) -> List[neo.core.spiketrainlist.SpikeTrainList]:
+                                   ) -> List[
+                                       neo.core.spiketrainlist.SpikeTrainList]:
         """
         Get all spiketrains from a specific trial and return a list.
 
@@ -178,7 +178,7 @@ class TrialsFromBlock(Trials):
     def __getitem__(self, trial_number: int) -> neo.core.segment:
         return self.block.segments[trial_number]
 
-    def get_trial(self, trial_number: int) -> neo.core.Segment:
+    def get_trial_as_segment(self, trial_number: int) -> neo.core.Segment:
         # Get a specific trial by number as a segment
         return self.__getitem__(trial_number)
 
@@ -186,13 +186,14 @@ class TrialsFromBlock(Trials):
         # Get a block of trials by trial numbers
         block = Block()
         for trial_number in trial_numbers:
-            block.segments.append(self.get_trial(trial_number))
+            block.segments.append(self.get_trial_as_segment(trial_number))
         return block
 
     def get_trials_as_list(self,
                            trial_numbers: List[int]) -> List[neo.core.Segment]:
         # Get a list of segments by trial numbers
-        return [self.get_trial(trial_number) for trial_number in trial_numbers]
+        return [self.get_trial_as_segment(trial_number)
+                for trial_number in trial_numbers]
 
     @property
     def n_trials(self) -> int:
@@ -267,7 +268,7 @@ class TrialsFromLists(Trials):
                 segment.analogsignals.append(element)
         return segment
 
-    def get_trial(self, trial_number: int) -> neo.core.Segment:
+    def get_trial_as_segment(self, trial_number: int) -> neo.core.Segment:
         # Get a specific trial by number as a segment
         return self.__getitem__(trial_number)
 
@@ -275,13 +276,14 @@ class TrialsFromLists(Trials):
         # Get a block of trials by trial numbers
         block = Block()
         for trial_number in trial_numbers:
-            block.segments.append(self.get_trial(trial_number))
+            block.segments.append(self.get_trial_as_segment(trial_number))
         return block
 
     def get_trials_as_list(self,
                            trial_numbers: List[int]) -> List[neo.core.Segment]:
         # Get a list of segments by trial numbers
-        return [self.get_trial(trial_number) for trial_number in trial_numbers]
+        return [self.get_trial_as_segment(trial_number)
+                for trial_number in trial_numbers]
 
     @property
     def n_trials(self) -> int:

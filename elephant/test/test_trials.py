@@ -78,12 +78,15 @@ class TrialsFromBlockTestCase(unittest.TestCase):
         """
         Test get a trial from the trials.
         """
-        self.assertIsInstance(self.trial_object.get_trial(0),
-                              neo.core.Segment)
-        self.assertIsInstance(self.trial_object.get_trial(0).spiketrains[0],
-                              neo.core.SpikeTrain)
-        self.assertIsInstance(self.trial_object.get_trial(0).analogsignals[0],
-                              neo.core.AnalogSignal)
+        self.assertIsInstance(
+            self.trial_object.get_trial_as_segment(0),
+            neo.core.Segment)
+        self.assertIsInstance(
+            self.trial_object.get_trial_as_segment(0).spiketrains[0],
+            neo.core.SpikeTrain)
+        self.assertIsInstance(
+            self.trial_object.get_trial_as_segment(0).analogsignals[0],
+            neo.core.AnalogSignal)
 
     def test_trials_from_block_get_trials(self) -> None:
         """
@@ -219,12 +222,15 @@ class TrialsFromListTestCase(unittest.TestCase):
         """
         Test get a trial from the trials.
         """
-        self.assertIsInstance(self.trial_object.get_trial(0),
-                              neo.core.Segment)
-        self.assertIsInstance(self.trial_object.get_trial(0).spiketrains[0],
-                              neo.core.SpikeTrain)
-        self.assertIsInstance(self.trial_object.get_trial(0).analogsignals[0],
-                              neo.core.AnalogSignal)
+        self.assertIsInstance(
+            self.trial_object.get_trial_as_segment(0),
+            neo.core.Segment)
+        self.assertIsInstance(
+            self.trial_object.get_trial_as_segment(0).spiketrains[0],
+            neo.core.SpikeTrain)
+        self.assertIsInstance(
+            self.trial_object.get_trial_as_segment(0).analogsignals[0],
+            neo.core.AnalogSignal)
 
     def test_trials_from_list_get_trials(self) -> None:
         """
