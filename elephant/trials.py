@@ -20,6 +20,7 @@ from typing import List
 
 import neo.utils
 from neo.core import Segment, Block
+from neo.core.spiketrainlist import SpikeTrainList
 
 
 class Trials:
@@ -75,7 +76,8 @@ class Trials:
 
     @abstractmethod
     def get_trials_as_list(self,
-                           trial_numbers: List[int]) -> List[neo.core.Segment]:
+                           trial_numbers: List[int]
+                           ) -> neo.core.spiketrainlist.SpikeTrainList:
         """Get trials as list of segments."""
         pass
 
@@ -215,11 +217,11 @@ class TrialsFromBlock(Trials):
                                      neo.core.spiketrainlist.SpikeTrainList]:
         return self.block.segments[trial_number].spiketrains
 
-    def get_spiketrains_from_trial_as_list(self, trial_number: int = 0
-                                           ) -> List[neo.core.SpikeTrain]:
+    def get_spiketrains_from_trial_as_list(self, trial_number: int = 0) -> (
+                                       neo.core.spiketrainlist.SpikeTrainList):
         # Return a list of all spiketrains from a trial
-        return [spiketrain for spiketrain in
-                self.block.segments[trial_number].spiketrains]
+        return SpikeTrainList(items=[spiketrain for spiketrain in
+                              self.block.segments[trial_number].spiketrains])
 
     def get_spiketrains_from_trial_as_segment(self, trial_number: int = 0
                                               ) -> neo.core.Segment:

@@ -143,7 +143,8 @@ class TrialsFromBlockTestCase(unittest.TestCase):
         Test get spiketrains from trial as list
         """
         self.assertIsInstance(
-            self.trial_object.get_spiketrains_from_trial_as_list(0), list)
+            self.trial_object.get_spiketrains_from_trial_as_list(0),
+            neo.core.spiketrainlist.SpikeTrainList)
         self.assertIsInstance(
             self.trial_object.get_spiketrains_from_trial_as_list(0)[0],
             neo.core.SpikeTrain)
