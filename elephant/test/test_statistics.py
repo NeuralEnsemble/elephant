@@ -20,6 +20,8 @@ from numpy.testing import assert_array_almost_equal, assert_array_equal, \
 import elephant.kernels as kernels
 from elephant import statistics
 from elephant.spike_train_generation import StationaryPoissonProcess
+from elephant.test.test_trials import _create_trials_block
+from elephant.trials import TrialsFromBlock
 
 
 class IsiTestCase(unittest.TestCase):
@@ -482,6 +484,17 @@ class CV2TestCase(unittest.TestCase):
 
 class InstantaneousRateTest(unittest.TestCase):
 
+    @classmethod
+    def setUpClass(cls) -> None:
+        """
+        Run once before tests:
+        """
+
+        block = _create_trials_block(n_trials=36)
+        cls.block = block
+        cls.trial_object = TrialsFromBlock(block,
+                                           description='trials are segments')
+
     def setUp(self):
         # create a poisson spike train:
         self.st_tr = (0, 20.0)  # seconds
@@ -646,7 +659,7 @@ class InstantaneousRateTest(unittest.TestCase):
                 10 * pq.Hz, t_start=0 * pq.s,
                 t_stop=10 * pq.s).generate_spiketrain()
             kernel = kernels.AlphaKernel(sigma=5 * pq.ms, invert=True)
-            rate = statistics.instantaneous_rate(
+            _ = statistics.instantaneous_rate(
                 spiketrain, sampling_period=sampling_period, kernel=kernel)
         except ValueError:
             self.fail('When providing a kernel on a much smaller time scale '
@@ -974,6 +987,16 @@ class InstantaneousRateTest(unittest.TestCase):
                 # The minimal rate deviates strongly in the uncorrected case.
                 self.assertLess(np.min(average_estimated_rate),
                                 (1. - rtol) * rate.item())
+
+    def test_instantaneous_rate_pool_trials(self):
+        kernel = kernels.GaussianKernel(sigma=500 * pq.ms)
+
+        rate = statistics.instantaneous_rate(self.trial_object,
+                                             sampling_period=0.1 * pq.ms,
+                                             kernel=kernel,
+                                             pool_spike_trains=False,
+                                             pool_trials=True)
+        self.assertIsInstance(rate, neo.core.AnalogSignal)
 
 
 class TimeHistogramTestCase(unittest.TestCase):

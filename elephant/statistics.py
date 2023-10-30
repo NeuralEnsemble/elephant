@@ -74,7 +74,7 @@ import scipy.stats
 import scipy.signal
 from numpy import ndarray
 from scipy.special import erf
-from typing import List, Union
+from typing import Union
 
 import elephant.conversion as conv
 import elephant.kernels as kernels
@@ -855,15 +855,13 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
                         kernel=analog_signal.annotations)
                 ]
 
-            list_of_average_rates_cross_trial = [
-                neo.AnalogSignal(signal=average_rate,
-                                 sampling_period=analog_signal.sampling_period,
-                                 units=analog_signal.units,
-                                 t_start=analog_signal.t_start,
-                                 t_stop=analog_signal.t_stop,
-                                 kernel=analog_signal.annotations)
-                for average_rate, analog_signal in
-                zip(average_rate_cross_trials, rates_cross_trials)]
+            list_of_average_rates_cross_trial = neo.AnalogSignal(
+                signal=list(average_rate_cross_trials),
+                sampling_period=rates_cross_trials[0].sampling_period,
+                units=rates_cross_trials[0].units,
+                t_start=rates_cross_trials[0].t_start,
+                t_stop=rates_cross_trials[0].t_stop,
+                kernel=rates_cross_trials[0].annotations)
 
             return list_of_average_rates_cross_trial
 
