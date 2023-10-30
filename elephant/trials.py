@@ -268,11 +268,6 @@ class TrialsFromBlock(Trials):
         A textual description of the set of trials. Can be accessed via the
         class attribute `description`.
         Default: None.
-
-    Properties
-    ----------
-    See Trials Class
-
     """
 
     def __init__(self, block: neo.core.block, **kwargs):
@@ -368,10 +363,6 @@ class TrialsFromLists(Trials):
         A textual description of the set of trials. Can be accessed via the
         class attribute `description`.
         Default: None.
-
-    Properties
-    ----------
-    see Trials class
     """
 
     def __init__(self, list_of_trials: list, **kwargs):
