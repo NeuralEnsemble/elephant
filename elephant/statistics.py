@@ -1061,12 +1061,8 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
 
 
 @deprecated_alias(binsize='bin_size')
-def time_histogram(list_of_spiketrains: List[neo.core.SpikeTrain],
-                   bin_size: pq.Quantity,
-                   t_start: pq.Quantity = None,
-                   t_stop: pq.Quantity = None,
-                   output: str = 'counts',
-                   binary: bool = False) -> neo.core.AnalogSignal:
+def time_histogram(spiketrains, bin_size, t_start=None, t_stop=None,
+                   output='counts', binary=False):
     """
     Time Histogram of a list of `neo.SpikeTrain` objects.
 
@@ -1075,7 +1071,7 @@ def time_histogram(list_of_spiketrains: List[neo.core.SpikeTrain],
 
     Parameters
     ----------
-    list_of_spiketrains : list of neo.SpikeTrain
+    spiketrains : list of neo.SpikeTrain
         `neo.SpikeTrain`s with a common time axis (same `t_start` and `t_stop`)
     bin_size : pq.Quantity
         Width of the histogram's time bins.
@@ -1139,11 +1135,11 @@ def time_histogram(list_of_spiketrains: List[neo.core.SpikeTrain],
     >>> import neo
     >>> import quantities as pq
     >>> from elephant import statistics
-    >>> list_of_spiketrains = [
+    >>> spiketrains = [
     ...     neo.SpikeTrain([0.3, 4.5, 6.7, 9.3], t_stop=10, units='s'),
     ...     neo.SpikeTrain([0.7, 4.3, 8.2], t_stop=10, units='s')
     ... ]
-    >>> hist = statistics.time_histogram(list_of_spiketrains,
+    >>> hist = statistics.time_histogram(spiketrains,
     ...                                  bin_size=1 * pq.s)
     >>> hist
     <AnalogSignal(array([[2],
@@ -1163,12 +1159,12 @@ def time_histogram(list_of_spiketrains: List[neo.core.SpikeTrain],
     """
     # Bin the spike trains and sum across columns
     if binary:
-        binned_spiketrain = BinnedSpikeTrain(list_of_spiketrains,
+        binned_spiketrain = BinnedSpikeTrain(spiketrains,
                                              t_start=t_start,
                                              t_stop=t_stop, bin_size=bin_size
                                              ).binarize(copy=False)
     else:
-        binned_spiketrain = BinnedSpikeTrain(list_of_spiketrains,
+        binned_spiketrain = BinnedSpikeTrain(spiketrains,
                                              t_start=t_start,
                                              t_stop=t_stop, bin_size=bin_size
                                              )
@@ -1185,13 +1181,13 @@ def time_histogram(list_of_spiketrains: List[neo.core.SpikeTrain],
 
     def _mean() -> pq.Quantity:
         # 'mean': mean spike counts per spike train.
-        return pq.Quantity(bin_hist / len(list_of_spiketrains),
+        return pq.Quantity(bin_hist / len(spiketrains),
                            units=pq.dimensionless, copy=False)
 
     def _rate() -> pq.Quantity:
         # 'rate': mean spike rate per spike train. Like 'mean', but the
         #         counts are additionally normalized by the bin width.
-        return bin_hist / (len(list_of_spiketrains) * bin_size)
+        return bin_hist / (len(spiketrains) * bin_size)
 
     output_mapping = {"counts": _counts, "mean": _mean, "rate": _rate}
     try:
