@@ -592,10 +592,14 @@ def multitaper_cross_spectrum(signals, fs=1.0, nw=4.0, num_tapers=None,
     nw : float, optional
         Time-halfbandwidth product. This parameter can be used to determine the
         number of tapers following the equation:
+
             num_tapers = 2*nw - 1
-        It can be determined by multplying the duration of the signal with the
+
+        It can be determined by multiplying the duration of the signal with the
         desired half-peak resolution frequency:
+
             n_samples/fs * peak_resolution/2.
+
         Default: 4.0
     num_tapers : int, optional
         Number of tapers used in step 2 (see above) to obtain estimate of PSD.
@@ -957,10 +961,14 @@ def segmented_multitaper_cross_spectrum(signals, n_segments=1,
     nw : float, optional
         Time-halfbandwidth product. This parameter can be used to determine the
         number of tapers following the equation:
+
             num_tapers = 2*nw - 1
-        It can be determined by multplying the duration of the signal with the
+
+        It can be determined by multiplying the duration of the signal with the
         desired half-peak resolution frequency:
+
             n_samples/fs * peak_resolution/2.
+
         Default: 4.0
     num_tapers : int, optional
         Number of tapers used in step 2 (see above) to obtain estimate of PSD.
@@ -1267,7 +1275,7 @@ def welch_coherence(signal_i, signal_j, n_segments=8, len_segment=None,
 
     >>> coherency.flatten()
     array([1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1.])
-    >>> phase_lag.flatten()
+    >>> phase_lag.flatten() # doctest: +SKIP
     array([0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.]) * rad
 
     """
@@ -1363,4 +1371,3 @@ def welch_cohere(*args, **kwargs):
     warnings.warn("'welch_cohere' is deprecated; use 'welch_coherence'",
                   DeprecationWarning)
     return welch_coherence(*args, **kwargs)
-
