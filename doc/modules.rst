@@ -77,14 +77,15 @@ Waveforms
 
     reference/waveform_features
 
-********************************
-Alternative data representations
-********************************
+********************
+Data Representations
+********************
 
 .. toctree::
     :maxdepth: 1
 
     reference/conversion
+    reference/trials
 
 *************
 Miscellaneous
@@ -97,4 +98,3 @@ Miscellaneous
     reference/utils
     reference/pandas_bridge
     reference/parallel
-    reference/trials
