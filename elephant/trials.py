@@ -53,10 +53,11 @@ class Trials:
     This is the base class from which all trial objects inherit.
     This class implements support for universally recommended arguments.
 
-    Attributes
+    Parameters
     ----------
     description : string, optional
-        The description of the trials.
+        A textual description of the set of trials. Can be accessed via the
+        class attribute `description`.
         Default: None.
 
     """
@@ -263,6 +264,10 @@ class TrialsFromBlock(Trials):
         The structure is assumed to follow the neo representation:
         A block contains multiple segments which are considered to contain the
         single trials.
+    description : string, optional
+        A textual description of the set of trials. Can be accessed via the
+        class attribute `description`.
+        Default: None.
 
     Properties
     ----------
@@ -359,6 +364,10 @@ class TrialsFromLists(Trials):
     list_of_trials : list of lists
         A list of lists. Each list entry contains a list of neo.SpikeTrains
         or neo.AnalogSignals.
+    description : string, optional
+        A textual description of the set of trials. Can be accessed via the
+        class attribute `description`.
+        Default: None.
 
     Properties
     ----------
