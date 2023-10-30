@@ -1032,8 +1032,8 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
                              sigma=str(kernel.sigma),
                              invert=kernel.invert)
 
-    if  isinstance(spiketrains, neo.core.spiketrainlist.SpikeTrainList) and (
-        pool_spike_trains):
+    if isinstance(spiketrains, neo.core.spiketrainlist.SpikeTrainList) and (
+                  pool_spike_trains):
         rate = np.mean(rate, axis=1)
 
     rate = neo.AnalogSignal(signal=rate,
