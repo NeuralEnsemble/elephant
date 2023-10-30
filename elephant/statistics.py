@@ -695,8 +695,11 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
 
         Default: False
     pool_spike_trains: bool, optional
-        If true: Calculate firing rates averaged over spiketrains if
-        spiketrains is of type elephant.trials.Trials
+        If true, calculate firing rates averaged over spike trains. If the
+        input is a Trials object, spike trains are pooled across spike trains
+        within each trial, and pool_trials determines whether spike trains are
+        additionally pooled across trials.
+        Has no effect for a single spike train.
 
         Default: False
 
