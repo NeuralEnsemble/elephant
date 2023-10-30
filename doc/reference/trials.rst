@@ -1,5 +1,5 @@
-======
-Trials
-======
+======================
+Trials representations
+======================
 
 .. automodule:: elephant.trials
