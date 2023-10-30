@@ -9,6 +9,7 @@ ASSET analysis class object of finding patterns
 
 .. autosummary::
     :toctree: _toctree/asset/
+    :template: class.rst
 
     ASSET
 
@@ -26,6 +27,8 @@ Patterns post-exploration
     synchronous_events_contained_in
     synchronous_events_contains_all
     synchronous_events_overlap
+    get_neurons_in_sse
+    get_sse_start_and_end_time_bins
 
 
 Tutorial
@@ -165,7 +168,9 @@ __all__ = [
     "synchronous_events_no_overlap",
     "synchronous_events_contained_in",
     "synchronous_events_contains_all",
-    "synchronous_events_overlap"
+    "synchronous_events_overlap",
+    "get_neurons_in_sse",
+    "get_sse_start_and_end_time_bins"
 ]
 
 
@@ -1769,6 +1774,108 @@ def synchronous_events_overlap(sse1, sse2):
     return not (contained_in or contains_all or identical or is_disjoint)
 
 
+def get_neurons_in_sse(sse):
+    """
+    Returns the IDs of all neurons present in the SSE pattern.
+
+    This ignores repetitions (i.e., if a neuron is present in more than one
+    pixel, it is returned only once).
+
+    Parameters
+    ----------
+    sse : dict
+        Dictionary of pixel positions `(i, j)` as keys and sets `S` of
+        synchronous events as values, as returned by
+        :func:`ASSET.extract_synchronous_events`.
+
+    Returns
+    -------
+    list
+        All neuron IDs present in the SSE, sorted in ascending order.
+
+    Examples
+    --------
+    >>> sse = {(268, 51): {22, 27},
+    ...        (274, 54): {26},
+    ...        (274, 56): {77},
+    ...        (274, 58): {26},
+    ...        (275, 58): {92},
+    ...        (276, 59): {9},
+    ...        (277, 58): {26},
+    ...        (277, 61): {26}}
+    >>> neurons = get_neurons_in_sse(sse)
+    >>> print(neurons)
+    [9, 22, 26, 27, 77, 92]
+
+    See Also
+    --------
+    ASSET.extract_synchronous_events
+    """
+    all_neurons = []
+    for neurons in sse.values():
+        all_neurons.extend(neurons)
+    neuron_ids = np.unique(all_neurons).tolist()
+    return neuron_ids
+
+
+def get_sse_start_and_end_time_bins(sse):
+    """
+    For each repeated sequence in the SSE pattern, returns the start and end
+    time bin IDs.
+
+    For an SSE consisting of several pixels `(i, j)`, the `i` and `j` elements
+    represent the time bin IDs in the cluster matrix used to extract the SSE.
+    The combination of all `i` and `j` elements in the SSE pixels defines the
+    temporal profile of each repeated sequence in the SSE pattern. Therefore,
+    the minimum and maximum values for each `i` and `j` will define when each
+    repeated sequence occured in time.
+
+    Parameters
+    ----------
+    sse : dict
+        Dictionary of pixel positions `(i, j)` as keys and sets `S` of
+        synchronous events as values, as returned by
+        :func:`ASSET.extract_synchronous_events`.
+
+    Returns
+    -------
+    start, end: list
+        Two-element list containing the first bins (`start`) or the last bins
+        (`end`) in each repeated sequence. In each list, the first element
+        corresponds to the first sequence (elements `i` in the SSE pixel), and
+        the second element corresponds to the second sequence (elements `j`
+        in the SSE pixel).
+
+    Examples
+    --------
+    >>> sse = {(268, 51): {22, 27},
+    ...        (274, 54): {26},
+    ...        (274, 56): {77},
+    ...        (274, 58): {26},
+    ...        (275, 58): {92},
+    ...        (276, 59): {9},
+    ...        (277, 58): {26},
+    ...        (277, 61): {26}}
+    >>> start, end = get_sse_start_and_end_time_bins(sse)
+    >>> print(start)
+    [268, 51]
+    >>> print(end)
+    [277, 61]
+
+    See Also
+    --------
+    ASSET.extract_synchronous_events
+    """
+    pixels = list(sse.keys())
+    start = list(pixels[0])
+    end = list(pixels[0])
+    for pixel in pixels[1:]:
+        for seq in (0, 1):
+            start[seq] = min(start[seq], pixel[seq])
+            end[seq] = max(end[seq], pixel[seq])
+    return start, end
+
+
 def _signals_t_start_stop(signals, t_start=None, t_stop=None):
     if t_start is None:
         t_start = _signals_same_attribute(signals, 't_start')
@@ -1935,6 +2042,8 @@ class ASSET(object):
 
     def is_symmetric(self):
         """
+        Checks if intersection matrix is symmetric or not.
+
         Returns
         -------
         bool

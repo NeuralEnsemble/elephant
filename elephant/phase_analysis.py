@@ -182,8 +182,10 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
                     hilbert_transform[phase_i].sampling_period
 
                 # Save hilbert_transform (interpolate on circle)
-                p1 = np.angle(hilbert_transform[phase_i][ind_at_spike_j])
-                p2 = np.angle(hilbert_transform[phase_i][ind_at_spike_j + 1])
+                p1 = np.angle(hilbert_transform[phase_i][ind_at_spike_j]
+                              ).item()
+                p2 = np.angle(hilbert_transform[phase_i][ind_at_spike_j + 1]
+                              ).item()
                 interpolation = (1 - z) * np.exp(complex(0, p1)) \
                                     + z * np.exp(complex(0, p2))
                 p12 = np.angle([interpolation])
@@ -352,8 +354,9 @@ def weighted_phase_lag_index(signal_i, signal_j, sampling_frequency=None,
         Takes the absolute value of the numerator in the WPLI-formula.
         When set to `False`, the WPLI contains additional directionality
         information about which signal leads/lags the other signal:
-            - wpli > 0 : first signal i leads second signal j
-            - wpli < 0 : first signal i lags second signal j
+
+        * wpli > 0 : first signal i leads second signal j
+        * wpli < 0 : first signal i lags second signal j
 
     Returns
     -------
@@ -378,12 +381,12 @@ def weighted_phase_lag_index(signal_i, signal_j, sampling_frequency=None,
         WPLI = \frac{| E( |Im(X)| * sgn(Im(X)) ) |}{E( |Im(X)| )}
 
     with:
-        - :math:`E{...}` : expected value operator
-        - :math:`Im{X}` : imaginary component of the cross-spectrum
-        - :math:`X = Z_i Z_{j}^{*}` : cross-spectrum, averaged across
-        trials
-        - :math:`Z_i, Z_j`: complex-valued matrix, representing the Fourier
-        spectra of a particular frequency of the signals i and j.
+
+    * :math:`E{...}` : expected value operator
+    * :math:`Im{X}` : imaginary component of the cross-spectrum
+    * :math:`X = Z_i Z_{j}^{*}` : cross-spectrum, averaged across trials
+    * :math:`Z_i, Z_j`: complex-valued matrix, representing the Fourier
+      spectra of a particular frequency of the signals i and j.
 
     """
     if isinstance(signal_i, neo.AnalogSignal) and \
