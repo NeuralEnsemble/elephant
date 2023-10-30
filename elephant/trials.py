@@ -70,13 +70,13 @@ class Trials:
         pass
 
     @abstractmethod
-    def get_trials_as_block(self, trial_numbers: List[int]) -> neo.core.Block:
+    def get_trials_as_block(self, trial_numbers: List[int] = None
+                            ) -> neo.core.Block:
         """Get trials as block."""
         pass
 
     @abstractmethod
-    def get_trials_as_list(self,
-                           trial_numbers: List[int]
+    def get_trials_as_list(self, trial_numbers: List[int] = None
                            ) -> neo.core.spiketrainlist.SpikeTrainList:
         """Get trials as list of segments."""
         pass
@@ -201,15 +201,20 @@ class TrialsFromBlock(Trials):
         # Get a specific trial by number as a segment
         return self.__getitem__(trial_number)
 
-    def get_trials_as_block(self, trial_numbers: List[int]) -> neo.core.Block:
+    def get_trials_as_block(self, trial_numbers: List[int] = None
+                            ) -> neo.core.Block:
         # Get a block of trials by trial numbers
         block = Block()
+        if not trial_numbers:
+            trial_numbers = list(range(self.n_trials))
         for trial_number in trial_numbers:
             block.segments.append(self.get_trial_as_segment(trial_number))
         return block
 
-    def get_trials_as_list(self,
-                           trial_numbers: List[int]) -> List[neo.core.Segment]:
+    def get_trials_as_list(self, trial_numbers: List[int] = None
+                           ) -> List[neo.core.Segment]:
+        if not trial_numbers:
+            trial_numbers = list(range(self.n_trials))
         # Get a list of segments by trial numbers
         return [self.get_trial_as_segment(trial_number)
                 for trial_number in trial_numbers]
@@ -300,15 +305,20 @@ class TrialsFromLists(Trials):
         # Get a specific trial by number as a segment
         return self.__getitem__(trial_number)
 
-    def get_trials_as_block(self, trial_numbers: List[int]) -> neo.core.Block:
+    def get_trials_as_block(self, trial_numbers: List[int] = None
+                            ) -> neo.core.Block:
+        if not trial_numbers:
+            trial_numbers = list(range(self.n_trials))
         # Get a block of trials by trial numbers
         block = Block()
         for trial_number in trial_numbers:
             block.segments.append(self.get_trial_as_segment(trial_number))
         return block
 
-    def get_trials_as_list(self,
-                           trial_numbers: List[int]) -> List[neo.core.Segment]:
+    def get_trials_as_list(self, trial_numbers: List[int] = None
+                           ) -> List[neo.core.Segment]:
+        if not trial_numbers:
+            trial_numbers = list(range(self.n_trials))
         # Get a list of segments by trial numbers
         return [self.get_trial_as_segment(trial_number)
                 for trial_number in trial_numbers]
