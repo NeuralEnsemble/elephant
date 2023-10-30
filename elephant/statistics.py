@@ -614,8 +614,11 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
     Parameters
     ----------
     spiketrains : neo.SpikeTrain, list of neo.SpikeTrain or elephant.trials.Trials  # noqa
-        Neo object(s) that contains spike times, the unit of the time stamps,
-        and `t_start` and `t_stop` of the spike train.
+        Input spike train(s) for which the instantaneous firing rate is
+        calculated. If a list of spike trains is supplied, the parameter
+        pool_spike_trains determines the behavior of the function. If a Trials
+        object is supplied, the behavior is determined by the parameters
+        pool_spike_trains (within a trial) and pool_trials (across trials).
     sampling_period : pq.Quantity
         Time stamp resolution of the spike times. The same resolution will
         be assumed for the kernel.
