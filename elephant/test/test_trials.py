@@ -130,16 +130,6 @@ class TrialsFromBlockTestCase(unittest.TestCase):
                          [len(trial.analogsignals) for trial in
                           self.block.segments])
 
-    def test_trials_from_block_get_spiketrains_from_trial(self) -> None:
-        """
-        Test get spiketrains from trial as SpikeTrainList
-        """
-        self.assertIsInstance(self.trial_object.get_spiketrains_from_trial(0),
-                              neo.core.spiketrainlist.SpikeTrainList)
-        self.assertIsInstance(
-            self.trial_object.get_spiketrains_from_trial_as_list(0)[0],
-            neo.core.SpikeTrain)
-
     def test_trials_from_block_get_spiketrains_from_trial_as_list(self
                                                                   ) -> None:
         """
@@ -290,16 +280,6 @@ class TrialsFromListTestCase(unittest.TestCase):
                          [sum(map(lambda x: isinstance(x,
                                                        neo.core.AnalogSignal),
                                   trial)) for trial in self.trial_list])
-
-    def test_trials_from_list_get_spiketrains_from_trial(self) -> None:
-        """
-        Test get spiketrains from trial as SpikeTrainList
-        """
-        self.assertIsInstance(self.trial_object.get_spiketrains_from_trial(0),
-                              neo.core.spiketrainlist.SpikeTrainList)
-        self.assertIsInstance(
-            self.trial_object.get_spiketrains_from_trial_as_list(0)[0],
-            neo.core.SpikeTrain)
 
     def test_trials_from_list_get_spiketrains_from_trial_as_list(self) -> None:
         """

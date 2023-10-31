@@ -825,7 +825,7 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
         if pool_trials:
             list_of_lists_of_spiketrains = [
                 spiketrains.get_spiketrains_from_trial_as_list(
-                    trial_number=trial_no)
+                    trial_id=trial_no)
                 for trial_no in range(spiketrains.n_trials)]
 
             spiketrains_cross_trials = (
@@ -868,13 +868,13 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
         if not pool_trials and not pool_spike_trains:
             return [instantaneous_rate(
                         spiketrains.get_spiketrains_from_trial_as_list(
-                            trial_number=trial_no), sampling_period, **kwargs)
+                            trial_id=trial_no), sampling_period, **kwargs)
                     for trial_no in range(spiketrains.n_trials)]
 
         if not pool_trials and pool_spike_trains:
             rates = [instantaneous_rate(
                         spiketrains.get_spiketrains_from_trial_as_list(
-                            trial_number=trial_no), sampling_period, **kwargs)
+                            trial_id=trial_no), sampling_period, **kwargs)
                      for trial_no in range(spiketrains.n_trials)]
 
             average_rates = (np.mean(rate, axis=1) for rate in rates)

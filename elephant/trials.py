@@ -106,12 +106,12 @@ class Trials:
         pass
 
     @abstractmethod
-    def get_trial_as_segment(self, trials_id: int) -> neo.core.Segment:
+    def get_trial_as_segment(self, trial_id: int) -> neo.core.Segment:
         """Get trial as segment.
 
         Parameters
         ----------
-        trials_id : int
+        trial_id : int
             Trial number to get (starting at trial ID 0).
 
         Returns
@@ -162,9 +162,8 @@ class Trials:
         pass
 
     @abstractmethod
-    def get_spiketrains_from_trial(self, trial_id: int
-                                   ) -> List[
-                                       neo.core.spiketrainlist.SpikeTrainList]:
+    def get_spiketrains_from_trial_as_list(self, trial_id: int) -> (
+                                       neo.core.spiketrainlist.SpikeTrainList):
         """
         Get all spike trains from a specific trial and return a list.
 
@@ -175,25 +174,7 @@ class Trials:
 
         Returns
         -------
-        list_of_spike_trains : class:`neo.SpikeTrainList`
-            List of all spike trains of the trial.
-        """
-        pass
-
-    @abstractmethod
-    def get_spiketrains_from_trial_as_list(self, trial_number: int) -> (
-                                       neo.core.spiketrainlist.SpikeTrainList):
-        """
-        Get all spike trains from a specific trial and return a list.
-
-        Parameters
-        ----------
-        trial_number : int
-            Trial ID to get the spike trains from (starting at trial ID 0).
-
-        Returns
-        -------
-        list_of_spike_trains : list class:`neo.SpikeTrain`
+        list of :class:`neo.SpikeTrain`
             List of all spike trains of the trial.
         """
         pass
@@ -211,8 +192,7 @@ class Trials:
 
         Returns
         -------
-        segment_with_spiketrains : :class:`neo.Segment`
-            Segment containing all spike trains of the trial.
+        :class:`neo.Segment`: Segment containing all spike trains of the trial.
         """
         pass
 
@@ -229,13 +209,13 @@ class Trials:
 
         Returns
         -------
-        list_of_analogsignals : list of class`neo.AnalogSignal`
-            List of all analogsignal objects of the trial.
+        list of :class`neo.AnalogSignal`: list of all analogsignal objects of
+            the trial.
         """
         pass
 
     @abstractmethod
-    def get_analogsignals_from_trial_as_segment(self, trial_id: int = 0
+    def get_analogsignals_from_trial_as_segment(self, trial_id: int
                                                 ) -> neo.core.Segment:
         """
         Get all analogsignal objects from a specific trial and return a
@@ -248,8 +228,8 @@ class Trials:
 
         Returns
         -------
-        segment_with_analogsignals : class:`neo.Segment`
-            Segment containing all analogsignal objects of the trial.
+        class:`neo.Segment`: segment containing all analogsignal objects of
+            the trial.
         """
 
 
@@ -277,9 +257,9 @@ class TrialsFromBlock(Trials):
     def __getitem__(self, trial_number: int) -> neo.core.segment:
         return self.block.segments[trial_number]
 
-    def get_trial_as_segment(self, trials_id: int) -> neo.core.Segment:
+    def get_trial_as_segment(self, trial_id: int) -> neo.core.Segment:
         # Get a specific trial by number as a segment
-        return self.__getitem__(trials_id)
+        return self.__getitem__(trial_id)
 
     def get_trials_as_block(self, trial_ids: List[int] = None
                             ) -> neo.core.Block:
@@ -314,19 +294,14 @@ class TrialsFromBlock(Trials):
         # Get the number of AnalogSignals instances in each trial.
         return [len(trial.analogsignals) for trial in self.block.segments]
 
-    def get_spiketrains_from_trial(self, trial_id: int
-                                   ) -> List[
-                                     neo.core.spiketrainlist.SpikeTrainList]:
-        return self.block.segments[trial_id].spiketrains
-
-    def get_spiketrains_from_trial_as_list(self, trial_number: int = 0) -> (
+    def get_spiketrains_from_trial_as_list(self, trial_id: int = 0) -> (
                                        neo.core.spiketrainlist.SpikeTrainList):
-        # Return a list of all spiketrains from a trial
+        # Return a list of all spike trains from a trial
         return SpikeTrainList(items=[spiketrain for spiketrain in
-                              self.block.segments[trial_number].spiketrains])
+                                     self.block.segments[trial_id].spiketrains])
 
-    def get_spiketrains_from_trial_as_segment(self, trial_id: int = 0
-                                              ) -> neo.core.Segment:
+    def get_spiketrains_from_trial_as_segment(self, trial_id: int) -> (
+            neo.core.Segment):
         # Return a segment with all spiketrains from a trial
         segment = neo.core.Segment()
         for spiketrain in self.get_spiketrains_from_trial_as_list(trial_id
@@ -334,14 +309,14 @@ class TrialsFromBlock(Trials):
             segment.spiketrains.append(spiketrain)
         return segment
 
-    def get_analogsignals_from_trial_as_list(self, trial_id: int = 0
-                                             ) -> List[neo.core.AnalogSignal]:
+    def get_analogsignals_from_trial_as_list(self, trial_id: int) -> (
+            List[neo.core.AnalogSignal]):
         # Return a list of all analogsignals from a trial
         return [analogsignal for analogsignal in
                 self.block.segments[trial_id].analogsignals]
 
-    def get_analogsignals_from_trial_as_segment(self, trial_id: int = 0
-                                                ) -> neo.core.Segment:
+    def get_analogsignals_from_trial_as_segment(self, trial_id: int) -> (
+            neo.core.Segment):
         # Return a segment with all analogsignals from a trial
         segment = neo.core.Segment()
         for analogsignal in self.get_analogsignals_from_trial_as_list(
@@ -358,7 +333,7 @@ class TrialsFromLists(Trials):
     ----------
     list_of_trials : list of lists
         A list of lists. Each list entry contains a list of neo.SpikeTrains
-        or neo.AnalogSignals.
+        and/or neo.AnalogSignals.
     description : string, optional
         A textual description of the set of trials. Can be accessed via the
         class attribute `description`.
@@ -381,9 +356,9 @@ class TrialsFromLists(Trials):
                 segment.analogsignals.append(element)
         return segment
 
-    def get_trial_as_segment(self, trials_id: int) -> neo.core.Segment:
+    def get_trial_as_segment(self, trial_id: int) -> neo.core.Segment:
         # Get a specific trial by number as a segment
-        return self.__getitem__(trials_id)
+        return self.__getitem__(trial_id)
 
     def get_trials_as_block(self, trial_ids: List[int] = None
                             ) -> neo.core.Block:
@@ -420,36 +395,30 @@ class TrialsFromLists(Trials):
         return [sum(map(lambda x: isinstance(x, neo.core.AnalogSignal), trial))
                 for trial in self.list_of_trials]
 
-    def get_spiketrains_from_trial(self, trial_id: int
-                                   ) -> neo.core.spiketrainlist.SpikeTrainList:
-        return neo.core.spiketrainlist.SpikeTrainList(
-            items=self.get_spiketrains_from_trial_as_list(trial_id))
-
-    def get_spiketrains_from_trial_as_list(self, trial_number: int = 0) -> (
+    def get_spiketrains_from_trial_as_list(self, trial_id: int = 0) -> (
                                        neo.core.spiketrainlist.SpikeTrainList):
         # Return a list of all spiketrains from a trial
         return SpikeTrainList(items=[
-            spiketrain for spiketrain in self.list_of_trials[trial_number]
+            spiketrain for spiketrain in self.list_of_trials[trial_id]
             if isinstance(spiketrain, neo.core.SpikeTrain)])
 
-    def get_spiketrains_from_trial_as_segment(self, trial_id: int = 0
-                                              ) -> neo.core.Segment:
+    def get_spiketrains_from_trial_as_segment(self, trial_id: int) -> (
+            neo.core.Segment):
         # Return a segment with all spiketrains from a trial
         segment = neo.core.Segment()
-        for spiketrain in self.get_spiketrains_from_trial_as_list(trial_id
-                                                                  ):
+        for spiketrain in self.get_spiketrains_from_trial_as_list(trial_id):
             segment.spiketrains.append(spiketrain)
         return segment
 
-    def get_analogsignals_from_trial_as_list(self, trial_id: int = 0
-                                             ) -> List[neo.core.AnalogSignal]:
+    def get_analogsignals_from_trial_as_list(self, trial_id: int) -> (
+            List[neo.core.AnalogSignal]):
         # Return a list of all analogsignals from a trial
         return [analogsignal for analogsignal in
                 self.list_of_trials[trial_id]
                 if isinstance(analogsignal, neo.core.AnalogSignal)]
 
-    def get_analogsignals_from_trial_as_segment(self, trial_id: int = 0
-                                                ) -> neo.core.Segment:
+    def get_analogsignals_from_trial_as_segment(self, trial_id: int) -> (
+            neo.core.Segment):
         # Return a segment with all analogsignals from a trial
         segment = neo.core.Segment()
         for analogsignal in self.get_analogsignals_from_trial_as_list(
