@@ -845,15 +845,14 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
                 average_rate = np.mean(list(average_rate_cross_trials), axis=0)
                 analog_signal = rates_cross_trials[0]
 
-                return [
-                    neo.AnalogSignal(
-                        signal=average_rate,
-                        sampling_period=analog_signal.sampling_period,
-                        units=analog_signal.units,
-                        t_start=analog_signal.t_start,
-                        t_stop=analog_signal.t_stop,
-                        kernel=analog_signal.annotations)
-                ]
+                return (neo.AnalogSignal(
+                                signal=average_rate,
+                                sampling_period=analog_signal.sampling_period,
+                                units=analog_signal.units,
+                                t_start=analog_signal.t_start,
+                                t_stop=analog_signal.t_stop,
+                                kernel=analog_signal.annotations)
+                        )
 
             list_of_average_rates_cross_trial = neo.AnalogSignal(
                 signal=list(average_rate_cross_trials),
