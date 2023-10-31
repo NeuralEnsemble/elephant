@@ -940,50 +940,44 @@ class InstantaneousRateTest(unittest.TestCase):
         self.assertAlmostEqual(spike_times[3].magnitude.item(),
                                rate.times[rate.argmax()].magnitude.item())
 
-        def test_instantaneous_rate_border_correction(self):
-            np.random.seed(0)
-            n_spiketrains = 125
-            rate = 50. * pq.Hz
-            t_start = 0. * pq.ms
-            t_stop = 1000. * pq.ms
-
-            sampling_period = 0.1 * pq.ms
-
-            trial_list = StationaryPoissonProcess(
-                rate=rate, t_start=t_start, t_stop=t_stop
-            ).generate_n_spiketrains(n_spiketrains)
-
-            for correction in (True, False):
-                rates = []
-                for trial in trial_list:
-                    # calculate the instantaneous rate, discard extra dimension
-                    instantaneous_rate = statistics.instantaneous_rate(
-                        spiketrains=trial,
-                        sampling_period=sampling_period,
-                        kernel='auto',
-                        border_correction=correction
-                    )
-                    rates.append(instantaneous_rate)
-
-            # The average estimated rate gives the average estimated value of
-            # the firing rate in each time bin.
-            # Note: the indexing [:, 0] is necessary to get the output an
-            # one-dimensional array.
-            average_estimated_rate = np.mean(rates, axis=0)[:, 0]
-
-            rtol = 0.05  # Five percent of tolerance
-
-            if correction:
-                self.assertLess(np.max(average_estimated_rate),
-                                (1. + rtol) * rate.item())
-                self.assertGreater(np.min(average_estimated_rate),
-                                   (1. - rtol) * rate.item())
-            else:
-                self.assertLess(np.max(average_estimated_rate),
-                                (1. + rtol) * rate.item())
-                # The minimal rate deviates strongly in the uncorrected case.
-                self.assertLess(np.min(average_estimated_rate),
-                                (1. - rtol) * rate.item())
+    def test_instantaneous_rate_border_correction(self):
+        np.random.seed(0)
+        n_spiketrains = 125
+        rate = 50. * pq.Hz
+        t_start = 0. * pq.ms
+        t_stop = 1000. * pq.ms
+        sampling_period = 0.1 * pq.ms
+        trial_list = StationaryPoissonProcess(
+            rate=rate, t_start=t_start, t_stop=t_stop
+        ).generate_n_spiketrains(n_spiketrains)
+        for correction in (True, False):
+            rates = []
+            for trial in trial_list:
+                # calculate the instantaneous rate, discard extra dimension
+                instantaneous_rate = statistics.instantaneous_rate(
+                    spiketrains=trial,
+                    sampling_period=sampling_period,
+                    kernel='auto',
+                    border_correction=correction
+                )
+                rates.append(instantaneous_rate)
+        # The average estimated rate gives the average estimated value of
+        # the firing rate in each time bin.
+        # Note: the indexing [:, 0] is necessary to get the output an
+        # one-dimensional array.
+        average_estimated_rate = np.mean(rates, axis=0)[:, 0]
+        rtol = 0.05  # Five percent of tolerance
+        if correction:
+            self.assertLess(np.max(average_estimated_rate),
+                            (1. + rtol) * rate.item())
+            self.assertGreater(np.min(average_estimated_rate),
+                               (1. - rtol) * rate.item())
+        else:
+            self.assertLess(np.max(average_estimated_rate),
+                            (1. + rtol) * rate.item())
+            # The minimal rate deviates strongly in the uncorrected case.
+            self.assertLess(np.min(average_estimated_rate),
+                            (1. - rtol) * rate.item())
 
     def test_instantaneous_rate_trials_pool_trials(self):
         kernel = kernels.GaussianKernel(sigma=500 * pq.ms)
@@ -1006,6 +1000,17 @@ class InstantaneousRateTest(unittest.TestCase):
             pool_trials=False)
         self.assertIsInstance(rate, neo.core.AnalogSignal)
         self.assertEqual(rate.magnitude.shape[1], 1)
+
+    def test_instantaneous_rate_list_of_spike_trains(self):
+        kernel = kernels.GaussianKernel(sigma=500 * pq.ms)
+        rate = statistics.instantaneous_rate(
+            self.trial_object.get_spiketrains_from_trial_as_list(0),
+            sampling_period=0.1 * pq.ms,
+            kernel=kernel,
+            pool_spike_trains=False,
+            pool_trials=False)
+        self.assertIsInstance(rate, neo.core.AnalogSignal)
+        self.assertEqual(rate.magnitude.shape[1], 2)
 
 
 class TimeHistogramTestCase(unittest.TestCase):
