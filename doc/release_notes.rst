@@ -2,6 +2,37 @@
 Release Notes
 =============
 
+
+Elephant 0.14.0 release notes
+=============================
+
+New functionality and features
+------------------------------
+* Added ASSET class initialization parameter to define the binning rounding error tolerance, allowing users to control the behavior of spike time binning (#585).
+* Enhanced ASSET function output messages and status information by replacing print statements with logging calls, introducing tqdm progress bars for looped steps, and providing control over INFO and DEBUG logging via parameters (#570).
+* Implemented logging instead of warnings in the round_binning_errors() function in elephant/utils.py (#571).
+* Implemented trial handling, providing a unified framework for representing and accessing trial data, supporting diverse trial structures and a common API (#579).
+* Improved `instantaneous_rate` function to support trial data (#579).
+
+Bug fixes
+---------
+* Added example to doc-string, handled one-dimensional arrays as input for x_positions, and added regression unit-tests in CSD.generate_lfp (#594).
+* Modified the check for signal type in z_score when using inplace option to ensure it works correctly with `np.float32` and `np.float64`  (#592).
+
+Documentation
+-------------
+* Fixed documentation build on readthedocs by updating deprecated configuration key `build.image` to `build.os` (#596).
+
+Validations
+-----------
+* Fixed spike time tiling coefficient calculation for unsorted spiketrains. The fix includes sorting the input spiketrains, additional input checks, and a validation test. (#564).
+
+Other changes
+-------------
+* Fixed several typos and grammatical errors in GPFA tutorial notebook (#587)
+* Updated the build_wheels action to use cibuildwheel version 2.13.1, enabling the building of wheels for Python 3.11 (#582).
+
+
 Elephant 0.13.0 release notes
 =============================
 
