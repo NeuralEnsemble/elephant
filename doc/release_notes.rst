@@ -12,6 +12,7 @@ New functionality and features
 * Enhanced ASSET function output messages and status information by replacing print statements with logging calls, introducing tqdm progress bars for looped steps, and providing control over INFO and DEBUG logging via parameters (#570).
 * Implemented logging instead of warnings in the round_binning_errors() function in elephant/utils.py (#571).
 * Implemented trial handling, providing a unified framework for representing and accessing trial data, supporting diverse trial structures and a common API (#579).
+* Improved `instantaneous_rate` function to support trial data (#579).
 
 Bug fixes
 ---------
@@ -30,10 +31,6 @@ Other changes
 -------------
 * Fixed several typos and grammatical errors in GPFA tutorial notebook (#587)
 * Updated the build_wheels action to use cibuildwheel version 2.13.1, enabling the building of wheels for Python 3.11 (#582).
-
-Selected dependency changes
----------------------------
-* No changes
 
 
 Elephant 0.13.0 release notes
