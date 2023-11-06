@@ -20,6 +20,7 @@ venv/
 env/
 .pytest_cache/
 **/*/__pycache__
+*.vscode
 
 # Compiled source #
 ###################
@@ -83,6 +84,8 @@ ignored/
 
 # data
 *.nix
+*.csv
+*.mat
 
 # neo logs
 **/logs

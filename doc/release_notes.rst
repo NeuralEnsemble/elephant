@@ -2,6 +2,118 @@
 Release Notes
 =============
 
+
+Elephant 0.14.0 release notes
+=============================
+
+New functionality and features
+------------------------------
+* Added ASSET class initialization parameter to define the binning rounding error tolerance, allowing users to control the behavior of spike time binning (#585).
+* Enhanced ASSET function output messages and status information by replacing print statements with logging calls, introducing tqdm progress bars for looped steps, and providing control over INFO and DEBUG logging via parameters (#570).
+* Implemented logging instead of warnings in the round_binning_errors() function in elephant/utils.py (#571).
+* Implemented trial handling, providing a unified framework for representing and accessing trial data, supporting diverse trial structures and a common API (#579).
+* Improved `instantaneous_rate` function to support trial data (#579).
+
+Bug fixes
+---------
+* Added example to doc-string, handled one-dimensional arrays as input for x_positions, and added regression unit-tests in CSD.generate_lfp (#594).
+* Modified the check for signal type in z_score when using inplace option to ensure it works correctly with `np.float32` and `np.float64`  (#592).
+
+Documentation
+-------------
+* Fixed documentation build on readthedocs by updating deprecated configuration key `build.image` to `build.os` (#596).
+
+Validations
+-----------
+* Fixed spike time tiling coefficient calculation for unsorted spiketrains. The fix includes sorting the input spiketrains, additional input checks, and a validation test. (#564).
+
+Other changes
+-------------
+* Fixed several typos and grammatical errors in GPFA tutorial notebook (#587)
+* Updated the build_wheels action to use cibuildwheel version 2.13.1, enabling the building of wheels for Python 3.11 (#582).
+
+
+Elephant 0.13.0 release notes
+=============================
+
+New functionality and features
+------------------------------
+* Implemented non-parametric spectral Granger causality analysis, extending the investigation of signal influence in the spectral domain. (#545)
+* Added functions to extract time bin and neuron information from Spike Sequence Events (SSEs) obtained using ASSET. (#549)
+
+Bug fixes
+---------
+* Resolved issue with old references to the gin repository INM-6/elephant-data, ensuring accurate repository information. (#547)
+* Fixed the usage of deprecated numpy functions, which were removed with numpy 1.25.0. (#568)
+* Rectified a bug in spade, addressing a missing call of `min_neu` to specify the minimum number of neurons in a pattern. Also, added a regression test to verify the fix. (#575)
+* Corrected a bug in the complexity class that resulted in unexpected behavior when binary=False and spread=0. (#554)
+* Resolved a bug in cell assembly detection (CAD) that produced different results compared to the original MATLAB implementation. (#576)
+
+Documentation
+-------------
+* Addressed various formatting issues in docstrings that were causing warnings during documentation builds. (#553)
+* Updated the contributors guide: The guide now includes a step to install Elephant itself by adding a "pip install -e ." command to the instructions for setting up a development environment. (#566)
+
+Validations
+-----------
+* No changes
+
+Other changes
+-------------
+* Added `codemeta.json` for automated publication of Elephant release to ebrains knowledge graph. (#561, #562)
+* Added "howfairis" badge to README.md, indicating Elephant's compliance with fair-software.eu recommendations. (#551)
+* CI: Enhance security of github actions by specifying a particular commit for third party actions, to improve security against re-tagging attacks.  (#565)
+* Separation of the `multitaper_psd()` function into `segmented_multitaper_psd()` and `multitaper_psd()` without segmentation. This restructuring was done to achieve consistency in the spectral module. (#556)
+* Improved reporting in test_multitaper_cohere_perfect_cohere: Updated the unittest to utilize the numpy assert array equal function. This enhancement aims to provide more detailed and informative traceback in case of failures. (#573)
+* Increased tolerance for Weigthed Phase-Lag Index (WPLI) ground truth test to avoid unitest to fail due minor differences in floating point operations (#572)
+* Added shields for twitter and fosstodon to README.md linking to Elephants accounts. (#532)
+
+Selected dependency changes
+---------------------------
+* no changes
+
+
+Elephant 0.12.0 release notes
+=============================
+
+New functionality and features
+------------------------------
+* ASSET: map pairwise distances matrix to disk while computing the cluster matrix to reduce memory usage. #498
+* multitaper cross spectrum: calculate the cross spectrum and the coherence as well as phase lag with the multitaper method. #525
+* weighted_phase_lag_index (WLPI), a measure of phase-synchronization based on the imaginary part of the complex-valued cross-spectrum of two signals. #411
+
+Bug fixes
+---------
+* fixed and included additional unit tests for the `multitaper_psd`. #529
+* replaced deprecated numpy types with builtins to ensure compatibility with numpy >=1.24.0. #535
+
+Documentation
+-------------
+* fixed math rendering with sphinx 5.3.0. #527
+* added documentation for `multitaper_psd`.  #531
+* updated the elephant logo to the current version. #534
+* removed version cap for sphinx extension sphinxcontrib-bibtex (previously set to ==1.0.0): citation style changed to name - year.  #523
+* fixed various formatting issues in docstrings, e.g. indentations, missing quotation marks or missing citation references. #478
+* fixed documentation code examples and test code by introducing a doctest runner to CI. #503
+* changed heading "Spike-triggered LFP phase" to "Phase Analysis", remove wrong reference to tutorial from function reference. #540
+* add launch on ebrains button for elephant tutorials. #538
+
+Validations
+-----------
+* WPLI  ‘ground-truth’-testing with: MATLABs package FieldTrip and its function ft_connectivity_wpli() and its wrapper ft_connectivity(); as well as with python package MNE and its function spectral_connectivity(). #411
+
+Other changes
+-------------
+* Fix/CI: update deprecated actions and commands for github actions workflow. #522
+* added codemeta.json file for automatic registration of elephant releases to ebrains knowledge graph. #541
+
+Selected dependency changes
+---------------------------
+* Python >= 3.8. #536
+* numpy > 1.20. #536
+* quantities > 0.14.0. #542
+
+
 Elephant 0.11.2 release notes
 =============================
 

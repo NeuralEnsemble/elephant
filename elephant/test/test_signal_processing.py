@@ -2,7 +2,7 @@
 """
 Unit tests for the signal_processing module.
 
-:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2023 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 from __future__ import division, print_function
@@ -15,7 +15,7 @@ import quantities as pq
 import scipy.signal as spsig
 import scipy.stats
 from numpy.ma.testutils import assert_array_equal, assert_allclose
-from numpy.testing.utils import assert_array_almost_equal
+from numpy.testing import assert_array_almost_equal
 
 import elephant.signal_processing
 
@@ -401,7 +401,7 @@ class ZscoreTestCase(unittest.TestCase):
         self.assertIs(result[0], signal_list[0])
         self.assertIs(result[1], signal_list[1])
 
-    def test_wrong_input(self):
+    def test_z_score_wrong_input(self):
         # wrong type
         self.assertRaises(TypeError, elephant.signal_processing.zscore,
                           signal=[1, 2] * pq.uV)
@@ -410,6 +410,23 @@ class ZscoreTestCase(unittest.TestCase):
         asig2 = neo.AnalogSignal([0, 1], units=pq.V, sampling_rate=1 * pq.ms)
         self.assertRaises(ValueError, elephant.signal_processing.zscore,
                           signal=[asig1, asig2])
+
+    def test_z_score_np_float32_64(self):
+        """
+        Regression test: Inplace operations for z_score failed when using
+        np.float32 or np.float64 types.
+        See Issue #591.
+        https://github.com/NeuralEnsemble/elephant/issues/591
+        """
+        test_types = (np.float32, np.float64)
+        for test_type in test_types:
+            with self.subTest(test_type):
+                signal = neo.AnalogSignal(self.test_seq1, units='mV',
+                                          t_start=0. * pq.ms,
+                                          sampling_rate=1000. * pq.Hz,
+                                          dtype=test_type)
+                # This should not raise a ValueError
+                elephant.signal_processing.zscore(signal, inplace=True)
 
 
 class ButterTestCase(unittest.TestCase):

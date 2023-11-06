@@ -14,7 +14,7 @@ signal, or filtering a signal).
     rauc
     derivative
 
-:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2023 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -167,7 +167,7 @@ def zscore(signal, inplace=True):
     for sig in signal:
         # Perform inplace operation only if array is of dtype float.
         # Otherwise, raise an error.
-        if inplace and not np.issubdtype(np.float, sig.dtype):
+        if inplace and not np.issubdtype(sig.dtype, np.floating):
             raise ValueError(f"Cannot perform inplace operation as the "
                              f"signal dtype is not float. Source: {sig.name}")
 
@@ -419,13 +419,10 @@ def butter(signal, highpass_frequency=None, lowpass_frequency=None, order=4,
         `lowpass_frequency` and `highpass_frequency`:
 
         * `highpass_frequency` only (`lowpass_frequency` is None):
-        highpass filter
-
+           highpass filter
         * `lowpass_frequency` only (`highpass_frequency` is None):
-        lowpass filter
-
+           lowpass filter
         * `highpass_frequency` < `lowpass_frequency`: bandpass filter
-
         * `highpass_frequency` > `lowpass_frequency`: bandstop filter
 
         Default: None
@@ -436,9 +433,7 @@ def butter(signal, highpass_frequency=None, lowpass_frequency=None, order=4,
         Filtering function to be used. Available filters:
 
         * 'filtfilt': `scipy.signal.filtfilt`;
-
         * 'lfilter': `scipy.signal.lfilter`;
-
         * 'sosfiltfilt': `scipy.signal.sosfiltfilt`.
 
         In most applications 'filtfilt' should be used, because it doesn't
@@ -673,7 +668,7 @@ def wavelet_transform(signal, frequency, n_cycles=6.0, sampling_frequency=1.0,
         # in Le van Quyen et al. J Neurosci Meth 111:83-98 (2001).
         sigma = n_cycles / (6. * freq)
         freqs = np.fft.fftfreq(n, 1.0 / fs)
-        heaviside = np.array(freqs > 0., dtype=np.float)
+        heaviside = np.array(freqs > 0., dtype=float)
         ft_real = np.sqrt(2 * np.pi * freq) * sigma * np.exp(
             -2 * (np.pi * sigma * (freqs - freq)) ** 2) * heaviside * fs
         ft_imag = np.zeros_like(ft_real)
@@ -717,7 +712,7 @@ def wavelet_transform(signal, frequency, n_cycles=6.0, sampling_frequency=1.0,
         n = n_orig
 
     # generate Morlet wavelets (in the frequency domain)
-    wavelet_fts = np.empty([len(freqs), n], dtype=np.complex)
+    wavelet_fts = np.empty([len(freqs), n], dtype=complex)
     for i, f in enumerate(freqs):
         wavelet_fts[i] = _morlet_wavelet_ft(f, n_cycles, sampling_frequency, n)
 
@@ -890,8 +885,8 @@ def rauc(signal, baseline=None, bin_duration=None, t_start=None, t_stop=None):
         If None, ends at the last time of `signal`.
         The signal is cropped using `signal.time_slice(t_start, t_stop)` after
         baseline removal. Useful if you want the RAUC for a short section of
-        the signal but want the mean or median calculation (`baseline`='mean'
-        or `baseline`='median') to use the entire signal for better baseline
+        the signal but want the mean or median calculation (`baseline` ='mean'
+        or `baseline` ='median') to use the entire signal for better baseline
         estimation.
         Default: None
 
