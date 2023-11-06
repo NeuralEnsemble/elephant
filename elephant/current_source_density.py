@@ -69,7 +69,7 @@ def estimate_csd(lfp, coordinates='coordinates', method=None,
 
     Parameters
     ----------
-    lfp : neo.AnalogSignal
+    lfp : :class:`neo.core.AnalogSignal`
         Positions of electrodes can be added as an array annotation
     coordinates : array-like Quantity or string
         Specifies the corresponding spatial coordinates of the electrodes.
@@ -180,14 +180,14 @@ def estimate_csd(lfp, coordinates='coordinates', method=None,
                 # All iCSD methods explicitly assume a source
                 # diameter in contrast to the stdCSD  that
                 # implicitly assume infinite source radius
-                raise ValueError("Parameter diam must be specified for iCSD \
-                                  methods: {}".format(", ".join(icsd_methods)))
+                raise ValueError(f"Parameter diam must be specified for iCSD "
+                                 f"methods: {', '.join(icsd_methods)}")
 
         if 'f_type' in kwargs:
             if (kwargs['f_type'] != 'identity') and  \
                (kwargs['f_order'] is None):
-                raise ValueError("The order of {} filter must be \
-                                  specified".format(kwargs['f_type']))
+                raise ValueError(f"The order of {kwargs['f_type']} filter must"
+                                 f" be specified")
 
         csd_method = getattr(icsd, method)  # fetch class from icsd.py file
         csd_estimator = csd_method(lfp=lfp.T.magnitude * lfp.units,
@@ -223,12 +223,15 @@ def generate_lfp(csd_profile, x_positions, y_positions=None, z_positions=None,
         2D : large_source_2D and small_source_2D
         3D : gauss_3d_dipole
     x_positions : np.ndarray
-        Positions of the x coordinates of the electrodes
+        A 2D column vector (N x 1 array) containing the positions of the x
+        coordinates of the electrodes
     y_positions : np.ndarray, optional
-        Positions of the y coordinates of the electrodes
+        A 2D column vector (N x 1 array) containing the positions of the y
+        coordinates of the electrodes
         Defaults to None, use in 2D or 3D cases only
     z_positions : np.ndarray, optional
-        Positions of the z coordinates of the electrodes
+        A 2D column vector (N x 1 array) containing the positions of the z
+        coordinates of the electrodes
         Defaults to None, use in 3D case only
     x_limits : list, optional
         A list of [start, end].
@@ -248,10 +251,31 @@ def generate_lfp(csd_profile, x_positions, y_positions=None, z_positions=None,
 
     Returns
     -------
-    LFP : neo.AnalogSignal
+    LFP : :class:`neo.core.AnalogSignal`
        The potentials created by the csd profile at the electrode positions.
        The electrode positions are attached as an annotation named
        'coordinates'.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from elephant.current_source_density import generate_lfp, estimate_csd
+    >>> from elephant.current_source_density_src.utility_functions import gauss_1d_dipole  # noqa
+    >>> # 1. Define an array xs to x coordinate values with a length of 2304
+    >>> xs=np.linspace(0, 10, 2304)
+
+    >>> # 2. Run generate_lfp(gauss_1d_dipole, xs)
+    >>> lfp = generate_lfp(gauss_1d_dipole, xs)
+
+    >>> # 3. Run estimate_csd(lfp, method="StandardCSD")
+    >>> csd = estimate_csd(lfp, method="StandardCSD")  #doctest: +ELLIPSIS
+    discrete ...
+    >>> # 4. Print the results
+    >>> print(f"LFPs: {lfp}")
+    LFPs: [[-0.01483716 -0.01483396 -0.01483075 ...  0.01219233  0.0121911
+       0.01218986]] mV
+    >>> print(f"CSD estimate: {csd}")  #doctest: +ELLIPSIS
+    CSD estimate: [[-1.00025592e-04 -6.06684588e-05  ...
     """
 
     def integrate_1D(x0, csd_x, csd, h):
@@ -292,6 +316,10 @@ def generate_lfp(csd_profile, x_positions, y_positions=None, z_positions=None,
     sigma = 1.0
     h = 50.
     if dim == 1:
+        # Handle one dimensional case,
+        # see https://github.com/NeuralEnsemble/elephant/issues/546
+        if len(x_positions.shape) == 1:
+            x_positions = np.expand_dims(x_positions, axis=1)
         chrg_x = x
         csd = csd_profile(chrg_x)
         pots = integrate_1D(x_positions, chrg_x, csd, h)

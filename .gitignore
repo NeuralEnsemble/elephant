@@ -20,6 +20,7 @@ venv/
 env/
 .pytest_cache/
 **/*/__pycache__
+*.vscode
 
 # Compiled source #
 ###################

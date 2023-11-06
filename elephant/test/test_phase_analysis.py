@@ -496,7 +496,7 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
                 self.lfps1_real, self.lfps2_real, self.sf1_real)
             np.testing.assert_allclose(
                 wpli, self.wpli_ground_truth_ft_connectivity_wpli_real,
-                atol=self.tolerance, rtol=self.tolerance, equal_nan=True)
+                equal_nan=True)
         # np.array-input
         with self.subTest(msg="np.array input"):
             freq, wpli = elephant.phase_analysis.weighted_phase_lag_index(
@@ -504,14 +504,14 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
                 self.sf1_real)
             np.testing.assert_allclose(
                 wpli, self.wpli_ground_truth_ft_connectivity_wpli_real,
-                atol=self.tolerance, rtol=self.tolerance, equal_nan=True)
+                equal_nan=True)
         # neo.AnalogSignal-input
         with self.subTest(msg="neo.AnalogSignal input"):
             freq, wpli = elephant.phase_analysis.weighted_phase_lag_index(
                 self.lfps1_real_AnalogSignal, self.lfps2_real_AnalogSignal)
             np.testing.assert_allclose(
                 wpli, self.wpli_ground_truth_ft_connectivity_wpli_real,
-                atol=self.tolerance, rtol=self.tolerance, equal_nan=True)
+                equal_nan=True)
 
     def test_WPLI_ground_truth_consistency_artificial_LFP_dataset(self):
         """
