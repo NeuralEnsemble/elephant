@@ -17,6 +17,9 @@ from numpy.testing import assert_array_equal, assert_array_almost_equal
 
 import elephant.conversion as conv
 import elephant.spike_train_correlation as sc
+from elephant.spike_train_generation import StationaryPoissonProcess, \
+    StationaryGammaProcess
+import math
 from elephant.datasets import download_datasets, ELEPHANT_TMP_DIR
 from elephant.spike_train_generation import homogeneous_poisson_process, \
     homogeneous_gamma_process
@@ -128,7 +131,8 @@ class CovarianceTestCase(unittest.TestCase):
 
     def test_covariance_fast_mode(self):
         np.random.seed(27)
-        st = homogeneous_poisson_process(rate=10 * pq.Hz, t_stop=10 * pq.s)
+        st = StationaryPoissonProcess(rate=10 * pq.Hz, t_stop=10 * pq.s
+                                      ).generate_spiketrain()
         binned_st = conv.BinnedSpikeTrain(st, n_bins=10)
         assert_array_almost_equal(sc.covariance(binned_st, fast=False),
                                   sc.covariance(binned_st, fast=True))
@@ -266,7 +270,8 @@ class CorrCoefTestCase(unittest.TestCase):
 
     def test_corrcoef_fast_mode(self):
         np.random.seed(27)
-        st = homogeneous_poisson_process(rate=10 * pq.Hz, t_stop=10 * pq.s)
+        st = StationaryPoissonProcess(rate=10 * pq.Hz, t_stop=10 * pq.s
+                                      ).generate_spiketrain()
         binned_st = conv.BinnedSpikeTrain(st, n_bins=10)
         assert_array_almost_equal(
             sc.correlation_coefficient(
@@ -890,7 +895,9 @@ class SpikeTrainTimescaleTestCase(unittest.TestCase):
         np.random.seed(35)
 
         for _ in range(10):
-            spikes = homogeneous_gamma_process(2, 2 * nu, 0 * pq.ms, T)
+            spikes = StationaryGammaProcess(rate=2 * nu / 2, shape_factor=2,
+                                            t_start=0 * pq.ms,
+                                            t_stop=T).generate_spiketrain()
             spikes_bin = conv.BinnedSpikeTrain(spikes, bin_size)
             timescale_i = sc.spike_train_timescale(spikes_bin, 10 * timescale)
             assert_array_almost_equal(timescale, timescale_i, decimal=3)

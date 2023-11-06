@@ -155,7 +155,7 @@ class CSD3D_TestCase(unittest.TestCase):
         self.assertEqual(result.sampling_rate, 1000 * pq.Hz)
         self.assertEqual(len(result.times), 1)
 
-
+        
 class GenerateLfpTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
