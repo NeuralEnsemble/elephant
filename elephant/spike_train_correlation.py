@@ -23,6 +23,7 @@ import numpy as np
 import quantities as pq
 import scipy.signal
 from scipy import integrate
+from elephant.utils import check_neo_consistency
 
 
 __all__ = [
@@ -32,8 +33,6 @@ __all__ = [
     "spike_time_tiling_coefficient",
     "spike_train_timescale"
 ]
-
-from elephant.utils import check_neo_consistency
 
 # The highest sparsity of the `BinnedSpikeTrain` matrix for which
 # memory-efficient (sparse) implementation of `covariance()` is faster than
