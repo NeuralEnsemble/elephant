@@ -6,23 +6,13 @@
             "name": "Denker, Michael"
         },
         {
-            "orcid": "0000-0003-0503-5264",
-            "affiliation": "Institute of Neuroscience and Medicine (INM-6) and Institute for Advanced Simulation (IAS-6) and JARA-Institute Brain Structure-Function Relationships (INM-10), Jülich Research Centre, Jülich, Germany",
-            "name": "Köhler, Cristiano"
-        },
-        {
             "orcid": "0000-0001-7292-1982",
             "affiliation": "Institute of Neuroscience and Medicine (INM-6) and Institute for Advanced Simulation (IAS-6) and JARA-Institute Brain Structure-Function Relationships (INM-10), Jülich Research Centre, Jülich, Germany",
             "name": "Kern, Moritz"
-        },
-        {
-            "orcid": "0000-0003-3776-4226",
-            "affiliation": "Institute of Neuroscience and Medicine (INM-6) and Institute for Advanced Simulation (IAS-6) and JARA-Institute Brain Structure-Function Relationships (INM-10), Jülich Research Centre, Jülich, Germany",
-            "name": "Kleinjohann, Alexander"
         }
     ],
 
-    "title": "Elephant 0.14.0",
+    "title": "Elephant 1.0.0",
 
     "keywords": [
     "neuroscience",

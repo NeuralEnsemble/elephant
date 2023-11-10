@@ -3,6 +3,20 @@ Release Notes
 =============
 
 
+Release 1.0.0
+=============
+Elephant's first major release is focused on providing a stable and consistent API consistency that will be maintained over the 1.x series of releases. In order to provide future support, this release will remove all features and API specifications that have been deprecated over the course of the last releases of the 0.x line. While work on the next generation of Elephant will commence, all new analysis capabilities will be consistently back-ported to become available in the 1.x release line.
+
+Breaking changes
+----------------
+* Removed deprecated features and naming introduced in #316 with Elephant release v0.8.0 (#488).
+* Removed the `pandas_bridge` module from Elephant in line with the deprecation plan introduced with Elephant v0.7.0 (#530).
+
+Selected dependency changes
+---------------------------
+* removed pandas from the dependencies (#530).
+
+
 Elephant 0.14.0 release notes
 =============================
 
