@@ -42,7 +42,6 @@ from scipy.integrate import simps
 
 import elephant.current_source_density_src.utility_functions as utils
 from elephant.current_source_density_src import KCSD, icsd
-from elephant.utils import deprecated_alias
 
 __all__ = [
     "estimate_csd",
@@ -61,7 +60,6 @@ icsd_methods = ['DeltaiCSD', 'StepiCSD', 'SplineiCSD']
 py_iCSD_toolbox = ['StandardCSD'] + icsd_methods
 
 
-@deprecated_alias(coords='coordinates')
 def estimate_csd(lfp, coordinates='coordinates', method=None,
                  process_estimate=True, **kwargs):
     """
@@ -209,9 +207,6 @@ def estimate_csd(lfp, coordinates='coordinates', method=None,
     return output
 
 
-@deprecated_alias(ele_xx='x_positions', ele_yy='y_positions',
-                  ele_zz='z_positions', xlims='x_limits', ylims='y_limits',
-                  zlims='z_limits', res='resolution')
 def generate_lfp(csd_profile, x_positions, y_positions=None, z_positions=None,
                  x_limits=[0., 1.], y_limits=[0., 1.], z_limits=[0., 1.],
                  resolution=50):

@@ -25,8 +25,6 @@ import numpy as np
 import quantities as pq
 import scipy.signal
 
-from elephant.utils import deprecated_alias
-
 __all__ = [
     "welch_psd",
     "welch_coherence",
@@ -37,8 +35,6 @@ __all__ = [
 ]
 
 
-@deprecated_alias(num_seg='n_segments', len_seg='len_segment',
-                  freq_res='frequency_resolution')
 def welch_psd(signal, n_segments=8, len_segment=None,
               frequency_resolution=None, overlap=0.5, fs=1.0, window='hann',
               nfft=None, detrend='constant', return_onesided=True,
@@ -1124,8 +1120,6 @@ def multitaper_coherence(signal_i, signal_j, n_segments=1, len_segment=None,
     return freqs, coherence, phase_lag
 
 
-@deprecated_alias(x='signal_i', y='signal_j', num_seg='n_segments',
-                  len_seg='len_segment', freq_res='frequency_resolution')
 def welch_coherence(signal_i, signal_j, n_segments=8, len_segment=None,
                     frequency_resolution=None, overlap=0.5, fs=1.0,
                     window='hann', nfft=None, detrend='constant',

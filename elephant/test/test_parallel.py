@@ -5,7 +5,7 @@ import quantities as pq
 from numpy.testing import assert_array_almost_equal
 
 from elephant.parallel import SingleProcess, ProcessPoolExecutor
-from elephant.spike_train_generation import homogeneous_poisson_process
+from elephant.spike_train_generation import StationaryPoissonProcess
 from elephant.statistics import mean_firing_rate
 
 
@@ -23,8 +23,8 @@ class TestParallel(unittest.TestCase):
         np.random.seed(28)
         n_spiketrains = 10
         cls.spiketrains = tuple(
-            homogeneous_poisson_process(
-                rate=10 * pq.Hz, t_stop=10 * pq.s, as_array=True)
+            StationaryPoissonProcess(
+                rate=10 * pq.Hz, t_stop=10 * pq.s).generate_spiketrain()
             for _ in range(n_spiketrains)
         )
         cls.mean_fr = tuple(map(mean_firing_rate, cls.spiketrains))

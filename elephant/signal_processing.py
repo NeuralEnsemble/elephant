@@ -25,9 +25,7 @@ import numpy as np
 import quantities as pq
 import scipy.signal
 
-from elephant.utils import deprecated_alias, check_same_units
-
-import warnings
+from elephant.utils import check_same_units
 
 __all__ = [
     "zscore",
@@ -197,8 +195,6 @@ def zscore(signal, inplace=True):
     return signal_ztransformed
 
 
-@deprecated_alias(ch_pairs='channel_pairs', nlags='n_lags',
-                  env='hilbert_envelope')
 def cross_correlation_function(signal, channel_pairs, hilbert_envelope=False,
                                n_lags=None, scaleopt='unbiased'):
     r"""
@@ -391,9 +387,6 @@ def cross_correlation_function(signal, channel_pairs, hilbert_envelope=False,
     return cross_corr
 
 
-@deprecated_alias(highpass_freq='highpass_frequency',
-                  lowpass_freq='lowpass_frequency',
-                  fs='sampling_frequency')
 def butter(signal, highpass_frequency=None, lowpass_frequency=None, order=4,
            filter_function='filtfilt', sampling_frequency=1.0, axis=-1):
     """
@@ -565,7 +558,6 @@ def butter(signal, highpass_frequency=None, lowpass_frequency=None, order=4,
     return filtered_data
 
 
-@deprecated_alias(nco='n_cycles', freq='frequency', fs='sampling_frequency')
 def wavelet_transform(signal, frequency, n_cycles=6.0, sampling_frequency=1.0,
                       zero_padding=True):
     r"""
@@ -737,7 +729,6 @@ def wavelet_transform(signal, frequency, n_cycles=6.0, sampling_frequency=1.0,
     return signal_wt
 
 
-@deprecated_alias(N='padding')
 def hilbert(signal, padding='nextpow'):
     """
     Apply a Hilbert transform to a `neo.AnalogSignal` object in order to
