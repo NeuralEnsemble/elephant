@@ -45,15 +45,12 @@ from __future__ import division, print_function, unicode_literals
 import numpy as np
 import quantities as pq
 
-from elephant.utils import deprecated_alias
-
 __all__ = [
     "multiple_filter_test",
     "empirical_parameters"
 ]
 
 
-@deprecated_alias(dt='time_step')
 def multiple_filter_test(window_sizes, spiketrain, t_final, alpha,
                          n_surrogates=1000, test_quantile=None,
                          test_param=None, time_step=None):
@@ -253,7 +250,6 @@ def _limit_processes(window_sizes, t_final, time_step):
     return limit_processes
 
 
-@deprecated_alias(dt='time_step')
 def empirical_parameters(window_sizes, t_final, alpha, n_surrogates=1000,
                          time_step=None):
     r"""

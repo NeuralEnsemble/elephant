@@ -96,5 +96,4 @@ Miscellaneous
 
     reference/neo_tools
     reference/utils
-    reference/pandas_bridge
     reference/parallel
