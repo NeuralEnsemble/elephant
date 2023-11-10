@@ -14,7 +14,7 @@
     "identifier": "https://doi.org/10.5281/zenodo.1186602",
     "description": "Elephant (Electrophysiology Analysis Toolkit) is an open-source, community centered library for the analysis of electrophysiological data in the Python programming language. The focus of Elephant is on generic analysis functions for spike train data and time series recordings from electrodes, such as the local field potentials (LFP) or intracellular voltages.In addition to providing a common platform for analysis code from different laboratories, the Elephant project aims to provide a consistent and homogeneous analysis framework that is built on a modular foundation. \nElephant is the direct successor to Neurotools and maintains ties to complementary projects such as OpenElectrophy and spykeviewer.",
     "applicationCategory": "library",
-    "releaseNotes": "https://github.com/NeuralEnsemble/elephant/releases/tag/v0.14.0",
+    "releaseNotes": "https://github.com/NeuralEnsemble/elephant/releases/tag/v1.0.0",
     "funding": "EU Grant 604102 (HBP), EU Grant 720270(HBP), EU Grant 785907(HBP), EU Grant 945539(HBP)",
     "developmentStatus": "active",
     "keywords": [
