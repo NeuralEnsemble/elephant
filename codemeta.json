@@ -34,7 +34,7 @@
         "MacOS"
     ],
     "softwareRequirements": [
-        "https://github.com/NeuralEnsemble/elephant/tree/v0.14.0/requirements"
+        "https://github.com/NeuralEnsemble/elephant/tree/v1.0.0/requirements"
     ],
     "relatedLink": [
         "http://python-elephant.org",
