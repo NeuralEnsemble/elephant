@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "elephant"
 dynamic = ["version"]
@@ -48,7 +52,6 @@ tutorials = ["matplotlib>=3.3.2",
              "h5py>=3.1.0",
              "nixio>=1.5.0",
              ]
-
 
 [project.urls]
 Homepage = "http://python-elephant.org"
