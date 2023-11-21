@@ -1,0 +1,29 @@
+[project]
+name = "elephant"
+dynamic = ["version"]
+description = "Elephant is a package for analysis of electrophysiology data in Python"
+license = {file = "LICENSE.txt"}
+classifiers = ["Development Status :: 5 - Production/Stable", 
+               "Intended Audience :: Science/Research",
+               "License :: OSI Approved :: BSD License",
+               "Natural Language :: English", "Operating System :: OS Independent",
+               "Programming Language :: Python :: 3",
+               "Programming Language :: Python :: 3.8",
+               "Programming Language :: Python :: 3.9",
+               "Programming Language :: Python :: 3.10",
+               "Programming Language :: Python :: 3.11",
+               "Programming Language :: Python :: 3 :: Only",
+               "Topic :: Scientific/Engineering"]
+authors = [{[name = "Elephant authors and contributors", email = "contact@python-elephant.org"]}]
+readme = {file = "README.md", content-type = "text/markdown"}
+requires-python = ">= 3.8"
+
+[project.urls]
+Homepage = "http://python-elephant.org"
+Documentation = "https://elephant.readthedocs.io/en/latest/"
+Repository = "https://github.com/NeuralEnsemble/elephant"
+Issues = "https://github.com/NeuralEnsemble/elephant/issues"
+Changelog = "https://github.com/NeuralEnsemble/elephant/releases"
+
+# This file was created follwing this guide:
+# https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#writing-pyproject-toml
