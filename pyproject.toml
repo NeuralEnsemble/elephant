@@ -59,5 +59,8 @@ Repository = "https://github.com/NeuralEnsemble/elephant"
 Issues = "https://github.com/NeuralEnsemble/elephant/issues"
 Changelog = "https://github.com/NeuralEnsemble/elephant/releases"
 
+[tool.setuptools.dynamic]
+version = {file = "elephant/VERSION"}
+
 # This file was created following this guide:
 # https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#writing-pyproject-toml
