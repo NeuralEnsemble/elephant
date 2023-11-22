@@ -3,13 +3,13 @@ requires = ["setuptools >= 61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "elephant"
+name = "Elephant"
 dynamic = [
         "version",
         "dependencies",
         "optional-dependencies"]
-description = "Elephant is a package for analysis of electrophysiology data in Python"
-license = {file = "LICENSE.txt"}
+description = "Elephant (Electrophysiology Analysis Toolkit) is an open-source, community centered library for the analysis of electrophysiological data in the Python programming language. The focus of Elephant is on generic analysis functions for spike train data and time series recordings from electrodes, such as the local field potentials (LFP) or intracellular voltages.In addition to providing a common platform for analysis code from different laboratories, the Elephant project aims to provide a consistent and homogeneous analysis framework that is built on a modular foundation. \nElephant is the direct successor to Neurotools and maintains ties to complementary projects such as OpenElectrophy and spykeviewer."
+license = "BSD-3-Clause"
 classifiers = [
         "Development Status :: 5 - Production/Stable", 
         "Intended Audience :: Science/Research",
@@ -22,7 +22,7 @@ classifiers = [
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3 :: Only",
         "Topic :: Scientific/Engineering"]
-authors = [{name = "Elephant authors and contributors", email = "contact@python-elephant.org"}]
+keywords = ["neuroscience", "neurophysiology", "electrophysiology", "statistics", "data-analysis"]
 readme = {file = "README.md", content-type = "text/markdown"}
 requires-python = ">= 3.8"
 
@@ -52,7 +52,7 @@ dependencies = {file = ["requirements/requirements.txt"]}
 name = "Elephant"
 version = "1.0.0"
 description = "Elephant (Electrophysiology Analysis Toolkit) is an open-source, community centered library for the analysis of electrophysiological data in the Python programming language. The focus of Elephant is on generic analysis functions for spike train data and time series recordings from electrodes, such as the local field potentials (LFP) or intracellular voltages.In addition to providing a common platform for analysis code from different laboratories, the Elephant project aims to provide a consistent and homogeneous analysis framework that is built on a modular foundation. \nElephant is the direct successor to Neurotools and maintains ties to complementary projects such as OpenElectrophy and spykeviewer."
-license = "BSD"
+license = "BSD-3-Clause"
 keywords = [
         "neuroscience",
         "neurophysiology",
@@ -64,16 +64,14 @@ keywords = [
 given-names = "Michael"
 family-names = "Denker"
 orcid = "https://orcid.org/0000-0003-1255-7300"
-author = true      # is a full author of the project (i.e. appears in citations)
-maintainer = true  # currently maintains the project (i.e. is a contact person)
+
 
 
 [[tool.somesy.project.people]]
 given-names = "Moritz"
 family-names = "Kern"
 orcid = "https://orcid.org/0000-0001-7292-1982"
-author = true      # is a full author of the project (i.e. appears in citations)
-maintainer = true  # currently maintains the project (i.e. is a contact person)
+
 
 [tool.somesy.config]
 verbose = true     # show detailed information about what somesy is doing
