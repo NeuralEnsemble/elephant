@@ -26,6 +26,13 @@ keywords = ["neuroscience", "neurophysiology", "electrophysiology", "statistics"
 readme = {file = "README.md", content-type = "text/markdown"}
 requires-python = ">= 3.8"
 
+[project.urls]
+Homepage = "http://python-elephant.org"
+Documentation = "https://elephant.readthedocs.io/en/latest/"
+Repository = "https://github.com/NeuralEnsemble/elephant"
+Issues = "https://github.com/NeuralEnsemble/elephant/issues"
+Changelog = "https://github.com/NeuralEnsemble/elephant/releases"
+
 [tool.setuptools.dynamic.optional-dependencies]
 docs = {file = ["requirements/requirements-docs.txt"]}
 extras = {file = ["requirements/requirements-extras.txt"]}
@@ -34,16 +41,13 @@ cuda = {file = ["requirements/requirements-cuda.txt"]}
 tests = {file = ["requirements/requirements-tests.txt"]}
 tutorials = {file = ["requirements/requirements-tutorials.txt"]}
 
-[project.urls]
-Homepage = "http://python-elephant.org"
-Documentation = "https://elephant.readthedocs.io/en/latest/"
-Repository = "https://github.com/NeuralEnsemble/elephant"
-Issues = "https://github.com/NeuralEnsemble/elephant/issues"
-Changelog = "https://github.com/NeuralEnsemble/elephant/releases"
-
 [tool.setuptools.dynamic]
 version = {file = "elephant/VERSION"}
 dependencies = {file = ["requirements/requirements.txt"]}
+
+[tool.setuptools]
+packages = ["elephant", "elephant.test"]
+
 
 # This file was created following this guide:
 # https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#writing-pyproject-toml
