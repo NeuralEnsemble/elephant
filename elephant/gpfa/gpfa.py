@@ -338,7 +338,7 @@ class GPFA(sklearn.base.BaseEstimator):
                 raise ValueError("Number of trials can not be 0")
             # TODO: implement both cases, only spiketrains, only analog signals
             if not spiketrains.n_analogsignals_trial_by_trial or all(
-                n_analog == 0 for n_analog in 
+                n_analog != 0 for n_analog in 
                 spiketrains.n_analogsignals_trial_by_trial):
                 raise Exception("input contains Analog signals")
 
