@@ -428,6 +428,9 @@ class GPFA(sklearn.base.BaseEstimator):
             If `returned_data` contains keys different from the ones in
             `self.valid_data_names`.
         """
+        if isinstance(spiketrains, trials.Trials):
+            spiketrains = [spiketrains.get_spiketrains_from_trial_as_list(idx)
+                           for idx in range(spiketrains.n_trials)]
         if len(spiketrains[0]) != len(self.has_spikes_bool):
             raise ValueError("'spiketrains' must contain the same number of "
                              "neurons as the training spiketrain data")
