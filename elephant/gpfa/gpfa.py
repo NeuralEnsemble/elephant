@@ -264,11 +264,12 @@ class GPFA(sklearn.base.BaseEstimator):
 
         Parameters
         ----------
-        spiketrains : list of list of neo.SpikeTrain
+        spiketrains : list of list of neo.SpikeTrain or elephant.trials.Trials
             Spike train data to be fit to latent variables.
-            The outer list corresponds to trials and the inner list corresponds
-            to the neurons recorded in that trial, such that
-            `spiketrains[l][n]` is the spike train of neuron `n` in trial `l`.
+            For list of lists, the outer list corresponds to trials and the 
+            inner list corresponds to the neurons recorded in that trial, such
+            that `spiketrains[l][n]` is the spike train of neuron `n` in trial
+            `l`.
             Note that the number and order of `neo.SpikeTrain` objects per
             trial must be fixed such that `spiketrains[l][n]` and
             `spiketrains[k][n]` refer to spike trains of the same neuron
@@ -346,11 +347,12 @@ class GPFA(sklearn.base.BaseEstimator):
 
         Parameters
         ----------
-        spiketrains : list of list of neo.SpikeTrain
+        spiketrains : list of list of neo.SpikeTrain or elephant.trials.Trials
             Spike train data to be transformed to latent variables.
-            The outer list corresponds to trials and the inner list corresponds
-            to the neurons recorded in that trial, such that
-            `spiketrains[l][n]` is the spike train of neuron `n` in trial `l`.
+            For list of lists, the outer list corresponds to trials and the 
+            inner list corresponds to the neurons recorded in that trial, such 
+            that `spiketrains[l][n]` is the spike train of neuron `n` in trial
+            `l`.
             Note that the number and order of `neo.SpikeTrain` objects per
             trial must be fixed such that `spiketrains[l][n]` and
             `spiketrains[k][n]` refer to spike trains of the same neuron
@@ -440,7 +442,7 @@ class GPFA(sklearn.base.BaseEstimator):
 
         Parameters
         ----------
-        spiketrains : list of list of neo.SpikeTrain
+        spiketrains : list of list of neo.SpikeTrain or elephant.trials.Trials
             Refer to the :func:`GPFA.fit` docstring.
 
         returned_data : list of str
