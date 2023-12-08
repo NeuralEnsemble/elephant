@@ -77,6 +77,7 @@ import quantities as pq
 import sklearn
 
 from elephant.gpfa import gpfa_core, gpfa_util
+from elephant import trials
 
 
 __all__ = [
@@ -324,13 +325,24 @@ class GPFA(sklearn.base.BaseEstimator):
 
     @staticmethod
     def _check_training_data(spiketrains):
-        if len(spiketrains) == 0:
-            raise ValueError("Input spiketrains cannot be empty")
-        if not isinstance(spiketrains[0][0], neo.SpikeTrain):
-            raise ValueError("structure of the spiketrains is not correct: "
-                             "0-axis should be trials, 1-axis neo.SpikeTrain"
-                             "and 2-axis spike times")
+        if isinstance(spiketrains, list):
+            if len(spiketrains) == 0:
+                raise ValueError("Input spiketrains cannot be empty")
+            if not isinstance(spiketrains[0][0], neo.SpikeTrain):
+                raise ValueError("structure of the spiketrains is not correct: "
+                                 "0-axis should be trials, 1-axis neo.SpikeTrain"
+                                 "and 2-axis spike times")
+        if isinstance(spiketrains, trials.Trials):
+            # TODO: implement input checks here
+            if spiketrains.n_trials == 0:
+                raise ValueError("Number of trials can not be 0")
+            # TODO: implement both cases, only spiketrains, only analog signals
+            if not spiketrains.n_analogsignals_trial_by_trial or all(
+                n_analog == 0 for n_analog in 
+                spiketrains.n_analogsignals_trial_by_trial):
+                raise Exception("input contains Analog signals")
 
+            
     def _format_training_data(self, spiketrains):
         seqs = gpfa_util.get_seqs(spiketrains, self.bin_size)
         # Remove inactive units based on training set
