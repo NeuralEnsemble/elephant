@@ -344,6 +344,9 @@ class GPFA(sklearn.base.BaseEstimator):
 
             
     def _format_training_data(self, spiketrains):
+        if isinstance(spiketrains, trials.Trials):
+            spiketrains = [spiketrains.get_spiketrains_from_trial_as_list(idx)
+                           for idx in range(spiketrains.n_trials)]
         seqs = gpfa_util.get_seqs(spiketrains, self.bin_size)
         # Remove inactive units based on training set
         self.has_spikes_bool = np.hstack(seqs['y']).any(axis=1)
