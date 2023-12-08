@@ -491,7 +491,7 @@ class GPFA(sklearn.base.BaseEstimator):
 
         Parameters
         ----------
-        spiketrains : list of list of neo.SpikeTrain
+        spiketrains : list of list of neo.SpikeTrain or elephant.trials.Trials
             Spike train data to be scored.
             The outer list corresponds to trials and the inner list corresponds
             to the neurons recorded in that trial, such that
