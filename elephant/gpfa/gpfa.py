@@ -267,7 +267,7 @@ class GPFA(sklearn.base.BaseEstimator):
         ----------
         spiketrains : list of list of neo.SpikeTrain or elephant.trials.Trials
             Spike train data to be fit to latent variables.
-            For list of lists, the outer list corresponds to trials and the 
+            For list of lists, the outer list corresponds to trials and the
             inner list corresponds to the neurons recorded in that trial, such
             that `spiketrains[l][n]` is the spike train of neuron `n` in trial
             `l`.
@@ -329,20 +329,19 @@ class GPFA(sklearn.base.BaseEstimator):
             if len(spiketrains) == 0:
                 raise ValueError("Input spiketrains cannot be empty")
             if not isinstance(spiketrains[0][0], neo.SpikeTrain):
-                raise ValueError("structure of the spiketrains is not correct: "
-                                 "0-axis should be trials, 1-axis neo.SpikeTrain"
-                                 "and 2-axis spike times")
+                raise ValueError("structure of the spiketrains is not"
+                                 "correct: 0-axis should be trials, 1-axis"
+                                 " neo.SpikeTrain and 2-axis spike times")
         if isinstance(spiketrains, trials.Trials):
             # TODO: implement input checks here
             if spiketrains.n_trials == 0:
                 raise ValueError("Number of trials can not be 0")
             # TODO: implement both cases, only spiketrains, only analog signals
             if not spiketrains.n_analogsignals_trial_by_trial or all(
-                n_analog != 0 for n_analog in 
-                spiketrains.n_analogsignals_trial_by_trial):
+                n_analog != 0 for n_analog in
+                    spiketrains.n_analogsignals_trial_by_trial):
                 raise Exception("input contains Analog signals")
 
-            
     def _format_training_data(self, spiketrains):
         if isinstance(spiketrains, trials.Trials):
             spiketrains = [spiketrains.get_spiketrains_from_trial_as_list(idx)
@@ -364,8 +363,8 @@ class GPFA(sklearn.base.BaseEstimator):
         ----------
         spiketrains : list of list of neo.SpikeTrain or elephant.trials.Trials
             Spike train data to be transformed to latent variables.
-            For list of lists, the outer list corresponds to trials and the 
-            inner list corresponds to the neurons recorded in that trial, such 
+            For list of lists, the outer list corresponds to trials and the
+            inner list corresponds to the neurons recorded in that trial, such
             that `spiketrains[l][n]` is the spike train of neuron `n` in trial
             `l`.
             Note that the number and order of `neo.SpikeTrain` objects per
