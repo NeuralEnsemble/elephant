@@ -2,7 +2,7 @@
 # On a pull requests and on pushes to master it will run different tests for elephant.
 
 name: tests
-# define events that trigger workflow 'tests'
+# Define events that trigger workflow 'tests'
 on:
   workflow_dispatch: # enables manual triggering of workflow
     inputs:
