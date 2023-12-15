@@ -47,7 +47,7 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-# jobs define the steps that will be executed on the runner
+# Jobs define the steps that will be executed on the runner
 jobs:
 
   #        _
