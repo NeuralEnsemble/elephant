@@ -204,7 +204,8 @@ def spike_extraction(signal: Union[neo.core.AnalogSignal,
 
 def threshold_detection(signal: neo.core.AnalogSignal,
                         threshold: pq.Quantity = 0.0 * pq.mV,
-                        sign: str = 'above') -> neo.core.AnalogSignal:
+                        sign: str = 'above'
+                        ) -> neo.core.AnalogSignal:
     """
     Returns the times when the analog signal crosses a threshold.
     Usually used for extracting spike times from a membrane potential.
@@ -261,42 +262,15 @@ def threshold_detection(signal: neo.core.AnalogSignal,
     return result_st
 
 
-def peak_detection(signal: neo.core.AnalogSignal,
-                   threshold: pq.Quantity = 0.0 * pq.mV,
-                   sign: str = 'above',
-                   as_array: bool = False
-                   ) -> neo.core.SpikeTrain:
-    """
-    Return the peak times for all events that cross threshold.
-    Usually used for extracting spike times from a membrane potential.
-    Similar to spike_train_generation.threshold_detection.
-
-    Parameters
-    ----------
-    signal : :class:`neo.core.AnalogSignal`
-        An analog input signal.
-    threshold : :class:`pq.Quantity`, optional
-        Contains a value that must be reached for an event to be detected.
-        Default: 0.*pq.mV
-    sign : {'above', 'below'}, optional
-        Determines whether to count threshold crossings that cross above or
-        below the threshold.
-        Default: 'above'
-    as_array : bool, optional
-        If True, a NumPy array of the resulting peak times is returned instead
-        of a (default) `neo.SpikeTrain` object.
-        Default: False
-
-    Returns
-    -------
-    result_st : :class:`neo.core.SpikeTrain`
-        Contains the spike times of each of the events (spikes) extracted from
-        the signal.
-    """
+# legacy implementation of peak_detection
+def _peak_detection(signal: neo.core.AnalogSignal,
+                    threshold: pq.Quantity = 0.0 * pq.mV,
+                    sign: str = 'above',
+                    as_array: bool = False
+                    ) -> neo.core.SpikeTrain:
     if not isinstance(threshold, pq.Quantity):
-        raise ValueError(
+        raise TypeError(
             f"threshold must be a pq.Quantity, provided: {type(threshold)}")
-
     if sign == 'above':
         cutout = np.where(signal > threshold)[0]
         peak_func = np.argmax
@@ -346,6 +320,64 @@ def peak_detection(signal: neo.core.AnalogSignal,
         result_st = result_st.magnitude
 
     return result_st
+
+
+def peak_detection(signal: neo.core.AnalogSignal,
+                   threshold: pq.Quantity = 0.0 * pq.mV,
+                   sign: str = 'above',
+                   as_array: bool = False,
+                   always_as_list: bool = False
+                   ) -> Union[neo.core.SpikeTrain,
+                              List[neo.core.SpikeTrain]]:
+    """
+    Return the peak times for all events that cross threshold.
+    Usually used for extracting spike times from a membrane potential.
+    Similar to spike_train_generation.threshold_detection.
+
+    Parameters
+    ---------- # noqa
+    signal : :class:`neo.core.AnalogSignal` or List[:class:`neo.core.AnalogSignal`] 
+        An analog input signal or a list of analog input signals.
+    threshold : :class:`pq.Quantity`, optional
+        Contains a value that must be reached for an event to be detected.
+        Default: 0.*pq.mV
+    sign : {'above', 'below'}, optional
+        Determines whether to count threshold crossings that cross above or
+        below the threshold.
+        Default: 'above'
+    as_array : bool, optional
+        If True, a NumPy array of the resulting peak times is returned instead
+        of a (default) `neo.SpikeTrain` object.
+        Default: False
+    always_as_list: bool, optional
+        If True, a list of neo.SpikeTrain is returned.
+        Default: False
+
+    Returns
+    -------
+    result_st : :class:`neo.core.SpikeTrain` or List[:class:`neo.core.SpikeTrain`]
+        Contains the spike times of each of the events (spikes) extracted from
+        the signal. If `signal` is an AnalogSignal with multiple channels,
+        a list of AnalogSignals or `always_return_list=True` , a
+        list of :class:`neo.core.SpikeTrain` is returned.
+    """
+    if isinstance(signal, neo.core.AnalogSignal):
+        if signal.shape[1] == 1:
+            if always_as_list:
+                return [_peak_detection(signal, threshold=threshold, sign=sign,
+                                        as_array=as_array)]
+            else:
+                return _peak_detection(signal, threshold=threshold, sign=sign,
+                                       as_array=as_array)
+        elif signal.shape[1] > 1:
+            return [_peak_detection(neo.core.AnalogSignal(
+                signal[:, channel], sampling_rate=signal.sampling_rate),
+                                    threshold=threshold,
+                                    sign=sign, as_array=as_array
+                                    ) for channel in range(signal.shape[1])]
+    else:
+        raise TypeError(
+            f"Signal must be AnalogSignal, provided: {type(signal)}")
 
 
 class AbstractPointProcess:
