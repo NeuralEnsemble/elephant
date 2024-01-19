@@ -83,21 +83,24 @@ __all__ = [
 ]
 
 
-def spike_extraction(signal: neo.core.AnalogSignal,
+def spike_extraction(signal: Union[neo.core.AnalogSignal,
+                                   List[neo.core.AnalogSignal]],
                      threshold: pq.Quantity = 0.0 * pq.mV,
                      sign: str = 'above',
                      time_stamps: neo.core.SpikeTrain = None,
-                     interval: tuple = (-2 * pq.ms, 4 * pq.ms)
-                     ) -> neo.core.SpikeTrain:
+                     interval: tuple = (-2 * pq.ms, 4 * pq.ms),
+                     always_as_list: bool = False
+                     ) -> Union[neo.core.SpikeTrain,
+                                neo.core.spiketrainlist.SpikeTrainList]:
     """
     Return the peak times for all events that cross threshold and the
     waveforms. Usually used for extracting spikes from a membrane
     potential to calculate waveform properties.
-
+    
     Parameters
-    ----------
-    signal : :class:`neo.core.AnalogSignal`
-        An analog input signal.
+    ---------- # noqa
+    signal : :class:`neo.core.AnalogSignal` or List[:class:`neo.core.AnalogSignal`] 
+        An analog input signal or a list of analog input signals.
     threshold : pq.Quantity, optional
         Contains a value that must be reached for an event to be detected.
         Default: 0.0 * pq.mV
@@ -117,21 +120,31 @@ def spike_extraction(signal: neo.core.AnalogSignal,
 
     Returns
     -------
-    result_st : :class:`neo.core.SpikeTrain`
+    result_st : :class:`neo.core.SpikeTrain` or :class:`neo.core.SpikeTrainList`
+        
         Contains the time_stamps of each of the spikes and the waveforms in
         `result_st.waveforms`.
 
     See Also
     --------
-    elephant.spike_train_generation.peak_detection
+    :func:`elephant.spike_train_generation.peak_detection`
     """
+#    if isinstance(signal, neo.core.AnalogSignal):
+#        signals = [signal]
+#    elif isinstance(signal, list) and all(isinstance(s, neo.core.AnalogSignal)
+#                                          for s in signal):
+#        signals = signal
+#    else:
+#        raise TypeError("signal must be a neo.core.AnalogSignal or"
+#                        f" a list of neo.core.AnalogSignal, not {type(signal)}")
+
     # Get spike time_stamps
     if time_stamps is None:
         time_stamps = peak_detection(signal, threshold, sign=sign)
     elif hasattr(time_stamps, 'times'):
         time_stamps = time_stamps.times
     else:
-        raise TypeError("time_stamps must be None, a `neo.core.SpikeTrain`" +
+        raise TypeError("time_stamps must be None, a `neo.core.SpikeTrain`"
                         " or expose the.times interface")
 
     if len(time_stamps) == 0:
@@ -142,6 +155,7 @@ def spike_extraction(signal: neo.core.AnalogSignal,
 
     # Unpack the extraction interval from tuple or array
     extr_left, extr_right = interval
+
     if extr_left > extr_right:
         raise ValueError("interval[0] must be < interval[1]")
 
@@ -280,23 +294,22 @@ def peak_detection(signal: neo.core.AnalogSignal,
         the signal.
     """
     if not isinstance(threshold, pq.Quantity):
-        raise ValueError("threshold must be a pq.Quantity")
-
-    if sign not in ('above', 'below'):
-        raise ValueError("sign should be 'above' or 'below'")
+        raise ValueError(
+            f"threshold must be a pq.Quantity, provided: {type(threshold)}")
 
     if sign == 'above':
         cutout = np.where(signal > threshold)[0]
         peak_func = np.argmax
-    else:
-        # sign == 'below'
+    elif sign == 'below':
         cutout = np.where(signal < threshold)[0]
         peak_func = np.argmin
+    else:
+        raise ValueError("sign should be 'above' or 'below'")
 
     if len(cutout) == 0:
         events_base = np.zeros(0)
     else:
-        # Select thr crossings lasting at least 2 dtps, np.diff(cutout) > 2
+        # Select the crossings lasting at least 2 dtps, np.diff(cutout) > 2
         # This avoids empty slices
         border_start = np.where(np.diff(cutout) > 1)[0]
         border_end = border_start + 1
