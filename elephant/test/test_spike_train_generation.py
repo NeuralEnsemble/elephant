@@ -37,7 +37,7 @@ def pdiff(a, b):
     return abs((a - b) / a)
 
 
-class AnalogSignalThresholdDetectionTestCase(unittest.TestCase):
+class ThresholdDetectionTestCase(unittest.TestCase):
 
     def setUp(self):
         # Load membrane potential simulated using Brian2
@@ -87,7 +87,7 @@ class AnalogSignalThresholdDetectionTestCase(unittest.TestCase):
         self.assertEqual(len(result), 0)
 
 
-class AnalogSignalPeakDetectionTestCase(unittest.TestCase):
+class PeakDetectionTestCase(unittest.TestCase):
 
     def setUp(self):
         curr_dir = os.path.dirname(os.path.realpath(__file__))
@@ -119,7 +119,7 @@ class AnalogSignalPeakDetectionTestCase(unittest.TestCase):
         self.assertEqual(len(result), 0)
 
 
-class AnalogSignalSpikeExtractionTestCase(unittest.TestCase):
+class SpikeExtractionTestCase(unittest.TestCase):
 
     def setUp(self):
         curr_dir = os.path.dirname(os.path.realpath(__file__))
