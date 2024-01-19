@@ -83,8 +83,12 @@ __all__ = [
 ]
 
 
-def spike_extraction(signal, threshold=0.0 * pq.mV, sign='above',
-                     time_stamps=None, interval=(-2 * pq.ms, 4 * pq.ms)):
+def spike_extraction(signal: neo.core.AnalogSignal,
+                     threshold: pq.Quantity = 0.0 * pq.mV,
+                     sign: str = 'above',
+                     time_stamps: neo.core.SpikeTrain = None,
+                     interval: tuple = (-2 * pq.ms, 4 * pq.ms)
+                     ) -> neo.core.SpikeTrain:
     """
     Return the peak times for all events that cross threshold and the
     waveforms. Usually used for extracting spikes from a membrane
@@ -92,7 +96,7 @@ def spike_extraction(signal, threshold=0.0 * pq.mV, sign='above',
 
     Parameters
     ----------
-    signal : neo.AnalogSignal
+    signal : :class:`neo.core.AnalogSignal`
         An analog input signal.
     threshold : pq.Quantity, optional
         Contains a value that must be reached for an event to be detected.
@@ -101,20 +105,19 @@ def spike_extraction(signal, threshold=0.0 * pq.mV, sign='above',
         Determines whether to count threshold crossings that cross above or
         below the threshold.
         Default: 'above'
-    time_stamps : pq.Quantity, optional
-        If `spike_train` is a `pq.Quantity` array, `time_stamps` provides the
-        time stamps around which the waveform is extracted. If it is None, the
-        function `peak_detection` is used to calculate the time_stamps
-        from signal.
+    time_stamps : :class:`neo.core.SpikeTrain` , optional
+        Provides the time stamps around which the waveform is extracted. If it
+        is None, the function `peak_detection` is used to calculate the
+        `time_stamps` from signal.
         Default: None
-    interval : tuple of pq.Quantity
+    interval : tuple of :class:`pq.Quantity`
         Specifies the time interval around the `time_stamps` where the waveform
         is extracted.
         Default: (-2 * pq.ms, 4 * pq.ms)
 
     Returns
     -------
-    result_st : neo.SpikeTrain
+    result_st : :class:`neo.core.SpikeTrain`
         Contains the time_stamps of each of the spikes and the waveforms in
         `result_st.waveforms`.
 
@@ -127,9 +130,9 @@ def spike_extraction(signal, threshold=0.0 * pq.mV, sign='above',
         time_stamps = peak_detection(signal, threshold, sign=sign)
     elif hasattr(time_stamps, 'times'):
         time_stamps = time_stamps.times
-    elif isinstance(time_stamps, pq.Quantity):
-        raise TypeError("time_stamps must be None, a pq.Quantity array or" +
-                        " expose the.times interface")
+    else:
+        raise TypeError("time_stamps must be None, a `neo.core.SpikeTrain`" +
+                        " or expose the.times interface")
 
     if len(time_stamps) == 0:
         return neo.SpikeTrain(time_stamps, units=signal.times.units,
@@ -185,16 +188,18 @@ def spike_extraction(signal, threshold=0.0 * pq.mV, sign='above',
                           left_sweep=extr_left)
 
 
-def threshold_detection(signal, threshold=0.0 * pq.mV, sign='above'):
+def threshold_detection(signal: neo.core.AnalogSignal,
+                        threshold: pq.Quantity = 0.0 * pq.mV,
+                        sign: str = 'above') -> neo.core.AnalogSignal:
     """
     Returns the times when the analog signal crosses a threshold.
     Usually used for extracting spike times from a membrane potential.
 
     Parameters
     ----------
-    signal : neo.AnalogSignal
+    signal : :class:`neo.core.AnalogSignal`
         An analog input signal.
-    threshold : pq.Quantity, optional
+    threshold : :class:`pq.Quantity`, optional
         Contains a value that must be reached for an event to be detected.
         Default: 0.0 * pq.mV
     sign : {'above', 'below'}, optional
@@ -204,7 +209,7 @@ def threshold_detection(signal, threshold=0.0 * pq.mV, sign='above'):
 
     Returns
     -------
-    result_st : neo.SpikeTrain
+    result_st :class:`neo.core.SpikeTrain`
         Contains the spike times of each of the events (spikes) extracted from
         the signal.
     """
@@ -242,8 +247,11 @@ def threshold_detection(signal, threshold=0.0 * pq.mV, sign='above'):
     return result_st
 
 
-def peak_detection(signal, threshold=0.0 * pq.mV, sign='above',
-                   as_array=False):
+def peak_detection(signal: neo.core.AnalogSignal,
+                   threshold: pq.Quantity = 0.0 * pq.mV,
+                   sign: str = 'above',
+                   as_array: bool = False
+                   ) -> neo.core.SpikeTrain:
     """
     Return the peak times for all events that cross threshold.
     Usually used for extracting spike times from a membrane potential.
@@ -251,9 +259,9 @@ def peak_detection(signal, threshold=0.0 * pq.mV, sign='above',
 
     Parameters
     ----------
-    signal : neo.AnalogSignal
+    signal : :class:`neo.core.AnalogSignal`
         An analog input signal.
-    threshold : pq.Quantity, optional
+    threshold : :class:`pq.Quantity`, optional
         Contains a value that must be reached for an event to be detected.
         Default: 0.*pq.mV
     sign : {'above', 'below'}, optional
@@ -267,7 +275,7 @@ def peak_detection(signal, threshold=0.0 * pq.mV, sign='above',
 
     Returns
     -------
-    result_st : neo.SpikeTrain
+    result_st : :class:`neo.core.SpikeTrain`
         Contains the spike times of each of the events (spikes) extracted from
         the signal.
     """
