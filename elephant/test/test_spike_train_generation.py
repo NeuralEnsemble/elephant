@@ -39,7 +39,8 @@ def pdiff(a, b):
 
 class ThresholdDetectionTestCase(unittest.TestCase):
 
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
         # Load membrane potential simulated using Brian2
         # according to make_spike_extraction_test_data.py.
         curr_dir = os.path.dirname(os.path.realpath(__file__))
@@ -49,10 +50,10 @@ class ThresholdDetectionTestCase(unittest.TestCase):
         with open(raw_data_file_loc, 'r') as f:
             for x in f.readlines():
                 raw_data.append(float(x))
-        self.vm = neo.AnalogSignal(
+        cls.vm = neo.AnalogSignal(
             raw_data, units=pq.V, sampling_period=0.1 * pq.ms)
-        self.true_time_stamps = [0.0123, 0.0354, 0.0712, 0.1191, 0.1694,
-                                 0.2200, 0.2711] * pq.s
+        cls.true_time_stamps = [0.0123, 0.0354, 0.0712, 0.1191, 0.1694,
+                                0.2200, 0.2711] * pq.s
 
     def test_threshold_detection(self):
         # Test whether spikes are extracted at the correct times from
@@ -89,7 +90,8 @@ class ThresholdDetectionTestCase(unittest.TestCase):
 
 class PeakDetectionTestCase(unittest.TestCase):
 
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
         curr_dir = os.path.dirname(os.path.realpath(__file__))
         raw_data_file_loc = os.path.join(
             curr_dir, 'spike_extraction_test_data.txt')
@@ -97,16 +99,19 @@ class PeakDetectionTestCase(unittest.TestCase):
         with open(raw_data_file_loc, 'r') as f:
             for x in f.readlines():
                 raw_data.append(float(x))
-        self.vm = neo.AnalogSignal(
+        cls.vm = neo.AnalogSignal(
             raw_data, units=pq.V, sampling_period=0.1 * pq.ms)
-        self.true_time_stamps = [0.0124, 0.0354, 0.0713, 0.1192, 0.1695,
-                                 0.2201, 0.2711] * pq.s
+        cls.vm_3d = neo.AnalogSignal(np.array([raw_data,
+                                              raw_data,
+                                              raw_data]).T,
+                                     units=pq.V, sampling_period=0.1 * pq.ms)
+        cls.true_time_stamps = [0.0124, 0.0354, 0.0713, 0.1192, 0.1695,
+                                0.2201, 0.2711] * pq.s
 
-    def test_peak_detection_time_stamps(self):
+    def test_peak_detection_validate_result(self):
         # Test with default arguments
         result = peak_detection(self.vm)
         self.assertEqual(len(self.true_time_stamps), len(result))
-        self.assertIsInstance(result, neo.core.SpikeTrain)
 
         try:
             assert_array_almost_equal(result, self.true_time_stamps)
@@ -117,6 +122,32 @@ class PeakDetectionTestCase(unittest.TestCase):
         # Test for empty SpikeTrain when threshold is too high
         result = peak_detection(self.vm, threshold=30 * pq.mV)
         self.assertEqual(len(result), 0)
+
+    def test_threshold_raise_type_error(self):
+        with self.assertRaises(TypeError):
+            peak_detection(self.vm, threshold=30)
+
+    def test_sign_raise_value_error(self):
+        with self.assertRaises(ValueError):
+            peak_detection(self.vm, sign="wrong input")
+
+    def test_return_is_neo_spike_train(self):
+        self.assertIsInstance(peak_detection(self.vm), neo.core.SpikeTrain)
+
+    def test_signal_raise_type_error(self):
+        with self.assertRaises(TypeError):
+            peak_detection(self.vm.magnitude)
+
+    def test_always_return_as_list(self):
+        self.assertIsInstance(peak_detection(self.vm, always_as_list=True),
+                              list)
+
+    def test_analog_signal_multiple_channels(self):
+        list_of_spike_trains = peak_detection(self.vm_3d)
+        self.assertEqual(len(list_of_spike_trains), 3)
+        for spike_train in list_of_spike_trains:
+            with self.subTest(value=spike_train):
+                self.assertIsInstance(spike_train, neo.SpikeTrain)
 
 
 class SpikeExtractionTestCase(unittest.TestCase):
