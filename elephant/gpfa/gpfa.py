@@ -259,7 +259,7 @@ class GPFA(sklearn.base.BaseEstimator):
         self.transform_info = dict()
 
     def fit(self,
-            spiketrains: Union[list[list[neo.core.SpikeTrain]], trials.Trials]
+            spiketrains: Union[list[list[neo.core.SpikeTrain]], 'trials.Trials']
             ) -> 'GPFA':
         """
         Fit the model with the given training data.
@@ -326,7 +326,7 @@ class GPFA(sklearn.base.BaseEstimator):
 
     @staticmethod
     def _check_training_data(
-        spiketrains: Union[list[list[neo.core.SpikeTrain]], trials.Trials]
+        spiketrains: Union[list[list[neo.core.SpikeTrain]], 'trials.Trials']
                              ) -> list[list[neo.core.SpikeTrain]]:
         if isinstance(spiketrains, list):
             if len(spiketrains) == 0:
