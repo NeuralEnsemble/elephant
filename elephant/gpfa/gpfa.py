@@ -69,7 +69,7 @@ https://users.ece.cmu.edu/~byronyu/software.shtml
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
-from typing import Union
+from typing import List, Union
 import neo
 import numpy as np
 import quantities as pq
@@ -259,7 +259,7 @@ class GPFA(sklearn.base.BaseEstimator):
         self.transform_info = dict()
 
     def fit(self,
-            spiketrains: Union[list[list[neo.core.SpikeTrain]],
+            spiketrains: Union[List[List[neo.core.SpikeTrain]],
                                'Trials']) -> 'GPFA':
         """
         Fit the model with the given training data.
@@ -326,8 +326,8 @@ class GPFA(sklearn.base.BaseEstimator):
 
     @staticmethod
     def _check_training_data(
-        spiketrains: Union[list[list[neo.core.SpikeTrain]], Trials]
-                             ) -> list[list[neo.core.SpikeTrain]]:
+        spiketrains: Union[List[List[neo.core.SpikeTrain]], Trials]
+                             ) -> List[List[neo.core.SpikeTrain]]:
         if isinstance(spiketrains, list):
             if len(spiketrains) == 0:
                 raise ValueError("Input spiketrains can not be empty")
