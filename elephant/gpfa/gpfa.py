@@ -359,7 +359,10 @@ class GPFA(sklearn.base.BaseEstimator):
             seq['y'] = seq['y'][self.has_spikes_bool, :]
         return seqs
 
-    def transform(self, spiketrains, returned_data=['latent_variable_orth']):
+    def transform(self,
+                  spiketrains: Union[List[List[neo.core.SpikeTrain]],
+                                     'Trials'],
+                  returned_data: str = ['latent_variable_orth']) -> 'GPFA':
         """
         Obtain trajectories of neural activity in a low-dimensional latent
         variable space by inferring the posterior mean of the obtained GPFA
@@ -455,8 +458,10 @@ class GPFA(sklearn.base.BaseEstimator):
             return seqs[returned_data[0]]
         return {x: seqs[x] for x in returned_data}
 
-    def fit_transform(self, spiketrains, returned_data=[
-                      'latent_variable_orth']):
+    def fit_transform(self,
+                      spiketrains: Union[List[List[neo.core.SpikeTrain]],
+                                         'Trials'],
+                      returned_data: str = ['latent_variable_orth']) -> 'GPFA':
         """
         Fit the model with `spiketrains` data and apply the dimensionality
         reduction on `spiketrains`.
@@ -488,7 +493,9 @@ class GPFA(sklearn.base.BaseEstimator):
         self.fit(spiketrains)
         return self.transform(spiketrains, returned_data=returned_data)
 
-    def score(self, spiketrains):
+    def score(self,
+              spiketrains: Union[List[List[neo.core.SpikeTrain]], 'Trials'],
+              ) -> 'GPFA':
         """
         Returns the log-likelihood of the given data under the fitted model
 
