@@ -76,7 +76,7 @@ import quantities as pq
 import sklearn
 
 from elephant.gpfa import gpfa_core, gpfa_util
-from elephant import trials
+from trials import Trials
 
 
 __all__ = [
@@ -259,8 +259,8 @@ class GPFA(sklearn.base.BaseEstimator):
         self.transform_info = dict()
 
     def fit(self,
-            spiketrains: Union[list[list[neo.core.SpikeTrain]], 'trials.Trials']
-            ) -> 'GPFA':
+            spiketrains: Union[list[list[neo.core.SpikeTrain]],
+                               'Trials']) -> 'GPFA':
         """
         Fit the model with the given training data.
 
@@ -326,7 +326,7 @@ class GPFA(sklearn.base.BaseEstimator):
 
     @staticmethod
     def _check_training_data(
-        spiketrains: Union[list[list[neo.core.SpikeTrain]], 'trials.Trials']
+        spiketrains: Union[list[list[neo.core.SpikeTrain]], Trials]
                              ) -> list[list[neo.core.SpikeTrain]]:
         if isinstance(spiketrains, list):
             if len(spiketrains) == 0:
@@ -337,7 +337,7 @@ class GPFA(sklearn.base.BaseEstimator):
                                  "correct: 0-axis should be trials, 1-axis"
                                  " neo.SpikeTrain and 2-axis spike times")
             return spiketrains
-        if isinstance(spiketrains, trials.Trials):
+        if isinstance(spiketrains, Trials):
             if spiketrains.n_trials == 0:
                 raise ValueError("Number of trials can not be 0")
             # Trials contain only SpikeTrains
