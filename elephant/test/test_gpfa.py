@@ -15,6 +15,7 @@ import quantities as pq
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
 from elephant.spike_train_generation import StationaryPoissonProcess
+from elephant.trials import TrialsFromLists
 if importlib.util.find_spec("sklearn") is not None:
     from elephant.gpfa import gpfa_util
     from elephant.gpfa import GPFA
@@ -215,6 +216,34 @@ class GPFATestCase(unittest.TestCase):
         logdet_fast = gpfa_util.logdet(matrix)
         logdet_ground_truth = np.log(np.linalg.det(matrix))
         assert_array_almost_equal(logdet_fast, logdet_ground_truth)
+
+    def test_trial_object_gpfa_fit(self):
+        gpfa_trial_object = GPFA(bin_size=self.bin_size, x_dim=self.x_dim,
+                                 em_max_iters=self.n_iters)
+        gpfa_list_of_lists = GPFA(bin_size=self.bin_size, x_dim=self.x_dim,
+                                  em_max_iters=self.n_iters)
+
+        trials = TrialsFromLists(self.data1)
+        gpfa_trial_object.fit(trials)
+        gpfa_list_of_lists.fit(self.data1)
+
+        assert_array_almost_equal(gpfa_trial_object.params_estimated['gamma'],
+                                  gpfa_list_of_lists.params_estimated['gamma'])
+
+    def test_trial_object_gpfa_transform(self):
+        gpfa_trial_object = GPFA(bin_size=self.bin_size, x_dim=self.x_dim,
+                                 em_max_iters=self.n_iters)
+        gpfa_list_of_lists = GPFA(bin_size=self.bin_size, x_dim=self.x_dim,
+                                  em_max_iters=self.n_iters)
+
+        trials = TrialsFromLists(self.data1)
+        gpfa_trial_object.fit(trials)
+        gpfa_trial_object.transform(trials)
+        gpfa_list_of_lists.fit(self.data1)
+        gpfa_list_of_lists.transform(self.data1)
+
+        assert_array_almost_equal(gpfa_trial_object.transform_info['Corth'],
+                                  gpfa_list_of_lists.transform_info['Corth'])
 
 
 if __name__ == "__main__":
