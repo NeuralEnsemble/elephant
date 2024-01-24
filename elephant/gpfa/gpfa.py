@@ -76,7 +76,7 @@ import quantities as pq
 import sklearn
 
 from elephant.gpfa import gpfa_core, gpfa_util
-from trials import Trials
+from elephant.trials import Trials
 
 
 __all__ = [

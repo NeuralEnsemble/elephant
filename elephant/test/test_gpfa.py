@@ -18,7 +18,7 @@ from elephant.spike_train_generation import StationaryPoissonProcess
 from elephant.trials import TrialsFromLists
 if importlib.util.find_spec("sklearn") is not None:
     from elephant.gpfa import gpfa_util
-    from elephant.gpfa.gpfa import GPFA
+    from elephant.gpfa import GPFA
     from sklearn.model_selection import cross_val_score
     HAVE_SKLEARN = True
 else:
