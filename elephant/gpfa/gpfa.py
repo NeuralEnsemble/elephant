@@ -331,24 +331,27 @@ class GPFA(sklearn.base.BaseEstimator):
         if isinstance(spiketrains, list):
             if len(spiketrains) == 0:
                 raise ValueError("Input spiketrains can not be empty")
-            if not isinstance(spiketrains[0][0], neo.SpikeTrain):
+            if not all(isinstance(item, neo.SpikeTrain)
+                       for sublist in spiketrains for item in sublist):
                 raise ValueError("structure of the spiketrains is not"
                                  "correct: 0-axis should be trials, 1-axis"
                                  " neo.SpikeTrain and 2-axis spike times")
             return spiketrains
         if isinstance(spiketrains, trials.Trials):
-            # TODO: implement input checks here
             if spiketrains.n_trials == 0:
                 raise ValueError("Number of trials can not be 0")
-            # TODO: implement both cases, only spiketrains, only analog signals
-            if not spiketrains.n_analogsignals_trial_by_trial or all(
-                n_analog != 0 for n_analog in
-                    spiketrains.n_analogsignals_trial_by_trial):
-                raise Exception("input contains Analog signals")
+            # Trials contain only SpikeTrains
+            if all(n_spktr != 0 for n_spktr in
+                   spiketrains.n_spiketrains_trial_by_trial):
+                if not all(n_analog == 0 for n_analog in
+                           spiketrains.n_analogsignals_trial_by_trial):
+                    raise ValueError("Input contains AnalogSignals and "
+                                     "SpikeTrains")
+        # TODO: implement continuous input data for GPFA
             return [spiketrains.get_spiketrains_from_trial_as_list(idx)
                     for idx in range(spiketrains.n_trials)]
 
-    def _format_training_data(self, spiketrains):            
+    def _format_training_data(self, spiketrains):
         seqs = gpfa_util.get_seqs(spiketrains, self.bin_size)
         # Remove inactive units based on training set
         self.has_spikes_bool = np.hstack(seqs['y']).any(axis=1)

@@ -245,6 +245,26 @@ class GPFATestCase(unittest.TestCase):
         assert_array_almost_equal(gpfa_trial_object.transform_info['Corth'],
                                   gpfa_list_of_lists.transform_info['Corth'])
 
+    def test_trial_object_zero_trials(self):
+        gpfa_trial_object = GPFA(bin_size=self.bin_size, x_dim=self.x_dim,
+                                 em_max_iters=self.n_iters)
+
+        trials = TrialsFromLists([])
+        with self.assertRaises(ValueError):
+            gpfa_trial_object.fit(trials)
+
+    def test_trial_object_mixed_input(self):
+        gpfa_trial_object = GPFA(bin_size=self.bin_size, x_dim=self.x_dim,
+                                 em_max_iters=self.n_iters)
+
+        data = self.data1
+        data[0].append(neo.AnalogSignal([[1, 2, 3], [4, 5, 6]], units='V',
+                       sampling_rate=1*pq.Hz))
+        trials = TrialsFromLists(data)
+
+        with self.assertRaises(ValueError):
+            gpfa_trial_object.fit(trials)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
