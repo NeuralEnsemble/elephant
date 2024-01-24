@@ -69,8 +69,6 @@ https://users.ece.cmu.edu/~byronyu/software.shtml
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
-from __future__ import division, print_function, unicode_literals
-
 import neo
 import numpy as np
 import quantities as pq
