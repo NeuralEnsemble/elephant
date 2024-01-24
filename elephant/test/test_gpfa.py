@@ -7,6 +7,7 @@ Unit tests for the GPFA analysis.
 """
 
 import unittest
+import importlib.util
 
 import neo
 import numpy as np
@@ -14,15 +15,12 @@ import quantities as pq
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
 from elephant.spike_train_generation import StationaryPoissonProcess
-
-try:
-    import sklearn
+if importlib.util.find_spec("sklearn") is not None:
     from elephant.gpfa import gpfa_util
     from elephant.gpfa import GPFA
     from sklearn.model_selection import cross_val_score
-
     HAVE_SKLEARN = True
-except ImportError:
+else:
     HAVE_SKLEARN = False
 
 
