@@ -434,7 +434,7 @@ class GPFA(sklearn.base.BaseEstimator):
         invalid_keys = set(returned_data).difference(self.valid_data_names)
         if len(invalid_keys) > 0:
             raise ValueError("'returned_data' can only have the following "
-                             "entries: {}".format(self.valid_data_names))
+                             f"entries: {self.valid_data_names}")
         seqs = gpfa_util.get_seqs(spiketrains, self.bin_size)
         for seq in seqs:
             seq['y'] = seq['y'][self.has_spikes_bool, :]
