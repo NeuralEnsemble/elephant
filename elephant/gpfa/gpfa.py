@@ -265,8 +265,8 @@ class GPFA(sklearn.base.BaseEstimator):
         Fit the model with the given training data.
 
         Parameters
-        ----------
-        spiketrains : list of list of neo.SpikeTrain or elephant.trials.Trials
+        ---------- # noqa
+        spiketrains : list of list of :class:`neo.core.SpikeTrain` or :class:`elephant.trials.Trials`
             Spike train data to be fit to latent variables.
             For list of lists, the outer list corresponds to trials and the
             inner list corresponds to the neurons recorded in that trial, such
@@ -366,8 +366,8 @@ class GPFA(sklearn.base.BaseEstimator):
         model and applying an orthonormalization on the latent variable space.
 
         Parameters
-        ----------
-        spiketrains : list of list of neo.SpikeTrain or elephant.trials.Trials
+        ---------- # noqa
+        spiketrains : list of list of :class:`neo.core.SpikeTrain` or :class:`elephant.trials.Trials`
             Spike train data to be transformed to latent variables.
             For list of lists, the outer list corresponds to trials and the
             inner list corresponds to the neurons recorded in that trial, such
@@ -400,7 +400,7 @@ class GPFA(sklearn.base.BaseEstimator):
 
         Returns
         -------
-        np.ndarray or dict
+        :class:`np.ndarray` or dict
             When the length of `returned_data` is one, a single np.ndarray,
             containing the requested data (the first entry in `returned_data`
             keys list), is returned. Otherwise, a dict of multiple np.ndarrays
@@ -462,8 +462,8 @@ class GPFA(sklearn.base.BaseEstimator):
         reduction on `spiketrains`.
 
         Parameters
-        ----------
-        spiketrains : list of list of neo.SpikeTrain or elephant.trials.Trials
+        ---------- # noqa
+        spiketrains : list of list of :class:`neo.core.SpikeTrain` or :class:`elephant.trials.Trials`
             Refer to the :func:`GPFA.fit` docstring.
 
         returned_data : list of str
@@ -493,8 +493,8 @@ class GPFA(sklearn.base.BaseEstimator):
         Returns the log-likelihood of the given data under the fitted model
 
         Parameters
-        ----------
-        spiketrains : list of list of neo.SpikeTrain or elephant.trials.Trials
+        ---------- # noqa
+        spiketrains : list of list of :class:`neo.core.SpikeTrain` or :class:`elephant.trials.Trials`
             Spike train data to be scored.
             The outer list corresponds to trials and the inner list corresponds
             to the neurons recorded in that trial, such that
