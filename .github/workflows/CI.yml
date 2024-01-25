@@ -143,6 +143,9 @@ jobs:
         with:
           auto-update-conda: true
           python-version: ${{ matrix.python-version }}
+          mamba-version: "*"
+          channels: conda-forge,defaults
+          channel-priority: true
           activate-environment: elephant
           environment-file: requirements/environment-tests.yml
           auto-activate-base: false
@@ -152,10 +155,9 @@ jobs:
         shell: bash -l {0}
         run: |
           python --version
-          conda env list
-          conda install mpi4py openmpi
-          conda install pytest
-          conda install pytest-cov coveralls
+          mamba install mpi4py openmpi
+          mamba install pytest
+          mamba install pytest-cov coveralls
           pip install -e .[extras]
 
       - name: List packages
