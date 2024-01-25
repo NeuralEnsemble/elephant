@@ -392,7 +392,7 @@ jobs:
           auto-update-conda: true
           python-version: 3.9
           activate-environment: elephant
-          environment-file: requirements/environment-tests.yml
+          environment-file: requirements/environment.yml
           auto-activate-base: false
           use-only-tar-bz2: true # IMPORTANT: This needs to be set for caching to work properly!
 
