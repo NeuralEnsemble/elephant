@@ -401,7 +401,8 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt install -y libopenmpi-dev openmpi-bin
-        
+          
+          conda install -c conda-forge openmpi pandoc
           python -m pip install --upgrade pip
           pip install -r requirements/requirements-docs.txt
           pip install -r requirements/requirements-tutorials.txt
