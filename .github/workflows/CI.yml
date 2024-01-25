@@ -379,11 +379,6 @@ jobs:
 
       - uses: actions/checkout@v3
 
-      - name: Add conda to system path
-        run: |
-          # $CONDA is an environment variable pointing to the root of the miniconda directory
-          echo $CONDA/bin >> $GITHUB_PATH
-
       - name: Cache pip
         uses: actions/cache@v3
         with:
@@ -392,15 +387,22 @@ jobs:
           key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements-docs.txt') }}-${{ hashFiles('**/requirements-tutorials.txt') }}-${{ hashFiles('**/environment-docs.yml') }}
            -${{ hashFiles('**/CI.yml') }}-${{ steps.date.outputs.date }}
 
+      - uses: conda-incubator/setup-miniconda@3b0f2504dd76ef23b6d31f291f4913fb60ab5ff3 # corresponds to v2.2.0
+        with:
+          auto-update-conda: true
+          python-version: 3.9
+          activate-environment: elephant
+          environment-file: requirements/environment-tests.yml
+          auto-activate-base: false
+          use-only-tar-bz2: true # IMPORTANT: This needs to be set for caching to work properly!
+
       - name: Install dependencies
         run: |
-          conda config --add channels conda-forge # bugfix with scipy==1.8.1: libstdcxx-ng 12.1.0 required
           sudo apt-get update
           sudo apt install -y libopenmpi-dev openmpi-bin
           conda update conda
           conda install -c conda-forge openmpi pandoc libstdcxx-ng # fix libstdc++.so.6: version for new scipy versions > 1.9.1
-          conda env update --file requirements/environment-docs.yml --name base
-          activate base
+        
           python -m pip install --upgrade pip
           pip install -r requirements/requirements-docs.txt
           pip install -r requirements/requirements-tutorials.txt
