@@ -281,7 +281,7 @@ def generate_lfp(csd_profile, x_positions, y_positions=None, z_positions=None,
     def integrate_1D(x0, csd_x, csd, h):
         m = np.sqrt((csd_x - x0) ** 2 + h ** 2) - abs(csd_x - x0)
         y = csd * m
-        I = simpson(y, csd_x)
+        I = simpson(y, x=csd_x)
         return I
 
     def integrate_2D(x, y, xlin, ylin, csd, h, X, Y):
@@ -293,17 +293,17 @@ def generate_lfp(csd_profile, x_positions, y_positions=None, z_positions=None,
         m = np.sqrt((x - X) ** 2 + (y - Y) ** 2)
         np.clip(m, a_min=0.0000001, a_max=None, out=m)
         y = np.arcsinh(2 * h / m) * csd
-        I = simpson(y.T, ylin)
-        F = simpson(I, xlin)
+        I = simpson(y.T, x=ylin)
+        F = simpson(I, x=xlin)
         return F
 
     def integrate_3D(x, y, z, csd, xlin, ylin, zlin, X, Y, Z):
         m = np.sqrt((x - X) ** 2 + (y - Y) ** 2 + (z - Z) ** 2)
         np.clip(m, a_min=0.0000001, a_max=None, out=m)
         z = csd / m
-        Iy = simpson(np.transpose(z, (1, 0, 2)), zlin)
-        Iy = simpson(Iy, ylin)
-        F = simpson(Iy, xlin)
+        Iy = simpson(np.transpose(z, (1, 0, 2)), x=zlin)
+        Iy = simpson(Iy, x=ylin)
+        F = simpson(Iy, x=xlin)
         return F
 
     dim = 1
