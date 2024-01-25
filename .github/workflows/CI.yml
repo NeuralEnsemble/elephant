@@ -139,7 +139,7 @@ jobs:
           path: ~/conda_pkgs_dir
           key: ${{ runner.os }}-conda-${{hashFiles('requirements/environment.yml') }}-${{ hashFiles('**/CI.yml') }}-${{ steps.date.outputs.date }}
 
-      - uses: conda-incubator/setup-miniconda@3b0f2504dd76ef23b6d31f291f4913fb60ab5ff3 # corresponds to v2.2.0
+      - uses: conda-incubator/setup-miniconda@11b562958363ec5770fef326fe8ef0366f8cbf8a # corresponds to v3.0.1
         with:
           auto-update-conda: true
           python-version: ${{ matrix.python-version }}
@@ -327,7 +327,7 @@ jobs:
 
           key: ${{ runner.os }}-pip-${{hashFiles('requirements/environment-tests.yml') }}-${{ hashFiles('**/CI.yml') }}-${{ steps.date.outputs.date }}
 
-      - uses: conda-incubator/setup-miniconda@3b0f2504dd76ef23b6d31f291f4913fb60ab5ff3 # corresponds to v2.2.0
+      - uses: conda-incubator/setup-miniconda@11b562958363ec5770fef326fe8ef0366f8cbf8a # corresponds to v3.0.1
         with:
           auto-update-conda: true
           python-version: ${{ matrix.python-version }}
@@ -389,7 +389,7 @@ jobs:
           key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements-docs.txt') }}-${{ hashFiles('**/requirements-tutorials.txt') }}-${{ hashFiles('**/environment-docs.yml') }}
            -${{ hashFiles('**/CI.yml') }}-${{ steps.date.outputs.date }}
 
-      - uses: conda-incubator/setup-miniconda@3b0f2504dd76ef23b6d31f291f4913fb60ab5ff3 # corresponds to v2.2.0
+      - uses: conda-incubator/setup-miniconda@11b562958363ec5770fef326fe8ef0366f8cbf8a # corresponds to v3.0.1
         with:
           auto-update-conda: true
           python-version: 3.9
