@@ -90,15 +90,6 @@ def _spike_extraction(signal: neo.core.AnalogSignal,
                       time_stamps: neo.core.SpikeTrain = None,
                       interval: tuple = (-2 * pq.ms, 4 * pq.ms)
                       ) -> neo.core.SpikeTrain:
-    # Get spike time_stamps
-    if time_stamps is None:
-        time_stamps = peak_detection(signal, threshold, sign=sign)
-    elif hasattr(time_stamps, 'times'):
-        time_stamps = time_stamps.times
-    else:
-        raise TypeError("time_stamps must be None, a `neo.core.SpikeTrain`"
-                        " or expose the.times interface")
-
     if len(time_stamps) == 0:
         return neo.SpikeTrain(time_stamps, units=signal.times.units,
                               t_start=signal.t_start, t_stop=signal.t_stop,
@@ -201,6 +192,15 @@ def spike_extraction(
     --------
     :func:`elephant.spike_train_generation.peak_detection`
     """
+    # Get spike time_stamps
+    if time_stamps is None:
+        time_stamps = peak_detection(signal, threshold, sign=sign)
+    elif hasattr(time_stamps, 'times'):
+        time_stamps = time_stamps.times
+    else:
+        raise TypeError("time_stamps must be None, a `neo.core.SpikeTrain`"
+                        " or expose the.times interface")
+
     if isinstance(signal, neo.core.AnalogSignal):
         if signal.shape[1] == 1:
             if always_as_list:
@@ -392,8 +392,7 @@ def peak_detection(signal: neo.core.AnalogSignal,
                    sign: Literal['above', 'below'] = 'above',
                    as_array: bool = False,
                    always_as_list: bool = False
-                   ) -> Union[neo.core.SpikeTrain,
-                              List[neo.core.SpikeTrain]]:
+                   ) -> Union[neo.core.SpikeTrain, SpikeTrainList]:
     """
     Return the peak times for all events that cross threshold.
     Usually used for extracting spike times from a membrane potential.
