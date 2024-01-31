@@ -250,7 +250,7 @@ class SpikeExtractionTestCase(unittest.TestCase):
 
     def test_always_return_as_list(self):
         self.assertIsInstance(spike_extraction(self.vm, always_as_list=True),
-                              list)
+                              SpikeTrainList)
 
     def test_analog_signal_multiple_channels(self):
         list_of_spike_trains = spike_extraction(self.vm_3d)
@@ -258,6 +258,7 @@ class SpikeExtractionTestCase(unittest.TestCase):
         for spike_train in list_of_spike_trains:
             with self.subTest(value=spike_train):
                 self.assertIsInstance(spike_train, neo.SpikeTrain)
+        self.assertIsInstance(list_of_spike_trains, SpikeTrainList)
 
 
 class AbstractPointProcessTestCase(unittest.TestCase):

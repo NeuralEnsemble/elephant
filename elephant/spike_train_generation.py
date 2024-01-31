@@ -161,8 +161,7 @@ def spike_extraction(
         time_stamps: neo.core.SpikeTrain = None,
         interval: tuple = (-2 * pq.ms, 4 * pq.ms),
         always_as_list: bool = False
-        ) -> Union[neo.core.SpikeTrain,
-                   neo.core.spiketrainlist.SpikeTrainList]:
+        ) -> Union[neo.core.SpikeTrain, SpikeTrainList]:
     """
     Return the peak times for all events that cross threshold and the
     waveforms. Usually used for extracting spikes from a membrane
@@ -189,12 +188,12 @@ def spike_extraction(
         is extracted.
         Default: (-2 * pq.ms, 4 * pq.ms)
     always_as_list: bool, optional
-        If True, a list of neo.SpikeTrain is returned.
+        If True, :class:`neo.core.spiketrainslist.SpikeTrainList` is returned.
         Default: False
 
     Returns
     ------- # noqa
-    result_st : :class:`neo.core.SpikeTrain`, list of :class:`neo.core.SpikeTrain`
+    result_st : :class:`neo.core.SpikeTrain`, :class:`neo.core.spiketrainslist.SpikeTrainList`.
         Contains the time_stamps of each of the spikes and the waveforms in
         `result_st.waveforms`.
 
@@ -205,22 +204,29 @@ def spike_extraction(
     if isinstance(signal, neo.core.AnalogSignal):
         if signal.shape[1] == 1:
             if always_as_list:
-                return [_spike_extraction(signal, threshold=threshold,
-                                          time_stamps=time_stamps,
-                                          interval=interval,
-                                          sign=sign)]
+                return SpikeTrainList(items=(_spike_extraction(
+                    signal,
+                    threshold=threshold,
+                    time_stamps=time_stamps,
+                    interval=interval,
+                    sign=sign),))
             else:
                 return _spike_extraction(signal, threshold=threshold,
                                          time_stamps=time_stamps,
                                          interval=interval,
                                          sign=sign)
         elif signal.shape[1] > 1:
-            return [_spike_extraction(neo.core.AnalogSignal(
-                signal[:, channel], sampling_rate=signal.sampling_rate),
+            spiketrainlist = SpikeTrainList()
+            for channel in range(signal.shape[1]):
+                spiketrainlist.append(
+                    _spike_extraction(neo.core.AnalogSignal(
+                        signal[:, channel],
+                        sampling_rate=signal.sampling_rate),
                                     threshold=threshold, sign=sign,
                                     time_stamps=time_stamps,
                                     interval=interval,
-                                    ) for channel in range(signal.shape[1])]
+                                    ))
+            return spiketrainlist
     else:
         raise TypeError(
             f"Signal must be AnalogSignal, provided: {type(signal)}")
