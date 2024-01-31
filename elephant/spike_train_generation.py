@@ -230,12 +230,6 @@ def _threshold_detection(signal: neo.core.AnalogSignal,
                          threshold: pq.Quantity = 0.0 * pq.mV,
                          sign: str = 'above'
                          ) -> neo.core.SpikeTrain:
-    if not isinstance(threshold, pq.Quantity):
-        raise TypeError('threshold must be a pq.Quantity')
-
-    if sign not in ('above', 'below'):
-        raise ValueError("sign should be 'above' or 'below'")
-
     if sign == 'above':
         cutout = np.where(signal > threshold)[0]
     else:
@@ -296,6 +290,12 @@ def threshold_detection(
         `always_return_list=True` , a
         :class:`neo.core.spiketrainlist.SpikeTrainList` is returned.
     """
+    if not isinstance(threshold, pq.Quantity):
+        raise TypeError('threshold must be a pq.Quantity')
+
+    if sign not in ('above', 'below'):
+        raise ValueError("sign should be 'above' or 'below'")
+
     if isinstance(signal, neo.core.AnalogSignal):
         if signal.shape[1] == 1:
             if always_as_list:
