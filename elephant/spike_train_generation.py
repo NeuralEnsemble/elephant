@@ -333,9 +333,6 @@ def _peak_detection(signal: neo.core.AnalogSignal,
                     sign: str = 'above',
                     as_array: bool = False
                     ) -> neo.core.SpikeTrain:
-    if not isinstance(threshold, pq.Quantity):
-        raise TypeError(
-            f"threshold must be a pq.Quantity, provided: {type(threshold)}")
     if sign == 'above':
         cutout = np.where(signal > threshold)[0]
         peak_func = np.argmax
@@ -414,32 +411,50 @@ def peak_detection(signal: neo.core.AnalogSignal,
         of a (default) `neo.SpikeTrain` object.
         Default: False
     always_as_list: bool, optional
-        If True, a list of neo.SpikeTrain is returned.
+        If True, a :class:`neo.core.spiketrainslist.SpikeTrainList` is returned.
         Default: False
 
     Returns
     ------- # noqa
-    result_st : :class:`neo.core.SpikeTrain`, List[:class:`neo.core.SpikeTrain`]
+    result_st : :class:`neo.core.SpikeTrain`, :class:`neo.core.spiketrainslist.SpikeTrainList`
         :class:`np.ndarrav`, List[:class:`np.ndarrav`]
         Contains the spike times of each of the events (spikes) extracted from
         the signal. 
         If `signal` is an AnalogSignal with multiple channels or
         `always_return_list=True` a list is returned.
     """
+    if not isinstance(threshold, pq.Quantity):
+        raise TypeError(
+            f"threshold must be a pq.Quantity, provided: {type(threshold)}")
+
     if isinstance(signal, neo.core.AnalogSignal):
         if signal.shape[1] == 1:
-            if always_as_list:
-                return [_peak_detection(signal, threshold=threshold, sign=sign,
-                                        as_array=as_array)]
+            if always_as_list and not as_array:
+                return SpikeTrainList(items=(_peak_detection(
+                    signal, threshold=threshold, sign=sign, as_array=as_array),
+                    ))
+            elif always_as_list and as_array:
+                return [_peak_detection(
+                    signal, threshold=threshold, sign=sign, as_array=as_array)]
             else:
                 return _peak_detection(signal, threshold=threshold, sign=sign,
                                        as_array=as_array)
-        elif signal.shape[1] > 1:
+        elif signal.shape[1] > 1 and as_array:
             return [_peak_detection(neo.core.AnalogSignal(
                 signal[:, channel], sampling_rate=signal.sampling_rate),
                                     threshold=threshold,
                                     sign=sign, as_array=as_array
                                     ) for channel in range(signal.shape[1])]
+        elif signal.shape[1] > 1 and not as_array:
+            spiketrainlist = SpikeTrainList()
+            for channel in range(signal.shape[1]):
+                spiketrainlist.append(_peak_detection(
+                    neo.core.AnalogSignal(signal[:, channel],
+                                          sampling_rate=signal.sampling_rate),
+                    threshold=threshold,
+                    sign=sign, as_array=as_array
+                    ))
+            return spiketrainlist
     else:
         raise TypeError(
             f"Signal must be AnalogSignal, provided: {type(signal)}")

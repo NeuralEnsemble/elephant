@@ -181,7 +181,7 @@ class PeakDetectionTestCase(unittest.TestCase):
 
     def test_always_return_as_list(self):
         self.assertIsInstance(peak_detection(self.vm, always_as_list=True),
-                              list)
+                              SpikeTrainList)
 
     def test_analog_signal_multiple_channels(self):
         list_of_spike_trains = peak_detection(self.vm_3d)
@@ -196,6 +196,11 @@ class PeakDetectionTestCase(unittest.TestCase):
         for spike_train in list_of_spike_trains:
             with self.subTest(value=spike_train):
                 self.assertIsInstance(spike_train, np.ndarray)
+
+    def test_analog_signal_single_channel_as_array(self):
+        array = peak_detection(self.vm, as_array=True)
+        self.assertIsInstance(array, np.ndarray)
+        self.assertEqual(array.ndim, 1)
 
 
 class SpikeExtractionTestCase(unittest.TestCase):
