@@ -55,6 +55,7 @@ import warnings
 from typing import List, Literal, Union, Optional
 
 import neo
+from neo.core.spiketrainlist import SpikeTrainList
 import numpy as np
 import quantities as pq
 from scipy import stats
@@ -267,7 +268,7 @@ def threshold_detection(
         threshold: pq.Quantity = 0.0 * pq.mV,
         sign: Literal['above', 'below'] = 'above',
         always_as_list: bool = False,
-        ) -> Union[neo.core.SpikeTrain, List[neo.core.SpikeTrain]]:
+        ) -> Union[neo.core.SpikeTrain, SpikeTrainList]:
     """
     Returns the times when the analog signal crosses a threshold.
     Usually used for extracting spike times from a membrane potential.
@@ -284,30 +285,37 @@ def threshold_detection(
         below the threshold.
         Default: 'above'
     always_as_list: bool, optional
-        If True, a list of neo.SpikeTrain is returned.
+        If True, a :class:`neo.core.spiketrainslist.SpikeTrainList`.
         Default: False
 
     Returns
     ------- # noqa
-    result_st : :class:`neo.core.SpikeTrain`, List[:class:`neo.core.SpikeTrain`]
+    result_st : :class:`neo.core.SpikeTrain`, :class:`neo.core.spiketrainslist.SpikeTrainList`
         Contains the spike times of each of the events (spikes) extracted from
-        the signal. If `signal` is an AnalogSignal with multiple channels,
-        a list of AnalogSignals or `always_return_list=True` , a
-        list of :class:`neo.core.SpikeTrain` is returned.
+        the signal. If `signal` is an AnalogSignal with multiple channels, or
+        `always_return_list=True` , a
+        :class:`neo.core.spiketrainlist.SpikeTrainList` is returned.
     """
     if isinstance(signal, neo.core.AnalogSignal):
         if signal.shape[1] == 1:
             if always_as_list:
-                return [_threshold_detection(signal, threshold=threshold,
-                                             sign=sign)]
+                return SpikeTrainList(items=(_threshold_detection(
+                    signal,
+                    threshold=threshold,
+                    sign=sign),)
+                                      )
             else:
                 return _threshold_detection(signal, threshold=threshold,
                                             sign=sign)
         elif signal.shape[1] > 1:
-            return [_threshold_detection(neo.core.AnalogSignal(
-                signal[:, channel], sampling_rate=signal.sampling_rate),
-                                    threshold=threshold, sign=sign
-                                    ) for channel in range(signal.shape[1])]
+            spiketrainlist = SpikeTrainList()
+            for channel in range(signal.shape[1]):
+                spiketrainlist.append(_threshold_detection(
+                    neo.core.AnalogSignal(signal[:, channel],
+                                          sampling_rate=signal.sampling_rate),
+                                      threshold=threshold, sign=sign)
+                                      )
+            return spiketrainlist
     else:
         raise TypeError(
             f"Signal must be AnalogSignal, provided: {type(signal)}")

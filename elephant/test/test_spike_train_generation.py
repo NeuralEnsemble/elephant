@@ -13,6 +13,7 @@ import unittest
 import warnings
 
 import neo
+from neo.core.spiketrainlist import SpikeTrainList
 import numpy as np
 from numpy.testing import assert_array_almost_equal, assert_allclose
 import quantities as pq
@@ -109,7 +110,8 @@ class ThresholdDetectionTestCase(unittest.TestCase):
 
     def test_always_return_as_list(self):
         self.assertIsInstance(threshold_detection(self.vm,
-                                                  always_as_list=True), list)
+                                                  always_as_list=True),
+                              SpikeTrainList)
 
     def test_analog_signal_multiple_channels(self):
         list_of_spike_trains = threshold_detection(self.vm_3d)
@@ -117,6 +119,7 @@ class ThresholdDetectionTestCase(unittest.TestCase):
         for spike_train in list_of_spike_trains:
             with self.subTest(value=spike_train):
                 self.assertIsInstance(spike_train, neo.SpikeTrain)
+        self.assertIsInstance(list_of_spike_trains, SpikeTrainList)
 
 
 class PeakDetectionTestCase(unittest.TestCase):
