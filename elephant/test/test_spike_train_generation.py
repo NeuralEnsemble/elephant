@@ -121,6 +121,13 @@ class ThresholdDetectionTestCase(unittest.TestCase):
                 self.assertIsInstance(spike_train, neo.SpikeTrain)
         self.assertIsInstance(list_of_spike_trains, SpikeTrainList)
 
+    def test_empty_analog_signal(self):
+        empty_analog_signal = neo.AnalogSignal([], units='V',
+                                               sampling_period=1*pq.ms)
+        self.assertEqual(empty_analog_signal.shape, (0, 1))
+        self.assertIsInstance(threshold_detection(empty_analog_signal),
+                              neo.core.SpikeTrain)
+
 
 class PeakDetectionTestCase(unittest.TestCase):
 
