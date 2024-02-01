@@ -234,10 +234,11 @@ def spike_extraction(
             f"Signal must be AnalogSignal, provided: {type(signal)}")
 
 
-def _threshold_detection(signal: neo.core.AnalogSignal,
-                         threshold: pq.Quantity = 0.0 * pq.mV,
-                         sign: str = 'above'
-                         ) -> neo.core.SpikeTrain:
+def _threshold_detection_from_single_channel(
+        signal: neo.core.AnalogSignal,
+        threshold: pq.Quantity = 0.0 * pq.mV,
+        sign: str = 'above'
+        ) -> neo.core.SpikeTrain:
     if sign == 'above':
         cutout = np.where(signal > threshold)[0]
     else:
@@ -307,18 +308,16 @@ def threshold_detection(
     if isinstance(signal, neo.core.AnalogSignal):
         if signal.shape[1] == 1:
             if always_as_list:
-                return SpikeTrainList(items=(_threshold_detection(
-                    signal,
-                    threshold=threshold,
-                    sign=sign),)
-                                      )
+                return SpikeTrainList(items=(
+                    _threshold_detection_from_single_channel(
+                        signal, threshold=threshold, sign=sign),))
             else:
-                return _threshold_detection(signal, threshold=threshold,
-                                            sign=sign)
+                return _threshold_detection_from_single_channel(
+                    signal, threshold=threshold, sign=sign)
         elif signal.shape[1] > 1:
             spiketrainlist = SpikeTrainList()
             for channel in range(signal.shape[1]):
-                spiketrainlist.append(_threshold_detection(
+                spiketrainlist.append(_threshold_detection_from_single_channel(
                     neo.core.AnalogSignal(signal[:, channel],
                                           sampling_rate=signal.sampling_rate),
                                       threshold=threshold, sign=sign)
