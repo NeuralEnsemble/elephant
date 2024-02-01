@@ -84,7 +84,8 @@ __all__ = [
 ]
 
 
-def _spike_extraction(signal: neo.core.AnalogSignal,
+def _spike_extraction_from_single_channel(
+                      signal: neo.core.AnalogSignal,
                       threshold: pq.Quantity = 0.0 * pq.mV,
                       sign: Literal['above', 'below'] = 'above',
                       time_stamps: neo.core.SpikeTrain = None,
@@ -204,28 +205,29 @@ def spike_extraction(
     if isinstance(signal, neo.core.AnalogSignal):
         if signal.shape[1] == 1:
             if always_as_list:
-                return SpikeTrainList(items=(_spike_extraction(
-                    signal,
-                    threshold=threshold,
-                    time_stamps=time_stamps,
-                    interval=interval,
-                    sign=sign),))
+                return SpikeTrainList(items=(
+                    _spike_extraction_from_single_channel(
+                            signal,
+                            threshold=threshold,
+                            time_stamps=time_stamps,
+                            interval=interval,
+                            sign=sign),))
             else:
-                return _spike_extraction(signal, threshold=threshold,
-                                         time_stamps=time_stamps,
-                                         interval=interval,
-                                         sign=sign)
+                return _spike_extraction_from_single_channel(
+                    signal, threshold=threshold, time_stamps=time_stamps,
+                    interval=interval, sign=sign)
         elif signal.shape[1] > 1:
             spiketrainlist = SpikeTrainList()
             for channel in range(signal.shape[1]):
                 spiketrainlist.append(
-                    _spike_extraction(neo.core.AnalogSignal(
-                        signal[:, channel],
-                        sampling_rate=signal.sampling_rate),
-                                    threshold=threshold, sign=sign,
-                                    time_stamps=time_stamps,
-                                    interval=interval,
-                                    ))
+                    _spike_extraction_from_single_channel(
+                        neo.core.AnalogSignal(
+                            signal[:, channel],
+                            sampling_rate=signal.sampling_rate),
+                        threshold=threshold, sign=sign,
+                        time_stamps=time_stamps,
+                        interval=interval,
+                        ))
             return spiketrainlist
     else:
         raise TypeError(
