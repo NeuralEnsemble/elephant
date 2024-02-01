@@ -329,11 +329,12 @@ def threshold_detection(
 
 
 # legacy implementation of peak_detection
-def _peak_detection(signal: neo.core.AnalogSignal,
-                    threshold: pq.Quantity = 0.0 * pq.mV,
-                    sign: str = 'above',
-                    as_array: bool = False
-                    ) -> neo.core.SpikeTrain:
+def _peak_detection_from_single_channel(
+        signal: neo.core.AnalogSignal,
+        threshold: pq.Quantity = 0.0 * pq.mV,
+        sign: str = 'above',
+        as_array: bool = False
+        ) -> neo.core.SpikeTrain:
     if sign == 'above':
         cutout = np.where(signal > threshold)[0]
         peak_func = np.argmax
@@ -431,17 +432,18 @@ def peak_detection(signal: neo.core.AnalogSignal,
     if isinstance(signal, neo.core.AnalogSignal):
         if signal.shape[1] == 1:
             if always_as_list and not as_array:
-                return SpikeTrainList(items=(_peak_detection(
-                    signal, threshold=threshold, sign=sign, as_array=as_array),
-                    ))
+                return SpikeTrainList(items=(
+                    _peak_detection_from_single_channel(
+                        signal, threshold=threshold, sign=sign,
+                        as_array=as_array),))
             elif always_as_list and as_array:
-                return [_peak_detection(
+                return [_peak_detection_from_single_channel(
                     signal, threshold=threshold, sign=sign, as_array=as_array)]
             else:
-                return _peak_detection(signal, threshold=threshold, sign=sign,
-                                       as_array=as_array)
+                return _peak_detection_from_single_channel(
+                    signal, threshold=threshold, sign=sign, as_array=as_array)
         elif signal.shape[1] > 1 and as_array:
-            return [_peak_detection(neo.core.AnalogSignal(
+            return [_peak_detection_from_single_channel(neo.core.AnalogSignal(
                 signal[:, channel], sampling_rate=signal.sampling_rate),
                                     threshold=threshold,
                                     sign=sign, as_array=as_array
@@ -449,7 +451,7 @@ def peak_detection(signal: neo.core.AnalogSignal,
         elif signal.shape[1] > 1 and not as_array:
             spiketrainlist = SpikeTrainList()
             for channel in range(signal.shape[1]):
-                spiketrainlist.append(_peak_detection(
+                spiketrainlist.append(_peak_detection_from_single_channel(
                     neo.core.AnalogSignal(signal[:, channel],
                                           sampling_rate=signal.sampling_rate),
                     threshold=threshold,
