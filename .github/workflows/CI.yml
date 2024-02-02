@@ -399,7 +399,7 @@ jobs:
           use-only-tar-bz2: true # IMPORTANT: This needs to be set for caching to work properly!
 
       - name: Install dependencies
-        shell: bash -l # use login shell to activate conda env
+        shell: bash -l {0}
         run: |
           sudo apt-get update
           sudo apt install -y libopenmpi-dev openmpi-bin
@@ -413,14 +413,14 @@ jobs:
           sed -i -E "s/nbsphinx_execute *=.*/nbsphinx_execute = 'always'/g" doc/conf.py
 
       - name: List packages
-        shell: bash -l
+        shell: bash -l {0}
         run: |
           pip list
           conda list
           python --version
 
       - name: make html
-        shell: bash -l
+        shell: bash -l {0}
         run: |
           cd doc
           make html
