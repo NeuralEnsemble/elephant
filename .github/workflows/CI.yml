@@ -399,7 +399,7 @@ jobs:
           use-only-tar-bz2: true # IMPORTANT: This needs to be set for caching to work properly!
 
       - name: Install dependencies
-        shell: bash -l {0}
+        shell: bash -l {0} # enables conda incubator to activate environment
         run: |
           sudo apt-get update
           sudo apt install -y libopenmpi-dev openmpi-bin
