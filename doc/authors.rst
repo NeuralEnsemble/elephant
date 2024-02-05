@@ -51,6 +51,8 @@ contribution, and may not be the current affiliation of a contributor.
 * Florian Porrmann [13]
 * Sarah Pilz [13]
 * Oliver Kloß [1]
+* Jonas Oberste-Frielinghaus [1]
+* Sven Krausse [1]
 
 1. Institute of Neuroscience and Medicine (INM-6) and Institute for Advanced Simulation (IAS-6) and JARA-Institute Brain Structure-Function Relationships (INM-10), Jülich Research Centre, Jülich, Germany
 2. Unité de Neurosciences, Information et Complexité, CNRS UPR 3293, Gif-sur-Yvette, France
