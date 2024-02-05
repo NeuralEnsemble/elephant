@@ -29,6 +29,7 @@ https://viziphant.readthedocs.io/en/latest/modules.html
 
 Notes
 -----
+
 This modules relies on the C++ implementation of the fp-growth
 algorithm developed by Forian Porrmann (available at
 https://github.com/fporrmann/FPG). The module replaces a more generic
@@ -2262,7 +2263,6 @@ def _covered_spikes_criterion(occ_superset,
     return reject_superset, reject_subset
 
 
-@deprecated_alias(binsize='bin_size')
 def concept_output_to_patterns(concepts, winlen, bin_size, pv_spec=None,
                                spectrum='#', t_start=0 * pq.ms):
     """

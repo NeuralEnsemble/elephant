@@ -44,15 +44,13 @@ class TestUtils(unittest.TestCase):
                           object_type=neo.SpikeTrain)
 
     def test_round_binning_errors(self):
-        with self.assertWarns(UserWarning):
-            n_bins = utils.round_binning_errors(0.999999, tolerance=1e-6)
-            self.assertEqual(n_bins, 1)
+        n_bins = utils.round_binning_errors(0.999999, tolerance=1e-6)
+        self.assertEqual(n_bins, 1)
         self.assertEqual(utils.round_binning_errors(0.999999, tolerance=None),
                          0)
         array = np.array([0, 0.7, 1 - 1e-8, 1 - 1e-9])
-        with self.assertWarns(UserWarning):
-            corrected = utils.round_binning_errors(array.copy())
-            assert_array_equal(corrected, [0, 0, 1, 1])
+        corrected = utils.round_binning_errors(array.copy())
+        assert_array_equal(corrected, [0, 0, 1, 1])
         assert_array_equal(
             utils.round_binning_errors(array.copy(), tolerance=None),
             [0, 0, 0, 0])

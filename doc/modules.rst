@@ -46,7 +46,7 @@ Spike trains
     :maxdepth: 2
 
     reference/spike_train_generation
-    
+
 
 ********************************
 LFPs and spike trains (combined)
@@ -77,14 +77,15 @@ Waveforms
 
     reference/waveform_features
 
-********************************
-Alternative data representations
-********************************
+********************
+Data Representations
+********************
 
 .. toctree::
     :maxdepth: 1
 
     reference/conversion
+    reference/trials
 
 *************
 Miscellaneous
@@ -95,5 +96,4 @@ Miscellaneous
 
     reference/neo_tools
     reference/utils
-    reference/pandas_bridge
     reference/parallel
