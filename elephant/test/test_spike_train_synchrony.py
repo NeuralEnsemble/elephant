@@ -448,7 +448,7 @@ class SynchrofactDetectionTestCase(unittest.TestCase):
         # Sanity check: block contains only one spiketrain before synchrofact
         # removal
         self.assertEqual(len(block.filter(objects=neo.SpikeTrain)), 1)
-        
+
         # perform a synchrofact search with delete=True
         synchrofact_obj = Synchrotool(
             [spiketrain],
