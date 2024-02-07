@@ -1319,8 +1319,11 @@ class GetAllEventsTestCase(unittest.TestCase):
         obj = generate_one_simple_segment(
             supported_objects=[neo.core.Segment, neo.core.Event])
         targ = copy.deepcopy(obj)
+        # TODO: This will no longer work with neo 0.13.0, similarly to
+        # the test: def test__get_all_spiketrains__segment(self):
+        # introduced here: https://github.com/NeuralEnsemble/elephant/pull/446
 
-        obj.events.extend(obj.events)
+        # obj.events.extend(obj.events)
         res0 = nt.get_all_events(obj)
 
         targ = targ.events
@@ -1469,7 +1472,10 @@ class GetAllEpochsTestCase(unittest.TestCase):
         obj = generate_one_simple_segment(
             supported_objects=[neo.core.Segment, neo.core.Epoch])
         targ = copy.deepcopy(obj)
-        obj.epochs.extend(obj.epochs)
+        # TODO: This will no longer work with neo 0.13.0, similarly to
+        # the test: def test__get_all_spiketrains__segment(self):
+        # introduced here: https://github.com/NeuralEnsemble/elephant/pull/446
+        # obj.epochs.extend(obj.epochs)
         res0 = nt.get_all_epochs(obj)
 
         targ = targ.epochs
