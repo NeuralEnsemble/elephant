@@ -79,9 +79,7 @@ from elephant.gpfa import gpfa_core, gpfa_util
 from elephant.trials import Trials
 
 
-__all__ = [
-    "GPFA"
-]
+__all__ = ["GPFA"]
 
 
 class GPFA(sklearn.base.BaseEstimator):
@@ -228,9 +226,18 @@ class GPFA(sklearn.base.BaseEstimator):
     ...                               'latent_variable'])
     """
 
-    def __init__(self, bin_size=20 * pq.ms, x_dim=3, min_var_frac=0.01,
-                 tau_init=100.0 * pq.ms, eps_init=1.0E-3, em_tol=1.0E-8,
-                 em_max_iters=500, freq_ll=5, verbose=False):
+    def __init__(
+        self,
+        bin_size=20 * pq.ms,
+        x_dim=3,
+        min_var_frac=0.01,
+        tau_init=100.0 * pq.ms,
+        eps_init=1.0e-3,
+        em_tol=1.0e-8,
+        em_max_iters=500,
+        freq_ll=5,
+        verbose=False,
+    ):
         # Initialize object
         self.bin_size = bin_size
         self.x_dim = x_dim
@@ -241,11 +248,12 @@ class GPFA(sklearn.base.BaseEstimator):
         self.em_max_iters = em_max_iters
         self.freq_ll = freq_ll
         self.valid_data_names = (
-            'latent_variable_orth',
-            'latent_variable',
-            'Vsm',
-            'VsmGP',
-            'y')
+            "latent_variable_orth",
+            "latent_variable",
+            "Vsm",
+            "VsmGP",
+            "y",
+        )
         self.verbose = verbose
 
         if not isinstance(self.bin_size, pq.Quantity):
@@ -258,9 +266,9 @@ class GPFA(sklearn.base.BaseEstimator):
         self.fit_info = dict()
         self.transform_info = dict()
 
-    def fit(self,
-            spiketrains: Union[List[List[neo.core.SpikeTrain]],
-                               'Trials']) -> 'GPFA':
+    def fit(
+        self, spiketrains: Union[List[List[neo.core.SpikeTrain]], "Trials"]
+    ) -> "GPFA":
         """
         Fit the model with the given training data.
 
@@ -294,75 +302,94 @@ class GPFA(sklearn.base.BaseEstimator):
         spiketrains = self._check_training_data(spiketrains)
         seqs_train = self._format_training_data(spiketrains)
         # Check if training data covariance is full rank
-        y_all = np.hstack(seqs_train['y'])
+        y_all = np.hstack(seqs_train["y"])
         y_dim = y_all.shape[0]
 
         if np.linalg.matrix_rank(np.cov(y_all)) < y_dim:
-            errmesg = 'Observation covariance matrix is rank deficient.\n' \
-                      'Possible causes: ' \
-                      'repeated units, not enough observations.'
+            errmesg = (
+                "Observation covariance matrix is rank deficient.\n"
+                "Possible causes: "
+                "repeated units, not enough observations."
+            )
             raise ValueError(errmesg)
 
         if self.verbose:
-            print('Number of training trials: {}'.format(len(seqs_train)))
-            print('Latent space dimensionality: {}'.format(self.x_dim))
-            print('Observation dimensionality: {}'.format(
-                self.has_spikes_bool.sum()))
+            print("Number of training trials: {}".format(len(seqs_train)))
+            print("Latent space dimensionality: {}".format(self.x_dim))
+            print(
+                "Observation dimensionality: {}".format(
+                    self.has_spikes_bool.sum()
+                )
+            )
 
         # The following does the heavy lifting.
         self.params_estimated, self.fit_info = gpfa_core.fit(
             seqs_train=seqs_train,
             x_dim=self.x_dim,
-            bin_width=self.bin_size.rescale('ms').magnitude,
+            bin_width=self.bin_size.rescale("ms").magnitude,
             min_var_frac=self.min_var_frac,
             em_max_iters=self.em_max_iters,
             em_tol=self.em_tol,
-            tau_init=self.tau_init.rescale('ms').magnitude,
+            tau_init=self.tau_init.rescale("ms").magnitude,
             eps_init=self.eps_init,
             freq_ll=self.freq_ll,
-            verbose=self.verbose)
+            verbose=self.verbose,
+        )
 
         return self
 
     @staticmethod
     def _check_training_data(
         spiketrains: Union[List[List[neo.core.SpikeTrain]], Trials]
-                             ) -> List[List[neo.core.SpikeTrain]]:
+    ) -> List[List[neo.core.SpikeTrain]]:
         if isinstance(spiketrains, list):
             if len(spiketrains) == 0:
                 raise ValueError("Input spiketrains can not be empty")
-            if not all(isinstance(item, neo.SpikeTrain)
-                       for sublist in spiketrains for item in sublist):
-                raise ValueError("structure of the spiketrains is not"
-                                 "correct: 0-axis should be trials, 1-axis"
-                                 " neo.SpikeTrain and 2-axis spike times")
+            if not all(
+                isinstance(item, neo.SpikeTrain)
+                for sublist in spiketrains
+                for item in sublist
+            ):
+                raise ValueError(
+                    "structure of the spiketrains is not"
+                    "correct: 0-axis should be trials, 1-axis"
+                    " neo.SpikeTrain and 2-axis spike times"
+                )
             return spiketrains
         if isinstance(spiketrains, Trials):
             if spiketrains.n_trials == 0:
                 raise ValueError("Number of trials can not be 0")
             # Trials contain only SpikeTrains
-            if all(n_spktr != 0 for n_spktr in
-                   spiketrains.n_spiketrains_trial_by_trial):
-                if not all(n_analog == 0 for n_analog in
-                           spiketrains.n_analogsignals_trial_by_trial):
-                    raise ValueError("Input contains AnalogSignals and "
-                                     "SpikeTrains")
-        # TODO: implement continuous input data for GPFA
-            return [spiketrains.get_spiketrains_from_trial_as_list(idx)
-                    for idx in range(spiketrains.n_trials)]
+            if all(
+                n_spktr != 0
+                for n_spktr in spiketrains.n_spiketrains_trial_by_trial
+            ):
+                if not all(
+                    n_analog == 0
+                    for n_analog in spiketrains.n_analogsignals_trial_by_trial
+                ):
+                    raise ValueError(
+                        "Input contains AnalogSignals and " "SpikeTrains"
+                    )
+            # TODO: implement continuous input data for GPFA
+            return [
+                spiketrains.get_spiketrains_from_trial_as_list(idx)
+                for idx in range(spiketrains.n_trials)
+            ]
 
     def _format_training_data(self, spiketrains):
         seqs = gpfa_util.get_seqs(spiketrains, self.bin_size)
         # Remove inactive units based on training set
-        self.has_spikes_bool = np.hstack(seqs['y']).any(axis=1)
+        self.has_spikes_bool = np.hstack(seqs["y"]).any(axis=1)
         for seq in seqs:
-            seq['y'] = seq['y'][self.has_spikes_bool, :]
+            seq["y"] = seq["y"][self.has_spikes_bool, :]
         return seqs
 
-    def transform(self,
-                  spiketrains: Union[List[List[neo.core.SpikeTrain]],
-                                     'Trials'],
-                  returned_data: str = ['latent_variable_orth']) -> 'GPFA':
+    def transform(
+        self,
+        spiketrains: Union[List[List[neo.core.SpikeTrain]], "Trials"],
+        returned_data: str = ["latent_variable_orth"],
+    ) -> "GPFA":
         """
         Obtain trajectories of neural activity in a low-dimensional latent
         variable space by inferring the posterior mean of the obtained GPFA
@@ -438,30 +465,35 @@ class GPFA(sklearn.base.BaseEstimator):
         """
         spiketrains = self._check_training_data(spiketrains)
         if len(spiketrains[0]) != len(self.has_spikes_bool):
-            raise ValueError("'spiketrains' must contain the same number of "
-                             "neurons as the training spiketrain data")
+            raise ValueError(
+                "'spiketrains' must contain the same number of "
+                "neurons as the training spiketrain data"
+            )
         invalid_keys = set(returned_data).difference(self.valid_data_names)
         if len(invalid_keys) > 0:
-            raise ValueError("'returned_data' can only have the following "
-                             f"entries: {self.valid_data_names}")
+            raise ValueError(
+                "'returned_data' can only have the following "
+                f"entries: {self.valid_data_names}"
+            )
         seqs = gpfa_util.get_seqs(spiketrains, self.bin_size)
         for seq in seqs:
-            seq['y'] = seq['y'][self.has_spikes_bool, :]
-        seqs, ll = gpfa_core.exact_inference_with_ll(seqs,
-                                                     self.params_estimated,
-                                                     get_ll=True)
-        self.transform_info['log_likelihood'] = ll
-        self.transform_info['num_bins'] = seqs['T']
+            seq["y"] = seq["y"][self.has_spikes_bool, :]
+        seqs, ll = gpfa_core.exact_inference_with_ll(
+            seqs, self.params_estimated, get_ll=True
+        )
+        self.transform_info["log_likelihood"] = ll
+        self.transform_info["num_bins"] = seqs["T"]
         Corth, seqs = gpfa_core.orthonormalize(self.params_estimated, seqs)
-        self.transform_info['Corth'] = Corth
+        self.transform_info["Corth"] = Corth
         if len(returned_data) == 1:
             return seqs[returned_data[0]]
         return {x: seqs[x] for x in returned_data}
 
-    def fit_transform(self,
-                      spiketrains: Union[List[List[neo.core.SpikeTrain]],
-                                         'Trials'],
-                      returned_data: str = ['latent_variable_orth']) -> 'GPFA':
+    def fit_transform(
+        self,
+        spiketrains: Union[List[List[neo.core.SpikeTrain]], "Trials"],
+        returned_data: str = ["latent_variable_orth"],
+    ) -> "GPFA":
         """
         Fit the model with `spiketrains` data and apply the dimensionality
         reduction on `spiketrains`.
@@ -493,9 +525,10 @@ class GPFA(sklearn.base.BaseEstimator):
         self.fit(spiketrains)
         return self.transform(spiketrains, returned_data=returned_data)
 
-    def score(self,
-              spiketrains: Union[List[List[neo.core.SpikeTrain]], 'Trials'],
-              ) -> 'GPFA':
+    def score(
+        self,
+        spiketrains: Union[List[List[neo.core.SpikeTrain]], "Trials"],
+    ) -> "GPFA":
         """
         Returns the log-likelihood of the given data under the fitted model
 
@@ -517,4 +550,4 @@ class GPFA(sklearn.base.BaseEstimator):
             Log-likelihood of the given spiketrains under the fitted model.
         """
         self.transform(spiketrains)
-        return self.transform_info['log_likelihood']
+        return self.transform_info["log_likelihood"]
