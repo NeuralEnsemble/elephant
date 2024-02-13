@@ -279,9 +279,9 @@ class GPFA(sklearn.base.BaseEstimator):
                 for item in sublist
             ):
                 raise ValueError(
-                    "structure of the spiketrains is not"
-                    "correct: 0-axis should be trials, 1-axis"
-                    " neo.SpikeTrain and 2-axis spike times"
+                    "structure of the spiketrains is not "
+                    "correct: 0-axis should be trials, 1-axis "
+                    "neo.SpikeTrain and 2-axis spike times."
                 )
             return spiketrains
         if isinstance(spiketrains, Trials):
@@ -297,7 +297,7 @@ class GPFA(sklearn.base.BaseEstimator):
                     for n_analog in spiketrains.n_analogsignals_trial_by_trial
                 ):
                     raise ValueError(
-                        "Input contains AnalogSignals and " "SpikeTrains"
+                        "Input contains AnalogSignals and SpikeTrains"
                     )
             # TODO: implement continuous input data for GPFA
             return [
