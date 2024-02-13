@@ -266,6 +266,53 @@ class GPFA(sklearn.base.BaseEstimator):
         self.fit_info = dict()
         self.transform_info = dict()
 
+    @staticmethod
+    def _check_training_data(
+        spiketrains: Union[List[List[neo.core.SpikeTrain]], Trials]
+    ) -> List[List[neo.core.SpikeTrain]]:
+        if isinstance(spiketrains, list):
+            if len(spiketrains) == 0:
+                raise ValueError("Input spiketrains can not be empty")
+            if not all(
+                isinstance(item, neo.SpikeTrain)
+                for sublist in spiketrains
+                for item in sublist
+            ):
+                raise ValueError(
+                    "structure of the spiketrains is not"
+                    "correct: 0-axis should be trials, 1-axis"
+                    " neo.SpikeTrain and 2-axis spike times"
+                )
+            return spiketrains
+        if isinstance(spiketrains, Trials):
+            if spiketrains.n_trials == 0:
+                raise ValueError("Number of trials can not be 0")
+            # Trials contain only SpikeTrains
+            if all(
+                n_spktr != 0
+                for n_spktr in spiketrains.n_spiketrains_trial_by_trial
+            ):
+                if not all(
+                    n_analog == 0
+                    for n_analog in spiketrains.n_analogsignals_trial_by_trial
+                ):
+                    raise ValueError(
+                        "Input contains AnalogSignals and " "SpikeTrains"
+                    )
+            # TODO: implement continuous input data for GPFA
+            return [
+                spiketrains.get_spiketrains_from_trial_as_list(idx)
+                for idx in range(spiketrains.n_trials)
+            ]
+
+    def _format_training_data(self, spiketrains):
+        seqs = gpfa_util.get_seqs(spiketrains, self.bin_size)
+        # Remove inactive units based on training set
+        self.has_spikes_bool = np.hstack(seqs["y"]).any(axis=1)
+        for seq in seqs:
+            seq["y"] = seq["y"][self.has_spikes_bool, :]
+        return seqs
+
     def fit(
         self, spiketrains: Union[List[List[neo.core.SpikeTrain]], "Trials"]
     ) -> "GPFA":
@@ -337,53 +384,6 @@ class GPFA(sklearn.base.BaseEstimator):
         )
 
         return self
-
-    @staticmethod
-    def _check_training_data(
-        spiketrains: Union[List[List[neo.core.SpikeTrain]], Trials]
-    ) -> List[List[neo.core.SpikeTrain]]:
-        if isinstance(spiketrains, list):
-            if len(spiketrains) == 0:
-                raise ValueError("Input spiketrains can not be empty")
-            if not all(
-                isinstance(item, neo.SpikeTrain)
-                for sublist in spiketrains
-                for item in sublist
-            ):
-                raise ValueError(
-                    "structure of the spiketrains is not"
-                    "correct: 0-axis should be trials, 1-axis"
-                    " neo.SpikeTrain and 2-axis spike times"
-                )
-            return spiketrains
-        if isinstance(spiketrains, Trials):
-            if spiketrains.n_trials == 0:
-                raise ValueError("Number of trials can not be 0")
-            # Trials contain only SpikeTrains
-            if all(
-                n_spktr != 0
-                for n_spktr in spiketrains.n_spiketrains_trial_by_trial
-            ):
-                if not all(
-                    n_analog == 0
-                    for n_analog in spiketrains.n_analogsignals_trial_by_trial
-                ):
-                    raise ValueError(
-                        "Input contains AnalogSignals and " "SpikeTrains"
-                    )
-            # TODO: implement continuous input data for GPFA
-            return [
-                spiketrains.get_spiketrains_from_trial_as_list(idx)
-                for idx in range(spiketrains.n_trials)
-            ]
-
-    def _format_training_data(self, spiketrains):
-        seqs = gpfa_util.get_seqs(spiketrains, self.bin_size)
-        # Remove inactive units based on training set
-        self.has_spikes_bool = np.hstack(seqs["y"]).any(axis=1)
-        for seq in seqs:
-            seq["y"] = seq["y"][self.has_spikes_bool, :]
-        return seqs
 
     def transform(
         self,
