@@ -292,7 +292,7 @@ class SynchrofactDetectionTestCase(unittest.TestCase):
         correct_annotations = np.array([[2, 1, 1, 1, 2, 1],
                                         [2, 1, 1, 1, 2, 1]])
 
-        self._test_template(list(segment.spiketrains), correct_annotations,
+        self._test_template(segment.spiketrains, correct_annotations,
                             sampling_rate, spread=0, mode='delete',
                             in_place=True, deletion_threshold=2)
 
