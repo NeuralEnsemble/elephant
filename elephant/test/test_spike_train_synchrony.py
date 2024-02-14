@@ -445,8 +445,7 @@ class SynchrofactDetectionTestCase(unittest.TestCase):
         correct_array_annotations = {key: value[correct_mask] for key, value in
                                      spiketrain.array_annotations.items()}
 
-        # Sanity check: block contains only one spiketrain before synchrofact
-        # removal
+        # block contains only one spiketrain before synchrofact removal.
         self.assertEqual(len(block.filter(objects=neo.SpikeTrain)), 1)
 
         # perform a synchrofact search with delete=True
@@ -460,7 +459,7 @@ class SynchrofactDetectionTestCase(unittest.TestCase):
             in_place=True,
             threshold=2)
 
-        # Ensure that the spiketrain was not duplicated
+        # Ensure that the spiketrain was not duplicated.
         self.assertEqual(len(block.filter(objects=neo.SpikeTrain)), 1)
 
         cleaned_spiketrain = segment.spiketrains[0]
