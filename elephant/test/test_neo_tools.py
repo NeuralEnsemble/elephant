@@ -481,7 +481,7 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
 
     @staticmethod
     def _fix_neo_issue_749(obj, targ):
-        # TODO: remove once fixed
+        # TODO: remove once fixed.
         # https://github.com/NeuralEnsemble/python-neo/issues/749
         num_times = len(targ['times'])
         obj = obj[:num_times]
@@ -1176,7 +1176,6 @@ class GetAllSpiketrainsTestCase(unittest.TestCase):
         no_spiketrains = len(obj.spiketrains)
         for spiketrain_idx in range(no_spiketrains):
             obj.spiketrains.append(obj.spiketrains[spiketrain_idx])
-        
 
         res0 = nt.get_all_spiketrains(obj)
 
@@ -1331,11 +1330,10 @@ class GetAllEventsTestCase(unittest.TestCase):
 
         # obj.events.extend(obj.events)
 
-
         no_events = len(obj.events)
         for event_idx in range(no_events):
             obj.events.append(obj.events[event_idx])
-        
+
         res0 = nt.get_all_events(obj)
 
         targ = targ.events
@@ -1484,7 +1482,7 @@ class GetAllEpochsTestCase(unittest.TestCase):
         obj = generate_one_simple_segment(
             supported_objects=[neo.core.Segment, neo.core.Epoch])
         targ = copy.deepcopy(obj)
-        
+
         # TODO: This will no longer work with neo 0.13.0.
         # This might be fixed in the future, see Issue:
         # https://github.com/NeuralEnsemble/python-neo/issues/1405
