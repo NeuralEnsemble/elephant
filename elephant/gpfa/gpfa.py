@@ -493,8 +493,9 @@ class GPFA(sklearn.base.BaseEstimator):
             for sublist in spiketrains
             for item in sublist
         ):
-            return self._transform_spiketrains(spiketrains,
-                                               returned_data=returned_data)
+            return self._transform_spiketrains(
+                spiketrains, returned_data=returned_data
+            )
         else:  # TODO: implement case for continuous data
             raise ValueError
 
