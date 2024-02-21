@@ -16,7 +16,6 @@ import logging
 import warnings
 from functools import wraps
 
-import neo
 from neo.core.spiketrainlist import SpikeTrainList
 import numpy as np
 import quantities as pq
@@ -38,9 +37,10 @@ logger = logging.getLogger(__file__)
 log_handler = logging.StreamHandler()
 log_handler.setFormatter(
     logging.Formatter(f"[%(asctime)s] {__name__[__name__.rfind('.')+1::]} -"
-                       " %(levelname)s: %(message)s"))
+                      " %(levelname)s: %(message)s"))
 logger.addHandler(log_handler)
 logger.propagate = False
+
 
 def is_binary(array):
     """
@@ -298,18 +298,20 @@ def round_binning_errors(values, tolerance=1e-8):
     if isinstance(values, np.ndarray):
         num_corrections = correction_mask.sum()
         if num_corrections > 0:
-            logger.warning(f'Correcting {num_corrections} rounding errors by '
-                         'shifting the affected spikes into the following '
-                         'bin. You can set tolerance=None to disable this '
-                         'behaviour.')
+            logger.warning(
+                f'Correcting {num_corrections} rounding errors by '
+                'shifting the affected spikes into the following '
+                'bin. You can set tolerance=None to disable this '
+                'behaviour.')
             values[correction_mask] += 0.5
         return values.astype(np.int32)
 
     if correction_mask:
-        logger.warning('Correcting a rounding error in the calculation '
-                    'of the number of bins by incrementing the value by 1. '
-                    'You can set tolerance=None to disable this '
-                    'behaviour.')
+        logger.warning(
+            'Correcting a rounding error in the calculation '
+            'of the number of bins by incrementing the value by 1. '
+            'You can set tolerance=None to disable this '
+            'behaviour.')
         values += 0.5
     return int(values)
 
