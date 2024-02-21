@@ -271,19 +271,18 @@ class GPFA(sklearn.base.BaseEstimator):
     def _check_training_data(
         spiketrains: List[List[neo.core.SpikeTrain]],
     ) -> None:
-        if isinstance(spiketrains, list):
-            if len(spiketrains) == 0:
-                raise ValueError("Input spiketrains can not be empty")
-            if not all(
-                isinstance(item, neo.SpikeTrain)
-                for sublist in spiketrains
-                for item in sublist
-            ):
-                raise ValueError(
-                    "structure of the spiketrains is not "
-                    "correct: 0-axis should be trials, 1-axis "
-                    "neo.SpikeTrain and 2-axis spike times."
-                )
+        if len(spiketrains) == 0:
+            raise ValueError("Input spiketrains can not be empty")
+        if not all(
+            isinstance(item, neo.SpikeTrain)
+            for sublist in spiketrains
+            for item in sublist
+        ):
+            raise ValueError(
+                "structure of the spiketrains is not "
+                "correct: 0-axis should be trials, 1-axis "
+                "neo.SpikeTrain and 2-axis spike times."
+            )
 
     def _format_training_data(
         self, spiketrains: List[List[neo.core.SpikeTrain]]
