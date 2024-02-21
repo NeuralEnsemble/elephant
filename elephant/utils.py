@@ -20,6 +20,8 @@ from neo.core.spiketrainlist import SpikeTrainList
 import numpy as np
 import quantities as pq
 
+from elephant.trials import Trials
+
 
 __all__ = [
     "deprecated_alias",
@@ -374,3 +376,20 @@ def get_opencl_capability():
         return True
     except ImportError:
         return False
+
+
+def trials_to_list_of_list_of_spiketrains(func):
+    @wraps(func)
+    def wrapper(self, *args, **kwargs):
+        for arg in args:
+            if isinstance(arg, Trials):
+                spiketrains = arg
+                if spiketrains.n_trials == 0:
+                    raise ValueError("Number of trials cannot be 0")
+                spiketrains = [
+                    spiketrains.get_spiketrains_from_trial_as_list(idx)
+                    for idx in range(spiketrains.n_trials)
+                    ]
+                return func(self, spiketrains, *args[1:], **kwargs)
+        return func(self, *args, **kwargs)
+    return wrapper

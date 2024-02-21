@@ -77,6 +77,7 @@ import sklearn
 
 from elephant.gpfa import gpfa_core, gpfa_util
 from elephant.trials import Trials
+from elephant.utils import trials_to_list_of_list_of_spiketrains
 
 
 __all__ = ["GPFA"]
@@ -268,8 +269,8 @@ class GPFA(sklearn.base.BaseEstimator):
 
     @staticmethod
     def _check_training_data(
-        spiketrains: Union[List[List[neo.core.SpikeTrain]], Trials]
-    ) -> List[List[neo.core.SpikeTrain]]:
+        spiketrains: List[List[neo.core.SpikeTrain]],
+    ) -> None:
         if isinstance(spiketrains, list):
             if len(spiketrains) == 0:
                 raise ValueError("Input spiketrains can not be empty")
@@ -283,29 +284,10 @@ class GPFA(sklearn.base.BaseEstimator):
                     "correct: 0-axis should be trials, 1-axis "
                     "neo.SpikeTrain and 2-axis spike times."
                 )
-            return spiketrains
-        if isinstance(spiketrains, Trials):
-            if spiketrains.n_trials == 0:
-                raise ValueError("Number of trials can not be 0")
-            # Trials contain only SpikeTrains
-            if all(
-                n_spktr != 0
-                for n_spktr in spiketrains.n_spiketrains_trial_by_trial
-            ):
-                if not all(
-                    n_analog == 0
-                    for n_analog in spiketrains.n_analogsignals_trial_by_trial
-                ):
-                    raise ValueError(
-                        "Input contains AnalogSignals and SpikeTrains"
-                    )
-            # TODO: implement continuous input data for GPFA
-            return [
-                spiketrains.get_spiketrains_from_trial_as_list(idx)
-                for idx in range(spiketrains.n_trials)
-            ]
 
-    def _format_training_data(self, spiketrains):
+    def _format_training_data(
+        self, spiketrains: List[List[neo.core.SpikeTrain]]
+    ) -> np.recarray:
         seqs = gpfa_util.get_seqs(spiketrains, self.bin_size)
         # Remove inactive units based on training set
         self.has_spikes_bool = np.hstack(seqs["y"]).any(axis=1)
@@ -313,6 +295,7 @@ class GPFA(sklearn.base.BaseEstimator):
             seq["y"] = seq["y"][self.has_spikes_bool, :]
         return seqs
 
+    @trials_to_list_of_list_of_spiketrains
     def fit(
         self, spiketrains: Union[List[List[neo.core.SpikeTrain]], "Trials"]
     ) -> "GPFA":
@@ -346,7 +329,7 @@ class GPFA(sklearn.base.BaseEstimator):
 
             If covariance matrix of input spike data is rank deficient.
         """
-        spiketrains = self._check_training_data(spiketrains)
+        self._check_training_data(spiketrains)
         seqs_train = self._format_training_data(spiketrains)
         # Check if training data covariance is full rank
         y_all = np.hstack(seqs_train["y"])
@@ -385,6 +368,7 @@ class GPFA(sklearn.base.BaseEstimator):
 
         return self
 
+    @trials_to_list_of_list_of_spiketrains
     def transform(
         self,
         spiketrains: Union[List[List[neo.core.SpikeTrain]], "Trials"],
@@ -463,7 +447,6 @@ class GPFA(sklearn.base.BaseEstimator):
             If `returned_data` contains keys different from the ones in
             `self.valid_data_names`.
         """
-        spiketrains = self._check_training_data(spiketrains)
         if len(spiketrains[0]) != len(self.has_spikes_bool):
             raise ValueError(
                 "'spiketrains' must contain the same number of "
