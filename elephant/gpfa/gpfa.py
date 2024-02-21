@@ -294,40 +294,9 @@ class GPFA(sklearn.base.BaseEstimator):
             seq["y"] = seq["y"][self.has_spikes_bool, :]
         return seqs
 
-    @trials_to_list_of_list_of_spiketrains
-    def fit(
-        self, spiketrains: Union[List[List[neo.core.SpikeTrain]], "Trials"]
+    def _fit_spiketrains(
+        self, spiketrains: List[List[neo.core.SpikeTrain]]
     ) -> "GPFA":
-        """
-        Fit the model with the given training data.
-
-        Parameters
-        ---------- # noqa
-        spiketrains : list of list of :class:`neo.core.SpikeTrain` or :class:`elephant.trials.Trials`
-            Spike train data to be fit to latent variables.
-            For list of lists, the outer list corresponds to trials and the
-            inner list corresponds to the neurons recorded in that trial, such
-            that `spiketrains[l][n]` is the spike train of neuron `n` in trial
-            `l`.
-            Note that the number and order of `neo.SpikeTrain` objects per
-            trial must be fixed such that `spiketrains[l][n]` and
-            `spiketrains[k][n]` refer to spike trains of the same neuron
-            for any choices of `l`, `k`, and `n`.
-
-        Returns
-        -------
-        self : object
-            Returns the instance itself.
-
-        Raises
-        ------
-        ValueError
-            If `spiketrains` is an empty list.
-
-            If `spiketrains[0][0]` is not a `neo.SpikeTrain`.
-
-            If covariance matrix of input spike data is rank deficient.
-        """
         self._check_training_data(spiketrains)
         seqs_train = self._format_training_data(spiketrains)
         # Check if training data covariance is full rank
@@ -366,6 +335,79 @@ class GPFA(sklearn.base.BaseEstimator):
         )
 
         return self
+
+    @trials_to_list_of_list_of_spiketrains
+    def fit(
+        self, spiketrains: Union[List[List[neo.core.SpikeTrain]], "Trials"]
+    ) -> "GPFA":
+        """
+        Fit the model with the given training data.
+
+        Parameters
+        ---------- # noqa
+        spiketrains : list of list of :class:`neo.core.SpikeTrain` or :class:`elephant.trials.Trials`
+            Spike train data to be fit to latent variables.
+            For list of lists, the outer list corresponds to trials and the
+            inner list corresponds to the neurons recorded in that trial, such
+            that `spiketrains[l][n]` is the spike train of neuron `n` in trial
+            `l`.
+            Note that the number and order of `neo.SpikeTrain` objects per
+            trial must be fixed such that `spiketrains[l][n]` and
+            `spiketrains[k][n]` refer to spike trains of the same neuron
+            for any choices of `l`, `k`, and `n`.
+
+        Returns
+        -------
+        self : object
+            Returns the instance itself.
+
+        Raises
+        ------
+        ValueError
+            If `spiketrains` is an empty list.
+
+            If `spiketrains[0][0]` is not a `neo.SpikeTrain`.
+
+            If covariance matrix of input spike data is rank deficient.
+        """
+        if all(
+            isinstance(item, neo.SpikeTrain)
+            for sublist in spiketrains
+            for item in sublist
+        ):
+            self._fit_spiketrains(spiketrains)
+        else:  # TODO: implement case for continuous data
+            raise ValueError
+
+    def _transform_spiketrains(
+        self,
+        spiketrains: List[List[neo.core.SpikeTrain]],
+        returned_data: str = ["latent_variable_orth"],
+    ) -> "GPFA":
+        if len(spiketrains[0]) != len(self.has_spikes_bool):
+            raise ValueError(
+                "'spiketrains' must contain the same number of "
+                "neurons as the training spiketrain data"
+            )
+        invalid_keys = set(returned_data).difference(self.valid_data_names)
+        if len(invalid_keys) > 0:
+            raise ValueError(
+                "'returned_data' can only have the following "
+                f"entries: {self.valid_data_names}"
+            )
+        seqs = gpfa_util.get_seqs(spiketrains, self.bin_size)
+        for seq in seqs:
+            seq["y"] = seq["y"][self.has_spikes_bool, :]
+        seqs, ll = gpfa_core.exact_inference_with_ll(
+            seqs, self.params_estimated, get_ll=True
+        )
+        self.transform_info["log_likelihood"] = ll
+        self.transform_info["num_bins"] = seqs["T"]
+        Corth, seqs = gpfa_core.orthonormalize(self.params_estimated, seqs)
+        self.transform_info["Corth"] = Corth
+        if len(returned_data) == 1:
+            return seqs[returned_data[0]]
+        return {x: seqs[x] for x in returned_data}
 
     @trials_to_list_of_list_of_spiketrains
     def transform(
@@ -446,30 +488,15 @@ class GPFA(sklearn.base.BaseEstimator):
             If `returned_data` contains keys different from the ones in
             `self.valid_data_names`.
         """
-        if len(spiketrains[0]) != len(self.has_spikes_bool):
-            raise ValueError(
-                "'spiketrains' must contain the same number of "
-                "neurons as the training spiketrain data"
-            )
-        invalid_keys = set(returned_data).difference(self.valid_data_names)
-        if len(invalid_keys) > 0:
-            raise ValueError(
-                "'returned_data' can only have the following "
-                f"entries: {self.valid_data_names}"
-            )
-        seqs = gpfa_util.get_seqs(spiketrains, self.bin_size)
-        for seq in seqs:
-            seq["y"] = seq["y"][self.has_spikes_bool, :]
-        seqs, ll = gpfa_core.exact_inference_with_ll(
-            seqs, self.params_estimated, get_ll=True
-        )
-        self.transform_info["log_likelihood"] = ll
-        self.transform_info["num_bins"] = seqs["T"]
-        Corth, seqs = gpfa_core.orthonormalize(self.params_estimated, seqs)
-        self.transform_info["Corth"] = Corth
-        if len(returned_data) == 1:
-            return seqs[returned_data[0]]
-        return {x: seqs[x] for x in returned_data}
+        if all(
+            isinstance(item, neo.SpikeTrain)
+            for sublist in spiketrains
+            for item in sublist
+        ):
+            return self._transform_spiketrains(spiketrains,
+                                               returned_data=returned_data)
+        else:  # TODO: implement case for continuous data
+            raise ValueError
 
     def fit_transform(
         self,
