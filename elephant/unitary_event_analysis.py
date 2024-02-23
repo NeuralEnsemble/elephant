@@ -60,7 +60,7 @@ import quantities as pq
 import scipy
 
 import elephant.conversion as conv
-from elephant.utils import is_binary, deprecated_alias
+from elephant.utils import is_binary
 
 __all__ = [
     "hash_from_pattern",
@@ -649,7 +649,6 @@ def _bintime(t, bin_size):
     return np.floor(np.array(t_dl) / bin_size_dl).astype(int)
 
 
-@deprecated_alias(winsize='win_size', winstep='win_step')
 def _winpos(t_start, t_stop, win_size, win_step, position='left-edge'):
     """
     Calculate the position of the analysis window.
@@ -690,8 +689,6 @@ def _UE(mat, pattern_hash, method='analytic_TrialByTrial', n_surrogates=1):
     return Js, rate_avg, n_exp, n_emp, indices
 
 
-@deprecated_alias(data='spiketrains', binsize='bin_size', winsize='win_size',
-                  winstep='win_step', n_surr='n_surrogates')
 def jointJ_window_analysis(spiketrains, bin_size=5 * pq.ms,
                            win_size=100 * pq.ms, win_step=5 * pq.ms,
                            pattern_hash=None, method='analytic_TrialByTrial',
