@@ -411,6 +411,9 @@ def trials_to_list_of_list_of_spiketrains(method):
                     spiketrains.get_spiketrains_from_trial_as_list(idx)
                     for idx in range(spiketrains.n_trials)
                     ]
-                return method(self, spiketrains, *args[1:], **kwargs)
+                if len(spiketrains) == 0:
+                    break
+                else:
+                    return method(self, spiketrains, *args[1:], **kwargs)
         return method(self, *args, **kwargs)
     return wrapper
