@@ -387,12 +387,12 @@ def trials_to_list_of_list_of_spiketrains(method):
     ----------
     method: callable, The method to be decorated.
 
-    Returns:
-    --------
+    Returns
+    -------
     callable: The decorated method.
 
-    Raises:
-    -------
+    Raises
+    ------
     ValueError: If the number of trials in the Trials object is 0.
 
     Example:
