@@ -481,7 +481,7 @@ class ExtractNeoAttrsTestCase(unittest.TestCase):
 
     @staticmethod
     def _fix_neo_issue_749(obj, targ):
-        # TODO: remove once fixed.
+        # TODO: remove once fixed
         # https://github.com/NeuralEnsemble/python-neo/issues/749
         num_times = len(targ['times'])
         obj = obj[:num_times]
