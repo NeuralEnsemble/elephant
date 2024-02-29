@@ -1167,15 +1167,6 @@ class GetAllSpiketrainsTestCase(unittest.TestCase):
             supported_objects=[neo.core.Segment, neo.core.SpikeTrain])
         targ = copy.deepcopy(obj)
         obj.spiketrains.append(obj.spiketrains[0])
-        # TODO: The following is the original line of the test, however, this
-        # fails with Neo 0.10.0
-        # Reinstate once issue is fixed:
-        # https://github.com/NeuralEnsemble/python-neo/issues/1405
-        # obj.spiketrains.extend(obj.spiketrains)
-
-        no_spiketrains = len(obj.spiketrains)
-        for spiketrain_idx in range(no_spiketrains):
-            obj.spiketrains.append(obj.spiketrains[spiketrain_idx])
 
         res0 = nt.get_all_spiketrains(obj)
 
@@ -1324,15 +1315,6 @@ class GetAllEventsTestCase(unittest.TestCase):
         obj = generate_one_simple_segment(
             supported_objects=[neo.core.Segment, neo.core.Event])
         targ = copy.deepcopy(obj)
-        # TODO: This will no longer work with neo 0.13.0.
-        # This might be fixed in the future, see Issue:
-        # https://github.com/NeuralEnsemble/python-neo/issues/1405
-
-        # obj.events.extend(obj.events)
-
-        no_events = len(obj.events)
-        for event_idx in range(no_events):
-            obj.events.append(obj.events[event_idx])
 
         res0 = nt.get_all_events(obj)
 
@@ -1482,16 +1464,6 @@ class GetAllEpochsTestCase(unittest.TestCase):
         obj = generate_one_simple_segment(
             supported_objects=[neo.core.Segment, neo.core.Epoch])
         targ = copy.deepcopy(obj)
-
-        # TODO: This will no longer work with neo 0.13.0.
-        # This might be fixed in the future, see Issue:
-        # https://github.com/NeuralEnsemble/python-neo/issues/1405
-
-        # obj.epochs.extend(obj.epochs)
-
-        no_epochs = len(obj.epochs)
-        for epoch_idx in range(no_epochs):
-            obj.epochs.append(obj.epochs[epoch_idx])
 
         res0 = nt.get_all_epochs(obj)
 
