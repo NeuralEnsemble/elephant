@@ -26,6 +26,7 @@ if HAVE_SKLEARN:
     from elephant.gpfa import GPFA
     from sklearn.model_selection import cross_val_score
 
+
 @unittest.skipUnless(HAVE_SKLEARN, 'requires sklearn')
 class GPFATestCase(unittest.TestCase):
     @classmethod
