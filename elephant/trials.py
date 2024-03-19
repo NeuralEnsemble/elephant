@@ -34,7 +34,7 @@ In the release, the classes :class:`TrialsFromBlock` and
     TrialsFromBlock
     TrialsFromLists
 
-:copyright: Copyright 2014-2023 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2024 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
