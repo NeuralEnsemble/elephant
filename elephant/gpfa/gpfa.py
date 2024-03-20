@@ -296,16 +296,19 @@ class GPFA(sklearn.base.BaseEstimator):
 
     @trials_to_list_of_spiketrainlist
     def fit(
-        self, spiketrains: Union[List[List[neo.core.SpikeTrain]],
-                                 "Trials",
-                                 List[neo.core.spiketrainlist.SpikeTrainList]]
+        self,
+        spiketrains: Union[
+            List[List[neo.core.SpikeTrain]],
+            "Trials",
+            List[neo.core.spiketrainlist.SpikeTrainList],
+        ],
     ) -> "GPFA":
         """
         Fit the model with the given training data.
 
         Parameters
         ---------- # noqa
-        spiketrains : :class:`elephant.trials.Trials`, list of :class:`neo.core.spiketrainlist.SpikeTrainList` or list of list of :class:`neo.core.SpikeTrain`  
+        spiketrains : :class:`elephant.trials.Trials`, list of :class:`neo.core.spiketrainlist.SpikeTrainList` or list of list of :class:`neo.core.SpikeTrain`
             Spike train data to be fit to latent variables.
             For list of lists, the outer list corresponds to trials and the
             inner list corresponds to the neurons recorded in that trial, such
@@ -378,9 +381,11 @@ class GPFA(sklearn.base.BaseEstimator):
     @trials_to_list_of_spiketrainlist
     def transform(
         self,
-        spiketrains: Union[List[List[neo.core.SpikeTrain]],
-                           "Trials",
-                           List[neo.core.spiketrainlist.SpikeTrainList]],
+        spiketrains: Union[
+            List[List[neo.core.SpikeTrain]],
+            "Trials",
+            List[neo.core.spiketrainlist.SpikeTrainList],
+        ],
         returned_data: str = ["latent_variable_orth"],
     ) -> "GPFA":
         """
