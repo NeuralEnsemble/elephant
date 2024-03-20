@@ -371,40 +371,9 @@ class GPFA(sklearn.base.BaseEstimator):
                 freq_ll=self.freq_ll,
                 verbose=self.verbose,
             )
-
             return self
         else:  # TODO: implement case for continuous data
             raise ValueError
-
-    def _transform_spiketrains(
-        self,
-        spiketrains: List[List[neo.core.SpikeTrain]],
-        returned_data: str = ["latent_variable_orth"],
-    ) -> "GPFA":
-        if len(spiketrains[0]) != len(self.has_spikes_bool):
-            raise ValueError(
-                "'spiketrains' must contain the same number of "
-                "neurons as the training spiketrain data"
-            )
-        invalid_keys = set(returned_data).difference(self.valid_data_names)
-        if len(invalid_keys) > 0:
-            raise ValueError(
-                "'returned_data' can only have the following "
-                f"entries: {self.valid_data_names}"
-            )
-        seqs = gpfa_util.get_seqs(spiketrains, self.bin_size)
-        for seq in seqs:
-            seq["y"] = seq["y"][self.has_spikes_bool, :]
-        seqs, ll = gpfa_core.exact_inference_with_ll(
-            seqs, self.params_estimated, get_ll=True
-        )
-        self.transform_info["log_likelihood"] = ll
-        self.transform_info["num_bins"] = seqs["T"]
-        Corth, seqs = gpfa_core.orthonormalize(self.params_estimated, seqs)
-        self.transform_info["Corth"] = Corth
-        if len(returned_data) == 1:
-            return seqs[returned_data[0]]
-        return {x: seqs[x] for x in returned_data}
 
     @trials_to_list_of_spiketrainlist
     def transform(
@@ -492,9 +461,30 @@ class GPFA(sklearn.base.BaseEstimator):
             for sublist in spiketrains
             for item in sublist
         ):
-            return self._transform_spiketrains(
-                spiketrains, returned_data=returned_data
+            if len(spiketrains[0]) != len(self.has_spikes_bool):
+                raise ValueError(
+                    "'spiketrains' must contain the same number of "
+                    "neurons as the training spiketrain data"
+                )
+            invalid_keys = set(returned_data).difference(self.valid_data_names)
+            if len(invalid_keys) > 0:
+                raise ValueError(
+                    "'returned_data' can only have the following "
+                    f"entries: {self.valid_data_names}"
+                )
+            seqs = gpfa_util.get_seqs(spiketrains, self.bin_size)
+            for seq in seqs:
+                seq["y"] = seq["y"][self.has_spikes_bool, :]
+            seqs, ll = gpfa_core.exact_inference_with_ll(
+                seqs, self.params_estimated, get_ll=True
             )
+            self.transform_info["log_likelihood"] = ll
+            self.transform_info["num_bins"] = seqs["T"]
+            Corth, seqs = gpfa_core.orthonormalize(self.params_estimated, seqs)
+            self.transform_info["Corth"] = Corth
+            if len(returned_data) == 1:
+                return seqs[returned_data[0]]
+            return {x: seqs[x] for x in returned_data}
         else:  # TODO: implement case for continuous data
             raise ValueError
 
