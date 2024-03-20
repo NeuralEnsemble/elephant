@@ -77,7 +77,7 @@ import sklearn
 
 from elephant.gpfa import gpfa_core, gpfa_util
 from elephant.trials import Trials
-from elephant.utils import trials_to_list_of_list_of_spiketrains
+from elephant.utils import trials_to_list_of_spiketrainlist
 
 
 __all__ = ["GPFA"]
@@ -294,58 +294,18 @@ class GPFA(sklearn.base.BaseEstimator):
             seq["y"] = seq["y"][self.has_spikes_bool, :]
         return seqs
 
-    def _fit_spiketrains(
-        self, spiketrains: List[List[neo.core.SpikeTrain]]
-    ) -> "GPFA":
-        self._check_training_data(spiketrains)
-        seqs_train = self._format_training_data(spiketrains)
-        # Check if training data covariance is full rank
-        y_all = np.hstack(seqs_train["y"])
-        y_dim = y_all.shape[0]
-
-        if np.linalg.matrix_rank(np.cov(y_all)) < y_dim:
-            errmesg = (
-                "Observation covariance matrix is rank deficient.\n"
-                "Possible causes: "
-                "repeated units, not enough observations."
-            )
-            raise ValueError(errmesg)
-
-        if self.verbose:
-            print("Number of training trials: {}".format(len(seqs_train)))
-            print("Latent space dimensionality: {}".format(self.x_dim))
-            print(
-                "Observation dimensionality: {}".format(
-                    self.has_spikes_bool.sum()
-                )
-            )
-
-        # The following does the heavy lifting.
-        self.params_estimated, self.fit_info = gpfa_core.fit(
-            seqs_train=seqs_train,
-            x_dim=self.x_dim,
-            bin_width=self.bin_size.rescale("ms").magnitude,
-            min_var_frac=self.min_var_frac,
-            em_max_iters=self.em_max_iters,
-            em_tol=self.em_tol,
-            tau_init=self.tau_init.rescale("ms").magnitude,
-            eps_init=self.eps_init,
-            freq_ll=self.freq_ll,
-            verbose=self.verbose,
-        )
-
-        return self
-
-    @trials_to_list_of_list_of_spiketrains
+    @trials_to_list_of_spiketrainlist
     def fit(
-        self, spiketrains: Union[List[List[neo.core.SpikeTrain]], "Trials"]
+        self, spiketrains: Union[List[List[neo.core.SpikeTrain]],
+                                 "Trials",
+                                 List[neo.core.spiketrainlist.SpikeTrainList]]
     ) -> "GPFA":
         """
         Fit the model with the given training data.
 
         Parameters
         ---------- # noqa
-        spiketrains : list of list of :class:`neo.core.SpikeTrain` or :class:`elephant.trials.Trials`
+        spiketrains : :class:`elephant.trials.Trials`, list of :class:`neo.core.spiketrainlist.SpikeTrainList` or list of list of :class:`neo.core.SpikeTrain`  
             Spike train data to be fit to latent variables.
             For list of lists, the outer list corresponds to trials and the
             inner list corresponds to the neurons recorded in that trial, such
@@ -375,7 +335,44 @@ class GPFA(sklearn.base.BaseEstimator):
             for sublist in spiketrains
             for item in sublist
         ):
-            self._fit_spiketrains(spiketrains)
+            self._check_training_data(spiketrains)
+            seqs_train = self._format_training_data(spiketrains)
+            # Check if training data covariance is full rank
+            y_all = np.hstack(seqs_train["y"])
+            y_dim = y_all.shape[0]
+
+            if np.linalg.matrix_rank(np.cov(y_all)) < y_dim:
+                errmesg = (
+                    "Observation covariance matrix is rank deficient.\n"
+                    "Possible causes: "
+                    "repeated units, not enough observations."
+                )
+                raise ValueError(errmesg)
+
+            if self.verbose:
+                print("Number of training trials: {}".format(len(seqs_train)))
+                print("Latent space dimensionality: {}".format(self.x_dim))
+                print(
+                    "Observation dimensionality: {}".format(
+                        self.has_spikes_bool.sum()
+                    )
+                )
+
+            # The following does the heavy lifting.
+            self.params_estimated, self.fit_info = gpfa_core.fit(
+                seqs_train=seqs_train,
+                x_dim=self.x_dim,
+                bin_width=self.bin_size.rescale("ms").magnitude,
+                min_var_frac=self.min_var_frac,
+                em_max_iters=self.em_max_iters,
+                em_tol=self.em_tol,
+                tau_init=self.tau_init.rescale("ms").magnitude,
+                eps_init=self.eps_init,
+                freq_ll=self.freq_ll,
+                verbose=self.verbose,
+            )
+
+            return self
         else:  # TODO: implement case for continuous data
             raise ValueError
 
@@ -409,10 +406,12 @@ class GPFA(sklearn.base.BaseEstimator):
             return seqs[returned_data[0]]
         return {x: seqs[x] for x in returned_data}
 
-    @trials_to_list_of_list_of_spiketrains
+    @trials_to_list_of_spiketrainlist
     def transform(
         self,
-        spiketrains: Union[List[List[neo.core.SpikeTrain]], "Trials"],
+        spiketrains: Union[List[List[neo.core.SpikeTrain]],
+                           "Trials",
+                           List[neo.core.spiketrainlist.SpikeTrainList]],
         returned_data: str = ["latent_variable_orth"],
     ) -> "GPFA":
         """
@@ -422,7 +421,7 @@ class GPFA(sklearn.base.BaseEstimator):
 
         Parameters
         ---------- # noqa
-        spiketrains : list of list of :class:`neo.core.SpikeTrain` or :class:`elephant.trials.Trials`
+        spiketrains : list of list of :class:`neo.core.SpikeTrain`, list of :class:`neo.core.spiketrainlist.SpikeTrainList` or :class:`elephant.trials.Trials`
             Spike train data to be transformed to latent variables.
             For list of lists, the outer list corresponds to trials and the
             inner list corresponds to the neurons recorded in that trial, such
