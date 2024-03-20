@@ -1073,5 +1073,5 @@ def spike_train_timescale(binned_spiketrain, max_tau):
 
     # Calculate the timescale using trapezoidal integration
     integr = (corrfct / corrfct[0]) ** 2
-    timescale = 2 * integrate.trapz(integr, dx=bin_size)
+    timescale = 2 * integrate.trapezoid(integr, dx=bin_size)
     return pq.Quantity(timescale, units=binned_spiketrain.units, copy=False)
