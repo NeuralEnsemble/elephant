@@ -378,9 +378,9 @@ def get_opencl_capability():
         return False
 
 
-def trials_to_list_of_list_of_spiketrains(method):
+def trials_to_list_of_spiketrainlist(method):
     """
-    Decorator to convert Trials object to a list of list of spiketrains before
+    Decorator to convert Trials object to a list of spiketrainlists before
     calling the wrapped method.
 
     Parameters
@@ -396,7 +396,7 @@ def trials_to_list_of_list_of_spiketrains(method):
     ValueError: If the number of trials in the Trials object is 0.
 
     Example:
-        @trials_to_list_of_list_of_spiketrains
+        @trials_to_list_of_spiketrainlist
         def process_data(self, spiketrains):
             ...
     """
@@ -405,15 +405,10 @@ def trials_to_list_of_list_of_spiketrains(method):
         for arg in args:
             if isinstance(arg, Trials):
                 spiketrains = arg
-                if spiketrains.n_trials == 0:
-                    raise ValueError("Number of trials cannot be 0")
                 spiketrains = [
                     spiketrains.get_spiketrains_from_trial_as_list(idx)
                     for idx in range(spiketrains.n_trials)
                     ]
-                if len(spiketrains) == 0:
-                    break
-                else:
-                    return method(self, spiketrains, *args[1:], **kwargs)
+                return method(self, spiketrains, *args[1:], **kwargs)
         return method(self, *args, **kwargs)
     return wrapper
