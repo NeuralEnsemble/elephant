@@ -24,7 +24,6 @@ from __future__ import division, print_function, unicode_literals
 
 import numpy as np
 import quantities as pq
-import scipy as sp
 from neo.core import SpikeTrain
 
 import elephant.kernels as kernels
@@ -364,7 +363,7 @@ def van_rossum_distance(spiketrains, time_constant=1.0 * pq.s, sort=True):
     for i, j in np.ndindex(k_dist.shape):
         vr_dist[i, j] = (
             k_dist[i, i] + k_dist[j, j] - k_dist[i, j] - k_dist[j, i])
-    return sp.sqrt(vr_dist)
+    return np.sqrt(vr_dist)
 
 
 def _summed_dist_matrix(spiketrains, tau, presorted=False):
