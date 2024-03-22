@@ -312,7 +312,7 @@ jobs:
       matrix:
         # OS [ubuntu-latest, macos-latest, windows-latest]
         os: [ubuntu-latest]
-        python-version: [3.10]
+        python-version: [3.9]
 
       # do not cancel all in-progress jobs if any matrix job fails
       fail-fast: false
@@ -331,7 +331,7 @@ jobs:
         with:
           auto-update-conda: true
           python-version: ${{ matrix.python-version }}
-          mamba-version: "*"
+          mamba-version: "0.11.1"
           channels: conda-forge,defaults
           channel-priority: true
           activate-environment: elephant
