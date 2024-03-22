@@ -403,7 +403,8 @@ jobs:
           sudo apt-get update
           sudo apt install -y libopenmpi-dev openmpi-bin
           
-          conda install -c conda-forge openmpi pandoc libstdcxx-ng
+          conda install -c conda-forge openmpi pandoc libstdcxx-ng # fix libstdc++.so.6: version for new scipy versions > 1.9.1
+          mamba env update --file requirements/environment-docs.yml --name elephant
           python -m pip install --upgrade pip
           pip install -r requirements/requirements-docs.txt
           pip install -r requirements/requirements-tutorials.txt
