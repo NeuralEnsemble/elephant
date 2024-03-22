@@ -397,6 +397,8 @@ jobs:
           auto-update-conda: true
           python-version: 3.9
           mamba-version: "*"
+          channels: conda-forge,defaults
+          channel-priority: true
           activate-environment: elephant
           environment-file: requirements/environment.yml
           auto-activate-base: false
