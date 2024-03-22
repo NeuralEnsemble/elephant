@@ -164,7 +164,7 @@ jobs:
         shell: bash -l {0}
         run: |
           pip list
-          conda list
+          mamba list
           python --version
 
       - name: Test with pytest
@@ -331,6 +331,7 @@ jobs:
         with:
           auto-update-conda: true
           python-version: ${{ matrix.python-version }}
+          mamba-version: "*"
           activate-environment: elephant
           environment-file: requirements/environment-tests.yml
           auto-activate-base: false
@@ -340,17 +341,17 @@ jobs:
         shell: bash -l {0}
         run: |
           python --version
-          conda env list
-          conda install mpi4py openmpi
-          conda install pytest
-          conda install pytest-cov coveralls
+          mamba env list
+          mamba install mpi4py openmpi
+          mamba install pytest
+          mamba install pytest-cov coveralls
           pip install -e .
 
       - name: List packages
         shell: bash -l {0}
         run: |
           pip list
-          conda list
+          mamba list
           python --version
 
       - name: Test with pytest
@@ -393,6 +394,7 @@ jobs:
         with:
           auto-update-conda: true
           python-version: 3.9
+          mamba-version: "*"
           activate-environment: elephant
           environment-file: requirements/environment.yml
           auto-activate-base: false
@@ -404,7 +406,7 @@ jobs:
           sudo apt-get update
           sudo apt install -y libopenmpi-dev openmpi-bin
           
-          conda install -c conda-forge openmpi pandoc
+          mamba install -c conda-forge openmpi pandoc
           python -m pip install --upgrade pip
           pip install -r requirements/requirements-docs.txt
           pip install -r requirements/requirements-tutorials.txt
@@ -416,7 +418,7 @@ jobs:
         shell: bash -l {0}
         run: |
           pip list
-          conda list
+          mamba list
           python --version
 
       - name: make html
