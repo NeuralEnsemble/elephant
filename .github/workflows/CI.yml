@@ -328,7 +328,8 @@ jobs:
 
       - uses: conda-incubator/setup-miniconda@030178870c779d9e5e1b4e563269f3aa69b04081 # corresponds to v3.0.3
         with:
-          python-version: 3.9
+          auto-update-conda: true
+          python-version: 3.11
           mamba-version: "*"
           channels: conda-forge,defaults
           channel-priority: true
@@ -371,7 +372,6 @@ jobs:
       matrix:
         # OS [ubuntu-latest, macos-latest, windows-latest]
         os: [ubuntu-latest]
-        python-version: [3.9]
 
     steps:
 
@@ -392,12 +392,10 @@ jobs:
       - uses: conda-incubator/setup-miniconda@030178870c779d9e5e1b4e563269f3aa69b04081 # corresponds to v3.0.3
         with:
           auto-update-conda: true
-          python-version: 3.9
+          python-version: 3.11
           mamba-version: "*"
           activate-environment: elephant
           environment-file: requirements/environment.yml
-          auto-activate-base: false
-          use-only-tar-bz2: true # IMPORTANT: This needs to be set for caching to work properly!
 
       - name: Install dependencies
         shell: bash -l {0} # enables conda incubator to activate environment
