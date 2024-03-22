@@ -331,12 +331,12 @@ jobs:
         with:
           auto-update-conda: true
           python-version: ${{ matrix.python-version }}
-          mamba-version: "0.11.1"
+          mamba-version: "*"
           channels: conda-forge,defaults
           channel-priority: true
           activate-environment: elephant
           environment-file: requirements/environment-tests.yml
-          auto-activate-base: false
+          auto-activate-base: true
           use-only-tar-bz2: true # IMPORTANT: This needs to be set for caching to work properly!
 
       - name: Install dependencies
