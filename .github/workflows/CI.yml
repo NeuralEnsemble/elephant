@@ -341,7 +341,7 @@ jobs:
         run: |
           python --version
           mamba env list
-          mamba install mpi4py openmpi
+          mamba install mpi4py
           mamba install pytest
           mamba install pytest-cov coveralls
           pip install -e .
