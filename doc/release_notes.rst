@@ -3,6 +3,32 @@ Release Notes
 =============
 
 
+Release 1.1.0
+=============
+New functionality and features
+------------------------------
+* Merged TSPE "Total spiking probability edges" into elephant, a tool for classifying excitatory and inhibitory synaptic effects using connectivity estimation (https://github.com/NeuralEnsemble/elephant/pull/560).
+
+Bug fixes
+---------
+* Fixed expired SciPy deprecations and breaking changes related to `sp.sqrt`, ensuring continued compatibility with the latest version of SciPy (https://github.com/NeuralEnsemble/elephant/pull/616).
+* Addressed failing unit tests for `neo_tools` with Neo 0.13.0, ensuring compatibility with the latest Neo release (https://github.com/NeuralEnsemble/elephant/pull/617).
+
+Documentation
+-------------
+* Fixed a bug in the CI docs runner to resolve formatting issues, ensuring documentation build is tested (https://github.com/NeuralEnsemble/elephant/pull/615).
+
+Other changes
+-------------
+* added Python 3.12 CI runner to ensure compatibility with the latest Python language features (https://github.com/NeuralEnsemble/elephant/pull/611).
+* Integrated `Trials` object with GPFA, allowing for a more formal way of specifying trials (https://github.com/NeuralEnsemble/elephant/pull/610).
+
+Selected dependency changes
+---------------------------
+* scipy>=1.10.0
+* Support for Python 3.12
+
+
 Release 1.0.0
 =============
 Elephant's first major release is focused on providing a stable and consistent API consistency that will be maintained over the 1.x series of releases. In order to provide future support, this release will remove all features and API specifications that have been deprecated over the course of the last releases of the 0.x line. While work on the next generation of Elephant will commence, all new analysis capabilities will be consistently back-ported to become available in the 1.x release line.
