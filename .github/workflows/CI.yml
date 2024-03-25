@@ -340,7 +340,6 @@ jobs:
         shell: bash -el {0}
         run: |
           python --version
-          mamba env list
           conda install mpi4py openmpi
           mamba install pytest
           mamba install pytest-cov coveralls
