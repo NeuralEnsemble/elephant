@@ -1167,10 +1167,6 @@ class GetAllSpiketrainsTestCase(unittest.TestCase):
             supported_objects=[neo.core.Segment, neo.core.SpikeTrain])
         targ = copy.deepcopy(obj)
         obj.spiketrains.append(obj.spiketrains[0])
-        # TODO: The following is the original line of the test, however, this
-        # fails with Neo 0.10.0
-        # Reinstate once issue is fixed
-        # obj.spiketrains.extend(obj.spiketrains)
 
         res0 = nt.get_all_spiketrains(obj)
 
@@ -1320,7 +1316,6 @@ class GetAllEventsTestCase(unittest.TestCase):
             supported_objects=[neo.core.Segment, neo.core.Event])
         targ = copy.deepcopy(obj)
 
-        obj.events.extend(obj.events)
         res0 = nt.get_all_events(obj)
 
         targ = targ.events
@@ -1469,7 +1464,7 @@ class GetAllEpochsTestCase(unittest.TestCase):
         obj = generate_one_simple_segment(
             supported_objects=[neo.core.Segment, neo.core.Epoch])
         targ = copy.deepcopy(obj)
-        obj.epochs.extend(obj.epochs)
+
         res0 = nt.get_all_epochs(obj)
 
         targ = targ.epochs
