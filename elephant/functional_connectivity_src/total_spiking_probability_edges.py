@@ -16,8 +16,8 @@ def total_spiking_probability_edges(
     normalize: bool = False,
 ):
     r"""
-    Use Total Spiking Probability Edges (TSPE) to estimate
-    the functional connectivity and delay times of a neural network.
+    Estimate the functional connectivity and delay times of a neural network
+    using Total Spiking Probability Edges (TSPE).
 
     This algorithm uses a normalized cross correlation between pairs of
     spike trains at different delay times to get a cross-correlogram.
@@ -53,7 +53,7 @@ def total_spiking_probability_edges(
     edge filter.
     4) Compute :math:`TSPE` using the sum of all :math:`SPE` for all different
     filter pairs.
-    5) Compute the connectivity matrix by using the index of the tspe-values
+    5) Compute the connectivity matrix by using the index of the TSPE values
     with the highest absolute values.
 
     *Normalized Cross-Correlation:*
@@ -63,47 +63,67 @@ def total_spiking_probability_edges(
         NCC_{XY}(d) = \frac{1}{N} \sum_{i=-\infty}^{\infty}{ \frac{ (y_{(i)} -
         \bar{y}) \cdot (x_{(i-d)} - \bar{x}) }{ \sigma_x \cdot \sigma_y }}
 
-    *Spiking Probability Edges*
+    *Edge Filter*
 
-    .. math ::
-        SPE_{X \rightarrow Y(d)} = NCC_{XY}(d) * g(i)
+    .. math::
 
-    *Total Spiking Probability Edges:*
+        g_{(i)} = \begin{cases}
+        - \frac{1}{a} & 0 \lt i \leq a \ \
+        \frac{2}{b} & a+c \lt i \leq a + b + c \ \
+        - \frac{1}{a} & a+b+2c \lt i \leq 2a + b + 2c \ \
+        0 & \mathrm{otherwise}
+        \end{cases}
 
-    .. math ::
-        TSPE_{X \rightarrow Y}(d) = \sum_{n=1}^{N_a \cdot N_b \cdot N_c}
-        {SPE_{X \rightarrow Y}^{(n)}(d) * h(i)^{(n)} }
+    where :math:`a` is the parameter `surrounding_window_size`, :math:`b`
+    `observed_window_size`, and :math:`c` is the parameter
+    `crossover_window_size`.
 
-    :cite:`functional_connectivity-de_blasi19_169`
 
-    Parameters
-    ----------
-    spike_trains : (N, ) elephant.conversion.BinnedSpikeTrain
-        A binned spike train containing all neurons for connectivity estimation
-    surrounding_window_sizes : List[int], default = [3, 4, 5, 6, 7, 8]
-        Array of window sizes for the surrounding area of the point of
-        interest.
-    observed_window_sizes : List[int], default = [2, 3, 4, 5, 6]
-        Array of window sizes for the observed area
-    crossover_window_sizes : List[int], default = [0]
-        Array of window sizes for the crossover between surrounding and
-        observed window.
-    max_delay : int, default = 25
-        Defines the max delay when performing the normalized cross-correlations.
-        Value is given in units of the bin size of the binned spike train
-        `spike_trains`.
-    normalize : bool, optional
-        Normalize the output [experimental]
+*Spiking Probability Edges*
 
-    Returns
-    -------
-    connectivity_matrix : (N, N) np.ndarray
-        Square matrix of the connectivity estimation between neurons.
-        Positive values describe an excitatory connection while
-        negative values describe an inhibitory connection.
-    delay_matrix : (N, N) np.ndarray
-        Square matrix of the estimated delay times between neuron activities.
-    """
+.. math ::
+    SPE_{X \rightarrow Y(d)} = NCC_{XY}(d) * g(i)
+
+*Total Spiking Probability Edges:*
+
+.. math ::
+    TSPE_{X \rightarrow Y}(d) = \sum_{n=1}^{N_a \cdot N_b \cdot N_c}
+    {SPE_{X \rightarrow Y}^{(n)}(d) * h(i)^{(n)} }
+
+:cite:`functional_connectivity-de_blasi19_169`
+
+Parameters
+----------
+spike_trains : (N, ) elephant.conversion.BinnedSpikeTrain
+    A binned spike train containing all neurons for connectivity estimation
+surrounding_window_sizes : List[int], default = [3, 4, 5, 6, 7, 8]
+    Array of window sizes for the surrounding area of the point of
+    interest.  This corresponds to parameter `a` of the edge filter in
+    :cite:`functional_connectivity-de_blasi19_169`.
+observed_window_sizes : List[int], default = [2, 3, 4, 5, 6]
+    Array of window sizes for the observed area. This corresponds to
+    parameter `b` of the edge filter and the length of the running filter
+    as defined in :cite:`functional_connectivity-de_blasi19_169`.
+crossover_window_sizes : List[int], default = [0]
+    Array of window sizes for the crossover between surrounding and
+    observed window. This corresponds to parameter `c` of the edge filter in
+    :cite:`functional_connectivity-de_blasi19_169`.
+max_delay : int, default = 25
+    Defines the max delay when performing the normalized cross-correlations.
+    Value is given in units of the bin size of the binned spike train
+    `spike_trains`.
+normalize : bool, optional
+    Normalize the output [experimental]. Default: False.
+
+Returns
+-------
+connectivity_matrix : (N, N) np.ndarray
+    Square matrix of the connectivity estimation between neurons.
+    Positive values describe an excitatory connection while
+    negative values describe an inhibitory connection.
+delay_matrix : (N, N) np.ndarray
+    Square matrix of the estimated delay times between neuron activities.
+"""
 
     if not surrounding_window_sizes:
         surrounding_window_sizes = [3, 4, 5, 6, 7, 8]
@@ -120,7 +140,7 @@ def total_spiking_probability_edges(
         surrounding_window_sizes, observed_window_sizes, crossover_window_sizes
     )
 
-    # Calculate normalized cross-corelation for different delays.
+    # Calculate normalized cross-correlation for different delays.
     # The delay range is from 0 to max_delay and includes
     # padding for the filter convolution
     max_padding = max(surrounding_window_sizes) + max(crossover_window_sizes)
@@ -264,7 +284,8 @@ def generate_edge_filter(
         g_{(i)} = \begin{cases}
             - \frac{1}{a} & 0 \lt i \leq a \\
             \frac{2}{b} & a+c \lt i \leq a + b + c \\
-            - \frac{1}{a} & a+b+2c \lt i \leq 2a + b + 2c
+            - \frac{1}{a} & a+b+2c \lt i \leq 2a + b + 2c \ \
+            0 & \mathrm{otherwise}
             \end{cases}
 
     """
