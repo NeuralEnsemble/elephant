@@ -60,6 +60,16 @@
                 "@type": "Organization",
                 "name": "Institute for Advanced Simulation (IAS-6), Jülich Research Centre, Jülich, Germany"
             }
+        },
+        {
+            "@type": "Person",
+            "@id": "https://orcid.org/0009-0003-9352-9826",
+            "givenName": "Felician",
+            "familyName": "Richter",
+            "affiliation": {
+                "@type": "Organization",
+                "name": "BioMEMS Lab, University of Applied Sciences Aschaffenburg, Germany"
+            }
         }
     ]
 }
