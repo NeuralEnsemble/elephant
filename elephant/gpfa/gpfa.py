@@ -493,9 +493,14 @@ class GPFA(sklearn.base.BaseEstimator):
         else:  # TODO: implement case for continuous data
             raise ValueError
 
+    @trials_to_list_of_spiketrainlist
     def fit_transform(
         self,
-        spiketrains: Union[List[List[neo.core.SpikeTrain]], "Trials"],
+        spiketrains: Union[
+            List[List[neo.core.SpikeTrain]],
+            "Trials",
+            List[neo.core.spiketrainlist.SpikeTrainList],
+        ],
         returned_data: str = ["latent_variable_orth"],
     ) -> "GPFA":
         """
@@ -504,7 +509,7 @@ class GPFA(sklearn.base.BaseEstimator):
 
         Parameters
         ---------- # noqa
-        spiketrains : list of list of :class:`neo.core.SpikeTrain` or :class:`elephant.trials.Trials`
+        spiketrains : list of list of :class:`neo.core.SpikeTrain`, list of :class:`neo.core.spiketrainlist.SpikeTrainList` or :class:`elephant.trials.Trials`
             Refer to the :func:`GPFA.fit` docstring.
 
         returned_data : list of str
@@ -529,16 +534,21 @@ class GPFA(sklearn.base.BaseEstimator):
         self.fit(spiketrains)
         return self.transform(spiketrains, returned_data=returned_data)
 
+    @trials_to_list_of_spiketrainlist
     def score(
         self,
-        spiketrains: Union[List[List[neo.core.SpikeTrain]], "Trials"],
+        spiketrains: Union[
+            List[List[neo.core.SpikeTrain]],
+            "Trials",
+            List[neo.core.spiketrainlist.SpikeTrainList],
+        ],
     ) -> "GPFA":
         """
         Returns the log-likelihood of the given data under the fitted model
 
         Parameters
         ---------- # noqa
-        spiketrains : list of list of :class:`neo.core.SpikeTrain` or :class:`elephant.trials.Trials`
+        spiketrains : list of list of :class:`neo.core.SpikeTrain`, list of :class:`neo.core.spiketrainlist.SpikeTrainList` or :class:`elephant.trials.Trials`
             Spike train data to be scored.
             The outer list corresponds to trials and the inner list corresponds
             to the neurons recorded in that trial, such that
