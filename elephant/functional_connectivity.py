@@ -1,7 +1,7 @@
 """
-Functions for analysing and estimating firing-patterns and connectivity among neurons
-in order to better understand the underlying neural-networks and information-flow
-between neurons.
+Functions for analysing and estimating firing patterns and connectivity among
+neurons in order to better understand the underlying neural networks and
+information flow between neurons.
 
 
 Network connectivity estimation
@@ -19,7 +19,7 @@ References
    :keyprefix: functional_connectivity-
 
 
-:copyright: Copyright 2014-2023 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2024 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
