@@ -16,45 +16,45 @@ def total_spiking_probability_edges(
     normalize: bool = False,
 ):
     r"""
-    Use total spiking probability edges (TSPE) to estimate
-    the functional connectivity and delay-times of a neural-network.
+    Use Total Spiking Probability Edges (TSPE) to estimate
+    the functional connectivity and delay times of a neural network.
 
     This algorithm uses a normalized cross correlation between pairs of
-    spiketrains at different delay-times to get a cross-correlogram.
-    Afterwards a series of convolutions with multiple edge-filters
-    on the cross-correlogram are preformed, in order to estimate the
+    spike trains at different delay times to get a cross-correlogram.
+    Afterwards, a series of convolutions with multiple edge filters
+    on the cross-correlogram are performed, in order to estimate the
     connectivity between neurons and thus allowing the discrimination
     between inhibitory and excitatory effects.
 
-    The default window-sizes and max-delay were optimized using
-    in-silico generated spiketrains.
+    The default window sizes and maximum delay were optimized using
+    in-silico generated spike trains.
 
     *Background:*
 
-    - On an excitatory connection the spikerate increases and decreases again
+    - On an excitatory connection the spike rate increases and decreases again
      due to the refractory period which results in local maxima in the
-     cross-correlogram followed by downwards slope
+     cross-correlogram followed by downwards slope.
 
-    - On an inhibitory connection the spikerate decreases and after refractory
-     period, increases again which results in lokal minima surrounded by high
+    - On an inhibitory connection the spike rate decreases and after refractory
+     period, increases again which results in local minima surrounded by high
      values in the cross-correlogram.
 
-    - An Edge-Filter can be used to interpret the cross-correlogram and
-    accentuate the lokal Maxima and Minima
+    - An edge filter can be used to interpret the cross-correlogram and
+    accentuate the local maxima and minima
 
     *Procedure:*
 
-    1) Compute normalized cross-correlation :math:`NCC` of spiketrains of all
-    Neuronpairs
-    2) Convolve :math:`NCC` with Edge-Filter :math:`g_{i}` to compute
-    :math:`SPE`
-    3) Convolve :math:`SPE` with corresponding Running-Total-Filter
+    1) Compute normalized cross-correlation :math:`NCC` of spike trains of all
+    neuron pairs.
+    2) Convolve :math:`NCC` with edge filter :math:`g_{i}` to compute
+    :math:`SPE`.
+    3) Convolve :math:`SPE` with corresponding running total filter
     :math:`h_{i}` to account for different lengths after convolution with
-    Edge-Filter
+    edge filter.
     4) Compute :math:`TSPE` using the sum of all :math:`SPE` for all different
-    filterpairs
-    5) Compute connectivitymatrix by using the index of the tspe-values with
-    the highest absolute values
+    filter pairs.
+    5) Compute the connectivity matrix by using the index of the tspe-values
+    with the highest absolute values.
 
     *Normalized Cross-Correlation:*
 
@@ -81,28 +81,28 @@ def total_spiking_probability_edges(
     spike_trains : (N, ) elephant.conversion.BinnedSpikeTrain
         A binned spike train containing all neurons for connectivity estimation
     surrounding_window_sizes : List[int], default = [3, 4, 5, 6, 7, 8]
-        Array of window-sizes for the surrounding area of the point of
+        Array of window sizes for the surrounding area of the point of
         interest.
     observed_window_sizes : List[int], default = [2, 3, 4, 5, 6]
-        Array of window-sizes for the observed area
+        Array of window sizes for the observed area
     crossover_window_sizes : List[int], default = [0]
-        Array of window-sizes for the crossover between surrounding and
+        Array of window sizes for the crossover between surrounding and
         observed window.
     max_delay : int, default = 25
-        Defines the max delay when performing the normalized crosscorrelations.
-        Value depends on the bin-size of the BinnedSpikeTrain.
-        On a bin-size of *1ms* a value of *25* corresponds to *25ms*
+        Defines the max delay when performing the normalized cross-correlations.
+        Value is given in units of the bin size of the binned spike train
+        `spike_trains`.
     normalize : bool, optional
         Normalize the output [experimental]
 
     Returns
     -------
     connectivity_matrix : (N, N) np.ndarray
-        Square Matrix of the connectivity estimation between neurons.
+        Square matrix of the connectivity estimation between neurons.
         Positive values describe an excitatory connection while
         negative values describe an inhibitory connection.
     delay_matrix : (N, N) np.ndarray
-        Square Matrix of the delay_times between neuron-activity.
+        Square matrix of the estimated delay times between neuron activities.
     """
 
     if not surrounding_window_sizes:
@@ -120,14 +120,14 @@ def total_spiking_probability_edges(
         surrounding_window_sizes, observed_window_sizes, crossover_window_sizes
     )
 
-    # Calculate normalized cross corelation for different delays
-    # The delay range ranges from 0 to max-delay and includes
+    # Calculate normalized cross-corelation for different delays.
+    # The delay range is from 0 to max_delay and includes
     # padding for the filter convolution
     max_padding = max(surrounding_window_sizes) + max(crossover_window_sizes)
     delay_times = list(range(-max_padding, max_delay + max_padding))
     NCC_d = normalized_cross_correlation(spike_trains, delay_times=delay_times)
 
-    # Normalize to counter network-bursts
+    # Normalize to counter network bursts
     if normalize:
         for delay_time in delay_times:
             NCC_d[:, :, delay_time] /= np.sum(
@@ -179,7 +179,7 @@ def normalized_cross_correlation(
     Normalized cross correlation using std deviation
 
     Computes the normalized_cross_correlation between all
-    Spiketrains inside a BinnedSpikeTrain-Object at a given delay_time
+    spike trains inside a `BinnedSpikeTrain` object at a given delay time.
 
     The underlying formula is:
 
@@ -189,7 +189,7 @@ def normalized_cross_correlation(
         \cdot \sigma_y}}}
 
     The subtraction of mean-values is omitted, since it offers little added
-    accuracy but increases the compute-time immensely.
+    accuracy but increases the compute-time considerably.
     """
 
     n_neurons, n_bins = spike_trains.shape
