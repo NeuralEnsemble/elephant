@@ -65,7 +65,7 @@ def total_spiking_probability_edges(
 
     *Edge Filter*
 
-    .. math::
+    .. math ::
 
         g_{(i)} = \begin{cases}
         - \frac{1}{a} & 0 \lt i \leq a \ \
@@ -96,22 +96,29 @@ Parameters
 ----------
 spike_trains : (N, ) elephant.conversion.BinnedSpikeTrain
     A binned spike train containing all neurons for connectivity estimation
-surrounding_window_sizes : List[int], default = [3, 4, 5, 6, 7, 8]
+surrounding_window_sizes : List[int]
     Array of window sizes for the surrounding area of the point of
     interest.  This corresponds to parameter `a` of the edge filter in
-    :cite:`functional_connectivity-de_blasi19_169`.
-observed_window_sizes : List[int], default = [2, 3, 4, 5, 6]
+    :cite:`functional_connectivity-de_blasi19_169`. Value is given in units of
+    the bin size of the binned spike trains `spike_trains`.
+    Default: [3, 4, 5, 6, 7, 8]
+observed_window_sizes : List[int]
     Array of window sizes for the observed area. This corresponds to
     parameter `b` of the edge filter and the length of the running filter
-    as defined in :cite:`functional_connectivity-de_blasi19_169`.
-crossover_window_sizes : List[int], default = [0]
+    as defined in :cite:`functional_connectivity-de_blasi19_169`. Value is given
+    in units of the bin size of the binned spike trains `spike_trains`.
+    Default: [2, 3, 4, 5, 6]
+crossover_window_sizes : List[int]
     Array of window sizes for the crossover between surrounding and
     observed window. This corresponds to parameter `c` of the edge filter in
-    :cite:`functional_connectivity-de_blasi19_169`.
-max_delay : int, default = 25
+    :cite:`functional_connectivity-de_blasi19_169`. Value is given in units of
+    the bin size of the binned spike trains `spike_trains`.
+    Default: [0]
+max_delay : int
     Defines the max delay when performing the normalized cross-correlations.
-    Value is given in units of the bin size of the binned spike train
+    Value is given in units of the bin size of the binned spike trains
     `spike_trains`.
+    Default: 25
 normalize : bool, optional
     Normalize the output [experimental]. Default: False.
 
