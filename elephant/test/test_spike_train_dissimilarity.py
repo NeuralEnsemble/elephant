@@ -491,7 +491,7 @@ class TimeScaleDependSpikeTrainDissimMeasuresTestCase(unittest.TestCase):
                 -((self.t - self.st08[1]) / self.tau3).simplified) -
             (self.t > self.st09[0]) * np.exp(
                 -((self.t - self.st09[0]) / self.tau3).simplified)) ** 2
-        distance = np.sqrt(2.0 * spint.cumtrapz(
+        distance = np.sqrt(2.0 * spint.cumulative_trapezoid(
             y=f_minus_g_squared, x=self.t.magnitude)[-1] /
                            self.tau3.rescale(self.t.units).magnitude)
         self.assertAlmostEqual(stds.van_rossum_distance(
@@ -573,7 +573,7 @@ class TimeScaleDependSpikeTrainDissimMeasuresTestCase(unittest.TestCase):
                 -((self.t - self.st34[0]) / self.tau3).simplified) -
               (self.t > self.st34[1]) * np.exp(
                 -((self.t - self.st34[1]) / self.tau3).simplified)) ** 2
-        distance = np.sqrt(2.0 * spint.cumtrapz(
+        distance = np.sqrt(2.0 * spint.cumulative_trapezoid(
             y=f_minus_g_squared, x=self.t.magnitude)[-1] /
                            self.tau3.rescale(self.t.units).magnitude)
         self.assertAlmostEqual(stds.van_rossum_distance([self.st31, self.st34],

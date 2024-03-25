@@ -616,7 +616,7 @@ class InstantaneousRateTest(unittest.TestCase):
                     border_correction=border_correction
                 )
                 num_spikes = len(self.spike_train)
-                area_under_curve = spint.cumtrapz(
+                area_under_curve = spint.cumulative_trapezoid(
                     y=rate_estimate.magnitude[:, 0],
                     x=rate_estimate.times.rescale('s').magnitude)[-1]
                 self.assertAlmostEqual(num_spikes, area_under_curve,

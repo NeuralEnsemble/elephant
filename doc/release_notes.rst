@@ -17,8 +17,8 @@ Selected dependency changes
 * removed pandas from the dependencies (#530).
 
 
-Elephant 0.14.0 release notes
-=============================
+Release 0.14.0
+==============
 
 New functionality and features
 ------------------------------
@@ -47,8 +47,8 @@ Other changes
 * Updated the build_wheels action to use cibuildwheel version 2.13.1, enabling the building of wheels for Python 3.11 (#582).
 
 
-Elephant 0.13.0 release notes
-=============================
+Release 0.13.0
+==============
 
 New functionality and features
 ------------------------------
@@ -87,8 +87,8 @@ Selected dependency changes
 * no changes
 
 
-Elephant 0.12.0 release notes
-=============================
+Release 0.12.0
+===============
 
 New functionality and features
 ------------------------------
@@ -128,8 +128,8 @@ Selected dependency changes
 * quantities > 0.14.0. #542
 
 
-Elephant 0.11.2 release notes
-=============================
+Release 0.11.2
+==============
 
 New functionality and features
 ------------------------------
@@ -172,8 +172,8 @@ Selected dependency changes
 * `nixio` added to test requirements, now nix files can be used in unit tests (#515)
 
 
-Elephant 0.11.1 release notes
-=============================
+Release 0.11.1
+==============
 
 Bug fixes
 ---------
@@ -196,8 +196,8 @@ Selected dependency changes
 ---------------------------
 * scipy >=1.5.4 (#473)
 
-Elephant 0.11.0 release notes
-=============================
+Release 0.11.0
+==============
 
 Breaking changes
 ----------------
@@ -255,8 +255,8 @@ Selected dependency changes
 * python >= 3.7
 
 
-Elephant 0.10.0 release notes
-=============================
+Release 0.10.0
+===============
 
 Documentation
 -------------
@@ -292,8 +292,8 @@ Bug fixes
 * Fix LvR values from being off when units are in seconds (https://github.com/NeuralEnsemble/elephant/pull/389)
 
 
-Elephant 0.9.0 release notes
-============================
+Release 0.9.0
+=============
 This release is titled to accompany the [2nd Elephant User Workshop](https://www.humanbrainproject.eu/en/education/participatecollaborate/infrastructure-events-trainings/2nd-elephant-user-workshop/)
 
 Viziphant
@@ -358,8 +358,8 @@ Bug fixes
   - surrogates get arbitrary sampling_rate (https://github.com/NeuralEnsemble/elephant/pull/353), which relates to the provenance tracking issue;
 
 
-Elephant 0.8.0 release notes
-============================
+Release 0.8.0
+=============
 New features
 ------------
 * The `parallel` module is a new experimental module (https://github.com/NeuralEnsemble/elephant/pull/307) to run python functions concurrently. Supports native (pythonic) ProcessPollExecutor and MPI. Not limited to Elephant functional.
@@ -384,8 +384,8 @@ Breaking changes
 ----------------
 * Naming convention changes (`binsize` -> `bin_size`, etc.) in almost all Elephant functions (https://github.com/NeuralEnsemble/elephant/pull/316).
 
-Elephant 0.7.0 release notes
-============================
+Release 0.7.0
+=============
 
 Breaking changes
 ----------------
@@ -430,8 +430,8 @@ Performance
 * [conversion] Use fast fftconvolve instead of np.correlate in `cross_correlation_histogram()` (https://github.com/NeuralEnsemble/elephant/pull/273).
 
 
-Elephant 0.6.4 release notes
-============================
+Release 0.6.4
+=============
 
 This release has been made for the "1st Elephant User Workshop" (https://www.humanbrainproject.eu/en/education/participatecollaborate/infrastructure-events-trainings/1st-elephant-user-workshop-accelerate-structured-and-reproducibl).
 
@@ -462,8 +462,8 @@ Improvements
 
 
 
-Elephant 0.6.3 release notes
-============================
+Release 0.6.3
+=============
 July 22nd 2019
 
 The release v0.6.3 is mostly about improving maintenance.
@@ -485,8 +485,8 @@ Other changes
 * Added issue templates (https://github.com/NeuralEnsemble/elephant/pull/226)
 * Single VERSION file (https://github.com/NeuralEnsemble/elephant/pull/231)
 
-Elephant 0.6.2 release notes
-============================
+Release 0.6.2
+=============
 April 23rd 2019
 
 New functions
@@ -500,8 +500,8 @@ Other changes
 * Multiple bug fixes
 
 
-Elephant 0.6.1 release notes
-============================
+Release 0.6.1
+=============
 April 1st 2019
 
 New functions
@@ -518,8 +518,8 @@ Other changes
 * Minor bug fixes
 
 
-Elephant 0.6.0 release notes
-============================
+Release 0.6.0
+=============
 October 12th 2018
 
 New functions
@@ -536,8 +536,8 @@ Other changes
 * Minor bug fixes
 
 
-Elephant 0.5.0 release notes
-============================
+Release 0.5.0
+=============
 April 4nd 2018
 
 New functions
@@ -556,8 +556,8 @@ Other changes
 * Minor bug fixes
 
 
-Elephant 0.4.3 release notes
-============================
+Release 0.4.3
+=============
 March 2nd 2018
 
 Other changes
@@ -566,8 +566,8 @@ Other changes
     * Fixed an incompatibility with the latest version of an external library
 
 
-Elephant 0.4.2 release notes
-============================
+Release 0.4.2
+=============
 March 1st 2018
 
 New functions
@@ -592,8 +592,8 @@ Other changes
 * Minor bug fixes
 
 
-Elephant 0.4.1 release notes
-============================
+Release 0.4.1
+=============
 March 23rd 2017
 
 Other changes
@@ -601,8 +601,8 @@ Other changes
 * Fix in `setup.py` to correctly import the current source density module
 
 
-Elephant 0.4.0 release notes
-============================
+Release 0.4.0
+=============
 March 22nd 2017
 
 New functions
@@ -627,8 +627,8 @@ Other changes
 * Added module `six` for Python 2.7 backwards compatibility
 
 
-Elephant 0.3.0 release notes
-============================
+Release 0.3.0
+=============
 April 12st 2016
 
 New functions
@@ -656,8 +656,8 @@ Other changes
 * Fixes to travis and readthedocs configuration files.
 
 
-Elephant 0.2.1 release notes
-============================
+Release 0.2.1
+=============
 February 18th 2016
 
 Other changes
@@ -665,8 +665,8 @@ Other changes
 Minor bug fixes.
 
 
-Elephant 0.2.0 release notes
-============================
+Release 0.2.0
+=============
 September 22nd 2015
 
 New functions
