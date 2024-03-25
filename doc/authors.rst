@@ -52,7 +52,7 @@ contribution, and may not be the current affiliation of a contributor.
 * Sarah Pilz [13]
 * Oliver Kloß [1]
 
-1. Institute for Advanced Simulation (IAS-6), Computational and Systems Neuroscience & JARA-Institut Brain Structure-Function Relationships (INM-10), Jülich Research Centre and JARA, Jülich, Germany
+1. Institute of Neuroscience and Medicine (INM-6) and Institute for Advanced Simulation (IAS-6) and JARA-Institute Brain Structure-Function Relationships (INM-10), Jülich Research Centre, Jülich, Germany
 2. Unité de Neurosciences, Information et Complexité, CNRS UPR 3293, Gif-sur-Yvette, France
 3. Electronic Visions Group, Kirchhoff-Institute for Physics, University of Heidelberg, Germany
 4. Brain-Mind Institute, Ecole Polytechnique Fédérale de Lausanne, Switzerland
