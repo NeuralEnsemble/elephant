@@ -74,12 +74,12 @@ class DecoratorTest:
 class TestTrialsToListOfSpiketrainlist(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        n_channels = 10
-        n_trials = 5
+        cls.n_channels = 10
+        cls.n_trials = 5
         cls.list_of_list_of_spiketrains = [
             StationaryPoissonProcess(rate=5 * pq.Hz, t_stop=1000.0 * pq.ms
-                                     ).generate_n_spiketrains(n_channels)
-            for _ in range(n_trials)]
+                                     ).generate_n_spiketrains(cls.n_channels)
+            for _ in range(cls.n_trials)]
         cls.trial_object = TrialsFromLists(cls.list_of_list_of_spiketrains)
 
     def test_decorator_applied(self):
@@ -94,7 +94,7 @@ class TestTrialsToListOfSpiketrainlist(unittest.TestCase):
         new_class = DecoratorTest()
         list_of_spiketrainlists = new_class.method_to_decorate(
             self.trial_object)
-        self.assertEqual(len(list_of_spiketrainlists), 5)
+        self.assertEqual(len(list_of_spiketrainlists), self.n_trials)
         for spiketrainlist in list_of_spiketrainlists:
             self.assertIsInstance(spiketrainlist, SpikeTrainList)
 
@@ -104,7 +104,7 @@ class TestTrialsToListOfSpiketrainlist(unittest.TestCase):
         new_class = DecoratorTest()
         list_of_list_of_spiketrains = new_class.method_to_decorate(
             self.list_of_list_of_spiketrains)
-        self.assertEqual(len(list_of_list_of_spiketrains), 5)
+        self.assertEqual(len(list_of_list_of_spiketrains), self.n_trials)
         for list_of_spiketrains in list_of_list_of_spiketrains:
             self.assertIsInstance(list_of_spiketrains, list)
             for spiketrain in list_of_spiketrains:
@@ -116,7 +116,7 @@ class TestTrialsToListOfSpiketrainlist(unittest.TestCase):
         new_class = DecoratorTest()
         list_of_spiketrainlists = new_class.method_to_decorate(
             trials_obj=self.trial_object)
-        self.assertEqual(len(list_of_spiketrainlists), 5)
+        self.assertEqual(len(list_of_spiketrainlists), self.n_trials)
         for spiketrainlist in list_of_spiketrainlists:
             self.assertIsInstance(spiketrainlist, SpikeTrainList)
 
@@ -126,7 +126,7 @@ class TestTrialsToListOfSpiketrainlist(unittest.TestCase):
         new_class = DecoratorTest()
         list_of_list_of_spiketrains = new_class.method_to_decorate(
             trials_obj=self.list_of_list_of_spiketrains)
-        self.assertEqual(len(list_of_list_of_spiketrains), 5)
+        self.assertEqual(len(list_of_list_of_spiketrains), self.n_trials)
         for list_of_spiketrains in list_of_list_of_spiketrains:
             self.assertIsInstance(list_of_spiketrains, list)
             for spiketrain in list_of_spiketrains:
