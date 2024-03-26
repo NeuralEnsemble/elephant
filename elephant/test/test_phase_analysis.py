@@ -203,6 +203,132 @@ class SpikeTriggeredPhaseTestCase(unittest.TestCase):
         self.assertEqual(len(phases_noint[0]), 2)
 
 
+class PairwisePhaseConsistencyTestCase(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):  # Note: using setUp makes the class call this
+        # function per test, while this way the function is called only
+        # 1 time per TestCase, slightly more efficient (0.5s tough)
+
+        # Same setup as SpikeTriggerePhaseTestCase
+        tlen0 = 100 * pq.s
+        f0 = 20. * pq.Hz
+        fs0 = 1 * pq.ms
+        t0 = np.arange(
+            0, tlen0.rescale(pq.s).magnitude,
+            fs0.rescale(pq.s).magnitude) * pq.s
+        cls.anasig0 = AnalogSignal(
+            np.sin(2 * np.pi * (f0 * t0).simplified.magnitude),
+            units=pq.mV, t_start=0 * pq.ms, sampling_period=fs0)
+
+        # Spiketrain with perfect locking
+        cls.st_perfect = SpikeTrain(
+            np.arange(50, tlen0.rescale(pq.ms).magnitude - 50, 50) * pq.ms,
+            t_start=0 * pq.ms, t_stop=tlen0)
+
+        # Spiketrain with inperfect locking
+        cls.st_inperfect = SpikeTrain(
+            [100., 100.1, 100.2, 100.3, 100.9, 101.] * pq.ms,
+            t_start=0 * pq.ms, t_stop=tlen0)
+
+        # Generate 2 'bursting' spiketrains, both locking on sinus period,
+        # but with different strengths
+        n_spikes = 3  # n spikes per burst
+        burst_interval = (1 / f0.magnitude) * pq.s
+        burst_start_times = np.arange(
+            0,
+            tlen0.rescale('ms').magnitude,
+            burst_interval.rescale('ms').magnitude
+        )
+
+        # Spiketrain with strong locking
+        burst_freq_strong = 200. * pq.Hz  # strongly locking unit
+        burst_spike_interval = (1 / burst_freq_strong.magnitude) * pq.s
+        st_in_burst = np.arange(
+            0,
+            burst_spike_interval.rescale('ms').magnitude * n_spikes,
+            burst_spike_interval.rescale('ms').magnitude
+        )
+        st = [st_in_burst + t_offset for t_offset in burst_start_times]
+        st = np.hstack(st) * pq.ms
+        cls.st_bursting_strong = SpikeTrain(st,
+                                            t_start=0 * pq.ms,
+                                            t_stop=tlen0
+                                            )
+
+        # Spiketrain with weak locking
+        burst_freq_weak = 100. * pq.Hz  # weak locking unit
+        burst_spike_interval = (1 / burst_freq_weak.magnitude) * pq.s
+        st_in_burst = np.arange(
+            0,
+            burst_spike_interval.rescale('ms').magnitude * n_spikes,
+            burst_spike_interval.rescale('ms').magnitude
+        )
+        st = [st_in_burst + t_offset for t_offset in burst_start_times]
+        st = np.hstack(st) * pq.ms
+        cls.st_bursting_weak = SpikeTrain(st,
+                                          t_start=0 * pq.ms,
+                                          t_stop=tlen0
+                                          )
+
+    def test_perfect_locking(self):
+        phases, _, _ = elephant.phase_analysis.spike_triggered_phase(
+            elephant.signal_processing.hilbert(self.anasig0),
+            self.st_perfect,
+            interpolate=True
+        )
+        # Pass input as single array
+        ppc0 = elephant.phase_analysis.pairwise_phase_consistency(
+            phases[0], method='ppc0'
+        )
+        self.assertEqual(ppc0, 1)
+        self.assertIsInstance(ppc0, float)
+
+        # Pass input as list of arrays
+        n_phases = int(phases[0].shape[0] / 2)
+        phases_cut = [phases[0][i * 2:i * 2 + 2] for i in range(n_phases)]
+        ppc0 = elephant.phase_analysis.pairwise_phase_consistency(
+            phases_cut, method='ppc0'
+        )
+        self.assertEqual(ppc0, 1)
+        self.assertIsInstance(ppc0, float)
+
+    def test_inperfect_locking(self):
+        phases, _, _ = elephant.phase_analysis.spike_triggered_phase(
+            elephant.signal_processing.hilbert(self.anasig0),
+            self.st_inperfect,
+            interpolate=True
+        )
+        # Pass input as single array
+        ppc0 = elephant.phase_analysis.pairwise_phase_consistency(
+            phases[0], method='ppc0'
+        )
+        self.assertLess(ppc0, 1)
+        self.assertIsInstance(ppc0, float)
+
+    def test_strong_vs_weak_locking(self):
+        phases_weak, _, _ = elephant.phase_analysis.spike_triggered_phase(
+            elephant.signal_processing.hilbert(self.anasig0),
+            self.st_bursting_weak,
+            interpolate=True
+        )
+        # Pass input as single array
+        ppc0_weak = elephant.phase_analysis.pairwise_phase_consistency(
+            phases_weak[0], method='ppc0'
+        )
+        phases_strong, _, _ = elephant.phase_analysis.spike_triggered_phase(
+            elephant.signal_processing.hilbert(self.anasig0),
+            self.st_bursting_strong,
+            interpolate=True
+        )
+        # Pass input as single array
+        ppc0_strong = elephant.phase_analysis.pairwise_phase_consistency(
+            phases_strong[0], method='ppc0'
+        )
+
+        self.assertLess(ppc0_weak, ppc0_strong)
+
+
 class MeanVectorTestCase(unittest.TestCase):
     def setUp(self):
         self.tolerance = 1e-15
