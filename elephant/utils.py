@@ -398,25 +398,26 @@ def get_opencl_capability():
 
 def trials_to_list_of_spiketrainlist(method):
     """
-    Decorator to convert Trials object to a list of spiketrainlists before
+    Decorator to convert `Trials` object to a list of `SpikeTrainList` before
     calling the wrapped method.
 
     Parameters
     ----------
-    method: callable, The method to be decorated.
+    method: callable
+    The method to be decorated.
 
     Returns
     -------
-    callable: The decorated method.
+    callable:
+    The decorated method.
 
-    Raises
-    ------
-    ValueError: If the number of trials in the Trials object is 0.
-
-    Example:
-        @trials_to_list_of_spiketrainlist
-        def process_data(self, spiketrains):
-            ...
+    Examples
+    --------
+    The decorator can be used as follows:
+    
+        >>> @trials_to_list_of_spiketrainlist
+        >>> def process_data(self, spiketrains):
+        ...     retutn None
     """
 
     @wraps(method)
