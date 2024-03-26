@@ -42,6 +42,11 @@ on:
     branches:
       - master
 
+# Cancel previous workflows on the same pull request
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 # jobs define the steps that will be executed on the runner
 jobs:
 

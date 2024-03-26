@@ -28,7 +28,7 @@ Surrogate types
     bin_shuffling
     trial_shifting
 
-:copyright: Copyright 2014-2023 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2024 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 

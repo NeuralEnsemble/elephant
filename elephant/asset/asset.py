@@ -1126,10 +1126,9 @@ class _JSFUniformOrderStat3D(_GPUBackend):
                           "the computed joint prob. matrix lie outside of the "
                           f"valid [0, 1] interval:\n{outside_vals}\nIf you're "
                           "using PyOpenCL backend, make sure you've disabled "
-                          "GPU Hangcheck as described here https://"
-                          "software.intel.com/content/www/us/en/develop/"
-                          "documentation/get-started-with-intel-oneapi-"
-                          "base-linux/top/before-you-begin.html\n"
+                          "GPU Hangcheck as described here https://www.intel."
+                          "com/content/www/us/en/docs/oneapi/installation-"
+                          "guide-linux/2023-1/gpu-disable-hangcheck.html \n"
                           "Clipping the output array to 0 and 1.")
             P_total = np.clip(P_total, a_min=0., a_max=1., out=P_total)
 
@@ -2529,11 +2528,11 @@ class ASSET(object):
 
            When using PyOpenCL backend, make sure you've disabled GPU Hangcheck
            as described in the `Intel GPU developers documentation
-           <https://software.intel.com/content/www/us/en/develop/
-           documentation/get-started-with-intel-oneapi-base-linux/top/
-           before-you-begin.html>`_. Do it with caution - using your built-in
-           Intel graphics card to perform computations may make the system
-           unresponsive until the compute program terminates.
+           <https://www.intel.com/content/www/us/en/docs/oneapi/installation-
+           guide-linux/2023-1/gpu-disable-hangcheck.html>`_. Do it with
+           caution -using your built-in Intel graphics card to perform
+           computations may make the system unresponsive until the compute
+           program terminates.
 
         """
         l, w = filter_shape
