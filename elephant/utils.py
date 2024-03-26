@@ -414,7 +414,7 @@ def trials_to_list_of_spiketrainlist(method):
     Examples
     --------
     The decorator can be used as follows:
-    
+
         >>> @trials_to_list_of_spiketrainlist
         >>> def process_data(self, spiketrains):
         ...     retutn None
