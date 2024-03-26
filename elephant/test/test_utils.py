@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Unit tests for the synchrofact detection app
+Unit tests for elephant.utils
 """
 
 import unittest
@@ -62,6 +62,9 @@ class TestUtils(unittest.TestCase):
 
 
 class DecoratorTest:
+    """
+    This class is used as a mock for testing the decorator.
+    """
     @utils.trials_to_list_of_spiketrainlist
     def method_to_decorate(self, trials=None, trials_obj=None):
         # This is just a mock implementation for testing purposes
