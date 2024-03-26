@@ -420,7 +420,7 @@ def trials_to_list_of_spiketrainlist(method):
     """
 
     @wraps(method)
-    def wrapper(self, *args, **kwargs):
+    def wrapper(*args, **kwargs):
         new_args = tuple(
             [
                 arg.get_spiketrains_from_trial_as_list(idx)
@@ -442,6 +442,6 @@ def trials_to_list_of_spiketrainlist(method):
             for key, value in kwargs.items()
         }
 
-        return method(self, *new_args, **new_kwargs)
+        return method(*new_args, **new_kwargs)
 
     return wrapper
