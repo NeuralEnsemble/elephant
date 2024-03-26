@@ -105,8 +105,8 @@ surrounding_window_sizes : List[int]
 observed_window_sizes : List[int]
     Array of window sizes for the observed area. This corresponds to
     parameter `b` of the edge filter and the length of the running filter
-    as defined in :cite:`functional_connectivity-de_blasi19_169`. Value is given
-    in units of the number of bins according to the binned spike trains
+    as defined in :cite:`functional_connectivity-de_blasi19_169`. Value is
+    given in units of the number of bins according to the binned spike trains
     `spike_trains`.
     Default: [2, 3, 4, 5, 6]
 crossover_window_sizes : List[int]
