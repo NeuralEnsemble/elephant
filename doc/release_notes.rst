@@ -365,7 +365,7 @@ Breaking changes
   - now the users can directly access `.sparse_matrix` attribute of BinnedSpikeTrain to do efficient (yet unsafe in general) operations. For this reason, `to_sparse_array()` function, which does not make a copy, as one could think of, is deprecated.
 * `instantaneous_rate` function (https://github.com/NeuralEnsemble/elephant/pull/362):
   - in case of multiple input spike trains, the output of the instantaneous rate function is (always) a 2D matrix of shape `(time, len(spiketrains))` instead of a pseudo 1D array (previous behavior) of shape `(time, 1)` that contained the instantaneous rate summed across input spike trains;
-  - in case of multiple input spike trains, the user needs to manually provide the input kernel instead of `auto`, which is set by default, for the reason that it's currently not clear how to estimate the common kernel for a set of spike trains. If you have an idea how to do this, we`d appreciate if you let us know by [getting in touch with us](https://elephant.readthedocs.io/en/latest/get_in_touch.html).
+  - in case of multiple input spike trains, the user needs to manually provide the input kernel instead of `auto`, which is set by default, for the reason that it's currently not clear how to estimate the common kernel for a set of spike trains. If you have an idea how to do this, we`d appreciate if you let us know by [getting in touch with us](https://elephant.readthedocs.io/en/v0.7.0/get_in_touch.html).
 
 Other changes
 -------------
@@ -644,7 +644,7 @@ API changes
 * Interoperability between Neo 0.5.0 and Elephant
     * Elephant has adapted its functions to the changes in Neo 0.5.0,
       most of the functionality behaves as before
-    * See Neo documentation for recent changes: http://neo.readthedocs.io/en/latest/whatisnew.html
+    * See Neo documentation for recent changes: http://neo.readthedocs.io/en/0.5.2/whatisnew.html
 
 Other changes
 -------------
