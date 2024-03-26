@@ -268,7 +268,7 @@ jobs:
         with:
           path: ~/.cache/pip
           # Look to see if there is a cache hit for the corresponding requirements files
-          # cache will be reset on changes to any requirements or every month.
+          # cache will be reset on changes to any requirements or every month
           key: ${{ runner.os }}-venv-${{ hashFiles('**/requirements.txt') }}-${{ hashFiles('**/requirements-tests.txt') }}
             -${{ hashFiles('**/requirements-extras.txt') }}-${{ hashFiles('setup.py') }} -${{ hashFiles('**/CI.yml') }}-${{ steps.date.outputs.date }}
 
