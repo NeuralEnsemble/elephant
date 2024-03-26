@@ -14,21 +14,23 @@ import quantities as pq
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
 from elephant.spike_train_generation import StationaryPoissonProcess
-
+from elephant.trials import TrialsFromLists
 try:
     import sklearn
+    HAVE_SKLEARN = True
+except ModuleNotFoundError:
+    HAVE_SKLEARN = False
+
+if HAVE_SKLEARN:
     from elephant.gpfa import gpfa_util
     from elephant.gpfa import GPFA
     from sklearn.model_selection import cross_val_score
 
-    HAVE_SKLEARN = True
-except ImportError:
-    HAVE_SKLEARN = False
-
 
 @unittest.skipUnless(HAVE_SKLEARN, 'requires sklearn')
 class GPFATestCase(unittest.TestCase):
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
         def gen_gamma_spike_train(k, theta, t_max):
             x = []
             for i in range(int(3 * t_max / (k * theta))):
@@ -43,8 +45,8 @@ class GPFATestCase(unittest.TestCase):
                 s = np.concatenate([s, s_i + np.sum(durs[:i])])
             return s
 
-        self.n_iters = 10
-        self.bin_size = 20 * pq.ms
+        cls.n_iters = 10
+        cls.bin_size = 20 * pq.ms
 
         # generate data1
         rates_a = (2, 10, 2, 2)
@@ -52,7 +54,7 @@ class GPFATestCase(unittest.TestCase):
         durs = (2.5, 2.5, 2.5, 2.5)
         np.random.seed(0)
         n_trials = 100
-        self.data0 = []
+        cls.data0 = []
         for trial in range(n_trials):
             n1 = neo.SpikeTrain(gen_test_data(rates_a, durs), units=1 * pq.s,
                                 t_start=0 * pq.s, t_stop=10 * pq.s)
@@ -70,14 +72,14 @@ class GPFATestCase(unittest.TestCase):
                                 t_start=0 * pq.s, t_stop=10 * pq.s)
             n8 = neo.SpikeTrain(gen_test_data(rates_b, durs), units=1 * pq.s,
                                 t_start=0 * pq.s, t_stop=10 * pq.s)
-            self.data0.append([n1, n2, n3, n4, n5, n6, n7, n8])
-        self.x_dim = 4
+            cls.data0.append([n1, n2, n3, n4, n5, n6, n7, n8])
+        cls.x_dim = 4
 
-        self.data1 = self.data0[:20]
+        cls.data1 = cls.data0[:20]
 
         # generate data2
         np.random.seed(27)
-        self.data2 = []
+        cls.data2 = []
         n_trials = 10
         n_channels = 20
         for trial in range(n_trials):
@@ -85,7 +87,7 @@ class GPFATestCase(unittest.TestCase):
             spike_times = [StationaryPoissonProcess(rate=rate * pq.Hz,
                            t_stop=1000.0 * pq.ms).generate_spiketrain()
                            for rate in rates]
-            self.data2.append(spike_times)
+            cls.data2.append(spike_times)
 
     def test_data1(self):
         gpfa = GPFA(x_dim=self.x_dim, em_max_iters=self.n_iters)
@@ -216,6 +218,42 @@ class GPFATestCase(unittest.TestCase):
         logdet_fast = gpfa_util.logdet(matrix)
         logdet_ground_truth = np.log(np.linalg.det(matrix))
         assert_array_almost_equal(logdet_fast, logdet_ground_truth)
+
+    def test_trial_object_gpfa_fit(self):
+        gpfa_trial_object = GPFA(bin_size=self.bin_size, x_dim=self.x_dim,
+                                 em_max_iters=self.n_iters)
+        gpfa_list_of_lists = GPFA(bin_size=self.bin_size, x_dim=self.x_dim,
+                                  em_max_iters=self.n_iters)
+
+        trials = TrialsFromLists(self.data1)
+        gpfa_trial_object.fit(trials)
+        gpfa_list_of_lists.fit(self.data1)
+
+        assert_array_almost_equal(gpfa_trial_object.params_estimated['gamma'],
+                                  gpfa_list_of_lists.params_estimated['gamma'])
+
+    def test_trial_object_gpfa_transform(self):
+        gpfa_trial_object = GPFA(bin_size=self.bin_size, x_dim=self.x_dim,
+                                 em_max_iters=self.n_iters)
+        gpfa_list_of_lists = GPFA(bin_size=self.bin_size, x_dim=self.x_dim,
+                                  em_max_iters=self.n_iters)
+
+        trials = TrialsFromLists(self.data1)
+        gpfa_trial_object.fit(trials)
+        gpfa_trial_object.transform(trials)
+        gpfa_list_of_lists.fit(self.data1)
+        gpfa_list_of_lists.transform(self.data1)
+
+        assert_array_almost_equal(gpfa_trial_object.transform_info['Corth'],
+                                  gpfa_list_of_lists.transform_info['Corth'])
+
+    def test_trial_object_zero_trials(self):
+        gpfa_trial_object = GPFA(bin_size=self.bin_size, x_dim=self.x_dim,
+                                 em_max_iters=self.n_iters)
+
+        trials = TrialsFromLists([])
+        with self.assertRaises(ValueError):
+            gpfa_trial_object.fit(trials)
 
 
 if __name__ == "__main__":
