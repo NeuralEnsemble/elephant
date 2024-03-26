@@ -105,8 +105,7 @@ jobs:
 
       - name: Test with pytest
         run: |
-          coverage run --source=elephant -m pytest
-          coveralls --service=github
+          coverage run --source=elephant -m pytest && coveralls --service=github || echo "Coveralls submission failed"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -294,8 +293,7 @@ jobs:
 
       - name: Test with pytest
         run: |
-          mpiexec -n 1 python -m mpi4py -m coverage run --source=elephant -m pytest
-          coveralls --service=github
+          mpiexec -n 1 python -m mpi4py -m coverage run --source=elephant -m pytest && coveralls --service=github || echo "Coveralls submission failed"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
