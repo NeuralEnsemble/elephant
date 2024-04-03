@@ -1550,11 +1550,11 @@ class Complexity(object):
             bin_shift = .5 / self.sampling_rate
             left_edges -= bin_shift
 
-        # Ensure that an epoch does not start before the minimum t_start.
-        # Note: all spike trains share the same t_start and t_stop.
-        if left_edges[0] < self.t_start:
-            left_edges[0] = self.t_start
-            durations[0] -= bin_shift
+            # Ensure that an epoch does not start before the minimum t_start.
+            # Note: all spike trains share the same t_start and t_stop.
+            if left_edges[0] < self.t_start:
+                left_edges[0] = self.t_start
+                durations[0] -= bin_shift
 
         else:
             warnings.warn('No sampling rate specified. '
