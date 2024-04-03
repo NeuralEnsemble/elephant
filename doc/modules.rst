@@ -35,8 +35,14 @@ Spike trains
 .. toctree::
     :maxdepth: 1
 
+    reference/functional_connectivity_estimation.rst
+
+.. toctree::
+    :maxdepth: 1
+
     reference/change_point_detection
     reference/gpfa
+
 .. toctree::
     :maxdepth: 1
 
