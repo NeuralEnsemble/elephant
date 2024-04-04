@@ -1357,6 +1357,11 @@ class Complexity(object):
     bin edge into the following bin. This can be adjusted using the tolerance
     parameter and turned off by setting `tolerance=None`.
 
+    Due to the rounding error correction an indexing error would occur if 
+    spikes were in the last bin. To avoid the t_stop of the original spike 
+    trains is modified to add one more bin in the cases where a spike is found
+    at the last time bin.
+
     See also
     --------
     elephant.conversion.BinnedSpikeTrain
@@ -1445,10 +1450,16 @@ class Complexity(object):
         if bin_size is None and sampling_rate is not None:
             self.bin_size = 1 / self.sampling_rate
 
-        # Extend t_stop to avoid indexing problems
-        self.t_stop += self.bin_size
-        for st in spiketrains:
-            st.t_stop = self.t_stop
+        # Check if spikes happen in the last bin
+        for st in self.input_spiketrains:
+            # Extend t_stop to avoid indexing problems
+            if np.isclose(self.t_stop.magnitude, st.times[-1].magnitude):
+                warnings.warn('Spike found in last bin, extra bin added ',
+                              'to avoid indexing errors')
+                self.t_stop += self.bin_size
+                for st in self.input_spiketrains:
+                    st.t_stop = self.t_stop
+                break
 
         if spread == 0:
             self.time_histogram, self.complexity_histogram = \
