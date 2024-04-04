@@ -376,7 +376,7 @@ def covariance(binned_spiketrain, binary=False, fast=True):
         binned_spiketrain, corrcoef_norm=False)
 
 
-def correlation_coefficient(binned_spiketrain, binary=False, fast=True):
+def correlation_coefficient(binned_spiketrain, binary=False, fast=True, zero_diag=False):
     r"""
     Calculate the NxN matrix of pairwise Pearson's correlation coefficients
     between all combinations of N binned spike trains.
