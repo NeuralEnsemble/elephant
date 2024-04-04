@@ -1454,8 +1454,6 @@ class Complexity(object):
         for st in self.input_spiketrains:
             # Extend t_stop to avoid indexing problems
             if np.isclose(self.t_stop.magnitude, st.times[-1].magnitude):
-                warnings.warn('Spike found in last bin, extra bin added ',
-                              'to avoid indexing errors')
                 self.t_stop += self.bin_size
                 for st in self.input_spiketrains:
                     st.t_stop = self.t_stop
