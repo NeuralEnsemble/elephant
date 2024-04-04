@@ -408,6 +408,28 @@ class SynchrofactDetectionTestCase(unittest.TestCase):
                             spread=0, mode='delete', in_place=True,
                             deletion_threshold=2)
 
+    def test_binning_indexing_last_bin_synchrofact(self):
+
+        # a test with inputs divided by 30000 which leads to rounding errors
+        # these errors have to be accounted for by proper binning;
+        # check if we still get the correct result
+        # If there is a synchrofact in the last bin there was an indexing
+        # error due to the rounding error correction
+
+        sampling_rate = 30000 / pq.s
+
+        st = neo.SpikeTrain(np.arange(10) * pq.s / 30000, t_stop=.1 * pq.s)
+
+        spiketrains = [st, st]
+
+        annotations = 2*np.ones(10)
+
+        correct_annotations = np.array([annotations, annotations])
+
+        self._test_template(spiketrains, correct_annotations, sampling_rate,
+                            spread=0, mode='delete', in_place=True,
+                            deletion_threshold=2)
+
     def test_correct_transfer_of_spiketrain_attributes(self):
 
         # for delete=True the spiketrains in the block are changed,
