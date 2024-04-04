@@ -235,7 +235,8 @@ class SynchrofactDetectionTestCase(unittest.TestCase):
                                           cleaned_spike_times):
             assert_array_almost_equal(cleaned_st, correct_st)
 
-        assert_array_almost_equal(spiketrains[0].t_stop.magnitude, intial_t_stop)
+        assert_array_almost_equal(spiketrains[0].t_stop.magnitude,
+                                  intial_t_stop)
 
     def test_no_synchrofacts(self):
 
