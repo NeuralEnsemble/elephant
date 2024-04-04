@@ -356,7 +356,12 @@ class Synchrotool(Complexity):
                     # replace link to spiketrain in segment
                     new_index = self._get_spiketrain_index(
                         segment.spiketrains, st)
-                    segment.spiketrains[new_index] = new_st
+
+                    # explicitly re-define the spiketrains
+                    sts = list(segment.spiketrains)
+                    sts[new_index] = new_st
+                    segment.spiketrains = sts
+
                 except ValueError:
                     # st is not in this segment even though it points to it
                     warnings.warn(f"The SpikeTrain at index {idx} of the "
