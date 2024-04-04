@@ -135,11 +135,14 @@ def spike_contrast(spiketrains, t_start=None, t_stop=None,
 
         If the input spike trains constist of a single spiketrain.
 
-        If all input spike trains contain no more than 1 spike.
     TypeError
         If the input spike trains is not a list of `neo.SpikeTrain` objects.
 
         If `t_start`, `t_stop`, or `min_bin` are not time quantities.
+
+    Warnings
+    --------
+    If all input spike trains contain no more than 1 spike.
 
     Examples
     --------
@@ -191,8 +194,12 @@ def spike_contrast(spiketrains, t_start=None, t_stop=None,
 
     try:
         isi_min = min(np.diff(st).min() for st in spiketrains if len(st) > 1)
-    except TypeError:
-        raise ValueError("All input spiketrains contain no more than 1 spike.")
+    except:
+        # Do not raise an error but just a warning and continue the code which will return nan-values as synchrony.
+        # This is useful when running spike-contrast in a batch script, where it is necessary 
+        # to get a complete data structure (trace for all bin-sizes) also for empty spike trains. 
+        warnings.warn("All input spiketrains contain no more than 1 spike.")
+        isi_min = 0  # continue with isi_min = 0, causing to return spike-contrast with nan as synchrony values but 
     bin_min = max(isi_min / 2, min_bin)
 
     contrast_list = []
