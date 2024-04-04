@@ -193,6 +193,8 @@ class SynchrofactDetectionTestCase(unittest.TestCase):
                        spread, deletion_threshold=2, mode='delete',
                        in_place=False, binary=True):
 
+        intial_t_stop = spiketrains[0].t_stop.magnitude
+
         synchrofact_obj = Synchrotool(
             spiketrains,
             sampling_rate=sampling_rate,
@@ -232,6 +234,8 @@ class SynchrofactDetectionTestCase(unittest.TestCase):
         for correct_st, cleaned_st in zip(correct_spike_times,
                                           cleaned_spike_times):
             assert_array_almost_equal(cleaned_st, correct_st)
+
+        assert_array_almost_equal(spiketrains[0].t_stop.magnitude, intial_t_stop)
 
     def test_no_synchrofacts(self):
 
