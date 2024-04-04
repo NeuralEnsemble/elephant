@@ -356,11 +356,7 @@ class Synchrotool(Complexity):
                     # replace link to spiketrain in segment
                     new_index = self._get_spiketrain_index(
                         segment.spiketrains, st)
-                    # Todo: Simplify following lines once Neo SpikeTrainList
-                    # implments indexed assignment of entries (i.e., stl[i]=st)
-                    spiketrainlist = list(segment.spiketrains)
-                    spiketrainlist[new_index] = new_st
-                    segment.spiketrains = spiketrainlist
+                    segment.spiketrains[new_index] = new_st
                 except ValueError:
                     # st is not in this segment even though it points to it
                     warnings.warn(f"The SpikeTrain at index {idx} of the "
