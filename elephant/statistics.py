@@ -1445,6 +1445,11 @@ class Complexity(object):
         if bin_size is None and sampling_rate is not None:
             self.bin_size = 1 / self.sampling_rate
 
+        # Extend t_stop to avoid indexing problems
+        self.t_stop += self.bin_size
+        for st in spiketrains:
+            st.t_stop = self.t_stop
+
         if spread == 0:
             self.time_histogram, self.complexity_histogram = \
                 self._histogram_no_spread()
