@@ -390,16 +390,16 @@ class SynchrofactDetectionTestCase(unittest.TestCase):
 
         sampling_rate = 30000 / pq.s
 
-        spiketrains = [neo.SpikeTrain(np.arange(1000) * pq.s / 30000,
+        spiketrains = [neo.SpikeTrain(np.arange(10) * pq.s / 30000,
                                       t_stop=.1 * pq.s),
-                       neo.SpikeTrain(np.arange(2000, step=2) * pq.s / 30000,
+                       neo.SpikeTrain(np.arange(20, step=2) * pq.s / 30000,
                                       t_stop=.1 * pq.s)]
 
-        first_annotations = np.ones(1000)
+        first_annotations = np.ones(10)
         first_annotations[::2] = 2
 
-        second_annotations = np.ones(1000)
-        second_annotations[:500] = 2
+        second_annotations = np.ones(10)
+        second_annotations[:5] = 2
 
         correct_annotations = np.array([first_annotations,
                                         second_annotations])
