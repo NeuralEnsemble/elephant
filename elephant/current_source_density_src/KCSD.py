@@ -317,17 +317,18 @@ class KCSD(CSD):
             V_train = self.pots[idx_train]
             V_test = self.pots[idx_test]
             I_matrix = np.identity(len(idx_train))
-            B_new = np.matrix(B_train) + (lambd*I_matrix)
+            B_new = np.array(B_train) + (lambd * I_matrix)
             try:
-                beta_new = np.dot(np.matrix(B_new).I, np.matrix(V_train))
+                beta_new = np.linalg.inv(B_new) @ V_train
                 B_test = self.k_pot[np.ix_(idx_test, idx_train)]
                 V_est = np.zeros((len(idx_test), self.pots.shape[1]))
                 for ii in range(len(idx_train)):
                     for tt in range(self.pots.shape[1]):
                         V_est[:, tt] += beta_new[ii, tt] * B_test[:, ii]
-                err += np.linalg.norm(V_est-V_test)
-            except LinAlgError:
-                raise LinAlgError('Encoutered Singular Matrix Error: try changing ele_pos slightly')
+                err += np.linalg.norm(V_est - V_test)
+            except np.linalg.LinAlgError:
+                raise np.linalg.LinAlgError(
+                    'Encountered Singular Matrix Error: try changing ele_pos slightly')
         return err
 
 class KCSD1D(KCSD):
@@ -394,7 +395,7 @@ class KCSD1D(KCSD):
         None
         """
         nx = (self.xmax - self.xmin)/self.gdx
-        self.estm_x = np.mgrid[self.xmin:self.xmax:np.complex(0,nx)]
+        self.estm_x = np.mgrid[self.xmin:self.xmax:complex(0,nx)]
         self.n_estm = self.estm_x.size
         self.ngx = self.estm_x.shape[0]
 
@@ -558,8 +559,8 @@ class KCSD2D(KCSD):
         """
         nx = (self.xmax - self.xmin)/self.gdx
         ny = (self.ymax - self.ymin)/self.gdy
-        self.estm_x, self.estm_y = np.mgrid[self.xmin:self.xmax:np.complex(0,nx),
-                                            self.ymin:self.ymax:np.complex(0,ny)]
+        self.estm_x, self.estm_y = np.mgrid[self.xmin:self.xmax:complex(0,nx),
+                                            self.ymin:self.ymax:complex(0,ny)]
         self.n_estm = self.estm_x.size
         self.ngx, self.ngy = self.estm_x.shape
 
@@ -848,9 +849,9 @@ class KCSD3D(KCSD):
         nx = (self.xmax - self.xmin)/self.gdx
         ny = (self.ymax - self.ymin)/self.gdy
         nz = (self.zmax - self.zmin)/self.gdz
-        self.estm_x, self.estm_y, self.estm_z = np.mgrid[self.xmin:self.xmax:np.complex(0,nx),
-                                                         self.ymin:self.ymax:np.complex(0,ny),
-                                                         self.zmin:self.zmax:np.complex(0,nz)]
+        self.estm_x, self.estm_y, self.estm_z = np.mgrid[self.xmin:self.xmax:complex(0,nx),
+                                                         self.ymin:self.ymax:complex(0,ny),
+                                                         self.zmin:self.zmax:complex(0,nz)]
         self.n_estm = self.estm_x.size
         self.ngx, self.ngy, self.ngz = self.estm_x.shape
 

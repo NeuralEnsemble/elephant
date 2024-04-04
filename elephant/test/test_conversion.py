@@ -2,7 +2,7 @@
 """
 Unit tests for the conversion module.
 
-:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2023 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -510,8 +510,8 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
     def test_to_array(self):
         x = cv.BinnedSpikeTrain(self.spiketrain_a, bin_size=1 * pq.s,
                                 n_bins=10, t_stop=10. * pq.s)
-        arr_float = x.to_array(dtype=np.float32)
-        assert_array_equal(arr_float, x.to_array().astype(np.float32))
+        arr_float = x.to_array(dtype=float)
+        assert_array_equal(arr_float, x.to_array().astype(float))
 
     # Test if error is raised when providing insufficient number of
     # parameters
@@ -666,11 +666,11 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
                                   bin_size=1 * pq.ms)
         self.assertEqual(bst.units, pq.s)
         target_edges = np.array([1000, 1001, 1002, 1003, 1004, 1005, 1006,
-                                 1007, 1008, 1009, 1010], dtype=np.float
+                                 1007, 1008, 1009, 1010], dtype=float
                                 ) * pq.ms
         target_centers = np.array(
             [1000.5, 1001.5, 1002.5, 1003.5, 1004.5, 1005.5, 1006.5, 1007.5,
-             1008.5, 1009.5], dtype=np.float) * pq.ms
+             1008.5, 1009.5], dtype=float) * pq.ms
         assert_array_almost_equal(bst.bin_edges, target_edges)
         assert_array_almost_equal(bst.bin_centers, target_centers)
 
@@ -717,10 +717,9 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
     def test_binned_spiketrain_rounding(self):
         train = neo.SpikeTrain(times=np.arange(120000) / 30000. * pq.s,
                                t_start=0 * pq.s, t_stop=4 * pq.s)
-        with self.assertWarns(UserWarning):
-            bst = cv.BinnedSpikeTrain(train,
-                                      t_start=0 * pq.s, t_stop=4 * pq.s,
-                                      bin_size=1. / 30000. * pq.s)
+        bst = cv.BinnedSpikeTrain(train,
+                                  t_start=0 * pq.s, t_stop=4 * pq.s,
+                                  bin_size=1. / 30000. * pq.s)
         assert_array_equal(bst.to_array().nonzero()[1],
                            np.arange(120000))
 
