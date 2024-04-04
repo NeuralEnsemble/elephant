@@ -26,7 +26,7 @@ import quantities as pq
 import scipy.signal
 
 from elephant.online import VarianceOnline
-from elephant.utils import check_same_units
+from elephant.utils import check_neo_consistency
 
 __all__ = [
     "zscore",
