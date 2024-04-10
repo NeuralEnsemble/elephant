@@ -3,6 +3,32 @@ Release Notes
 =============
 
 
+Release 1.1.0
+=============
+New functionality and features
+------------------------------
+* New method "Total spiking probability edges" (TPSE) for inferring functional connectivity (https://github.com/NeuralEnsemble/elephant/pull/560).
+
+Bug fixes
+---------
+* Fixed expired SciPy deprecations and breaking changes related to `sp.sqrt`, ensuring continued compatibility with the latest version of SciPy (https://github.com/NeuralEnsemble/elephant/pull/616).
+* Addressed failing unit tests for `neo_tools` with Neo 0.13.0, ensuring compatibility with the latest Neo release (https://github.com/NeuralEnsemble/elephant/pull/617).
+
+Documentation
+-------------
+* Fixed a bug in the CI docs runner to resolve formatting issues, ensuring documentation build is tested (https://github.com/NeuralEnsemble/elephant/pull/615).
+
+Other changes
+-------------
+* added Python 3.12 CI runner to ensure compatibility with the latest Python language features (https://github.com/NeuralEnsemble/elephant/pull/611).
+* Integrated `Trials` object with GPFA, allowing for a more formal way of specifying trials (https://github.com/NeuralEnsemble/elephant/pull/610).
+
+Selected dependency changes
+---------------------------
+* scipy>=1.10.0
+* Support for Python 3.12
+
+
 Release 1.0.0
 =============
 Elephant's first major release is focused on providing a stable and consistent API consistency that will be maintained over the 1.x series of releases. In order to provide future support, this release will remove all features and API specifications that have been deprecated over the course of the last releases of the 0.x line. While work on the next generation of Elephant will commence, all new analysis capabilities will be consistently back-ported to become available in the 1.x release line.
@@ -339,7 +365,7 @@ Breaking changes
   - now the users can directly access `.sparse_matrix` attribute of BinnedSpikeTrain to do efficient (yet unsafe in general) operations. For this reason, `to_sparse_array()` function, which does not make a copy, as one could think of, is deprecated.
 * `instantaneous_rate` function (https://github.com/NeuralEnsemble/elephant/pull/362):
   - in case of multiple input spike trains, the output of the instantaneous rate function is (always) a 2D matrix of shape `(time, len(spiketrains))` instead of a pseudo 1D array (previous behavior) of shape `(time, 1)` that contained the instantaneous rate summed across input spike trains;
-  - in case of multiple input spike trains, the user needs to manually provide the input kernel instead of `auto`, which is set by default, for the reason that it's currently not clear how to estimate the common kernel for a set of spike trains. If you have an idea how to do this, we`d appreciate if you let us know by [getting in touch with us](https://elephant.readthedocs.io/en/latest/get_in_touch.html).
+  - in case of multiple input spike trains, the user needs to manually provide the input kernel instead of `auto`, which is set by default, for the reason that it's currently not clear how to estimate the common kernel for a set of spike trains. If you have an idea how to do this, we`d appreciate if you let us know by [getting in touch with us](https://elephant.readthedocs.io/en/v0.7.0/get_in_touch.html).
 
 Other changes
 -------------
@@ -618,7 +644,7 @@ API changes
 * Interoperability between Neo 0.5.0 and Elephant
     * Elephant has adapted its functions to the changes in Neo 0.5.0,
       most of the functionality behaves as before
-    * See Neo documentation for recent changes: http://neo.readthedocs.io/en/latest/whatisnew.html
+    * See Neo documentation for recent changes: http://neo.readthedocs.io/en/0.5.2/whatisnew.html
 
 Other changes
 -------------
