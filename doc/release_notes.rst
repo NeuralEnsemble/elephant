@@ -7,7 +7,7 @@ Release 1.1.0
 =============
 New functionality and features
 ------------------------------
-* Merged TSPE "Total spiking probability edges" into elephant, a tool for classifying excitatory and inhibitory synaptic effects using connectivity estimation (https://github.com/NeuralEnsemble/elephant/pull/560).
+* New method "Total spiking probability edges" (TPSE) for inferring functional connectivity (https://github.com/NeuralEnsemble/elephant/pull/560).
 
 Bug fixes
 ---------
