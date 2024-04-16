@@ -33,7 +33,7 @@ jobs:
         if : ${{ steps.ruff-check.outcome == 'failure' }}
         with:
             src: './elephant'
-            args: 'format --fix'
+            args: 'format --verbose'
 
       - name: Create PR
         uses: peter-evans/create-pull-request@v5
