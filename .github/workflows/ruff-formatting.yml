@@ -23,12 +23,14 @@ jobs:
       - name: Check with Ruff
         uses: chartboost/ruff-action@v1
         with:
-            args: 'check elephant'
+            src: './elephant'
+            args: 'format --check'
 
       - name: Fix with Ruff
         uses: chartboost/ruff-action@v1
         with:
-            args: 'fix elephant'
+            src: './elephant'
+            args: 'format --fix'
 
       - name: Create PR
         uses: peter-evans/create-pull-request@v5
