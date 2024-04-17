@@ -158,7 +158,6 @@ jobs:
         shell: bash -l {0}
         run: |
           python --version
-          mamba install mpi4py openmpi
           mamba install pytest
           mamba install pytest-cov coveralls
           pip install -e .[extras]
