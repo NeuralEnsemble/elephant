@@ -42,6 +42,11 @@ on:
     branches:
       - master
 
+# Cancel previous workflows on the same pull request
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 # jobs define the steps that will be executed on the runner
 jobs:
 
@@ -105,7 +110,8 @@ jobs:
 
       - name: Test with pytest
         run: |
-          coverage run --source=elephant -m pytest && coveralls --service=github || echo "Coveralls submission failed"
+          coverage run --source=elephant -m pytest
+          coveralls --service=github || echo "Coveralls submission failed"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -291,7 +297,8 @@ jobs:
 
       - name: Test with pytest
         run: |
-          mpiexec -n 1 python -m mpi4py -m coverage run --source=elephant -m pytest && coveralls --service=github || echo "Coveralls submission failed"
+          mpiexec -n 1 python -m mpi4py -m coverage run --source=elephant -m pytest
+          coveralls --service=github || echo "Coveralls submission failed"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

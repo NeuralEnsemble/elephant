@@ -202,9 +202,9 @@ You can have one, both, or none installed in your system.
         .. note::
 
             Make sure you've disabled GPU Hangcheck as described in the
-            `Intel GPU developers documentation <https://software.intel.com/
-            content/www/us/en/develop/documentation/get-started-with-intel-
-            oneapi-base-linux/top/before-you-begin.html>`_. Do it with caution -
+            `Intel GPU developers documentation <https://www.intel.com/content/
+            www/us/en/docs/oneapi/installation-guide-linux/2023-1/
+            gpu-disable-hangcheck.html>`_. Do it with caution -
             using your graphics card to perform computations may make the system
             unresponsive until the compute program terminates.
 
