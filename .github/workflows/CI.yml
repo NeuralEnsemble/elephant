@@ -303,6 +303,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
+        # python versions for elephant: [3.8, 3.9, 3.10, 3.11]
+        python-version: [3.11]
         # OS [ubuntu-latest, macos-latest, windows-latest]
         os: [ubuntu-latest]
 
@@ -331,7 +333,7 @@ jobs:
       - uses: conda-incubator/setup-miniconda@030178870c779d9e5e1b4e563269f3aa69b04081 # corresponds to v3.0.3
         with:
           auto-update-conda: true
-          python-version: 3.11
+          python-version: ${{ matrix.python-version }}
           mamba-version: "*"
           channels: conda-forge,defaults
           channel-priority: true
@@ -370,6 +372,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
+        # python versions for elephant: [3.8, 3.9, 3.10, 3.11, 3.12]
+        python-version: [3.12]
         # OS [ubuntu-latest, macos-latest, windows-latest]
         os: [ubuntu-latest]
 
@@ -397,7 +401,7 @@ jobs:
       - uses: conda-incubator/setup-miniconda@030178870c779d9e5e1b4e563269f3aa69b04081 # corresponds to v3.0.3
         with:
           auto-update-conda: true
-          python-version: 3.11
+          python-version: ${{ matrix.python-version }}
           mamba-version: "*"
           activate-environment: elephant
           environment-file: requirements/environment.yml
