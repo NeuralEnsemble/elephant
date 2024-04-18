@@ -52,10 +52,10 @@ jobs:
             # Download repository and also fetch data
             run: |
               gin --version
-              gin get NeuralEnsemble/elephant-data
+              git clone git@gin.g-node.org:/NeuralEnsemble/elephant-data.git
               cd ~/elephant-data
               gin getc .
-    
+
           - name: Show size of the cache to assert data is downloaded
             run: |
               cd ~
