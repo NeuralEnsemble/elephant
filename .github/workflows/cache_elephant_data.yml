@@ -52,6 +52,9 @@ jobs:
             # Download repository and also fetch data
             run: |
               gin --version
+              gin get NeuralEnsemble/elephant-data
+              cd ~/elephant-data
+              gin getc .
     
           - name: Show size of the cache to assert data is downloaded
             run: |
