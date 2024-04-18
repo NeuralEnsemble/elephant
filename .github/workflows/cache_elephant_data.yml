@@ -48,6 +48,7 @@ jobs:
                 brew install g-node/pkg/gin-cli
 
           - name: Download dataset
+            id: download-dataset
             if: steps.cache-datasets.outputs.cache-hit != 'true'
             # Download repository and also fetch data
             run: |
@@ -55,13 +56,12 @@ jobs:
                 git clone --depth 1 https://gin.g-node.org/NeuralEnsemble/elephant-data.git
                 cd elephant-data
                 gin getc .
-                pwd
+                echo "dataset-path =$(pwd)"" >> $GITHUB_OUTPUT
 
           - name: Show size of the cache to assert data is downloaded
             run: |
-                cd ~
                 pwd
-                du -hs elephant-data
-                cd elephant-data
+                du -hs ${{steps.download-dataset.outputs.dataset-path}}
+                cd ${{steps.download-dataset.outputs.dataset-path}}
                 pwd
                 ls -lh
