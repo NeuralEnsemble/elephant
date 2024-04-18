@@ -25,7 +25,7 @@ jobs:
           - name: Get current hash (SHA) of the elephant_data repo
             id: elephant-data
             run: |
-              echo "dataset_hash=$(git ls-remote https://gin.g-node.org/NeuralEnsemble/elephant-data.git HEAD | cut -f1)" >> $GITHUB_OUTPUT
+                echo "dataset_hash=$(git ls-remote https://gin.g-node.org/NeuralEnsemble/elephant-data.git HEAD | cut -f1)" >> $GITHUB_OUTPUT
     
           - uses: actions/cache@v3
             # Loading cache of elephant-data
@@ -51,15 +51,15 @@ jobs:
             if: steps.cache-datasets.outputs.cache-hit != 'true'
             # Download repository and also fetch data
             run: |
-              gin --version
-              git clone git@gin.g-node.org:/NeuralEnsemble/elephant-data.git
-              cd ~/elephant-data
-              gin getc .
+                gin --version
+                git clone https://gin.g-node.org/NeuralEnsemble/elephant-data.git
+                cd ~/elephant-data
+                gin getc .
 
           - name: Show size of the cache to assert data is downloaded
             run: |
-              cd ~
-              pwd
-              du -hs elephant-data
-              cd elephant-data
-              pwd
+                cd ~
+                pwd
+                du -hs elephant-data
+                cd elephant-data
+                pwd
