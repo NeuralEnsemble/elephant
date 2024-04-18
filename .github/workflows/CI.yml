@@ -316,10 +316,15 @@ jobs:
 
       - uses: actions/checkout@v3
 
+      - name: Get pip cache dir
+        id: pip-cache
+        run: |
+          echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
+
       - name: Cache pip
         uses: actions/cache@v3
         with:
-          path: ~/.cache/pip
+          path: ${{ steps.pip-cache.outputs.dir }}
 
           key: ${{ runner.os }}-pip-${{hashFiles('requirements/environment-tests.yml') }}-${{ hashFiles('**/CI.yml') }}-${{ steps.date.outputs.date }}
 
@@ -376,10 +381,15 @@ jobs:
 
       - uses: actions/checkout@v3
 
+      - name: Get pip cache dir
+        id: pip-cache
+        run: |
+          echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
+
       - name: Cache pip
         uses: actions/cache@v3
         with:
-          path: ~/.cache/pip
+          path: ${{ steps.pip-cache.outputs.dir }}
           # Look to see if there is a cache hit for the corresponding requirements files
           key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements-docs.txt') }}-${{ hashFiles('**/requirements-tutorials.txt') }}-${{ hashFiles('**/environment-docs.yml') }}
            -${{ hashFiles('**/CI.yml') }}-${{ steps.date.outputs.date }}
@@ -401,9 +411,7 @@ jobs:
           conda install -c conda-forge openmpi pandoc libstdcxx-ng # fix libstdc++.so.6: version for new scipy versions > 1.9.1
           mamba env update --file requirements/environment-docs.yml --name elephant
           python -m pip install --upgrade pip
-          pip install -r requirements/requirements-docs.txt
-          pip install -r requirements/requirements-tutorials.txt
-          pip install -e .[extras]
+          pip install -e .[extras,tutorials,docs]
           # run notebooks
           sed -i -E "s/nbsphinx_execute *=.*/nbsphinx_execute = 'always'/g" doc/conf.py
 
