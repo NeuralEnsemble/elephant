@@ -256,10 +256,15 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Get pip cache dir
+        id: pip-cache
+        run: |
+          echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
+
       - name: Cache test_env
         uses: actions/cache@v3
         with:
-          path: ~/.cache/pip
+          path: ${{ steps.pip-cache.outputs.dir }}
           # Look to see if there is a cache hit for the corresponding requirements files
           # cache will be reset on changes to any requirements or every month
           key: ${{ runner.os }}-venv-${{ hashFiles('**/requirements.txt') }}-${{ hashFiles('**/requirements-tests.txt') }}
