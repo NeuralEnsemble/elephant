@@ -8,6 +8,14 @@ on:
   schedule:
     - cron: "0 12 * * *"  # Daily at noon UTC
 
+  pull_request:
+      branches:
+        - master
+      types:
+        - opened
+        - reopened
+        - synchronize
+
 jobs:
     create-data-cache-if-missing:
         name: Caching data env
