@@ -1,0 +1,54 @@
+name: Create caches for elephant_data
+
+on:
+  workflow_dispatch: # Workflow can be triggered manually via GH actions webinterface
+  push:  # When something is pushed into master this checks if caches need to re-created
+    branches:
+      - master
+  schedule:
+    - cron: "0 12 * * *"  # Daily at noon UTC
+
+jobs:
+    create-data-cache-if-missing:
+        name: Caching data env
+        runs-on: "macos-latest"
+        steps:
+    
+          - name: Get current hash (SHA) of the elephant_data repo
+            id: elephant-data
+            run: |
+              echo "dataset_hash=$(git ls-remote https://gin.g-node.org/NeuralEnsemble/elephant-data.git HEAD | cut -f1)" >> $GITHUB_OUTPUT
+    
+          - uses: actions/cache@v3
+            # Loading cache of elephant-data
+            id: cache-datasets
+            with:
+              path: ~/elephant-data
+              key: ${{ runner.os }}-datasets-${{ steps.elephant-data.outputs.dataset_hash }}
+    
+          - name: Cache found?
+            run: echo "Cache-hit == ${{steps.cache-datasets.outputs.cache-hit == 'true'}}"
+    
+          - name: Installing gin
+            if: steps.cache-datasets.outputs.cache-hit != 'true'
+            run: |
+                git config --global user.email "elephant_ci@fake_mail.com"
+                git config --global user.name "elephant CI"
+                git config --global filter.annex.process "git-annex filter-process"  # recommended for efficiency
+
+                brew tap g-node/pkg
+                brew install g-node/pkg/gin-cli
+
+          - name: Download dataset
+            if: steps.cache-datasets.outputs.cache-hit != 'true'
+            # Download repository and also fetch data
+            run: |
+              gin --version
+    
+          - name: Show size of the cache to assert data is downloaded
+            run: |
+              cd ~
+              pwd
+              du -hs elephant-data
+              cd elephant-data
+              pwd
