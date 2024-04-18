@@ -55,6 +55,7 @@ jobs:
                 gin --version
                 git clone --depth 1 https://gin.g-node.org/NeuralEnsemble/elephant-data.git
                 cd elephant-data
+                gin add-remote primary gin:NeuralEnsemble/elephant-data
                 gin getc .
                 echo "dataset-path =$(pwd)"" >> $GITHUB_OUTPUT
 
