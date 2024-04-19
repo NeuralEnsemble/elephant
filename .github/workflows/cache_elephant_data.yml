@@ -44,40 +44,23 @@ jobs:
                 git config --global user.name "elephant CI"
                 git config --global filter.annex.process "git-annex filter-process"  # recommended for efficiency
 
-                brew tap g-node/pkg
-                brew install g-node/pkg/gin-cli
+                brew install datalad
 
           - name: Download dataset
             id: download-dataset
             if: steps.cache-datasets.outputs.cache-hit != 'true'
             # Download repository and also fetch data
             run: |
-                gin --version
-                git clone --depth 1 https://gin.g-node.org/NeuralEnsemble/elephant-data.git
+                cd ~
+                datalad install --recursive --get-data https://gin.g-node.org/NeuralEnsemble/elephant-data
                 cd elephant-data
-                set timeout 10
-                spawn gin add-remote primary gin:NeuralEnsemble/elephant-data
-                expect {
-                  "Remote ssh://git@gin.g-node.org:22/NeuralEnsemble/elephant-data does not exist. Would you like to create it?" {
-                    send "yes\r"
-                    expect eof
-                  }
-                  timeout {
-                    puts "Timeout occurred. Exiting."
-                    exit 1
-                  }
-                  eof {
-                    puts "Command executed successfully."
-                    exit 0
-                  }
-                }
-                gin getc .
                 echo "dataset-path =$(pwd)"" >> $GITHUB_OUTPUT
 
           - name: Show size of the cache to assert data is downloaded
             run: |
-                pwd
+                cd ~
                 du -hs ${{steps.download-dataset.outputs.dataset-path}}
                 cd ${{steps.download-dataset.outputs.dataset-path}}
                 pwd
                 ls -lh
+                cd elephant
