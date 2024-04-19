@@ -80,7 +80,7 @@ def download_datasets(repo_path, filepath=None, checksum=None,
         elephant-data.
         Different versions of the elephant package may require different
         versions of elephant-data.
-        e.g. the follwoing URLs:
+        e.g. the following URLs:
         -  https://web.gin.g-node.org/NeuralEnsemble/elephant-data/raw/0.0.1
            points to release v0.0.1.
         -  https://web.gin.g-node.org/NeuralEnsemble/elephant-data/raw/master
@@ -96,15 +96,18 @@ def download_datasets(repo_path, filepath=None, checksum=None,
         `ELEPHANT_DATA_URL` to
         https://web.gin.g-node.org/NeuralEnsemble/elephant-data/raw/multitaper.
         For a complete example, see Examples section.
-
+        
+        To use a local copy of elephant-data, use the environment variable
+        `ELEPHANT_DATA_PATH`, e.g. set to /home/user/elephant-data.
+        
         Parameters
         ----------
         repo_path : str
             String denoting the path relative to elephant-data repository root
         filepath : str, optional
             Path to temporary folder where the downloaded files will be stored
-        checksum : str, otpional
-            Checksum to verify dara integrity after download
+        checksum : str, optional
+            Checksum to verify data integrity after download
         verbose : bool, optional
             Whether to disable the entire progressbar wrapper [].
             If set to None, disable on non-TTY.
@@ -134,6 +137,9 @@ def download_datasets(repo_path, filepath=None, checksum=None,
         PosixPath('/tmp/elephant/time_series.npy')
         """
 
+    if 'ELEPHANT_DATA_PATH' in environ:  # user did set local path
+        return Path(f"{getenv('ELEPHANT_DATA_PATH')}/{repo_path}")
+
     # this url redirects to the current location of elephant-data
     url_to_root = "https://datasets.python-elephant.org/"
 
@@ -149,7 +155,7 @@ def download_datasets(repo_path, filepath=None, checksum=None,
         except HTTPError as error:
             # if corresponding elephant-data version is not found,
             # use latest commit of elephant-data
-            default_url = url_to_root + f"raw/master"
+            default_url = url_to_root + "raw/master"
 
             warnings.warn(f"No corresponding version of elephant-data found.\n"
                           f"Elephant version: {_get_version()}. "
@@ -164,7 +170,7 @@ def download_datasets(repo_path, filepath=None, checksum=None,
                 ctx.check_hostname = True
                 urlopen(default_url + '/README.md')
             except HTTPError:  # e.g. 404
-                default_url = url_to_root + f"raw/master"
+                default_url = url_to_root + "raw/master"
 
             warnings.warn(f"Data URL:{default_url}, error: {error}."
                           f"{error.reason}")
