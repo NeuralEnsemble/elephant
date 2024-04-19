@@ -54,7 +54,6 @@ jobs:
                 cd ~
                 datalad --version
                 datalad install --recursive --get-data https://gin.g-node.org/NeuralEnsemble/elephant-data
-                echo "dataset-path =$(pwd)" >> $GITHUB_OUTPUT
 
           - name: Show size of the cache to assert data is downloaded
             run: |
