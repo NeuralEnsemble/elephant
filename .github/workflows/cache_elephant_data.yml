@@ -55,7 +55,22 @@ jobs:
                 gin --version
                 git clone --depth 1 https://gin.g-node.org/NeuralEnsemble/elephant-data.git
                 cd elephant-data
-                gin add-remote primary gin:NeuralEnsemble/elephant-data
+                set timeout 10
+                spawn gin add-remote primary gin:NeuralEnsemble/elephant-data
+                expect {
+                  "Remote ssh://git@gin.g-node.org:22/NeuralEnsemble/elephant-data does not exist. Would you like to create it?" {
+                    send "yes\r"
+                    expect eof
+                  }
+                  timeout {
+                    puts "Timeout occurred. Exiting."
+                    exit 1
+                  }
+                  eof {
+                    puts "Command executed successfully."
+                    exit 0
+                  }
+                }
                 gin getc .
                 echo "dataset-path =$(pwd)"" >> $GITHUB_OUTPUT
 
