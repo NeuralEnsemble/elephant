@@ -535,7 +535,7 @@ class PairwiseSpectralGrangerTestCase(unittest.TestCase):
             ("time_series_small.npy", "b33dc12d4291db7c2087dd8429f15ab4"),
             ("gc_matrix.npy", "c57262145e74a178588ff0a1004879e2")
         ]
-        
+
         downloaded_files = {}
         for filename, checksum in files_to_download:
             downloaded_files[filename] = {
