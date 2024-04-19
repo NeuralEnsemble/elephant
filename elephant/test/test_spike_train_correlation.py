@@ -20,7 +20,7 @@ import elephant.spike_train_correlation as sc
 from elephant.spike_train_generation import StationaryPoissonProcess, \
     StationaryGammaProcess
 import math
-from elephant.datasets import download_datasets, ELEPHANT_TMP_DIR
+from elephant.datasets import download_datasets
 from elephant.spike_train_generation import homogeneous_poisson_process, \
     homogeneous_gamma_process
 
@@ -852,11 +852,15 @@ class SpikeTimeTilingCoefficientTestCase(unittest.TestCase):
         files_to_download = [("spike_time_tiling_coefficient_results.nix",
                               "e3749d79046622494660a03e89950f51")]
 
+        downloaded_files = {}
         for filename, checksum in files_to_download:
-            filepath = download_datasets(repo_path=f"{repo_path}/{filename}",
-                                         checksum=checksum)
+            downloaded_files[filename] = {
+                'filename': filename,
+                'path': download_datasets(repo_path=f"{repo_path}/{filename}",
+                                          checksum=checksum)}
 
-        reader = NixIO(filepath, mode='ro')
+        reader = NixIO(downloaded_files[
+            'spike_time_tiling_coefficient_results.nix']['path'], mode='ro')
         test_data_block = reader.read()
 
         for segment in test_data_block[0].segments:
