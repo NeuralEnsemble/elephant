@@ -1569,7 +1569,6 @@ class Complexity(object):
             if left_edges[0] < self.t_start:
                 left_edges[0] = self.t_start
                 durations[0] -= bin_shift
-
         else:
             warnings.warn('No sampling rate specified. '
                           'Note that using the complexity epoch to get '
