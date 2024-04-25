@@ -110,7 +110,7 @@ jobs:
         with:
           path: ~/elephant-data
           key: macos-latest-datasets-${{ steps.elephant-data.outputs.dataset_hash }}
-          restore-keys: ${{ runner.os }}-datasets-      
+          restore-keys: macos-latest-datasets-      
 
       - name: Install dependencies
         run: |
