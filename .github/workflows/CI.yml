@@ -125,6 +125,10 @@ jobs:
 
       - name: Test with pytest
         run: |
+          du ~/elephant-data
+          full_path=~/elephant-data
+          echo "$full_path"
+          export ELEPHANT_DATA_PATH="$full_path"
           coverage run --source=elephant -m pytest
           coveralls --service=github || echo "Coveralls submission failed"
         env:
