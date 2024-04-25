@@ -109,7 +109,7 @@ jobs:
         id: cache-datasets
         with:
           path: ~/elephant-data
-          key: ${{ runner.os }}-datasets-${{ steps.elephant-data.outputs.dataset_hash }}
+          key: macos-latest-datasets-${{ steps.elephant-data.outputs.dataset_hash }}
           restore-keys: ${{ runner.os }}-datasets-      
 
       - name: Install dependencies
