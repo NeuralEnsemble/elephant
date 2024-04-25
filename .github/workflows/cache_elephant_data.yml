@@ -52,7 +52,10 @@ jobs:
                 if [[ "$OSTYPE" == "darwin"* ]]; then
                   brew install datalad
                 elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
-                  sudo apt-get install datalad
+                  python -m pip install -U pip  # Official recommended way
+                  pip install datalad-installer
+                  datalad-installer --sudo ok git-annex --method datalad/packages
+                  pip install datalad
                 else
                   echo "Unsupported operating system."
                   exit 1
