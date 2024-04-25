@@ -146,6 +146,19 @@ jobs:
           path: ~/conda_pkgs_dir
           key: ${{ runner.os }}-conda-${{hashFiles('requirements/environment.yml') }}-${{ hashFiles('**/CI.yml') }}-${{ steps.date.outputs.date }}
 
+      - name: Get current hash (SHA) of the elephant_data repo
+        id: elephant-data
+        run: |
+            echo "dataset_hash=$(git ls-remote https://gin.g-node.org/NeuralEnsemble/elephant-data.git HEAD | cut -f1)" >> $GITHUB_OUTPUT
+
+      - uses: actions/cache/restore@v3
+        # Loading cache of ephys_testing_dataset
+        id: cache-datasets
+        with:
+          path: ~/elephant-data
+          key: ${{ runner.os }}-datasets-${{ steps.elephant-data.outputs.dataset_hash }}
+          restore-keys: ${{ runner.os }}-datasets-      
+
       - uses: conda-incubator/setup-miniconda@030178870c779d9e5e1b4e563269f3aa69b04081 # corresponds to v3.0.3
         with:
           auto-update-conda: true
@@ -173,6 +186,7 @@ jobs:
       - name: Test with pytest
         shell: bash -l {0}
         run: |
+          export ELEPHANT_DATA_PATH=~/elephant-data
           pytest --cov=elephant
 
   # __        ___           _
