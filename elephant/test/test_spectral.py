@@ -277,7 +277,7 @@ class MultitaperPSDTestCase(unittest.TestCase):
             ("time_series.npy", "ff43797e2ac94613f510b20a31e2e80e"),
             ("psd_nitime.npy", "89d1f53957e66c786049ea425b53c0e8")
         ]
-        
+
         downloaded_files = {}
         for filename, checksum in files_to_download:
             downloaded_files[filename] = {
