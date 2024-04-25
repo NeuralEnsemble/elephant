@@ -152,7 +152,7 @@ jobs:
             echo "dataset_hash=$(git ls-remote https://gin.g-node.org/NeuralEnsemble/elephant-data.git HEAD | cut -f1)" >> $GITHUB_OUTPUT
 
       - uses: actions/cache/restore@v3
-        # Loading cache of ephys_testing_dataset
+        # Loading cache of elephant-data
         id: cache-datasets
         with:
           path: ~/elephant-data
@@ -186,7 +186,10 @@ jobs:
       - name: Test with pytest
         shell: bash -l {0}
         run: |
-          export ELEPHANT_DATA_PATH=~/elephant-data
+          du ~/elephant-data
+          full_path=$(realpath "~/elephant-data")
+          echo "$full_path"
+          export ELEPHANT_DATA_PATH="$full_path"
           pytest --cov=elephant
 
   # __        ___           _
