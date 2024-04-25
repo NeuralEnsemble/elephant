@@ -99,6 +99,19 @@ jobs:
             -${{ hashFiles('**/requirements-extras.txt') }}-${{ hashFiles('**/CI.yml') }}-${{ hashFiles('setup.py') }}
             -${{ steps.date.outputs.date }}
 
+      - name: Get current hash (SHA) of the elephant_data repo
+        id: elephant-data
+        run: |
+            echo "dataset_hash=$(git ls-remote https://gin.g-node.org/NeuralEnsemble/elephant-data.git HEAD | cut -f1)" >> $GITHUB_OUTPUT
+
+      - uses: actions/cache/restore@v3
+        # Loading cache of elephant-data
+        id: cache-datasets
+        with:
+          path: ~/elephant-data
+          key: ${{ runner.os }}-datasets-${{ steps.elephant-data.outputs.dataset_hash }}
+          restore-keys: ${{ runner.os }}-datasets-      
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
