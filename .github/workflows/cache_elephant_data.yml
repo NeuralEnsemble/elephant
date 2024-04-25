@@ -52,7 +52,7 @@ jobs:
                 if [[ "$OSTYPE" == "darwin"* ]]; then
                   brew install datalad
                 elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
-                  apt-get install datalad
+                  sudo apt-get install datalad
                 else
                   echo "Unsupported operating system."
                   exit 1
