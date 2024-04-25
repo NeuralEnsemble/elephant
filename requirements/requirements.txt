@@ -1,4 +1,4 @@
-neo>=0.10.0
+neo>=0.13.0
 numpy>=1.19.5
 quantities>=0.14.1
 scipy>=1.10.0
