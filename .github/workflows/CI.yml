@@ -187,7 +187,7 @@ jobs:
         shell: bash -l {0}
         run: |
           du ~/elephant-data
-          full_path=$(realpath "~/elephant-data")
+          full_path=~/elephant-data
           echo "$full_path"
           export ELEPHANT_DATA_PATH="$full_path"
           pytest --cov=elephant
