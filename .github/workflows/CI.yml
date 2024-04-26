@@ -256,8 +256,8 @@ jobs:
 
       - name: Test with pytest
         run: |
-          if (Test-Path "$env:~\elephant-data") {
-              $env:ELEPHANT_DATA_PATH = "$env:~\elephant-data"
+          if (Test-Path "$env:USERPROFILE\elephant-data") {
+              $env:ELEPHANT_DATA_PATH = "$env:USERPROFILE\elephant-data"
               Write-Output $env:ELEPHANT_DATA_PATH
           }
           pytest --cov=elephant
