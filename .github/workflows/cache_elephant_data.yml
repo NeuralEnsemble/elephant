@@ -51,12 +51,12 @@ jobs:
                 git config --global filter.annex.process "git-annex filter-process"  # recommended for efficiency
                 
           - name: Install Datalad macOS
-            if: steps.cache-datasets.outputs.cache-hit != 'true' && ${{ runner.os }} == 'macOS'
+            if: steps.cache-datasets.outputs.cache-hit != 'true' && runner.os == 'macOS'
             run: |
               brew install datalad
 
           - name: Install Datalad Linux/ Windows
-            if: steps.cache-datasets.outputs.cache-hit != 'true' && ${{ runner.os }} == 'Linux' || ${{ runner.os }}" == 'Windows'
+            if: steps.cache-datasets.outputs.cache-hit != 'true' && runner.os == 'Linux' || runner.os == 'Windows'
             run: |
               python -m pip install -U pip  # Official recommended way
               pip install datalad-installer
@@ -73,14 +73,14 @@ jobs:
               datalad install --recursive --get-data https://gin.g-node.org/NeuralEnsemble/elephant-data
 
           - name: Show size of the cache to assert data is downloaded macOS, Linux
-            if: ${{ runner.os }} == 'Linux' || ${{ runner.os }} == 'macOS'
+            if: runner.os == 'Linux' || runner.os == 'macOS'
             run: |
               cd ~
               du -hs ~/elephant-data
               ls -lh ~/elephant-data
 
           - name: Show size of the cache to assert data is downloaded Windows
-            if: ${{ runner.os }} == 'Windows'
+            if: runner.os == 'Windows'
             run: |
               cd ~
               dir ~\elephant-data
