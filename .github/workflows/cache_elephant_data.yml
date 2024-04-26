@@ -17,70 +17,70 @@ on:
         - synchronize
 
 jobs:
-    create-data-cache-if-missing:
-        name: Caching data env
-        runs-on: ${{ matrix.os }}
-        strategy:
-          # do not cancel all in-progress jobs if any matrix job fails
-          fail-fast: false
-          matrix:
-            # OS [ubuntu-latest, macos-latest, windows-latest]
-            os: [macos-latest,ubuntu-latest,windows-latest]
-        steps:
-    
-          - name: Get current hash (SHA) of the elephant_data repo
-            id: elephant-data
-            run: |
-                echo "dataset_hash=$(git ls-remote https://gin.g-node.org/NeuralEnsemble/elephant-data.git HEAD | cut -f1)" >> $GITHUB_OUTPUT
-    
-          - uses: actions/cache@v3
-            # Loading cache of elephant-data
-            id: cache-datasets
-            with:
-              path: ~/elephant-data
-              key: ${{ runner.os }}-datasets-${{ steps.elephant-data.outputs.dataset_hash }}
-    
-          - name: Cache found?
-            run: echo "Cache-hit == ${{steps.cache-datasets.outputs.cache-hit == 'true'}}"
-    
-          - name: Configuring git
-            if: steps.cache-datasets.outputs.cache-hit != 'true'
-            run: |
-                git config --global user.email "elephant_ci@fake_mail.com"
-                git config --global user.name "elephant CI"
-                git config --global filter.annex.process "git-annex filter-process"  # recommended for efficiency
+  create-data-cache-if-missing:
+    name: Caching data env
+    runs-on: ${{ matrix.os }}
+    strategy:
+      # do not cancel all in-progress jobs if any matrix job fails
+      fail-fast: false
+      matrix:
+        # OS [ubuntu-latest, macos-latest, windows-latest]
+        os: [macos-latest,ubuntu-latest,windows-latest]
+
+    steps:
+      - name: Get current hash (SHA) of the elephant_data repo
+        id: elephant-data
+        run: |
+            echo "dataset_hash=$(git ls-remote https://gin.g-node.org/NeuralEnsemble/elephant-data.git HEAD | cut -f1)" >> $GITHUB_OUTPUT
+
+      - uses: actions/cache@v3
+        # Loading cache of elephant-data
+        id: cache-datasets
+        with:
+          path: ~/elephant-data
+          key: ${{ runner.os }}-datasets-${{ steps.elephant-data.outputs.dataset_hash }}
+
+      - name: Cache found?
+        run: echo "Cache-hit == ${{steps.cache-datasets.outputs.cache-hit == 'true'}}"
+
+      - name: Configuring git
+        if: steps.cache-datasets.outputs.cache-hit != 'true'
+        run: |
+            git config --global user.email "elephant_ci@fake_mail.com"
+            git config --global user.name "elephant CI"
+            git config --global filter.annex.process "git-annex filter-process"  # recommended for efficiency
+              
+      - name: Install Datalad macOS
+        if: steps.cache-datasets.outputs.cache-hit != 'true' && runner.os == 'macOS'
+        run: |
+          brew install datalad
+
+      - name: Install Datalad Linux/ Windows
+        if: steps.cache-datasets.outputs.cache-hit != 'true' && runner.os == 'Linux' || runner.os == 'Windows'
+        run: |
+          python -m pip install -U pip  # Official recommended way
+          pip install datalad-installer
+          datalad-installer --sudo ok git-annex --method datalad/packages
+          pip install datalad
                 
-          - name: Install Datalad macOS
-            if: steps.cache-datasets.outputs.cache-hit != 'true' && runner.os == 'macOS'
-            run: |
-              brew install datalad
+      - name: Download dataset
+        id: download-dataset
+        if: steps.cache-datasets.outputs.cache-hit != 'true'
+        # Download repository and also fetch data
+        run: |
+          cd ~
+          datalad --version
+          datalad install --recursive --get-data https://gin.g-node.org/NeuralEnsemble/elephant-data
 
-          - name: Install Datalad Linux/ Windows
-            if: steps.cache-datasets.outputs.cache-hit != 'true' && runner.os == 'Linux' || runner.os == 'Windows'
-            run: |
-              python -m pip install -U pip  # Official recommended way
-              pip install datalad-installer
-              datalad-installer --sudo ok git-annex --method datalad/packages
-              pip install datalad
-                
-          - name: Download dataset
-            id: download-dataset
-            if: steps.cache-datasets.outputs.cache-hit != 'true'
-            # Download repository and also fetch data
-            run: |
-              cd ~
-              datalad --version
-              datalad install --recursive --get-data https://gin.g-node.org/NeuralEnsemble/elephant-data
+      - name: Show size of the cache to assert data is downloaded macOS, Linux
+        if: runner.os == 'Linux' || runner.os == 'macOS'
+        run: |
+          cd ~
+          du -hs ~/elephant-data
+          ls -lh ~/elephant-data
 
-          - name: Show size of the cache to assert data is downloaded macOS, Linux
-            if: runner.os == 'Linux' || runner.os == 'macOS'
-            run: |
-              cd ~
-              du -hs ~/elephant-data
-              ls -lh ~/elephant-data
-
-          - name: Show size of the cache to assert data is downloaded Windows
-            if: runner.os == 'Windows'
-            run: |
-              cd ~
-              dir ~\elephant-data
+      - name: Show size of the cache to assert data is downloaded Windows
+        if: runner.os == 'Windows'
+        run: |
+          cd ~
+          dir ~\elephant-data
