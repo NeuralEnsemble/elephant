@@ -476,10 +476,10 @@ class WeightedPhaseLagIndexTestCase(unittest.TestCase):
         # load ground-truth reference calculated by:
         # Matlab package 'FieldTrip': ft_connectivity_wpli()
         self.wpli_ground_truth_ft_connectivity_wpli_real = np.loadtxt(
-            f"{self.tmp_path[self.files_to_download_ground_truth[0][0]]['path']}", # noqa
+            f"{self.tmp_path[self.files_to_download_ground_truth[0][0]]['path']}",  # noqa
             delimiter=',', dtype=np.float64)
         self.wpli_ground_truth_ft_connectivity_artificial = np.loadtxt(
-            f"{self.tmp_path[self.files_to_download_ground_truth[1][0]]['path']}", # noqa
+            f"{self.tmp_path[self.files_to_download_ground_truth[1][0]]['path']}",  # noqa
             delimiter=',', dtype=np.float64)
 
     def test_WPLI_ground_truth_consistency_real_LFP_dataset(self):
