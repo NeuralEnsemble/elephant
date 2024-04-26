@@ -70,16 +70,6 @@ jobs:
       fail-fast: false
 
     steps:
-      # used to reset cache every month
-      - name: Get current year-month
-        id: date
-        run: echo "date=$(date +'%Y-%m')" >> $GITHUB_OUTPUT
-      
-      - name: Get pip cache dir
-        id: pip-cache
-        run: |
-          echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
-
       - uses: actions/checkout@v3
 
       - name: Set up Python ${{ matrix.python-version }}
@@ -88,17 +78,10 @@ jobs:
           python-version: ${{ matrix.python-version }}
           check-latest: true
           cache: 'pip'
-          cache-dependency-path: '**/requirements.txt'
-
-      - name: Cache test_env
-        uses: actions/cache@v3
-        with:
-          path: ${{ steps.pip-cache.outputs.dir }}
-          # Look to see if there is a cache hit for the corresponding requirements files
-          # cache will be reset on changes to any requirements or every month.
-          key: ${{ runner.os }}-venv-${{ hashFiles('**/requirements.txt') }}-${{ hashFiles('**/requirements-tests.txt') }}
-            -${{ hashFiles('**/requirements-extras.txt') }}-${{ hashFiles('**/CI.yml') }}-${{ hashFiles('setup.py') }}
-            -${{ steps.date.outputs.date }}
+          cache-dependency-path: |
+            '**/requirements.txt'
+            '**/requirements-extras.txt'
+            '**/requirements-tests.txt'
 
       - name: Get current hash (SHA) of the elephant_data repo
         id: elephant-data
