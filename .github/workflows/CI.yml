@@ -211,10 +211,6 @@ jobs:
         os: [windows-latest]
 
     steps:
-      - name: Get current year-month
-        id: date
-        run: echo "date=$(date +'%Y-%m')" >> $GITHUB_OUTPUT
-
       - uses: actions/checkout@v3
 
       - name: Set up Python ${{ matrix.python-version }}
@@ -227,14 +223,6 @@ jobs:
             **/requirements.txt
             **/requirements-extras.txt
             **/requirements-tests.txt
-
-      - name: Cache pip
-        uses: actions/cache@v3
-        with:
-          path: ~\AppData\Local\pip\Cache
-          # Look to see if there is a cache hit for the corresponding requirements files
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}-${{ hashFiles('**/requirements-tests.txt') }}
-            -${{ hashFiles('**/requirements-extras.txt') }}-${{ hashFiles('setup.py') }} -${{ hashFiles('**/CI.yml') }}-${{ steps.date.outputs.date }}
 
       - name: Get current hash (SHA) of the elephant_data repo
         id: elephant-data
