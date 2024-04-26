@@ -87,3 +87,4 @@ jobs:
                   ls -lh ~/elephant-data
                 elif [[ "${{ runner.os }}" == "Windows"* ]]; then
                   dir ~\elephant-data
+                fi
