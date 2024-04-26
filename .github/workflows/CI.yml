@@ -79,9 +79,9 @@ jobs:
           check-latest: true
           cache: 'pip'
           cache-dependency-path: |
-            '**/requirements.txt'
-            '**/requirements-extras.txt'
-            '**/requirements-tests.txt'
+            **/requirements.txt
+            **/requirements-extras.txt
+            **/requirements-tests.txt
 
       - name: Get current hash (SHA) of the elephant_data repo
         id: elephant-data
