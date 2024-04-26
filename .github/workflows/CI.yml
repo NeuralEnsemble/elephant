@@ -188,8 +188,10 @@ jobs:
       - name: Test with pytest
         shell: bash -l {0}
         run: |
+          if [ -d ~/elephant-data ]; then
           export ELEPHANT_DATA_PATH=~/elephant-data
           echo $ELEPHANT_DATA_PATH
+          fi
           pytest --cov=elephant
 
   # __        ___           _
@@ -287,6 +289,19 @@ jobs:
           key: ${{ runner.os }}-venv-${{ hashFiles('**/requirements.txt') }}-${{ hashFiles('**/requirements-tests.txt') }}
             -${{ hashFiles('**/requirements-extras.txt') }}-${{ hashFiles('setup.py') }} -${{ hashFiles('**/CI.yml') }}-${{ steps.date.outputs.date }}
 
+      - name: Get current hash (SHA) of the elephant_data repo
+        id: elephant-data
+        run: |
+            echo "dataset_hash=$(git ls-remote https://gin.g-node.org/NeuralEnsemble/elephant-data.git HEAD | cut -f1)" >> $GITHUB_OUTPUT
+
+      - uses: actions/cache/restore@v3
+        # Loading cache of elephant-data
+        id: cache-datasets
+        with:
+          path: ~/elephant-data
+          key: ${{ runner.os }}-datasets-${{ steps.elephant-data.outputs.dataset_hash }}
+          restore-keys: ${{ runner.os }}-datasets-
+
       - name: Setup environment
         run: |
           sudo apt-get update
@@ -304,6 +319,10 @@ jobs:
 
       - name: Test with pytest
         run: |
+          if [ -d ~/elephant-data ]; then
+          export ELEPHANT_DATA_PATH=~/elephant-data
+          echo $ELEPHANT_DATA_PATH
+          fi
           mpiexec -n 1 python -m mpi4py -m coverage run --source=elephant -m pytest
           coveralls --service=github || echo "Coveralls submission failed"
         env:
@@ -347,6 +366,19 @@ jobs:
 
           key: ${{ runner.os }}-pip-${{hashFiles('requirements/environment-tests.yml') }}-${{ hashFiles('**/CI.yml') }}-${{ steps.date.outputs.date }}
 
+      - name: Get current hash (SHA) of the elephant_data repo
+        id: elephant-data
+        run: |
+            echo "dataset_hash=$(git ls-remote https://gin.g-node.org/NeuralEnsemble/elephant-data.git HEAD | cut -f1)" >> $GITHUB_OUTPUT
+
+      - uses: actions/cache/restore@v3
+        # Loading cache of elephant-data
+        id: cache-datasets
+        with:
+          path: ~/elephant-data
+          key: ${{ runner.os }}-datasets-${{ steps.elephant-data.outputs.dataset_hash }}
+          restore-keys: ${{ runner.os }}-datasets-
+
       - uses: conda-incubator/setup-miniconda@030178870c779d9e5e1b4e563269f3aa69b04081 # corresponds to v3.0.3
         with:
           auto-update-conda: true
@@ -375,6 +407,10 @@ jobs:
       - name: Test with pytest
         shell: bash -el {0}
         run: |
+          if [ -d ~/elephant-data ]; then
+          export ELEPHANT_DATA_PATH=~/elephant-data
+          echo $ELEPHANT_DATA_PATH
+          fi
           pytest --cov=elephant
 
   #  ____
