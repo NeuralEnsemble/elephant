@@ -25,7 +25,7 @@ jobs:
           fail-fast: false
           matrix:
             # OS [ubuntu-latest, macos-latest, windows-latest]
-            os: [macos-latest,ubuntu-latest]
+            os: [macos-latest,ubuntu-latest,windows-latest]
         steps:
     
           - name: Get current hash (SHA) of the elephant_data repo
@@ -49,9 +49,15 @@ jobs:
                 git config --global user.email "elephant_ci@fake_mail.com"
                 git config --global user.name "elephant CI"
                 git config --global filter.annex.process "git-annex filter-process"  # recommended for efficiency
-                if [[ "$OSTYPE" == "darwin"* ]]; then
+
+                if [[ "${{ runner.os }}" == "macOS"* ]]; then
                   brew install datalad
-                elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
+                elif [[ "${{ runner.os }}" == "Linux"* ]]; then
+                  python -m pip install -U pip  # Official recommended way
+                  pip install datalad-installer
+                  datalad-installer --sudo ok git-annex --method datalad/packages
+                  pip install datalad
+                elif [[ "${{ runner.os }}" == "Windows"* ]]; then
                   python -m pip install -U pip  # Official recommended way
                   pip install datalad-installer
                   datalad-installer --sudo ok git-annex --method datalad/packages
@@ -73,5 +79,11 @@ jobs:
           - name: Show size of the cache to assert data is downloaded
             run: |
                 cd ~
-                du -hs ~/elephant-data
-                ls -lh ~/elephant-data
+                if [[ "${{ runner.os }}" == "macOS"* ]]; then
+                  du -hs ~/elephant-data
+                  ls -lh ~/elephant-data
+                elif [[ "${{ runner.os }}" == "Linux"* ]]; then
+                  du -hs ~/elephant-data
+                  ls -lh ~/elephant-data
+                elif [[ "${{ runner.os }}" == "Windows"* ]]; then
+                  dir ~\elephant-data
