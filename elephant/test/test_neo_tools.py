@@ -1166,7 +1166,6 @@ class GetAllSpiketrainsTestCase(unittest.TestCase):
         obj = generate_one_simple_segment(
             supported_objects=[neo.core.Segment, neo.core.SpikeTrain])
         targ = copy.deepcopy(obj)
-        obj.spiketrains.append(obj.spiketrains[0])
 
         res0 = nt.get_all_spiketrains(obj)
 
@@ -1184,9 +1183,6 @@ class GetAllSpiketrainsTestCase(unittest.TestCase):
             supported_objects=[
                 neo.core.Block, neo.core.Segment, neo.core.SpikeTrain])
         targ = copy.deepcopy(obj)
-
-        iobj1 = obj.segments[0]
-        obj.segments.append(iobj1)
         iobj2 = obj.segments[0].spiketrains[1]
         obj.segments[1].spiketrains.append(iobj2)
         res0 = nt.get_all_spiketrains(obj)
@@ -1207,8 +1203,6 @@ class GetAllSpiketrainsTestCase(unittest.TestCase):
                     neo.core.Block, neo.core.Segment, neo.core.SpikeTrain])
             for _ in range(3)]
         targ = copy.deepcopy(obj)
-        iobj1 = obj[2].segments[0]
-        obj[2].segments.append(iobj1)
         iobj2 = obj[1].segments[2].spiketrains[1]
         obj[2].segments[1].spiketrains.append(iobj2)
         obj.append(obj[-1])
@@ -1232,8 +1226,6 @@ class GetAllSpiketrainsTestCase(unittest.TestCase):
             for _ in range(3)]
         targ = copy.deepcopy(obj)
         obj.append(obj[-1])
-        iobj1 = obj[2].segments[0]
-        obj[2].segments.append(iobj1)
         iobj2 = obj[1].segments[2].spiketrains[1]
         obj[2].segments[1].spiketrains.append(iobj2)
         obj.append(obj[-1])
@@ -1256,8 +1248,6 @@ class GetAllSpiketrainsTestCase(unittest.TestCase):
                     neo.core.Block, neo.core.Segment, neo.core.SpikeTrain])
             for _ in range(3)]
         targ = copy.deepcopy(obj)
-        iobj1 = obj[2].segments[0]
-        obj[2].segments.append(iobj1)
         iobj2 = obj[1].segments[2].spiketrains[1]
         obj[2].segments[1].spiketrains.append(iobj2)
         obj.append(obj[-1])
@@ -1281,8 +1271,6 @@ class GetAllSpiketrainsTestCase(unittest.TestCase):
                     neo.core.Block, neo.core.Segment, neo.core.SpikeTrain])
             for _ in range(3)]
         targ = copy.deepcopy(obj)
-        iobj1 = obj[2].segments[0]
-        obj[2].segments.append(iobj1)
         iobj2 = obj[1].segments[2].spiketrains[1]
         obj[2].segments[1].spiketrains.append(iobj2)
         obj.append(obj[-1])
@@ -1333,8 +1321,6 @@ class GetAllEventsTestCase(unittest.TestCase):
                 neo.core.Block, neo.core.Segment, neo.core.Event])
         targ = copy.deepcopy(obj)
 
-        iobj1 = obj.segments[0]
-        obj.segments.append(iobj1)
         iobj2 = obj.segments[0].events[1]
         obj.segments[1].events.append(iobj2)
         res0 = nt.get_all_events(obj)
@@ -1356,8 +1342,6 @@ class GetAllEventsTestCase(unittest.TestCase):
             for _ in range(3)]
         targ = copy.deepcopy(obj)
         obj.append(obj[-1])
-        iobj1 = obj[2].segments[0]
-        obj[2].segments.append(iobj1)
         iobj2 = obj[1].segments[2].events[1]
         obj[2].segments[1].events.append(iobj2)
         obj.append(obj[-1])
@@ -1381,8 +1365,6 @@ class GetAllEventsTestCase(unittest.TestCase):
             for _ in range(3)]
         targ = copy.deepcopy(obj)
         obj.append(obj[-1])
-        iobj1 = obj[2].segments[0]
-        obj[2].segments.append(iobj1)
         iobj2 = obj[1].segments[2].events[1]
         obj[2].segments[1].events.append(iobj2)
         obj.append(obj[0])
@@ -1406,8 +1388,6 @@ class GetAllEventsTestCase(unittest.TestCase):
             for _ in range(3)]
         targ = copy.deepcopy(obj)
         obj.append(obj[-1])
-        iobj1 = obj[2].segments[0]
-        obj[2].segments.append(iobj1)
         iobj2 = obj[1].segments[2].events[1]
         obj[2].segments[1].events.append(iobj2)
         obj.append(obj[0])
@@ -1431,8 +1411,6 @@ class GetAllEventsTestCase(unittest.TestCase):
             for _ in range(3)]
         targ = copy.deepcopy(obj)
         obj.append(obj[-1])
-        iobj1 = obj[2].segments[0]
-        obj[2].segments.append(iobj1)
         iobj2 = obj[1].segments[2].events[1]
         obj[2].segments[1].events.append(iobj2)
         obj.append(obj[0])
@@ -1482,10 +1460,6 @@ class GetAllEpochsTestCase(unittest.TestCase):
                 neo.core.Block, neo.core.Segment, neo.core.Epoch])
         targ = copy.deepcopy(obj)
 
-        iobj1 = obj.segments[0]
-        obj.segments.append(iobj1)
-        iobj2 = obj.segments[0].epochs[1]
-        obj.segments[1].epochs.append(iobj2)
         res0 = nt.get_all_epochs(obj)
 
         targ = targ.list_children_by_class('Epoch')
@@ -1505,8 +1479,6 @@ class GetAllEpochsTestCase(unittest.TestCase):
             for _ in range(3)]
         targ = copy.deepcopy(obj)
         obj.append(obj[-1])
-        iobj1 = obj[2].segments[0]
-        obj[2].segments.append(iobj1)
         iobj2 = obj[1].segments[2].epochs[1]
         obj[2].segments[1].epochs.append(iobj2)
         obj.append(obj[-1])
@@ -1530,8 +1502,6 @@ class GetAllEpochsTestCase(unittest.TestCase):
             for _ in range(3)]
         targ = copy.deepcopy(obj)
         obj.append(obj[-1])
-        iobj1 = obj[2].segments[0]
-        obj[2].segments.append(iobj1)
         iobj2 = obj[1].segments[2].epochs[1]
         obj[2].segments[1].epochs.append(iobj2)
         obj.append(obj[0])
@@ -1555,8 +1525,6 @@ class GetAllEpochsTestCase(unittest.TestCase):
             for _ in range(3)]
         targ = copy.deepcopy(obj)
         obj.append(obj[-1])
-        iobj1 = obj[2].segments[0]
-        obj[2].segments.append(iobj1)
         iobj2 = obj[1].segments[2].epochs[1]
         obj[2].segments[1].epochs.append(iobj2)
         obj.append(obj[0])
@@ -1580,8 +1548,6 @@ class GetAllEpochsTestCase(unittest.TestCase):
             for _ in range(3)]
         targ = copy.deepcopy(obj)
         obj.append(obj[-1])
-        iobj1 = obj[2].segments[0]
-        obj[2].segments.append(iobj1)
         iobj2 = obj[1].segments[2].epochs[1]
         obj[2].segments[1].epochs.append(iobj2)
         obj.append(obj[0])
