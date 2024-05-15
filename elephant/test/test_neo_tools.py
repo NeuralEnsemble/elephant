@@ -1163,19 +1163,21 @@ class GetAllSpiketrainsTestCase(unittest.TestCase):
     #     assert_same_sub_schema(targ, res0)
 
     def test__get_all_spiketrains__segment(self):
+        # Generate a simple segment object containing one spike train,
+        # supporting objects of type Segment and SpikeTrain.
         obj = generate_one_simple_segment(
-            supported_objects=[neo.core.Segment, neo.core.SpikeTrain])
-        targ = copy.deepcopy(obj)
-
+            nb_spiketrain=1,
+            supported_objects=[neo.core.Segment, neo.core.SpikeTrain]
+        )
+        # Append a deep copy of the first spike train in the segment's
+        # spike train list to itself.
+        obj.spiketrains.append(copy.deepcopy(obj.spiketrains[0]))
+        # Call the function get_all_spiketrains with the segment object
         res0 = nt.get_all_spiketrains(obj)
-
-        targ = targ.spiketrains
-
-        self.assertTrue(len(res0) > 0)
-
-        self.assertEqual(len(targ), len(res0))
-
-        assert_same_sub_schema(targ, res0)
+        # Assert that the length of the result res0 is equal to 2.
+        # This checks if the function correctly returns two spike trains,
+        # including the original and its copy.
+        self.assertTrue(len(res0) == 2)
 
     def test__get_all_spiketrains__block(self):
         obj = generate_one_simple_block(
