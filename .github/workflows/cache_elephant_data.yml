@@ -6,7 +6,7 @@ on:
     branches:
       - master
   schedule:
-    - cron: "0 12 * * *"  # Daily at noon UTC
+    - cron: "11 23 * * *"  # Daily at 23:11 UTC
 
   pull_request:
     branches:
@@ -19,13 +19,10 @@ on:
 jobs:
   create-data-cache-if-missing:
     name: Caching data env
-    runs-on: ${{ matrix.os }}
+    runs-on: macos-latest
     strategy:
       # do not cancel all in-progress jobs if any matrix job fails
       fail-fast: false
-      matrix:
-        # OS [ubuntu-latest, macos-latest, windows-latest]
-        os: [macos-latest]
 
     steps:
       - name: Get current hash (SHA) of the elephant_data repo
@@ -50,8 +47,8 @@ jobs:
             git config --global user.name "elephant CI"
             git config --global filter.annex.process "git-annex filter-process"  # recommended for efficiency
               
-      - name: Install Datalad macOS
-        if: steps.cache-datasets.outputs.cache-hit != 'true' && runner.os == 'macOS'
+      - name: Install Datalad
+        if: steps.cache-datasets.outputs.cache-hit != 'true'
         run: |
           brew install datalad
                 
@@ -64,7 +61,7 @@ jobs:
           datalad --version
           datalad install --recursive --get-data https://gin.g-node.org/NeuralEnsemble/elephant-data
 
-      - name: Show size of the cache to assert data is downloaded macOS
+      - name: Show size of the cache to assert data is downloaded
         run: |
           cd ~
           du -hs ~/elephant-data
