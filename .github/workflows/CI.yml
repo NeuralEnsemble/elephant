@@ -70,7 +70,7 @@ jobs:
       fail-fast: false
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4.1.6
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5.1.0
@@ -141,7 +141,7 @@ jobs:
         id: date
         run: echo "date=$(date +'%Y-%m')" >> $GITHUB_OUTPUT
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4.1.6
 
       - name: Cache conda
         uses: actions/cache@v3
@@ -212,7 +212,7 @@ jobs:
         os: [windows-latest]
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4.1.6
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5.1.0
@@ -278,7 +278,7 @@ jobs:
       fail-fast: false
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4.1.6
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5.1.0
@@ -355,7 +355,7 @@ jobs:
         id: date
         run: echo "date=$(date +'%Y-%m')" >> $GITHUB_OUTPUT
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4.1.6
 
       - name: Get pip cache dir
         id: pip-cache
@@ -440,7 +440,7 @@ jobs:
         id: date
         run: echo "date=$(date +'%Y-%m')" >> $GITHUB_OUTPUT
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4.1.6
 
       - name: Get pip cache dir
         id: pip-cache
@@ -505,7 +505,7 @@ jobs:
       - name: Get current year-month
         id: date
         run: echo "::set-output name=date::$(date +'%Y-%m')"
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4.1.6
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5.1.0
