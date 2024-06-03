@@ -1,20 +1,16 @@
 import hashlib
+import ssl
 import tempfile
 import warnings
-import ssl
-
-from elephant import _get_version
-from pathlib import Path
-from urllib.request import urlretrieve, urlopen
-from urllib.error import HTTPError, URLError
-from urllib.parse import urlparse
-from zipfile import ZipFile
-import os
 from os import environ, getenv
-
-
+from pathlib import Path
+from urllib.error import HTTPError, URLError
+from urllib.request import urlopen, urlretrieve
+from zipfile import ZipFile
 
 from tqdm import tqdm
+
+from elephant import _get_version
 
 ELEPHANT_TMP_DIR = Path(tempfile.gettempdir()) / "elephant"
 
