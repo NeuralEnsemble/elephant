@@ -111,8 +111,8 @@ jobs:
       - name: Test with pytest
         run: |
           if [ -d ~/elephant-data ]; then
-          export ELEPHANT_DATA_PATH=~/elephant-data
-          echo $ELEPHANT_DATA_PATH
+          export ELEPHANT_DATA_LOCATION=~/elephant-data
+          echo $ELEPHANT_DATA_LOCATION
           fi
       
           coverage run --source=elephant -m pytest
@@ -190,8 +190,8 @@ jobs:
         shell: bash -l {0}
         run: |
           if [ -d ~/elephant-data ]; then
-          export ELEPHANT_DATA_PATH=~/elephant-data
-          echo $ELEPHANT_DATA_PATH
+          export ELEPHANT_DATA_LOCATION=~/elephant-data
+          echo $ELEPHANT_DATA_LOCATION
           fi
           pytest --cov=elephant
 
@@ -253,8 +253,8 @@ jobs:
       - name: Test with pytest
         run: |
           if (Test-Path "$env:USERPROFILE\elephant-data") {
-              $env:ELEPHANT_DATA_PATH = "$env:USERPROFILE\elephant-data"
-              Write-Output $env:ELEPHANT_DATA_PATH
+              $env:ELEPHANT_DATA_LOCATION = "$env:USERPROFILE\elephant-data"
+              Write-Output $env:ELEPHANT_DATA_LOCATION
           }
           pytest --cov=elephant
 
@@ -323,8 +323,8 @@ jobs:
       - name: Test with pytest
         run: |
           if [ -d ~/elephant-data ]; then
-          export ELEPHANT_DATA_PATH=~/elephant-data
-          echo $ELEPHANT_DATA_PATH
+          export ELEPHANT_DATA_LOCATION=~/elephant-data
+          echo $ELEPHANT_DATA_LOCATION
           fi
           mpiexec -n 1 python -m mpi4py -m coverage run --source=elephant -m pytest
           coveralls --service=github || echo "Coveralls submission failed"
@@ -412,8 +412,8 @@ jobs:
         shell: bash -el {0}
         run: |
           if [ -d ~/elephant-data ]; then
-          export ELEPHANT_DATA_PATH=~/elephant-data
-          echo $ELEPHANT_DATA_PATH
+          export ELEPHANT_DATA_LOCATION=~/elephant-data
+          echo $ELEPHANT_DATA_LOCATION
           fi
           pytest --cov=elephant
 

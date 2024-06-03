@@ -7,8 +7,12 @@ from elephant import _get_version
 from pathlib import Path
 from urllib.request import urlretrieve, urlopen
 from urllib.error import HTTPError, URLError
+from urllib.parse import urlparse
 from zipfile import ZipFile
+import os
 from os import environ, getenv
+
+
 
 from tqdm import tqdm
 
@@ -71,6 +75,16 @@ def download(url, filepath=None, checksum=None, verbose=True):
     return filepath
 
 
+def is_path(path_or_url: str) -> bool:
+    try:
+        # Attempt to create a Path object
+        path = Path(path_or_url)
+        # Check if the path has at least one part
+        return bool(path.drive or path.root or path.parts)
+    except Exception:
+        return False
+
+
 def download_datasets(repo_path, filepath=None, checksum=None,
                       verbose=True):
     r"""
@@ -88,17 +102,17 @@ def download_datasets(repo_path, filepath=None, checksum=None,
         -  https://datasets.python-elephant.org/
            points to the root of elephant data
 
-        To change this URL, use the environment variable `ELEPHANT_DATA_URL`.
+        To change this URL, use the environment variable `ELEPHANT_DATA_LOCATION`.
         When using data, which is not yet contained in the master branch or a
         release of elephant data, e.g. during development, this variable can
         be used to change the default URL.
         For example to use data on branch `multitaper`, change the
-        `ELEPHANT_DATA_URL` to
+        `ELEPHANT_DATA_LOCATION` to
         https://web.gin.g-node.org/NeuralEnsemble/elephant-data/raw/multitaper.
         For a complete example, see Examples section.
         
         To use a local copy of elephant-data, use the environment variable
-        `ELEPHANT_DATA_PATH`, e.g. set to /home/user/elephant-data.
+        `ELEPHANT_DATA_LOCATION`, e.g. set to /home/user/elephant-data.
         
         Parameters
         ----------
@@ -123,7 +137,7 @@ def download_datasets(repo_path, filepath=None, checksum=None,
         -----
         The default URL always points to elephant-data. Please
         do not change its value. For development purposes use the environment
-        variable 'ELEPHANT_DATA_URL'.
+        variable 'ELEPHANT_DATA_LOCATION'.
 
         Examples
         --------
@@ -132,13 +146,14 @@ def download_datasets(repo_path, filepath=None, checksum=None,
 
         >>> import os
         >>> from elephant.datasets import download_datasets
-        >>> os.environ["ELEPHANT_DATA_URL"] = "https://web.gin.g-node.org/NeuralEnsemble/elephant-data/raw/multitaper" # noqa
+        >>> os.environ["ELEPHANT_DATA_LOCATION"] = "https://web.gin.g-node.org/NeuralEnsemble/elephant-data/raw/multitaper" # noqa
         >>> download_datasets("unittest/spectral/multitaper_psd/data/time_series.npy") # doctest: +SKIP
         PosixPath('/tmp/elephant/time_series.npy')
         """
 
-    if 'ELEPHANT_DATA_PATH' in environ:  # user did set local path
-        return Path(f"{getenv('ELEPHANT_DATA_PATH')}/{repo_path}")
+    if 'ELEPHANT_DATA_LOCATION' in environ:  # user did set local path
+        if is_path(getenv('ELEPHANT_DATA_LOCATION')):
+            return Path(f"{getenv('ELEPHANT_DATA_LOCATION')}/{repo_path}")
 
     # this url redirects to the current location of elephant-data
     url_to_root = "https://datasets.python-elephant.org/"
@@ -147,7 +162,7 @@ def download_datasets(repo_path, filepath=None, checksum=None,
     # (version elephant is equal to version elephant-data)
     default_url = url_to_root + f"raw/v{_get_version()}"
 
-    if 'ELEPHANT_DATA_URL' not in environ:  # user did not set URL
+    if 'ELEPHANT_DATA_LOCATION' not in environ:  # user did not set URL
         # is 'version-URL' available? (not for elephant development version)
         try:
             urlopen(default_url+'/README.md')
@@ -175,7 +190,7 @@ def download_datasets(repo_path, filepath=None, checksum=None,
             warnings.warn(f"Data URL:{default_url}, error: {error}."
                           f"{error.reason}")
 
-    url = f"{getenv('ELEPHANT_DATA_URL', default_url)}/{repo_path}"
+    url = f"{getenv('ELEPHANT_DATA_LOCATION', default_url)}/{repo_path}"
 
     return download(url, filepath, checksum, verbose)
 
