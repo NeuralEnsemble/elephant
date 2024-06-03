@@ -1180,21 +1180,35 @@ class GetAllSpiketrainsTestCase(unittest.TestCase):
         self.assertTrue(len(res0) == 2)
 
     def test__get_all_spiketrains__block(self):
+        # Generate a simple block with 3 segments
         obj = generate_one_simple_block(
             nb_segment=3,
-            supported_objects=[
-                neo.core.Block, neo.core.Segment, neo.core.SpikeTrain])
+            supported_objects=[neo.core.Block,
+                               neo.core.Segment,
+                               neo.core.SpikeTrain]
+        )
+
+        # Deep copy the generated block for comparison
         targ = copy.deepcopy(obj)
+
+        # Manipulate the block by appending a spiketrain from one segment to
+        # another
         iobj2 = obj.segments[0].spiketrains[1]
         obj.segments[1].spiketrains.append(iobj2)
+
+        # Get all spiketrains from the modified block
         res0 = nt.get_all_spiketrains(obj)
 
+        # Convert the target deep copy to a SpikeTrainList
         targ = SpikeTrainList(targ.list_children_by_class('SpikeTrain'))
 
-        self.assertTrue(len(res0) > 0)
-
-        self.assertEqual(len(targ), len(res0))
-
+        # Perform assertions to validate the results
+        self.assertTrue(
+            len(res0) > 0,
+            "The result of get_all_spiketrains should not be empty.")
+        self.assertEqual(
+            len(targ), len(res0),
+            "The lengths of the SpikeTrainList and result should be equal.")
         assert_same_sub_schema(targ, res0)
 
     def test__get_all_spiketrains__list(self):
