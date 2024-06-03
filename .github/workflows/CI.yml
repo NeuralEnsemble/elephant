@@ -235,7 +235,8 @@ jobs:
         with:
           path: ~/elephant-data
           key: datasets-${{ steps.elephant-data.outputs.dataset_hash }}
-          restore-keys: datasets-    
+          restore-keys: datasets-
+          enableCrossOsArchive: true    
 
       - name: Install dependencies
         run: |
