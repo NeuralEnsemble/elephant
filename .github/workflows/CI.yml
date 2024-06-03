@@ -374,13 +374,14 @@ jobs:
         run: |
             echo "dataset_hash=$(git ls-remote https://gin.g-node.org/NeuralEnsemble/elephant-data.git HEAD | cut -f1)" >> $GITHUB_OUTPUT
 
-      - uses: actions/cache/restore@v3
+      - uses: actions/cache/restore@v4.0.2
         # Loading cache of elephant-data
         id: cache-datasets
         with:
           path: ~/elephant-data
-          key: ${{ runner.os }}-datasets-${{ steps.elephant-data.outputs.dataset_hash }}
-          restore-keys: ${{ runner.os }}-datasets-
+          key: datasets-${{ steps.elephant-data.outputs.dataset_hash }}
+          restore-keys: datasets-
+          enableCrossOsArchive: true 
 
       - uses: conda-incubator/setup-miniconda@030178870c779d9e5e1b4e563269f3aa69b04081 # corresponds to v3.0.3
         with:
