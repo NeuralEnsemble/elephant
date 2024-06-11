@@ -19,7 +19,7 @@ on:
 jobs:
   create-data-cache-if-missing:
     name: Caching data env
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     strategy:
       # do not cancel all in-progress jobs if any matrix job fails
       fail-fast: false
@@ -46,11 +46,14 @@ jobs:
             git config --global user.email "elephant_ci@fake_mail.com"
             git config --global user.name "elephant CI"
             git config --global filter.annex.process "git-annex filter-process"  # recommended for efficiency
-              
-      - name: Install Datalad
+
+      - name: Install Datalad Linux
         if: steps.cache-datasets.outputs.cache-hit != 'true'
         run: |
-          brew install datalad
+          python -m pip install -U pip  # Official recommended way
+          pip install datalad-installer
+          datalad-installer --sudo ok git-annex --method datalad/packages
+          pip install datalad
                 
       - name: Download dataset
         id: download-dataset
