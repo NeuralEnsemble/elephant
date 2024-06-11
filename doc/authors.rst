@@ -37,7 +37,7 @@ contribution, and may not be the current affiliation of a contributor.
 * Alessandra Stella [1]
 * Peter Bouss [1]
 * Alexander van Meegen [1]
-* Aitor Morales-Gregorio [1]
+* Aitor Morales-Gregorio [1, 14]
 * Cristiano Köhler [1]
 * Paulina Dąbrowska [1]
 * Jan Lewen [1]
@@ -51,6 +51,8 @@ contribution, and may not be the current affiliation of a contributor.
 * Florian Porrmann [13]
 * Sarah Pilz [13]
 * Oliver Kloß [1]
+* Jonas Oberste-Frielinghaus [1, 14]
+* Sven Krausse [1]
 * Felician Richter [12]
 
 1. Institute of Neuroscience and Medicine (INM-6) and Institute for Advanced Simulation (IAS-6) and JARA-Institute Brain Structure-Function Relationships (INM-10), Jülich Research Centre, Jülich, Germany

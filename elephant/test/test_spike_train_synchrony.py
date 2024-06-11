@@ -193,6 +193,8 @@ class SynchrofactDetectionTestCase(unittest.TestCase):
                        spread, deletion_threshold=2, mode='delete',
                        in_place=False, binary=True):
 
+        intial_t_stop = spiketrains[0].t_stop.magnitude
+
         synchrofact_obj = Synchrotool(
             spiketrains,
             sampling_rate=sampling_rate,
@@ -232,6 +234,9 @@ class SynchrofactDetectionTestCase(unittest.TestCase):
         for correct_st, cleaned_st in zip(correct_spike_times,
                                           cleaned_spike_times):
             assert_array_almost_equal(cleaned_st, correct_st)
+
+        assert_array_almost_equal(spiketrains[0].t_stop.magnitude,
+                                  intial_t_stop)
 
     def test_no_synchrofacts(self):
 
@@ -390,19 +395,41 @@ class SynchrofactDetectionTestCase(unittest.TestCase):
 
         sampling_rate = 30000 / pq.s
 
-        spiketrains = [neo.SpikeTrain(np.arange(1000) * pq.s / 30000,
+        spiketrains = [neo.SpikeTrain(np.arange(10) * pq.s / 30000,
                                       t_stop=.1 * pq.s),
-                       neo.SpikeTrain(np.arange(2000, step=2) * pq.s / 30000,
+                       neo.SpikeTrain(np.arange(20, step=2) * pq.s / 30000,
                                       t_stop=.1 * pq.s)]
 
-        first_annotations = np.ones(1000)
+        first_annotations = np.ones(10)
         first_annotations[::2] = 2
 
-        second_annotations = np.ones(1000)
-        second_annotations[:500] = 2
+        second_annotations = np.ones(10)
+        second_annotations[:5] = 2
 
         correct_annotations = np.array([first_annotations,
                                         second_annotations])
+
+        self._test_template(spiketrains, correct_annotations, sampling_rate,
+                            spread=0, mode='delete', in_place=True,
+                            deletion_threshold=2)
+
+    def test_binning_indexing_last_bin_synchrofact(self):
+
+        # a test with inputs divided by 30000 which leads to rounding errors
+        # these errors have to be accounted for by proper binning;
+        # check if we still get the correct result
+        # If there is a synchrofact in the last bin there was an indexing
+        # error due to the rounding error correction
+
+        sampling_rate = 30000 / pq.s
+
+        st = neo.SpikeTrain(np.arange(10) * pq.s / 30000, t_stop=.1 * pq.s)
+
+        spiketrains = [st, st]
+
+        annotations = 2*np.ones(10)
+
+        correct_annotations = np.array([annotations, annotations])
 
         self._test_template(spiketrains, correct_annotations, sampling_rate,
                             spread=0, mode='delete', in_place=True,
