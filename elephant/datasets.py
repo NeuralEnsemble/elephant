@@ -1,4 +1,5 @@
 import hashlib
+import os
 import ssl
 import tempfile
 import warnings
@@ -71,16 +72,6 @@ def download(url, filepath=None, checksum=None, verbose=True):
     return filepath
 
 
-def is_path(path_or_url: str) -> bool:
-    try:
-        # Attempt to create a Path object
-        path = Path(path_or_url)
-        # Check if the path has at least one part
-        return bool(path.drive or path.root or path.parts)
-    except Exception:
-        return False
-
-
 def download_datasets(repo_path, filepath=None, checksum=None,
                       verbose=True):
     r"""
@@ -147,8 +138,8 @@ def download_datasets(repo_path, filepath=None, checksum=None,
         PosixPath('/tmp/elephant/time_series.npy')
         """
 
-    if 'ELEPHANT_DATA_LOCATION' in environ:  # user did set local path
-        if is_path(getenv('ELEPHANT_DATA_LOCATION')):
+    if 'ELEPHANT_DATA_LOCATION' in environ:  # user did set path or URL
+        if os.path.exists(getenv('ELEPHANT_DATA_LOCATION')):
             return Path(f"{getenv('ELEPHANT_DATA_LOCATION')}/{repo_path}")
 
     # this url redirects to the current location of elephant-data
