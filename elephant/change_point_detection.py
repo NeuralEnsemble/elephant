@@ -45,15 +45,19 @@ from __future__ import division, print_function, unicode_literals
 import numpy as np
 import quantities as pq
 
-__all__ = [
-    "multiple_filter_test",
-    "empirical_parameters"
-]
+__all__ = ["multiple_filter_test", "empirical_parameters"]
 
 
-def multiple_filter_test(window_sizes, spiketrain, t_final, alpha,
-                         n_surrogates=1000, test_quantile=None,
-                         test_param=None, time_step=None):
+def multiple_filter_test(
+    window_sizes,
+    spiketrain,
+    t_final,
+    alpha,
+    n_surrogates=1000,
+    test_quantile=None,
+    test_param=None,
+    time_step=None,
+):
     """
     Detects change points.
 
@@ -107,15 +111,17 @@ def multiple_filter_test(window_sizes, spiketrain, t_final, alpha,
     """
 
     if test_quantile is None and test_param is None:
-        test_quantile, test_param = empirical_parameters(window_sizes, t_final,
-                                                         alpha, n_surrogates,
-                                                         time_step)
+        test_quantile, test_param = empirical_parameters(
+            window_sizes, t_final, alpha, n_surrogates, time_step
+        )
     elif test_quantile is None:
-        test_quantile = empirical_parameters(window_sizes, t_final, alpha,
-                                             n_surrogates, time_step)[0]
+        test_quantile = empirical_parameters(
+            window_sizes, t_final, alpha, n_surrogates, time_step
+        )[0]
     elif test_param is None:
-        test_param = empirical_parameters(window_sizes, t_final, alpha,
-                                          n_surrogates, time_step)[1]
+        test_param = empirical_parameters(
+            window_sizes, t_final, alpha, n_surrogates, time_step
+        )[1]
 
     #  List of lists of detected change points (CPs), to be returned
     cps = []
@@ -124,8 +130,7 @@ def multiple_filter_test(window_sizes, spiketrain, t_final, alpha,
         # automatic setting of time_step
         dt_temp = h / 20 if time_step is None else time_step
         # filter_process for window of size h
-        t, differences = _filter_process(dt_temp, h, spiketrain, t_final,
-                                         test_param)
+        t, differences = _filter_process(dt_temp, h, spiketrain, t_final, test_param)
         time_index = np.arange(len(differences))
         # Point detected with window h
         cps_window = []
@@ -193,8 +198,7 @@ def _brownian_motion(t_in, t_fin, x_in, time_step):
     except ValueError:
         raise ValueError("dt must be a time quantity")
 
-    x = np.random.normal(0, np.sqrt(dt_sec),
-                         size=int((t_fin_sec - t_in_sec) / dt_sec))
+    x = np.random.normal(0, np.sqrt(dt_sec), size=int((t_fin_sec - t_in_sec) / dt_sec))
     s = np.cumsum(x)
     return s + x_in
 
@@ -237,11 +241,11 @@ def _limit_processes(window_sizes, t_final, time_step):
 
     for h in window_sizes_sec:
         # BM on [h,T-h], shifted in time t-->t+h
-        brownian_right = w[int(2 * h / dt_sec):]
+        brownian_right = w[int(2 * h / dt_sec) :]
         # BM on [h,T-h], shifted in time t-->t-h
-        brownian_left = w[:int(-2 * h / dt_sec)]
+        brownian_left = w[: int(-2 * h / dt_sec)]
         # BM on [h,T-h]
-        brownian_center = w[int(h / dt_sec):int(-h / dt_sec)]
+        brownian_center = w[int(h / dt_sec) : int(-h / dt_sec)]
 
         modul = np.abs(brownian_right + brownian_left - 2 * brownian_center)
         limit_process_h = modul / (np.sqrt(2 * h))
@@ -250,8 +254,9 @@ def _limit_processes(window_sizes, t_final, time_step):
     return limit_processes
 
 
-def empirical_parameters(window_sizes, t_final, alpha, n_surrogates=1000,
-                         time_step=None):
+def empirical_parameters(
+    window_sizes, t_final, alpha, n_surrogates=1000, time_step=None
+):
     r"""
     This function generates the threshold and the null parameters.
     The filter processes (`h`) have been proved to converge (for `t_final`,
@@ -341,9 +346,8 @@ def empirical_parameters(window_sizes, t_final, alpha, n_surrogates=1000,
         raise ValueError("window size too large")
     if time_step is not None:
         for h in window_sizes:
-            if int(h.rescale('us')) % int(time_step.rescale('us')) != 0:
-                raise ValueError(
-                    "Every window size h must be a multiple of time_step")
+            if int(h.rescale("us")) % int(time_step.rescale("us")) != 0:
+                raise ValueError("Every window size h must be a multiple of time_step")
 
     # Generate a matrix M*: n X m where n = n_surrogates is the number of
     # simulated limit processes and m is the number of chosen window sizes.
@@ -418,7 +422,8 @@ def _filter(t_center, window, spiketrain):
         spk_sec = spiketrain.rescale(u).magnitude
     except AttributeError:
         raise ValueError(
-            "spiketrain must be a list (array) of times or a neo spiketrain")
+            "spiketrain must be a list (array) of times or a neo spiketrain"
+        )
 
     # cut spike-train on the right
     train_right = spk_sec[(t_sec < spk_sec) & (spk_sec < t_sec + h_sec)]
@@ -516,7 +521,6 @@ def _filter_process(time_step, h, spk, t_final, test_param):
 
     filter_trajectrory = np.asanyarray(filter_trajectrory)
     # ordered normalization to give each process the same impact on the max
-    filter_process = (
-        np.abs(filter_trajectrory) - emp_mean_h) / np.sqrt(emp_var_h)
+    filter_process = (np.abs(filter_trajectrory) - emp_mean_h) / np.sqrt(emp_var_h)
 
     return time_domain, filter_process
