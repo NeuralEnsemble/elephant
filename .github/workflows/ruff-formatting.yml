@@ -1,0 +1,38 @@
+name: Ruff formatting
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 12 * * 0"  # Weekly at noon UTC on Sundays
+
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Check with Ruff
+        id: ruff-check
+        uses: chartboost/ruff-action@v1
+        with:
+            src: './elephant'
+            args: 'format --check'
+        continue-on-error: true
+
+      - name: Fix with Ruff
+        uses: chartboost/ruff-action@v1
+        if : ${{ steps.ruff-check.outcome == 'failure' }}
+        with:
+            src: './elephant'
+            args: 'format --verbose'
+
+      - name: Create PR
+        uses: peter-evans/create-pull-request@v5
+        if : ${{ steps.ruff-check.outcome == 'failure' }}
+        with:
+            commit-message: ruff formatting
+            title: Ruff formatting
+            body: Reformatting code with ruff
+            branch: ruff-formatting

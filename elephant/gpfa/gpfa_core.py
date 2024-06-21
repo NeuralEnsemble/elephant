@@ -2,7 +2,7 @@
 """
 GPFA core functionality.
 
-:copyright: Copyright 2014-2023 by the Elephant team, see AUTHORS.txt.
+:copyright: Copyright 2014-2024 by the Elephant team, see AUTHORS.txt.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
