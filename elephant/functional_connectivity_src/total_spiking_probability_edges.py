@@ -29,43 +29,41 @@ def total_spiking_probability_edges(
     The default window sizes and maximum delay were optimized using
     in-silico generated spike trains.
 
-    *Background:*
+    **Background:**
 
     - On an excitatory connection the spike rate increases and decreases again
-     due to the refractory period which results in local maxima in the
-     cross-correlogram followed by downwards slope.
-
+      due to the refractory period which results in local maxima in the
+      cross-correlogram followed by downwards slope.
     - On an inhibitory connection the spike rate decreases and after refractory
-     period, increases again which results in local minima surrounded by high
-     values in the cross-correlogram.
-
+      period, increases again which results in local minima surrounded by high
+      values in the cross-correlogram.
     - An edge filter can be used to interpret the cross-correlogram and
-    accentuate the local maxima and minima
+      accentuate the local maxima and minima
 
-    *Procedure:*
+    **Procedure:**
 
-    1) Compute normalized cross-correlation :math:`NCC` of spike trains of all
-    neuron pairs.
-    2) Convolve :math:`NCC` with edge filter :math:`g_{i}` to compute
-    :math:`SPE`.
-    3) Convolve :math:`SPE` with corresponding running total filter
-    :math:`h_{i}` to account for different lengths after convolution with
-    edge filter.
-    4) Compute :math:`TSPE` using the sum of all :math:`SPE` for all different
-    filter pairs.
-    5) Compute the connectivity matrix by using the index of the TSPE values
-    with the highest absolute values.
+    1. Compute normalized cross-correlation :math:`NCC` of spike trains of all
+       neuron pairs.
+    2. Convolve :math:`NCC` with edge filter :math:`g_{i}` to compute
+       :math:`SPE`.
+    3. Convolve :math:`SPE` with corresponding running total filter
+       :math:`h_{i}` to account for different lengths after convolution with
+       edge filter.
+    4. Compute :math:`TSPE` using the sum of all :math:`SPE` for all different
+       filter pairs.
+    5. Compute the connectivity matrix by using the index of the TSPE values
+       with the highest absolute values.
 
-    *Normalized Cross-Correlation:*
+    **Normalized Cross-Correlation:**
 
-    .. math ::
+    .. math::
 
         NCC_{XY}(d) = \frac{1}{N} \sum_{i=-\infty}^{\infty}{ \frac{ (y_{(i)} -
         \bar{y}) \cdot (x_{(i-d)} - \bar{x}) }{ \sigma_x \cdot \sigma_y }}
 
-    *Edge Filter*
+    **Edge Filter**
 
-    .. math ::
+    .. math::
 
         g_{(i)} = \begin{cases}
         - \frac{1}{a} & 0 \lt i \leq a \ \
@@ -79,14 +77,14 @@ def total_spiking_probability_edges(
     `crossover_window_size`.
 
 
-*Spiking Probability Edges*
+**Spiking Probability Edges**
 
-.. math ::
+.. math::
     SPE_{X \rightarrow Y(d)} = NCC_{XY}(d) * g(i)
 
 *Total Spiking Probability Edges:*
 
-.. math ::
+.. math::
     TSPE_{X \rightarrow Y}(d) = \sum_{n=1}^{N_a \cdot N_b \cdot N_c}
     {SPE_{X \rightarrow Y}^{(n)}(d) * h(i)^{(n)} }
 
@@ -105,8 +103,8 @@ surrounding_window_sizes : List[int]
 observed_window_sizes : List[int]
     Array of window sizes for the observed area. This corresponds to
     parameter `b` of the edge filter and the length of the running filter
-    as defined in :cite:`functional_connectivity-de_blasi19_169`. Value is given
-    in units of the number of bins according to the binned spike trains
+    as defined in :cite:`functional_connectivity-de_blasi19_169`. Value is
+    given in units of the number of bins according to the binned spike trains
     `spike_trains`.
     Default: [2, 3, 4, 5, 6]
 crossover_window_sizes : List[int]
