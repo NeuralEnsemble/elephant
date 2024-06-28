@@ -34,7 +34,7 @@ class CubicTestCase(unittest.TestCase):
         self.data_signal = neo.AnalogSignal(
             numpy.array([self.xi] * n2 + [0] * n0).reshape(n0 + n2, 1) *
             pq.dimensionless, sampling_period=1 * pq.s)
-        self.data_array = numpy.array([self.xi] * n2 + [0] * n0)
+        self.data_array = numpy.array([self.xi] * n2 + [0] * n0, dtype=numpy.float64)
         self.alpha = 0.05
         self.max_iterations = 10
 
