@@ -16,7 +16,7 @@ from numpy.testing import assert_array_almost_equal
 
 from elephant.spectral import multitaper_cross_spectrum, multitaper_coherence
 import elephant.causality.granger
-from elephant.datasets import download_datasets, ELEPHANT_TMP_DIR
+from elephant.datasets import download_datasets
 
 
 class PairwiseGrangerTestCase(unittest.TestCase):
@@ -453,12 +453,16 @@ class PairwiseSpectralGrangerTestCase(unittest.TestCase):
             ("noise_covariance.npy", "6f80ccff2b2aa9485dc9c01d81570bf5")
         ]
 
+        downloaded_files = {}
         for filename, checksum in files_to_download:
-            download_datasets(repo_path=f"{repo_path}/{filename}",
-                              checksum=checksum)
-        signals = np.load(ELEPHANT_TMP_DIR / 'time_series.npy')
-        weights = np.load(ELEPHANT_TMP_DIR / 'weights.npy')
-        cov = np.load(ELEPHANT_TMP_DIR / 'noise_covariance.npy')
+            downloaded_files[filename] = {
+                'filename': filename,
+                'path': download_datasets(repo_path=f"{repo_path}/{filename}",
+                                          checksum=checksum)}
+
+        signals = np.load(downloaded_files['time_series.npy']['path'])
+        weights = np.load(downloaded_files['weights.npy']['path'])
+        cov = np.load(downloaded_files['noise_covariance.npy']['path'])
 
         # Estimate spectral Granger Causality
         f, spectral_causality = \
@@ -532,11 +536,15 @@ class PairwiseSpectralGrangerTestCase(unittest.TestCase):
             ("gc_matrix.npy", "c57262145e74a178588ff0a1004879e2")
         ]
 
+        downloaded_files = {}
         for filename, checksum in files_to_download:
-            download_datasets(repo_path=f"{repo_path}/{filename}",
-                              checksum=checksum)
-        signal = np.load(ELEPHANT_TMP_DIR / 'time_series_small.npy')
-        gc_matrix = np.load(ELEPHANT_TMP_DIR / 'gc_matrix.npy')
+            downloaded_files[filename] = {
+                'filename': filename,
+                'path': download_datasets(repo_path=f"{repo_path}/{filename}",
+                                          checksum=checksum)}
+
+        signal = np.load(downloaded_files['time_series_small.npy']['path'])
+        gc_matrix = np.load(downloaded_files['gc_matrix.npy']['path'])
 
         denom = 20
         f, spectral_causality = \

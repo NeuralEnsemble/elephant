@@ -15,7 +15,7 @@ import elephant.kernels as kernels
 from elephant.spike_train_generation import StationaryPoissonProcess
 import elephant.spike_train_dissimilarity as stds
 
-from elephant.datasets import download_datasets, ELEPHANT_TMP_DIR
+from elephant.datasets import download_datasets
 
 
 class TimeScaleDependSpikeTrainDissimMeasuresTestCase(unittest.TestCase):
@@ -398,12 +398,16 @@ class TimeScaleDependSpikeTrainDissimMeasuresTestCase(unittest.TestCase):
             ("times_float.npy", "ed1ff4d2c0eeed4a2b50a456803656be"),
             ("matlab_results_float.npy", "a17f049e7ad0ddf7ca812e86fdb92646")]
 
+        downloaded_files = {}
         for filename, checksum in files_to_download:
-            download_datasets(repo_path=f"{repo_path}/{filename}",
-                              checksum=checksum)
+            downloaded_files[filename] = {
+                'filename': filename,
+                'path': download_datasets(repo_path=f"{repo_path}/{filename}",
+                                          checksum=checksum)}
 
-        times_float = np.load(ELEPHANT_TMP_DIR / 'times_float.npy')
-        mat_res_float = np.load(ELEPHANT_TMP_DIR / 'matlab_results_float.npy')
+        times_float = np.load(downloaded_files['times_float.npy']['path'])
+        mat_res_float = np.load(downloaded_files[
+            'matlab_results_float.npy']['path'])
 
         r_float = SpikeTrain(times_float[0], units='ms', t_start=0,
                              t_stop=1000 * ms)
@@ -428,12 +432,16 @@ class TimeScaleDependSpikeTrainDissimMeasuresTestCase(unittest.TestCase):
             ("times_int.npy", "aa1411c04da3f58d8b8913ae2f935057"),
             ("matlab_results_int.npy", "7edd32e50edde12dc1ef4aa5f57f70fb")]
 
+        downloaded_files = {}
         for filename, checksum in files_to_download:
-            download_datasets(repo_path=f"{repo_path}/{filename}",
-                              checksum=checksum)
+            downloaded_files[filename] = {
+                'filename': filename,
+                'path': download_datasets(repo_path=f"{repo_path}/{filename}",
+                                          checksum=checksum)}
 
-        times_int = np.load(ELEPHANT_TMP_DIR / 'times_int.npy')
-        mat_res_int = np.load(ELEPHANT_TMP_DIR / 'matlab_results_int.npy')
+        times_int = np.load(downloaded_files['times_int.npy']['path'])
+        mat_res_int = np.load(
+            downloaded_files['matlab_results_int.npy']['path'])
 
         r_int = SpikeTrain(times_int[0], units='ms', t_start=0,
                            t_stop=1000 * ms)
