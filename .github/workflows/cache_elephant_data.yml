@@ -8,13 +8,6 @@ on:
   schedule:
     - cron: "11 23 * * *"  # Daily at 23:11 UTC
 
-  pull_request:
-    branches:
-      - master
-    types:
-      - opened
-      - reopened
-      - synchronize
 
 jobs:
   create-data-cache-if-missing:
