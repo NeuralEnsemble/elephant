@@ -237,5 +237,6 @@ def _kstat(data):
     """
     if len(data) == 0:
         raise ValueError('The input data must be a non-empty array')
-    moments = [scipy.stats.kstat(data, n=n) for n in [1, 2, 3]]
+    # Due to issue with precision when calculating moments, ensure float64 (default) is the precision of data array.
+    moments = [scipy.stats.kstat(data.astype(np.float64), n=n) for n in [1, 2, 3]]
     return moments
