@@ -520,8 +520,8 @@ class SynchrofactDetectionTestCase(unittest.TestCase):
 
         synchrotool_instance = Synchrotool([st, st], sampling_rate, spread=0, include_t_stop=True)
         synchrotool_instance.annotate_synchrofacts()
-        self.assertFalse(np.isnan(st.array_annotations['complexity'][-1])) # non NaN
-        self.assertEqual(len(st.array_annotations['complexity']), len(st)) # all spikes annotated
+        self.assertFalse(np.isnan(st.array_annotations['complexity'][-1]))  # non NaN
+        self.assertEqual(len(st.array_annotations['complexity']), len(st))  # all spikes annotated
 
 
 if __name__ == '__main__':
