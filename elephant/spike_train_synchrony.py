@@ -266,9 +266,11 @@ class Synchrotool(Complexity):
                  bin_size=None,
                  binary=True,
                  spread=0,
-                 tolerance=1e-8):
+                 tolerance=1e-8,
+                 include_t_stop=True):
 
         self.annotated = False
+        self.include_t_stop = include_t_stop
 
         super(Synchrotool, self).__init__(spiketrains=spiketrains,
                                           bin_size=bin_size,
@@ -391,6 +393,12 @@ class Synchrotool(Complexity):
         """
         Annotate the complexity of each spike in the
         ``self.epoch.array_annotations`` *in-place*.
+
+        Warns
+        -----
+        UserWarning
+            If spikes fall too close to `t_stop`.
+            Those spikes will be annotated with `NaN`.
         """
         epoch_complexities = self.epoch.array_annotations['complexity']
         right_edges = (
@@ -407,7 +415,18 @@ class Synchrotool(Complexity):
             spike_to_epoch_idx = np.searchsorted(
                 right_edges,
                 st.times.rescale(self.epoch.times.units).magnitude.flatten())
-            complexity_per_spike = epoch_complexities[spike_to_epoch_idx]
+
+            # Initialize complexity_per_spike with NaNs
+            complexity_per_spike = np.full(spike_to_epoch_idx.shape, np.nan)
+            # Iterate through spike_to_epoch_idx and assign values or NaN
+            for i, idx in enumerate(spike_to_epoch_idx):
+                if 0 <= idx < len(epoch_complexities):
+                    complexity_per_spike[i] = epoch_complexities[idx]
+                else:
+                    warnings.warn(
+                        "Some spikes in the input Spike Train are too close to t_stop and will be annotated with NaN."
+                        "Consider setting include_t_stop=True in the Synchrotool class to address this."
+                        )
 
             st.array_annotate(complexity=complexity_per_spike)
 
