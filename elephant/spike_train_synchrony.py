@@ -267,7 +267,7 @@ class Synchrotool(Complexity):
                  binary=True,
                  spread=0,
                  tolerance=1e-8,
-                 include_t_stop=True):
+                 include_t_stop=False):
 
         self.annotated = False
         self.include_t_stop = include_t_stop
@@ -278,6 +278,17 @@ class Synchrotool(Complexity):
                                           binary=binary,
                                           spread=spread,
                                           tolerance=tolerance)
+
+        if self.include_t_stop:
+            self.t_stop += self.bin_size
+            if spread == 0:
+                self.time_histogram, self.complexity_histogram = \
+                    self._histogram_no_spread()
+                self.epoch = self._epoch_no_spread()
+            else:
+                self.epoch = self._epoch_with_spread()
+                self.time_histogram, self.complexity_histogram = \
+                    self._histogram_with_spread()
 
     def delete_synchrofacts(self, threshold, in_place=False, mode='delete'):
         """

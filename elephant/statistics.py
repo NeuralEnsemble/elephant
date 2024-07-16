@@ -1434,8 +1434,8 @@ class Complexity(object):
             raise ValueError('Spread must be >=0')
 
         self.input_spiketrains = spiketrains
-        self.t_start = spiketrains[0].t_start.copy()
-        self.t_stop = spiketrains[0].t_stop.copy()
+        self.t_start = spiketrains[0].t_start
+        self.t_stop = spiketrains[0].t_stop
         self.sampling_rate = sampling_rate
         self.bin_size = bin_size
         self.binary = binary

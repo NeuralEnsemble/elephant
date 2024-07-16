@@ -486,6 +486,43 @@ class SynchrofactDetectionTestCase(unittest.TestCase):
                           synchrofact_obj.delete_synchrofacts,
                           -1)
 
+    def test_regression_PR_612_index_out_of_bounds_raise_warning(self):
+        """
+        https://github.com/NeuralEnsemble/elephant/pull/612
+        """
+        sampling_rate = 1/pq.ms
+        st = neo.SpikeTrain(np.arange(0, 11)*pq.ms, t_start=0*pq.ms, t_stop=10*pq.ms)
+
+        synchrotool_instance = Synchrotool([st, st], sampling_rate, spread=0)
+
+        with self.assertWarns(UserWarning) as cm:
+            synchrotool_instance.annotate_synchrofacts()
+
+        self.assertIn("Some spikes in the input Spike Train are too close to t_stop", str(cm.warning))
+
+    def test_regression_PR_612_index_out_of_bounds_annotate_nan(self):
+        """
+        https://github.com/NeuralEnsemble/elephant/pull/612
+        """
+        sampling_rate = 1/pq.ms
+        st = neo.SpikeTrain(np.arange(0, 11)*pq.ms, t_start=0*pq.ms, t_stop=10*pq.ms)
+
+        synchrotool_instance = Synchrotool([st, st], sampling_rate, spread=0)
+        synchrotool_instance.annotate_synchrofacts()
+        self.assertTrue(np.isnan(st.array_annotations['complexity'][-1]))
+
+    def test_regression_PR_612_index_out_of_bounds_annotate_include_t_stop(self):
+        """
+        https://github.com/NeuralEnsemble/elephant/pull/612
+        """
+        sampling_rate = 1/pq.ms
+        st = neo.SpikeTrain(np.arange(0, 11)*pq.ms, t_start=0*pq.ms, t_stop=10*pq.ms)
+
+        synchrotool_instance = Synchrotool([st, st], sampling_rate, spread=0, include_t_stop=True)
+        synchrotool_instance.annotate_synchrofacts()
+        self.assertFalse(np.isnan(st.array_annotations['complexity'][-1])) # non NaN
+        self.assertEqual(len(st.array_annotations['complexity']), len(st)) # all spikes annotated
+
 
 if __name__ == '__main__':
     unittest.main()
