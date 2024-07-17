@@ -131,14 +131,14 @@ jobs:
       fail-fast: false
       matrix:
         # OS [ubuntu-latest, macos-latest, windows-latest]
-        os: [macos-11,macos-12]
+        os: [macos-12,macos-13]
         python-version: [3.11]
     steps:
       - name: Get current year-month
         id: date
         run: echo "date=$(date +'%Y-%m')" >> $GITHUB_OUTPUT
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4.1.6
 
       - name: Cache conda
         uses: actions/cache@v3
@@ -146,7 +146,7 @@ jobs:
           path: ~/conda_pkgs_dir
           key: ${{ runner.os }}-conda-${{hashFiles('requirements/environment.yml') }}-${{ hashFiles('**/CI.yml') }}-${{ steps.date.outputs.date }}
 
-      - uses: conda-incubator/setup-miniconda@030178870c779d9e5e1b4e563269f3aa69b04081 # corresponds to v3.0.3
+      - uses: conda-incubator/setup-miniconda@a4260408e20b96e80095f42ff7f1a15b27dd94ca # corresponds to v3.0.4
         with:
           auto-update-conda: true
           python-version: ${{ matrix.python-version }}
