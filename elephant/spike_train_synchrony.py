@@ -255,6 +255,15 @@ class Synchrotool(Complexity):
     This class inherits from :class:`elephant.statistics.Complexity`, see its
     documentation for more details and input parameters description.
 
+    Parameters
+    ----------
+    include_t_stop : bool, optional
+        If True, the end of the spike train (`t_stop`) is included in the
+        analysis, ensuring that any spikes close to `t_stop` are properly
+        annotated.
+        Default is False.
+
+
     See also
     --------
     elephant.statistics.Complexity
