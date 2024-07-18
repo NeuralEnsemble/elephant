@@ -89,9 +89,12 @@ class TestSpikeContrast(unittest.TestCase):
     def test_invalid_data(self):
         # invalid spiketrains
         self.assertRaises(TypeError, spike_contrast, [[0, 1], [1.5, 2.3]])
-        self.assertRaises(ValueError, spike_contrast,
-                          [neo.SpikeTrain([10] * ms, t_stop=1000 * ms),
-                           neo.SpikeTrain([20] * ms, t_stop=1000 * ms)])
+        
+        # remove the following test of "All input spiketrains contain no more than 1 spike"  
+        # as the ValueError was replaced by a warning:
+        #self.assertRaises(ValueError, spike_contrast,
+        #                  [neo.SpikeTrain([10] * ms, t_stop=1000 * ms),
+        #                   neo.SpikeTrain([20] * ms, t_stop=1000 * ms)])
 
         # a single spiketrain
         spiketrain_valid = neo.SpikeTrain([0, 1000] * ms, t_stop=1000 * ms)
