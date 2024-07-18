@@ -376,7 +376,8 @@ def covariance(binned_spiketrain, binary=False, fast=True):
         binned_spiketrain, corrcoef_norm=False)
 
 
-def correlation_coefficient(binned_spiketrain, binary=False, fast=True):
+def correlation_coefficient(binned_spiketrain, binary=False, fast=True,
+                            zero_diag=False):
     r"""
     Calculate the NxN matrix of pairwise Pearson's correlation coefficients
     between all combinations of N binned spike trains.
@@ -414,6 +415,9 @@ def correlation_coefficient(binned_spiketrain, binary=False, fast=True):
         If True, two spikes of a particular spike train falling in the same bin
         are counted as 1, resulting in binary binned vectors :math:`b_i`. If
         False, the binned vectors :math:`b_i` contain the spike counts per bin.
+        Default: False
+    zero_diag : bool, optional
+        Zero-out the diagonal of a correlation matrix (True) or not (False).
         Default: False
     fast : bool, optional
         If `fast=True` and the sparsity of `binned_spiketrain` is `> 0.1`, use
@@ -478,10 +482,13 @@ def correlation_coefficient(binned_spiketrain, binary=False, fast=True):
 
     if fast and binned_spiketrain.sparsity > _SPARSITY_MEMORY_EFFICIENT_THR:
         array = binned_spiketrain.to_array()
-        return np.corrcoef(array)
+        corr_mat = np.corrcoef(array)
+    else:
+        corr_mat = _covariance_sparse(binned_spiketrain, corrcoef_norm=True)
 
-    return _covariance_sparse(
-        binned_spiketrain, corrcoef_norm=True)
+    if zero_diag:
+        np.fill_diagonal(corr_mat, 0)
+    return corr_mat
 
 
 def corrcoef(*args, **kwargs):
