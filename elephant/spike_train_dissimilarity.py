@@ -28,14 +28,12 @@ from neo.core import SpikeTrain
 
 import elephant.kernels as kernels
 
-__all__ = [
-    "victor_purpura_distance",
-    "van_rossum_distance"
-]
+__all__ = ["victor_purpura_distance", "van_rossum_distance"]
 
 
 def _create_matrix_from_indexed_function(
-        shape, func, symmetric_2d=False, **func_params):
+    shape, func, symmetric_2d=False, **func_params
+):
     mat = np.empty(shape)
     if symmetric_2d:
         for i in range(shape[0]):
@@ -47,8 +45,9 @@ def _create_matrix_from_indexed_function(
     return mat
 
 
-def victor_purpura_distance(spiketrains, cost_factor=1.0 * pq.Hz, kernel=None,
-                            sort=True, algorithm='fast'):
+def victor_purpura_distance(
+    spiketrains, cost_factor=1.0 * pq.Hz, kernel=None, sort=True, algorithm="fast"
+):
     """
     Calculates the Victor-Purpura's (VP) distance. It is often denoted as
     :math:`D^{\\text{spike}}[q]`.
@@ -119,14 +118,18 @@ def victor_purpura_distance(spiketrains, cost_factor=1.0 * pq.Hz, kernel=None,
     ...        algorithm='intuitive')[0, 1]
     """
     for train in spiketrains:
-        if not (isinstance(train, (pq.quantity.Quantity, SpikeTrain)) and
-                train.dimensionality.simplified ==
-                pq.Quantity(1, "s").dimensionality.simplified):
+        if not (
+            isinstance(train, (pq.quantity.Quantity, SpikeTrain))
+            and train.dimensionality.simplified
+            == pq.Quantity(1, "s").dimensionality.simplified
+        ):
             raise TypeError("Spike trains must have a time unit.")
 
-    if not (isinstance(cost_factor, pq.quantity.Quantity) and
-            cost_factor.dimensionality.simplified ==
-            pq.Quantity(1, "Hz").dimensionality.simplified):
+    if not (
+        isinstance(cost_factor, pq.quantity.Quantity)
+        and cost_factor.dimensionality.simplified
+        == pq.Quantity(1, "Hz").dimensionality.simplified
+    ):
         raise TypeError("cost_factor must be a rate quantity.")
 
     if kernel is None:
@@ -136,26 +139,27 @@ def victor_purpura_distance(spiketrains, cost_factor=1.0 * pq.Hz, kernel=None,
         if cost_factor == np.inf:
             num_spikes = np.atleast_2d([st.size for st in spiketrains])
             return num_spikes.T + num_spikes
-        kernel = kernels.TriangularKernel(
-            sigma=2.0 / (np.sqrt(6.0) * cost_factor))
+        kernel = kernels.TriangularKernel(sigma=2.0 / (np.sqrt(6.0) * cost_factor))
 
     if sort:
-        spiketrains = [np.sort(st.view(type=pq.Quantity))
-                       for st in spiketrains]
+        spiketrains = [np.sort(st.view(type=pq.Quantity)) for st in spiketrains]
 
     def compute(i, j):
         if i == j:
             return 0.0
-        if algorithm == 'fast':
+        if algorithm == "fast":
             return _victor_purpura_dist_for_st_pair_fast(
-                spiketrains[i], spiketrains[j], kernel)
-        if algorithm == 'intuitive':
+                spiketrains[i], spiketrains[j], kernel
+            )
+        if algorithm == "intuitive":
             return _victor_purpura_dist_for_st_pair_intuitive(
-                spiketrains[i], spiketrains[j], cost_factor)
+                spiketrains[i], spiketrains[j], cost_factor
+            )
         raise NameError("The algorithm must be either 'fast' or 'intuitive'.")
 
     return _create_matrix_from_indexed_function(
-        (len(spiketrains), len(spiketrains)), compute, kernel.is_symmetric())
+        (len(spiketrains), len(spiketrains)), compute, kernel.is_symmetric()
+    )
 
 
 def _victor_purpura_dist_for_st_pair_fast(spiketrain_a, spiketrain_b, kernel):
@@ -216,32 +220,38 @@ def _victor_purpura_dist_for_st_pair_fast(spiketrain_a, spiketrain_b, kernel):
     min_dim, max_dim = spiketrain_b.size, spiketrain_a.size + 1
     cost = np.asfortranarray(np.tile(np.arange(float(max_dim)), (2, 1)))
     decreasing_sequence = np.asfortranarray(cost[:, ::-1])
-    kern = kernel((np.atleast_2d(spiketrain_a).T.view(type=pq.Quantity) -
-                   spiketrain_b.view(type=pq.Quantity)))
-    as_fortran = np.asfortranarray(
-        ((np.sqrt(6.0) * kernel.sigma) * kern).simplified)
+    kern = kernel(
+        (
+            np.atleast_2d(spiketrain_a).T.view(type=pq.Quantity)
+            - spiketrain_b.view(type=pq.Quantity)
+        )
+    )
+    as_fortran = np.asfortranarray(((np.sqrt(6.0) * kernel.sigma) * kern).simplified)
     k = 1 - 2 * as_fortran
 
     for i in range(min_dim):
         # determine G[i, i] == accumulated_min[:, 0]
-        accumulated_min = cost[:, :-i - 1] + k[i:, i]
-        accumulated_min[1, :spiketrain_b.size - i] = \
-            cost[1, :spiketrain_b.size - i] + k[i, i:]
+        accumulated_min = cost[:, : -i - 1] + k[i:, i]
+        accumulated_min[1, : spiketrain_b.size - i] = (
+            cost[1, : spiketrain_b.size - i] + k[i, i:]
+        )
         accumulated_min = np.minimum(
             accumulated_min,  # shift
-            cost[:, 1:max_dim - i])  # insert
+            cost[:, 1 : max_dim - i],
+        )  # insert
         acc_dim = accumulated_min.shape[1]
         # delete vs min(insert, shift)
         accumulated_min[:, 0] = min(cost[1, 1], accumulated_min[0, 0])
         # determine G[i, :] and G[:, i] by propagating minima.
-        accumulated_min += decreasing_sequence[:, -acc_dim - 1:-1]
+        accumulated_min += decreasing_sequence[:, -acc_dim - 1 : -1]
         accumulated_min = np.minimum.accumulate(accumulated_min, axis=1)
         cost[:, :acc_dim] = accumulated_min - decreasing_sequence[:, -acc_dim:]
     return cost[0, -min_dim - 1]
 
 
-def _victor_purpura_dist_for_st_pair_intuitive(spiketrain_a, spiketrain_b,
-                                               cost_factor=1.0 * pq.Hz):
+def _victor_purpura_dist_for_st_pair_intuitive(
+    spiketrain_a, spiketrain_b, cost_factor=1.0 * pq.Hz
+):
     """
     Function to calculate the Victor-Purpura distance between two spike trains
     described in *J. D. Victor and K. P. Purpura, Nature and precision of
@@ -277,19 +287,23 @@ def _victor_purpura_dist_for_st_pair_intuitive(spiketrain_a, spiketrain_b,
     """
     nspk_a = len(spiketrain_a)
     nspk_b = len(spiketrain_b)
-    scr = np.zeros((nspk_a+1, nspk_b+1))
-    scr[:, 0] = range(0, nspk_a+1)
-    scr[0, :] = range(0, nspk_b+1)
+    scr = np.zeros((nspk_a + 1, nspk_b + 1))
+    scr[:, 0] = range(0, nspk_a + 1)
+    scr[0, :] = range(0, nspk_b + 1)
 
     if nspk_a > 0 and nspk_b > 0:
-        for i in range(1, nspk_a+1):
-            for j in range(1, nspk_b+1):
-                scr[i, j] = min(scr[i-1, j]+1, scr[i, j-1]+1)
-                scr[i, j] = min(scr[i, j], scr[i-1, j-1] +
-                                np.float64((
-                                    cost_factor * abs(
-                                        spiketrain_a[i - 1] -
-                                        spiketrain_b[j - 1])).simplified))
+        for i in range(1, nspk_a + 1):
+            for j in range(1, nspk_b + 1):
+                scr[i, j] = min(scr[i - 1, j] + 1, scr[i, j - 1] + 1)
+                scr[i, j] = min(
+                    scr[i, j],
+                    scr[i - 1, j - 1]
+                    + np.float64(
+                        (
+                            cost_factor * abs(spiketrain_a[i - 1] - spiketrain_b[j - 1])
+                        ).simplified
+                    ),
+                )
     return scr[nspk_a, nspk_b]
 
 
@@ -339,14 +353,18 @@ def van_rossum_distance(spiketrains, time_constant=1.0 * pq.s, sort=True):
     >>> vr = van_rossum_distance([st_a, st_b], tau)[0, 1]
     """
     for train in spiketrains:
-        if not (isinstance(train, (pq.quantity.Quantity, SpikeTrain)) and
-                train.dimensionality.simplified ==
-                pq.Quantity(1, "s").dimensionality.simplified):
+        if not (
+            isinstance(train, (pq.quantity.Quantity, SpikeTrain))
+            and train.dimensionality.simplified
+            == pq.Quantity(1, "s").dimensionality.simplified
+        ):
             raise TypeError("Spike trains must have a time unit.")
 
-    if not (isinstance(time_constant, pq.quantity.Quantity) and
-            time_constant.dimensionality.simplified ==
-            pq.Quantity(1, "s").dimensionality.simplified):
+    if not (
+        isinstance(time_constant, pq.quantity.Quantity)
+        and time_constant.dimensionality.simplified
+        == pq.Quantity(1, "s").dimensionality.simplified
+    ):
         raise TypeError("tau must be a time quantity.")
 
     if time_constant == 0:
@@ -357,12 +375,11 @@ def van_rossum_distance(spiketrains, time_constant=1.0 * pq.s, sort=True):
         return np.absolute(spike_counts - np.atleast_2d(spike_counts).T)
 
     k_dist = _summed_dist_matrix(
-        [st.view(type=pq.Quantity)
-         for st in spiketrains], time_constant, not sort)
+        [st.view(type=pq.Quantity) for st in spiketrains], time_constant, not sort
+    )
     vr_dist = np.empty_like(k_dist)
     for i, j in np.ndindex(k_dist.shape):
-        vr_dist[i, j] = (
-            k_dist[i, i] + k_dist[j, j] - k_dist[i, j] - k_dist[j, i])
+        vr_dist[i, j] = k_dist[i, i] + k_dist[j, j] - k_dist[i, j] - k_dist[j, i]
     return np.sqrt(vr_dist)
 
 
@@ -389,8 +406,7 @@ def _summed_dist_matrix(spiketrains, tau, presorted=False):
     values.fill(np.nan)
     for i, v in enumerate(spiketrains):
         if v.size > 0:
-            values[i, :v.size] = \
-                (v / tau * pq.dimensionless).simplified
+            values[i, : v.size] = (v / tau * pq.dimensionless).simplified
 
     exp_diffs = np.exp(values[:, :-1] - values[:, 1:])
     markage = np.zeros(values.shape)
@@ -405,18 +421,20 @@ def _summed_dist_matrix(spiketrains, tau, presorted=False):
 
     # Cross spiketrain terms
     for u in range(D.shape[0]):
-        all_ks = np.searchsorted(values[u], values, 'left') - 1
+        all_ks = np.searchsorted(values[u], values, "left") - 1
         for v in range(u):
-            js = np.searchsorted(values[v], values[u], 'right') - 1
+            js = np.searchsorted(values[v], values[u], "right") - 1
             ks = all_ks[v]
-            slice_j = np.s_[np.searchsorted(js, 0):sizes[u]]
-            slice_k = np.s_[np.searchsorted(ks, 0):sizes[v]]
+            slice_j = np.s_[np.searchsorted(js, 0) : sizes[u]]
+            slice_k = np.s_[np.searchsorted(ks, 0) : sizes[v]]
             D[u, v] = np.sum(
-                np.exp(values[v][js[slice_j]] - values[u][slice_j]) *
-                (1.0 + markage[v][js[slice_j]]))
+                np.exp(values[v][js[slice_j]] - values[u][slice_j])
+                * (1.0 + markage[v][js[slice_j]])
+            )
             D[u, v] += np.sum(
-                np.exp(values[u][ks[slice_k]] - values[v][slice_k]) *
-                (1.0 + markage[u][ks[slice_k]]))
+                np.exp(values[u][ks[slice_k]] - values[v][slice_k])
+                * (1.0 + markage[u][ks[slice_k]])
+            )
             D[v, u] = D[u, v]
 
     return D

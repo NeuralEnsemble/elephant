@@ -25,10 +25,10 @@ def main():  # pragma: no cover
   """
 
     # Setup and run simulation.
-    G = NeuronGroup(1, eqs, threshold='v>30*mvolt', reset='v = -70*mvolt')
+    G = NeuronGroup(1, eqs, threshold="v>30*mvolt", reset="v = -70*mvolt")
     G.v = -65 * mvolt
     G.u = b * G.v
-    M = StateMonitor(G, 'v', record=True)
+    M = StateMonitor(G, "v", record=True)
     run(300 * ms)
 
     # Store results in neo format.
@@ -37,11 +37,11 @@ def main():  # pragma: no cover
     # Plot results.
     plt.figure()
     plt.plot(vm.times * 1000, vm * 1000)  # Plot mV and ms instead of V and s.
-    plt.xlabel('Time (ms)')
-    plt.ylabel('mv')
+    plt.xlabel("Time (ms)")
+    plt.ylabel("mv")
 
     # Save results.
-    iom = neo.io.PyNNNumpyIO('spike_extraction_test_data')
+    iom = neo.io.PyNNNumpyIO("spike_extraction_test_data")
     block = neo.core.Block()
     segment = neo.core.Segment()
     segment.analogsignals.append(vm)
@@ -49,7 +49,7 @@ def main():  # pragma: no cover
     iom.write(block)
 
     # Load results.
-    iom2 = neo.io.PyNNNumpyIO('spike_extraction_test_data.npz')
+    iom2 = neo.io.PyNNNumpyIO("spike_extraction_test_data.npz")
     data = iom2.read()
     vm = data[0].segments[0].analogsignals[0]
 
@@ -57,9 +57,9 @@ def main():  # pragma: no cover
     # The two figures should match.
     plt.figure()
     plt.plot(vm.times * 1000, vm * 1000)  # Plot mV and ms instead of V and s.
-    plt.xlabel('Time (ms)')
-    plt.ylabel('mv')
+    plt.xlabel("Time (ms)")
+    plt.ylabel("mv")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

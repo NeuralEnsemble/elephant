@@ -95,16 +95,20 @@ __all__ = (
     "Causality",
     "pairwise_granger",
     "conditional_granger",
-    "pairwise_spectral_granger"
+    "pairwise_spectral_granger",
 )
 
 
 # the return type of pairwise_granger(), pairwise_spectral_granger() function
-Causality = namedtuple('Causality',
-                       ['directional_causality_x_y',
-                        'directional_causality_y_x',
-                        'instantaneous_causality',
-                        'total_interdependence'])
+Causality = namedtuple(
+    "Causality",
+    [
+        "directional_causality_x_y",
+        "directional_causality_y_x",
+        "instantaneous_causality",
+        "total_interdependence",
+    ],
+)
 
 
 def _bic(cov, order, dimension, length):
@@ -128,8 +132,7 @@ def _bic(cov, order, dimension, length):
        Bayesian Information Criterion
     """
     sign, log_det_cov = np.linalg.slogdet(cov)
-    criterion = 2 * log_det_cov \
-        + 2*(dimension**2)*order*np.log(length)/length
+    criterion = 2 * log_det_cov + 2 * (dimension**2) * order * np.log(length) / length
 
     return criterion
 
@@ -155,8 +158,7 @@ def _aic(cov, order, dimension, length):
         Akaike Information Criterion
     """
     sign, log_det_cov = np.linalg.slogdet(cov)
-    criterion = 2 * log_det_cov \
-        + 2*(dimension**2)*order/length
+    criterion = 2 * log_det_cov + 2 * (dimension**2) * order / length
 
     return criterion
 
@@ -199,13 +201,14 @@ def _lag_covariances(signals, dimension, max_lag):
     # centralize time series
     signals_mean = (signals - np.mean(signals, keepdims=True)).T
 
-    lag_covariances = np.zeros((max_lag+1, dimension, dimension))
+    lag_covariances = np.zeros((max_lag + 1, dimension, dimension))
 
     # determine lagged covariance for different time lags
-    for lag in range(0, max_lag+1):
-        lag_covariances[lag] = \
-                np.mean(np.einsum('ij,ik -> ijk', signals_mean[:length-lag],
-                                  signals_mean[lag:]), axis=0)
+    for lag in range(0, max_lag + 1):
+        lag_covariances[lag] = np.mean(
+            np.einsum("ij,ik -> ijk", signals_mean[: length - lag], signals_mean[lag:]),
+            axis=0,
+        )
 
     return lag_covariances
 
@@ -248,20 +251,19 @@ def _yule_walker_matrix(data, dimension, order):
 
     lag_covariances = _lag_covariances(data, dimension, order)
 
-    yule_walker_matrix = np.zeros((dimension*order, dimension*order))
+    yule_walker_matrix = np.zeros((dimension * order, dimension * order))
 
     for block_row in range(order):
         for block_column in range(block_row, order):
-            yule_walker_matrix[block_row*dimension: (block_row+1)*dimension,
-                               block_column*dimension:
-                               (block_column+1)*dimension] = \
-                lag_covariances[block_column-block_row].T
+            yule_walker_matrix[
+                block_row * dimension : (block_row + 1) * dimension,
+                block_column * dimension : (block_column + 1) * dimension,
+            ] = lag_covariances[block_column - block_row].T
 
-            yule_walker_matrix[block_column*dimension:
-                               (block_column+1)*dimension,
-                               block_row*dimension:
-                               (block_row+1)*dimension] = \
-                lag_covariances[block_column-block_row]
+            yule_walker_matrix[
+                block_column * dimension : (block_column + 1) * dimension,
+                block_row * dimension : (block_row + 1) * dimension,
+            ] = lag_covariances[block_column - block_row]
     return yule_walker_matrix, lag_covariances
 
 
@@ -302,31 +304,30 @@ def _vector_arm(signals, dimension, order):
 
     """
 
-    yule_walker_matrix, lag_covariances = \
-        _yule_walker_matrix(signals, dimension, order)
+    yule_walker_matrix, lag_covariances = _yule_walker_matrix(signals, dimension, order)
 
-    positive_lag_covariances = np.reshape(lag_covariances[1:],
-                                          (dimension*order, dimension))
+    positive_lag_covariances = np.reshape(
+        lag_covariances[1:], (dimension * order, dimension)
+    )
 
-    lstsq_coeffs = np.linalg.lstsq(yule_walker_matrix,
-                                   positive_lag_covariances,
-                                   rcond=None)[0]
+    lstsq_coeffs = np.linalg.lstsq(
+        yule_walker_matrix, positive_lag_covariances, rcond=None
+    )[0]
 
     coeffs = []
     for index in range(order):
-        coeffs.append(lstsq_coeffs[index*dimension:(index+1)*dimension, ].T)
+        coeffs.append(lstsq_coeffs[index * dimension : (index + 1) * dimension,].T)
 
     coeffs = np.stack(coeffs)
 
     cov_matrix = np.copy(lag_covariances[0])
     for i in range(order):
-        cov_matrix -= np.matmul(coeffs[i], lag_covariances[i+1])
+        cov_matrix -= np.matmul(coeffs[i], lag_covariances[i + 1])
 
     return coeffs, cov_matrix
 
 
-def _optimal_vector_arm(signals, dimension, max_order,
-                        information_criterion='aic'):
+def _optimal_vector_arm(signals, dimension, max_order, information_criterion="aic"):
     """
     Determine optimal auto regressive model by choosing optimal order via
     Information Criterion
@@ -365,13 +366,15 @@ def _optimal_vector_arm(signals, dimension, max_order,
     for order in range(1, max_order + 1):
         coeffs, cov_matrix = _vector_arm(signals, dimension, order)
 
-        if information_criterion == 'aic':
+        if information_criterion == "aic":
             temp_ic = _aic(cov_matrix, order, dimension, length)
-        elif information_criterion == 'bic':
+        elif information_criterion == "bic":
             temp_ic = _bic(cov_matrix, order, dimension, length)
         else:
-            raise ValueError("The specified information criterion is not"
-                             "available. Please use 'aic' or 'bic'.")
+            raise ValueError(
+                "The specified information criterion is not"
+                "available. Please use 'aic' or 'bic'."
+            )
 
         if temp_ic < optimal_ic:
             optimal_ic = temp_ic
@@ -405,7 +408,7 @@ def _bracket_operator(spectrum, num_freqs, num_signals):
     causal_part = np.fft.ifft(spectrum, axis=0)
 
     # Throw away acausal part
-    causal_part[(num_freqs + 1) // 2:] = 0
+    causal_part[(num_freqs + 1) // 2 :] = 0
 
     # Treat coefficient belonging to 0
     causal_part[0] /= 2
@@ -490,31 +493,29 @@ def _spectral_factorization(cross_spectrum, num_iterations, term_crit=1e-12):
 
     # Initialization
     identity = np.identity(num_signals)
-    factorization = np.zeros(np.shape(spectral_density_function),
-                             dtype='complex128')
+    factorization = np.zeros(np.shape(spectral_density_function), dtype="complex128")
 
     # Estimate initial conditions
     try:
         initial_cond = np.linalg.cholesky(cross_spectrum[0].real)
     except np.linalg.LinAlgError:
-        raise ValueError('Could not calculate Cholesky decomposition of real'
-                         + ' part of zero frequency estimate of cross-spectrum'
-                         + '. This might suggest a problem with the input')
+        raise ValueError(
+            "Could not calculate Cholesky decomposition of real"
+            + " part of zero frequency estimate of cross-spectrum"
+            + ". This might suggest a problem with the input"
+        )
 
     factorization += initial_cond
 
     converged = False
     # Iteration for calculating spectral factorization
     for i in range(num_iterations):
-
         factorization_old = np.copy(factorization)
 
         # Implementation of Eq. 3.1 from "The Factorization of Matricial
         # Spectral Densities", Wilson 1972, SiAM J Appl Math
-        X = np.linalg.solve(factorization,
-                            spectral_density_function)
-        Y = np.linalg.solve(factorization,
-                            _dagger(X))
+        X = np.linalg.solve(factorization, spectral_density_function)
+        Y = np.linalg.solve(factorization, _dagger(X))
         Y += identity
         Y = _bracket_operator(Y, num_freqs, num_signals)
 
@@ -523,27 +524,27 @@ def _spectral_factorization(cross_spectrum, num_iterations, term_crit=1e-12):
         diff = factorization - factorization_old
         error = np.max(np.abs(diff))
         if error < term_crit:
-            print(f'Spectral factorization converged after {i} steps')
-            converged=True
+            print(f"Spectral factorization converged after {i} steps")
+            converged = True
             break
 
     if not converged:
-        raise Exception("Spectral factorization did not converge after "
-                        + f"{num_iterations} steps. Try to increase "
-                        + "'num_iterations', or lower the allowed error "
-                        + " in the termination criterion, currently "
-                        + f"{term_crit}")
+        raise Exception(
+            "Spectral factorization did not converge after "
+            + f"{num_iterations} steps. Try to increase "
+            + "'num_iterations', or lower the allowed error "
+            + " in the termination criterion, currently "
+            + f"{term_crit}"
+        )
 
-    cov_matrix = np.matmul(factorization[0],
-                           _dagger(factorization[0]))
+    cov_matrix = np.matmul(factorization[0], _dagger(factorization[0]))
 
-    transfer_function = np.matmul(factorization,
-                                  np.linalg.inv(factorization[0]))
+    transfer_function = np.matmul(factorization, np.linalg.inv(factorization[0]))
 
     return cov_matrix, transfer_function
 
 
-def pairwise_granger(signals, max_order, information_criterion='aic'):
+def pairwise_granger(signals, max_order, information_criterion="aic"):
     r"""
     Determine Granger Causality of two time series
 
@@ -658,12 +659,15 @@ def pairwise_granger(signals, max_order, information_criterion='aic'):
     # signal_x and signal_y are (1, N) arrays
     signal_x, signal_y = np.expand_dims(signals, axis=1)
 
-    coeffs_x, var_x, p_1 = _optimal_vector_arm(signal_x, 1, max_order,
-                                               information_criterion)
-    coeffs_y, var_y, p_2 = _optimal_vector_arm(signal_y, 1, max_order,
-                                               information_criterion)
-    coeffs_xy, cov_xy, p_3 = _optimal_vector_arm(signals, 2, max_order,
-                                                 information_criterion)
+    coeffs_x, var_x, p_1 = _optimal_vector_arm(
+        signal_x, 1, max_order, information_criterion
+    )
+    coeffs_y, var_y, p_2 = _optimal_vector_arm(
+        signal_y, 1, max_order, information_criterion
+    )
+    coeffs_xy, cov_xy, p_3 = _optimal_vector_arm(
+        signals, 2, max_order, information_criterion
+    )
 
     sign, log_det_cov = np.linalg.slogdet(cov_xy)
     tolerance = 1e-7
@@ -671,18 +675,20 @@ def pairwise_granger(signals, max_order, information_criterion='aic'):
     if sign <= 0:
         raise ValueError(
             "Determinant of covariance matrix must be always positive: "
-            "In this case its sign is {}".format(sign))
+            "In this case its sign is {}".format(sign)
+        )
 
     if log_det_cov <= tolerance:
-        warnings.warn("The value of the log determinant is at or below the "
-                      "tolerance level. Proceeding with computation.",
-                      UserWarning)
+        warnings.warn(
+            "The value of the log determinant is at or below the "
+            "tolerance level. Proceeding with computation.",
+            UserWarning,
+        )
 
     directional_causality_y_x = np.log(var_x[0]) - np.log(cov_xy[0, 0])
     directional_causality_x_y = np.log(var_y[0]) - np.log(cov_xy[1, 1])
 
-    instantaneous_causality = \
-        np.log(cov_xy[0, 0]) + np.log(cov_xy[1, 1]) - log_det_cov
+    instantaneous_causality = np.log(cov_xy[0, 0]) + np.log(cov_xy[1, 1]) - log_det_cov
     instantaneous_causality = np.asarray(instantaneous_causality)
 
     total_interdependence = np.log(var_x[0]) + np.log(var_y[0]) - log_det_cov
@@ -691,26 +697,27 @@ def pairwise_granger(signals, max_order, information_criterion='aic'):
     #     Note that standard error scales as 1/sqrt(sample_size)
     #     Calculate  significant figures according to standard error
     length = np.size(signal_x)
-    asymptotic_std_error = 1/np.sqrt(length)
-    est_sig_figures = int((-1)*np.around(np.log10(asymptotic_std_error)))
+    asymptotic_std_error = 1 / np.sqrt(length)
+    est_sig_figures = int((-1) * np.around(np.log10(asymptotic_std_error)))
 
-    directional_causality_x_y_round = np.around(directional_causality_x_y,
-                                                est_sig_figures)
-    directional_causality_y_x_round = np.around(directional_causality_y_x,
-                                                est_sig_figures)
-    instantaneous_causality_round = np.around(instantaneous_causality,
-                                              est_sig_figures)
-    total_interdependence_round = np.around(total_interdependence,
-                                            est_sig_figures)
+    directional_causality_x_y_round = np.around(
+        directional_causality_x_y, est_sig_figures
+    )
+    directional_causality_y_x_round = np.around(
+        directional_causality_y_x, est_sig_figures
+    )
+    instantaneous_causality_round = np.around(instantaneous_causality, est_sig_figures)
+    total_interdependence_round = np.around(total_interdependence, est_sig_figures)
 
     return Causality(
         directional_causality_x_y=directional_causality_x_y_round.item(),
         directional_causality_y_x=directional_causality_y_x_round.item(),
         instantaneous_causality=instantaneous_causality_round.item(),
-        total_interdependence=total_interdependence_round.item())
+        total_interdependence=total_interdependence_round.item(),
+    )
 
 
-def conditional_granger(signals, max_order, information_criterion='aic'):
+def conditional_granger(signals, max_order, information_criterion="aic"):
     r"""
     Determine conditional Granger Causality of the second time series on the
     first time series, given the third time series. In other words, for time
@@ -763,11 +770,17 @@ def conditional_granger(signals, max_order, information_criterion='aic'):
     signals_xz = np.vstack([signal_x, signal_z])
 
     coeffs_xz, cov_xz, p_1 = _optimal_vector_arm(
-        signals_xz, dimension=2, max_order=max_order,
-        information_criterion=information_criterion)
+        signals_xz,
+        dimension=2,
+        max_order=max_order,
+        information_criterion=information_criterion,
+    )
     coeffs_xyz, cov_xyz, p_2 = _optimal_vector_arm(
-        signals, dimension=3, max_order=max_order,
-        information_criterion=information_criterion)
+        signals,
+        dimension=3,
+        max_order=max_order,
+        information_criterion=information_criterion,
+    )
 
     conditional_causality_xy_z = np.log(cov_xz[0, 0]) - np.log(cov_xyz[0, 0])
 
@@ -775,20 +788,30 @@ def conditional_granger(signals, max_order, information_criterion='aic'):
     #     Note that standard error scales as 1/sqrt(sample_size)
     #     Calculate  significant figures according to standard error
     length = np.size(signal_x)
-    asymptotic_std_error = 1/np.sqrt(length)
-    est_sig_figures = int((-1)*np.around(np.log10(asymptotic_std_error)))
+    asymptotic_std_error = 1 / np.sqrt(length)
+    est_sig_figures = int((-1) * np.around(np.log10(asymptotic_std_error)))
 
-    conditional_causality_xy_z_round = np.around(conditional_causality_xy_z,
-                                                 est_sig_figures)
+    conditional_causality_xy_z_round = np.around(
+        conditional_causality_xy_z, est_sig_figures
+    )
 
     return conditional_causality_xy_z_round
 
 
-def pairwise_spectral_granger(signal_i, signal_j, fs=1, nw=4, num_tapers=None,
-                              peak_resolution=None, n_segments=1,
-                              len_segment=None, frequency_resolution=None,
-                              overlap=0.5, num_iterations=300,
-                              term_crit=1e-12):
+def pairwise_spectral_granger(
+    signal_i,
+    signal_j,
+    fs=1,
+    nw=4,
+    num_tapers=None,
+    peak_resolution=None,
+    n_segments=1,
+    len_segment=None,
+    frequency_resolution=None,
+    overlap=0.5,
+    num_iterations=300,
+    term_crit=1e-12,
+):
     r"""Determine spectral Granger Causality of two signals.
 
     The spectral Granger Causality is obtained through the following steps:
@@ -886,18 +909,26 @@ def pairwise_spectral_granger(signal_i, signal_j, fs=1, nw=4, num_tapers=None,
                 of X, i.e. `signal_i` and Y, i.e. `signal_j`. If the total
                 interdependence is positive, X and Y are not independent.
     """
-    if isinstance(signal_i, neo.core.AnalogSignal) and \
-            isinstance(signal_j, neo.core.AnalogSignal):
+    if isinstance(signal_i, neo.core.AnalogSignal) and isinstance(
+        signal_j, neo.core.AnalogSignal
+    ):
         signals = signal_i.merge(signal_j)
     elif isinstance(signal_i, np.ndarray) and isinstance(signal_j, np.ndarray):
         signals = np.vstack([signal_i, signal_j])
 
     # Calculate cross spectrum for signals
     freqs, S = segmented_multitaper_cross_spectrum(
-        signals=signals, n_segments=n_segments, len_segment=len_segment,
-        frequency_resolution=frequency_resolution, overlap=overlap, fs=fs,
-        nw=nw, num_tapers=num_tapers, peak_resolution=peak_resolution,
-        return_onesided=False)
+        signals=signals,
+        n_segments=n_segments,
+        len_segment=len_segment,
+        frequency_resolution=frequency_resolution,
+        overlap=overlap,
+        fs=fs,
+        nw=nw,
+        num_tapers=num_tapers,
+        peak_resolution=peak_resolution,
+        return_onesided=False,
+    )
 
     # Remove units attached by the multitaper_cross_spectrum
     if isinstance(S, pq.Quantity):
@@ -915,7 +946,7 @@ def pairwise_spectral_granger(signal_i, signal_j, fs=1, nw=4, num_tapers=None,
     C, H = _spectral_factorization(S, num_iterations=num_iterations)
 
     # Take positive frequencies
-    mask = (freqs >= 0)
+    mask = freqs >= 0
     freqs = freqs[mask]
 
     S = S[mask]
@@ -923,32 +954,32 @@ def pairwise_spectral_granger(signal_i, signal_j, fs=1, nw=4, num_tapers=None,
 
     # Calculate spectral Granger Causality.
     # Formulae follow Wen et al., 2013, Phil Trans R Soc
-    H_tilde_xx = H[:, 0, 0] + C[0, 1]/C[0, 0]*H[:, 0, 1]
-    H_tilde_yy = H[:, 1, 1] + C[0, 1]/C[1, 1]*H[:, 1, 0]
+    H_tilde_xx = H[:, 0, 0] + C[0, 1] / C[0, 0] * H[:, 0, 1]
+    H_tilde_yy = H[:, 1, 1] + C[0, 1] / C[1, 1] * H[:, 1, 0]
 
-    directional_causality_y_x = np.log(S[:, 0, 0].real /
-                                       (H_tilde_xx
-                                        * C[0, 0]
-                                        * H_tilde_xx.conj()).real)
+    directional_causality_y_x = np.log(
+        S[:, 0, 0].real / (H_tilde_xx * C[0, 0] * H_tilde_xx.conj()).real
+    )
 
-    directional_causality_x_y = np.log(S[:, 1, 1].real /
-                                       (H_tilde_yy
-                                        * C[1, 1]
-                                        * H_tilde_yy.conj()).real)
+    directional_causality_x_y = np.log(
+        S[:, 1, 1].real / (H_tilde_yy * C[1, 1] * H_tilde_yy.conj()).real
+    )
 
     instantaneous_causality = np.log(
         (H_tilde_xx * C[0, 0] * H_tilde_xx.conj()).real
-        * (H_tilde_yy * C[1, 1] * H_tilde_yy.conj()).real)
+        * (H_tilde_yy * C[1, 1] * H_tilde_yy.conj()).real
+    )
     instantaneous_causality -= np.linalg.slogdet(S)[1]
 
-    total_interdependence = (directional_causality_x_y
-                             + directional_causality_y_x
-                             + instantaneous_causality)
+    total_interdependence = (
+        directional_causality_x_y + directional_causality_y_x + instantaneous_causality
+    )
 
     spectral_causality = Causality(
         directional_causality_x_y=directional_causality_x_y,
         directional_causality_y_x=directional_causality_y_x,
         instantaneous_causality=instantaneous_causality,
-        total_interdependence=total_interdependence)
+        total_interdependence=total_interdependence,
+    )
 
     return freqs, spectral_causality
