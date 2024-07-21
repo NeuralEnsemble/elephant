@@ -60,6 +60,7 @@ class MPICommExecutor(MPIPoolExecutor):
     For more information of how to launch MPI processes in Python refer to
     https://mpi4py.readthedocs.io/en/stable/mpi4py.futures.html#command-line
     """
+
     def __init__(self, comm=None, root=0):
         super(MPICommExecutor, self).__init__(max_workers=None)
         if comm is None:
