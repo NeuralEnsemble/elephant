@@ -70,34 +70,32 @@ jobs:
       fail-fast: false
 
     steps:
-      # used to reset cache every month
-      - name: Get current year-month
-        id: date
-        run: echo "date=$(date +'%Y-%m')" >> $GITHUB_OUTPUT
-      
-      - name: Get pip cache dir
-        id: pip-cache
-        run: |
-          echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
-
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4.1.6
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5.1.0
         with:
           python-version: ${{ matrix.python-version }}
+          check-latest: true
           cache: 'pip'
-          cache-dependency-path: '**/requirements.txt'
+          cache-dependency-path: |
+            **/requirements.txt
+            **/requirements-extras.txt
+            **/requirements-tests.txt
 
-      - name: Cache test_env
-        uses: actions/cache@v3
+      - name: Get current hash (SHA) of the elephant_data repo
+        id: elephant-data
+        run: |
+            echo "dataset_hash=$(git ls-remote https://gin.g-node.org/NeuralEnsemble/elephant-data.git HEAD | cut -f1)" >> $GITHUB_OUTPUT
+
+      - uses: actions/cache/restore@v4.0.2
+        # Loading cache of elephant-data
+        id: cache-datasets
         with:
-          path: ${{ steps.pip-cache.outputs.dir }}
-          # Look to see if there is a cache hit for the corresponding requirements files
-          # cache will be reset on changes to any requirements or every month
-          key: ${{ runner.os }}-venv-${{ hashFiles('**/requirements.txt') }}-${{ hashFiles('**/requirements-tests.txt') }}
-            -${{ hashFiles('**/requirements-extras.txt') }}-${{ hashFiles('**/CI.yml') }}-${{ hashFiles('setup.py') }}
-            -${{ steps.date.outputs.date }}
+          path: ~/elephant-data
+          key: datasets-${{ steps.elephant-data.outputs.dataset_hash }}
+          restore-keys: datasets-
+          enableCrossOsArchive: true 
 
       - name: Install dependencies
         run: |
@@ -112,6 +110,11 @@ jobs:
 
       - name: Test with pytest
         run: |
+          if [ -d ~/elephant-data ]; then
+          export ELEPHANT_DATA_LOCATION=~/elephant-data
+          echo $ELEPHANT_DATA_LOCATION
+          fi
+      
           coverage run --source=elephant -m pytest
           coveralls --service=github || echo "Coveralls submission failed"
         env:
@@ -146,6 +149,19 @@ jobs:
           path: ~/conda_pkgs_dir
           key: ${{ runner.os }}-conda-${{hashFiles('requirements/environment.yml') }}-${{ hashFiles('**/CI.yml') }}-${{ steps.date.outputs.date }}
 
+      - name: Get current hash (SHA) of the elephant_data repo
+        id: elephant-data
+        run: |
+            echo "dataset_hash=$(git ls-remote https://gin.g-node.org/NeuralEnsemble/elephant-data.git HEAD | cut -f1)" >> $GITHUB_OUTPUT
+
+      - uses: actions/cache/restore@v4.0.2
+        # Loading cache of elephant-data
+        id: cache-datasets
+        with:
+          path: ~/elephant-data
+          key: datasets-${{ steps.elephant-data.outputs.dataset_hash }}
+          restore-keys: datasets-      
+
       - uses: conda-incubator/setup-miniconda@a4260408e20b96e80095f42ff7f1a15b27dd94ca # corresponds to v3.0.4
         with:
           auto-update-conda: true
@@ -173,6 +189,10 @@ jobs:
       - name: Test with pytest
         shell: bash -l {0}
         run: |
+          if [ -d ~/elephant-data ]; then
+          export ELEPHANT_DATA_LOCATION=~/elephant-data
+          echo $ELEPHANT_DATA_LOCATION
+          fi
           pytest --cov=elephant
 
   # __        ___           _
@@ -192,24 +212,32 @@ jobs:
         os: [windows-latest]
 
     steps:
-      - name: Get current year-month
-        id: date
-        run: echo "date=$(date +'%Y-%m')" >> $GITHUB_OUTPUT
-
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4.1.6
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5.1.0
         with:
           python-version: ${{ matrix.python-version }}
+          check-latest: true
+          cache: 'pip'
+          cache-dependency-path: |
+            **/requirements.txt
+            **/requirements-extras.txt
+            **/requirements-tests.txt
 
-      - name: Cache pip
-        uses: actions/cache@v3
+      - name: Get current hash (SHA) of the elephant_data repo
+        id: elephant-data
+        run: |
+            echo "dataset_hash=$(git ls-remote https://gin.g-node.org/NeuralEnsemble/elephant-data.git HEAD | cut -f1)" >> $GITHUB_OUTPUT
+
+      - uses: actions/cache/restore@v4.0.2
+        # Loading cache of elephant-data
+        id: cache-datasets
         with:
-          path: ~\AppData\Local\pip\Cache
-          # Look to see if there is a cache hit for the corresponding requirements files
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}-${{ hashFiles('**/requirements-tests.txt') }}
-            -${{ hashFiles('**/requirements-extras.txt') }}-${{ hashFiles('setup.py') }} -${{ hashFiles('**/CI.yml') }}-${{ steps.date.outputs.date }}
+          path: ~/elephant-data
+          key: datasets-${{ steps.elephant-data.outputs.dataset_hash }}
+          restore-keys: datasets-
+          enableCrossOsArchive: true    
 
       - name: Install dependencies
         run: |
@@ -224,6 +252,10 @@ jobs:
 
       - name: Test with pytest
         run: |
+          if (Test-Path "$env:USERPROFILE\elephant-data") {
+              $env:ELEPHANT_DATA_LOCATION = "$env:USERPROFILE\elephant-data"
+              Write-Output $env:ELEPHANT_DATA_LOCATION
+          }
           pytest --cov=elephant
 
   #  __  __ ____ ___
@@ -246,29 +278,32 @@ jobs:
       fail-fast: false
 
     steps:
-      - name: Get current year-month
-        id: date
-        run: echo "date=$(date +'%Y-%m')" >> $GITHUB_OUTPUT
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4.1.6
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5.1.0
         with:
           python-version: ${{ matrix.python-version }}
+          check-latest: true
+          cache: 'pip'
+          cache-dependency-path: |
+            **/requirements.txt
+            **/requirements-extras.txt
+            **/requirements-tests.txt
 
-      - name: Get pip cache dir
-        id: pip-cache
+      - name: Get current hash (SHA) of the elephant_data repo
+        id: elephant-data
         run: |
-          echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
+            echo "dataset_hash=$(git ls-remote https://gin.g-node.org/NeuralEnsemble/elephant-data.git HEAD | cut -f1)" >> $GITHUB_OUTPUT
 
-      - name: Cache test_env
-        uses: actions/cache@v3
+      - uses: actions/cache/restore@v4.0.2
+        # Loading cache of elephant-data
+        id: cache-datasets
         with:
-          path: ${{ steps.pip-cache.outputs.dir }}
-          # look to see if there is a cache hit for the corresponding requirements files
-          # cache will be reset on changes to any requirements or every month
-          key: ${{ runner.os }}-venv-${{ hashFiles('**/requirements.txt') }}-${{ hashFiles('**/requirements-tests.txt') }}
-            -${{ hashFiles('**/requirements-extras.txt') }}-${{ hashFiles('setup.py') }} -${{ hashFiles('**/CI.yml') }}-${{ steps.date.outputs.date }}
+          path: ~/elephant-data
+          key: datasets-${{ steps.elephant-data.outputs.dataset_hash }}
+          restore-keys: datasets-
+          enableCrossOsArchive: true 
 
       - name: Setup environment
         run: |
@@ -287,6 +322,10 @@ jobs:
 
       - name: Test with pytest
         run: |
+          if [ -d ~/elephant-data ]; then
+          export ELEPHANT_DATA_LOCATION=~/elephant-data
+          echo $ELEPHANT_DATA_LOCATION
+          fi
           mpiexec -n 1 python -m mpi4py -m coverage run --source=elephant -m pytest
           coveralls --service=github || echo "Coveralls submission failed"
         env:
@@ -316,7 +355,7 @@ jobs:
         id: date
         run: echo "date=$(date +'%Y-%m')" >> $GITHUB_OUTPUT
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4.1.6
 
       - name: Get pip cache dir
         id: pip-cache
@@ -329,6 +368,20 @@ jobs:
           path: ${{ steps.pip-cache.outputs.dir }}
 
           key: ${{ runner.os }}-pip-${{hashFiles('requirements/environment-tests.yml') }}-${{ hashFiles('**/CI.yml') }}-${{ steps.date.outputs.date }}
+
+      - name: Get current hash (SHA) of the elephant_data repo
+        id: elephant-data
+        run: |
+            echo "dataset_hash=$(git ls-remote https://gin.g-node.org/NeuralEnsemble/elephant-data.git HEAD | cut -f1)" >> $GITHUB_OUTPUT
+
+      - uses: actions/cache/restore@v4.0.2
+        # Loading cache of elephant-data
+        id: cache-datasets
+        with:
+          path: ~/elephant-data
+          key: datasets-${{ steps.elephant-data.outputs.dataset_hash }}
+          restore-keys: datasets-
+          enableCrossOsArchive: true 
 
       - uses: conda-incubator/setup-miniconda@030178870c779d9e5e1b4e563269f3aa69b04081 # corresponds to v3.0.3
         with:
@@ -358,6 +411,10 @@ jobs:
       - name: Test with pytest
         shell: bash -el {0}
         run: |
+          if [ -d ~/elephant-data ]; then
+          export ELEPHANT_DATA_LOCATION=~/elephant-data
+          echo $ELEPHANT_DATA_LOCATION
+          fi
           pytest --cov=elephant
 
   #  ____
@@ -383,7 +440,7 @@ jobs:
         id: date
         run: echo "date=$(date +'%Y-%m')" >> $GITHUB_OUTPUT
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4.1.6
 
       - name: Get pip cache dir
         id: pip-cache
@@ -448,10 +505,10 @@ jobs:
       - name: Get current year-month
         id: date
         run: echo "::set-output name=date::$(date +'%Y-%m')"
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4.1.6
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5.1.0
         with:
           python-version: ${{ matrix.python-version }}
 
