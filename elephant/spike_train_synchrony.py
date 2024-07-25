@@ -261,7 +261,7 @@ class Synchrotool(Complexity):
         If True, the end of the spike train (`t_stop`) is included in the
         analysis, ensuring that any spikes close to `t_stop` are properly
         annotated.
-        Default is True.
+        Default: True.
 
 
     See also
