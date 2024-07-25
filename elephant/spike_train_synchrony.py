@@ -405,11 +405,10 @@ class Synchrotool(Complexity):
         Annotate the complexity of each spike in the
         ``self.epoch.array_annotations`` *in-place*.
 
-        Warns
+        Raises
         -----
-        UserWarning
-            If spikes fall too close to `t_stop`.
-            Those spikes will be annotated with `NaN`.
+        ValueError
+            If spikes fall too close to `t_stop` and can not be associated with a bin.
         """
         epoch_complexities = self.epoch.array_annotations['complexity']
         right_edges = (
