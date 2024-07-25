@@ -261,7 +261,7 @@ class Synchrotool(Complexity):
         If True, the end of the spike train (`t_stop`) is included in the
         analysis, ensuring that any spikes close to `t_stop` are properly
         annotated.
-        Default is False.
+        Default is True.
 
 
     See also
@@ -276,28 +276,19 @@ class Synchrotool(Complexity):
                  binary=True,
                  spread=0,
                  tolerance=1e-8,
-                 include_t_stop=False):
+                 include_t_stop=True):
 
         self.annotated = False
-        self.include_t_stop = include_t_stop
 
-        super(Synchrotool, self).__init__(spiketrains=spiketrains,
-                                          bin_size=bin_size,
-                                          sampling_rate=sampling_rate,
-                                          binary=binary,
-                                          spread=spread,
-                                          tolerance=tolerance)
-
-        if self.include_t_stop:
-            self.t_stop += self.bin_size
-            if spread == 0:
-                self.time_histogram, self.complexity_histogram = \
-                    self._histogram_no_spread()
-                self.epoch = self._epoch_no_spread()
-            else:
-                self.epoch = self._epoch_with_spread()
-                self.time_histogram, self.complexity_histogram = \
-                    self._histogram_with_spread()
+        super(Synchrotool, self).__init__(
+            spiketrains=spiketrains,
+            bin_size=bin_size,
+            sampling_rate=sampling_rate,
+            binary=binary,
+            spread=spread,
+            tolerance=tolerance,
+            t_stop=spiketrains[0].t_stop + (1 / sampling_rate) if include_t_stop else None,
+            )
 
     def delete_synchrofacts(self, threshold, in_place=False, mode='delete'):
         """
@@ -427,7 +418,7 @@ class Synchrotool(Complexity):
                 self.epoch.times.units).magnitude.flatten()
         )
 
-        for idx, st in enumerate(self.input_spiketrains):
+        for st in self.input_spiketrains:
 
             # all indices of spikes that are within the half-open intervals
             # defined by the boundaries
@@ -435,18 +426,13 @@ class Synchrotool(Complexity):
             spike_to_epoch_idx = np.searchsorted(
                 right_edges,
                 st.times.rescale(self.epoch.times.units).magnitude.flatten())
-
-            # Initialize complexity_per_spike with NaNs
-            complexity_per_spike = np.full(spike_to_epoch_idx.shape, np.nan)
-            # Iterate through spike_to_epoch_idx and assign values or NaN
-            for i, idx in enumerate(spike_to_epoch_idx):
-                if 0 <= idx < len(epoch_complexities):
-                    complexity_per_spike[i] = epoch_complexities[idx]
-                else:
-                    warnings.warn(
-                        "Some spikes in the input Spike Train are too close to t_stop and will be annotated with NaN."
-                        "Consider setting include_t_stop=True in the Synchrotool class to address this."
-                        )
+            try:
+                complexity_per_spike = epoch_complexities[spike_to_epoch_idx]
+            except IndexError:
+                raise ValueError(
+                    "Some spikes in the input Spike Train may be too close or right at t_stop, they can not be binned "
+                    "and therefore are not annotated. "
+                    "Consider setting include_t_stop=True in the Synchrotool class to address this.")
 
             st.array_annotate(complexity=complexity_per_spike)
 

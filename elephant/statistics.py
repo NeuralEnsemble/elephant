@@ -1423,7 +1423,10 @@ class Complexity(object):
                  bin_size=None,
                  binary=True,
                  spread=0,
-                 tolerance=1e-8):
+                 tolerance=1e-8,
+                 t_start=None,
+                 t_stop=None,
+                 ):
 
         check_neo_consistency(spiketrains, object_type=neo.SpikeTrain)
 
@@ -1434,8 +1437,10 @@ class Complexity(object):
             raise ValueError('Spread must be >=0')
 
         self.input_spiketrains = spiketrains
-        self.t_start = spiketrains[0].t_start
-        self.t_stop = spiketrains[0].t_stop
+        self.t_start = spiketrains[0].t_start if t_start is None else t_start
+        self.t_stop = spiketrains[0].t_stop if t_stop is None else t_stop
+        for st in self.input_spiketrains:
+            st.t_stop = self.t_stop
         self.sampling_rate = sampling_rate
         self.bin_size = bin_size
         self.binary = binary
