@@ -14,7 +14,7 @@ signal, or filtering a signal).
     rauc
     derivative
 
-:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2024 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -25,9 +25,7 @@ import numpy as np
 import quantities as pq
 import scipy.signal
 
-from elephant.utils import deprecated_alias, check_same_units
-
-import warnings
+from elephant.utils import check_same_units
 
 __all__ = [
     "zscore",
@@ -167,7 +165,7 @@ def zscore(signal, inplace=True):
     for sig in signal:
         # Perform inplace operation only if array is of dtype float.
         # Otherwise, raise an error.
-        if inplace and not np.issubdtype(float, sig.dtype):
+        if inplace and not np.issubdtype(sig.dtype, np.floating):
             raise ValueError(f"Cannot perform inplace operation as the "
                              f"signal dtype is not float. Source: {sig.name}")
 
@@ -197,8 +195,6 @@ def zscore(signal, inplace=True):
     return signal_ztransformed
 
 
-@deprecated_alias(ch_pairs='channel_pairs', nlags='n_lags',
-                  env='hilbert_envelope')
 def cross_correlation_function(signal, channel_pairs, hilbert_envelope=False,
                                n_lags=None, scaleopt='unbiased'):
     r"""
@@ -391,9 +387,6 @@ def cross_correlation_function(signal, channel_pairs, hilbert_envelope=False,
     return cross_corr
 
 
-@deprecated_alias(highpass_freq='highpass_frequency',
-                  lowpass_freq='lowpass_frequency',
-                  fs='sampling_frequency')
 def butter(signal, highpass_frequency=None, lowpass_frequency=None, order=4,
            filter_function='filtfilt', sampling_frequency=1.0, axis=-1):
     """
@@ -419,13 +412,10 @@ def butter(signal, highpass_frequency=None, lowpass_frequency=None, order=4,
         `lowpass_frequency` and `highpass_frequency`:
 
         * `highpass_frequency` only (`lowpass_frequency` is None):
-        highpass filter
-
+           highpass filter
         * `lowpass_frequency` only (`highpass_frequency` is None):
-        lowpass filter
-
+           lowpass filter
         * `highpass_frequency` < `lowpass_frequency`: bandpass filter
-
         * `highpass_frequency` > `lowpass_frequency`: bandstop filter
 
         Default: None
@@ -436,9 +426,7 @@ def butter(signal, highpass_frequency=None, lowpass_frequency=None, order=4,
         Filtering function to be used. Available filters:
 
         * 'filtfilt': `scipy.signal.filtfilt`;
-
         * 'lfilter': `scipy.signal.lfilter`;
-
         * 'sosfiltfilt': `scipy.signal.sosfiltfilt`.
 
         In most applications 'filtfilt' should be used, because it doesn't
@@ -570,7 +558,6 @@ def butter(signal, highpass_frequency=None, lowpass_frequency=None, order=4,
     return filtered_data
 
 
-@deprecated_alias(nco='n_cycles', freq='frequency', fs='sampling_frequency')
 def wavelet_transform(signal, frequency, n_cycles=6.0, sampling_frequency=1.0,
                       zero_padding=True):
     r"""
@@ -742,7 +729,6 @@ def wavelet_transform(signal, frequency, n_cycles=6.0, sampling_frequency=1.0,
     return signal_wt
 
 
-@deprecated_alias(N='padding')
 def hilbert(signal, padding='nextpow'):
     """
     Apply a Hilbert transform to a `neo.AnalogSignal` object in order to
@@ -890,8 +876,8 @@ def rauc(signal, baseline=None, bin_duration=None, t_start=None, t_stop=None):
         If None, ends at the last time of `signal`.
         The signal is cropped using `signal.time_slice(t_start, t_stop)` after
         baseline removal. Useful if you want the RAUC for a short section of
-        the signal but want the mean or median calculation (`baseline`='mean'
-        or `baseline`='median') to use the entire signal for better baseline
+        the signal but want the mean or median calculation (`baseline` ='mean'
+        or `baseline` ='median') to use the entire signal for better baseline
         estimation.
         Default: None
 

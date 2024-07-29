@@ -1,5 +1,5 @@
-=========================
-Spike-triggered LFP phase
-=========================
+==============
+Phase Analysis
+==============
 
 .. automodule:: elephant.phase_analysis

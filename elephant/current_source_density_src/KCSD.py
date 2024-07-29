@@ -317,17 +317,18 @@ class KCSD(CSD):
             V_train = self.pots[idx_train]
             V_test = self.pots[idx_test]
             I_matrix = np.identity(len(idx_train))
-            B_new = np.matrix(B_train) + (lambd*I_matrix)
+            B_new = np.array(B_train) + (lambd * I_matrix)
             try:
-                beta_new = np.dot(np.matrix(B_new).I, np.matrix(V_train))
+                beta_new = np.linalg.inv(B_new) @ V_train
                 B_test = self.k_pot[np.ix_(idx_test, idx_train)]
                 V_est = np.zeros((len(idx_test), self.pots.shape[1]))
                 for ii in range(len(idx_train)):
                     for tt in range(self.pots.shape[1]):
                         V_est[:, tt] += beta_new[ii, tt] * B_test[:, ii]
-                err += np.linalg.norm(V_est-V_test)
-            except LinAlgError:
-                raise LinAlgError('Encoutered Singular Matrix Error: try changing ele_pos slightly')
+                err += np.linalg.norm(V_est - V_test)
+            except np.linalg.LinAlgError:
+                raise np.linalg.LinAlgError(
+                    'Encountered Singular Matrix Error: try changing ele_pos slightly')
         return err
 
 class KCSD1D(KCSD):

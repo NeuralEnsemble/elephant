@@ -26,17 +26,11 @@ Spike train synchrony
 References
 ----------
 
-.. bibliography:: ../bib/elephant.bib
-   :labelprefix: cor
-   :keyprefix: correlation-
-   :style: unsrt
+.. bibliography::
+    :keyprefix: correlation-
 
-.. bibliography:: ../bib/elephant.bib
-   :labelprefix: ds
-   :keyprefix: dissimilarity-
-   :style: unsrt
+.. bibliography::
+    :keyprefix: dissimilarity-
 
-.. bibliography:: ../bib/elephant.bib
-   :labelprefix: syn
-   :keyprefix: synchrony-
-   :style: unsrt
+.. bibliography::
+    :keyprefix: synchrony-

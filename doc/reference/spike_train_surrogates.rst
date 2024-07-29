@@ -9,7 +9,5 @@ Spike train surrogates
 References
 ----------
 
-.. bibliography:: ../bib/elephant.bib
-   :labelprefix: sr
-   :keyprefix: surrogates-
-   :style: unsrt
+.. bibliography::
+    :keyprefix: surrogates-

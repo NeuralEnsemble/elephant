@@ -1,11 +1,9 @@
 """
 Unit tests for the spade module.
 
-:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2024 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
-from __future__ import division
-
 import unittest
 
 import neo
@@ -16,7 +14,8 @@ from numpy.testing import assert_array_equal, assert_equal
 
 import elephant.conversion as conv
 import elephant.spade as spade
-import elephant.spike_train_generation as stg
+from elephant.spike_train_generation import StationaryPoissonProcess, \
+    compound_poisson_process
 
 try:
     import statsmodels
@@ -48,7 +47,7 @@ class SpadeTestCase(unittest.TestCase):
         # CPP parameters
         self.n_neu = 100
         self.amplitude = [0] * self.n_neu + [1]
-        self.cpp = stg.cpp(
+        self.cpp = compound_poisson_process(
             rate=3 * pq.Hz,
             amplitude_distribution=self.amplitude,
             t_stop=5 * pq.s)
@@ -185,10 +184,10 @@ class SpadeTestCase(unittest.TestCase):
     def test_spade_msip_spiketrainlist(self):
         output_msip = spade.spade(
             SpikeTrainList(self.msip), self.bin_size, self.winlen,
-            approx_stab_pars=dict(
-            n_subsets=self.n_subset,
-            stability_thresh=self.stability_thresh),
-            n_surr=self.n_surr, alpha=self.alpha,
+            approx_stab_pars=dict(n_subsets=self.n_subset,
+                                  stability_thresh=self.stability_thresh),
+            n_surr=self.n_surr,
+            alpha=self.alpha,
             psr_param=self.psr_param,
             stat_corr='no',
             output_format='patterns')['patterns']
@@ -242,7 +241,7 @@ class SpadeTestCase(unittest.TestCase):
             lags_msip_min_spikes, key=len)
         # check the lags
         assert_array_equal(lags_msip_min_spikes, [
-            l for l in self.lags_msip if len(l) + 1 >= self.min_spikes])
+            lag for lag in self.lags_msip if len(lag) + 1 >= self.min_spikes])
         # check the neurons in the patterns
         assert_array_equal(elements_msip_min_spikes, [
             el for el in self.elements_msip if len(el) >= self.min_neu and len(
@@ -348,6 +347,33 @@ class SpadeTestCase(unittest.TestCase):
         assert_array_equal(sorted(mining_results_ffca[0][1]), sorted(
             mining_results_fpg[0][1]))
 
+    def test_spade_output_for_specific_pattern(self):
+
+        np.random.seed(0)
+
+        n_spiketrains = 3
+        spiketrains = StationaryPoissonProcess(
+            rate=20 * pq.Hz, t_stop=5 * pq.s).generate_n_spiketrains(
+            n_spiketrains=n_spiketrains)
+        bin_size = 5 * pq.ms
+
+        spade_output = spade.spade(
+            spiketrains,
+            bin_size=bin_size,
+            winlen=2,
+            min_spikes=3,
+            max_spikes=3,
+            min_neu=n_spiketrains,
+            spectrum='3d#')
+
+        patterns = spade_output['patterns']
+        self.assertEqual (len(patterns), 1)
+        pattern = patterns[0]
+        self.assertEqual(len(np.unique(pattern['neurons'])), n_spiketrains)
+        assert_array_equal(sorted(pattern['itemset']), [1, 2, 5])
+        assert_array_equal(sorted(pattern['windows_ids']), [36, 134, 856])
+        assert_array_equal(pattern['signature'], [3, 3, 1])
+
     # Tests 3d spectrum
     # Testing with multiple patterns input
     def test_spade_msip_3d(self):
@@ -406,7 +432,7 @@ class SpadeTestCase(unittest.TestCase):
             lags_msip_min_spikes, key=len)
         # check the lags
         assert_array_equal(lags_msip_min_spikes, [
-            l for l in self.lags_msip if len(l) + 1 >= self.min_spikes])
+            lag for lag in self.lags_msip if len(lag) + 1 >= self.min_spikes])
         # check the neurons in the patterns
         assert_array_equal(elements_msip_min_spikes, [
             el for el in self.elements_msip if len(el) >= self.min_neu and len(
@@ -729,7 +755,3 @@ class SpadeTestCase(unittest.TestCase):
                        [(2, 4), (1, 2, 3, 4)]]),
             alpha=0.15, winlen=1, corr='fdr_bh')
         self.assertEqual(sig_spectrum, [(2., 3., False), (2., 4., True)])
-
-
-if __name__ == "__main__":
-    unittest.main(verbosity=2)

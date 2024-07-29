@@ -3,7 +3,6 @@
 iCSD testing suite
 """
 
-import os
 import numpy as np
 import numpy.testing as nt
 import quantities as pq
@@ -122,20 +121,6 @@ def potential_of_cylinder(z_j,
         radius of disk source
     sigma : float*pq.S/pq.m
         conductivity of medium in units of S/m
-
-    Notes
-    -----
-    Sympy can't deal with eq. 11 in Pettersen et al 2006, J neurosci Meth,
-    so we numerically evaluate it in this function.
-
-    Tested with
-
-    >>> from sympy import *
-    >>> C_i, z_i, h, z_j, z_j, sigma, R = symbols('C_i z_i h z z_j sigma R')
-    >>> C_i*integrate(1/(2*sigma)*(sqrt((z-z_j)**2 + R**2) -
-    ... abs(z-z_j)), (z, z_i-h/2, z_i+h/2))
-
-
     """
     try:
         assert(z_j.units == z_i.units == R_i.units == h_i.units)

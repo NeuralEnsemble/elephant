@@ -12,13 +12,15 @@
 from __future__ import division, print_function, unicode_literals
 
 import ctypes
+import logging
 import warnings
 from functools import wraps
 
-import neo
 from neo.core.spiketrainlist import SpikeTrainList
 import numpy as np
 import quantities as pq
+
+from elephant.trials import Trials
 
 
 __all__ = [
@@ -28,8 +30,21 @@ __all__ = [
     "get_common_start_stop_times",
     "check_neo_consistency",
     "check_same_units",
-    "round_binning_errors"
+    "round_binning_errors",
 ]
+
+
+# Create logger and set configuration
+logger = logging.getLogger(__file__)
+log_handler = logging.StreamHandler()
+log_handler.setFormatter(
+    logging.Formatter(
+        f"[%(asctime)s] {__name__[__name__.rfind('.')+1::]} -"
+        " %(levelname)s: %(message)s"
+    )
+)
+logger.addHandler(log_handler)
+logger.propagate = False
 
 
 def is_binary(array):
@@ -73,6 +88,7 @@ def deprecated_alias(**aliases):
     ...     pass
 
     """
+
     def deco(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -88,10 +104,12 @@ def _rename_kwargs(func_name, kwargs, aliases):
     for old, new in aliases.items():
         if old in kwargs:
             if new in kwargs:
-                raise TypeError(f"{func_name} received both '{old}' and "
-                                f"'{new}'")
-            warnings.warn(f"'{old}' is deprecated; use '{new}'",
-                          DeprecationWarning)
+                raise TypeError(
+                    f"{func_name} received both '{old}' and " f"'{new}'"
+                )
+            warnings.warn(
+                f"'{old}' is deprecated; use '{new}'", DeprecationWarning
+            )
             kwargs[new] = kwargs.pop(old)
 
 
@@ -149,22 +167,25 @@ def get_common_start_stop_times(neo_objects):
         If there is no shared interval ``[t_start, t_stop]`` across the input
         neo objects.
     """
-    if hasattr(neo_objects, 't_start') and hasattr(neo_objects, 't_stop'):
+    if hasattr(neo_objects, "t_start") and hasattr(neo_objects, "t_stop"):
         return neo_objects.t_start, neo_objects.t_stop
     try:
         t_start = max(elem.t_start for elem in neo_objects)
         t_stop = min(elem.t_stop for elem in neo_objects)
     except AttributeError:
-        raise AttributeError("Input neo objects must have 't_start' and "
-                             "'t_stop' attributes")
+        raise AttributeError(
+            "Input neo objects must have 't_start' and " "'t_stop' attributes"
+        )
     if t_stop < t_start:
-        raise ValueError(f"t_stop ({t_stop}) is smaller than t_start "
-                         f"({t_start})")
+        raise ValueError(
+            f"t_stop ({t_stop}) is smaller than t_start " f"({t_start})"
+        )
     return t_start, t_stop
 
 
-def check_neo_consistency(neo_objects, object_type, t_start=None,
-                          t_stop=None, tolerance=1e-8):
+def check_neo_consistency(
+    neo_objects, object_type, t_start=None, t_stop=None, tolerance=1e-8
+):
     """
     Checks that all input neo objects share the same units, t_start, and
     t_stop.
@@ -203,9 +224,11 @@ def check_neo_consistency(neo_objects, object_type, t_start=None,
         tolerance = 0
     for neo_obj in neo_objects:
         if not isinstance(neo_obj, object_type):
-            raise TypeError("The input must be a list of "
-                            f"{object_type.__name__}. Got "
-                            f"{type(neo_obj).__name__}")
+            raise TypeError(
+                "The input must be a list of "
+                f"{object_type.__name__}. Got "
+                f"{type(neo_obj).__name__}"
+            )
         if neo_obj.units != units:
             raise ValueError("The input must have the same units.")
         if t_start is None and abs(neo_obj.t_start.item() - start) > tolerance:
@@ -242,13 +265,17 @@ def check_same_units(quantities, object_type=pq.Quantity):
         raise TypeError(f"The input must be a list of {object_type.__name__}")
     for quantity in quantities:
         if not isinstance(quantity, object_type):
-            raise TypeError("The input must be a list of "
-                            f"{object_type.__name__}. Got "
-                            f"{type(quantity).__name__}")
+            raise TypeError(
+                "The input must be a list of "
+                f"{object_type.__name__}. Got "
+                f"{type(quantity).__name__}"
+            )
         if quantity.units != units:
-            raise ValueError("The input quantities must have the same units, "
-                             "which is achieved with object.rescale('ms') "
-                             "operation.")
+            raise ValueError(
+                "The input quantities must have the same units, "
+                "which is achieved with object.rescale('ms') "
+                "operation."
+            )
 
 
 def round_binning_errors(values, tolerance=1e-8):
@@ -288,18 +315,22 @@ def round_binning_errors(values, tolerance=1e-8):
     if isinstance(values, np.ndarray):
         num_corrections = correction_mask.sum()
         if num_corrections > 0:
-            warnings.warn(f'Correcting {num_corrections} rounding errors by '
-                          f'shifting the affected spikes into the following '
-                          f'bin. You can set tolerance=None to disable this '
-                          'behaviour.')
+            logger.warning(
+                f"Correcting {num_corrections} rounding errors by "
+                "shifting the affected spikes into the following "
+                "bin. You can set tolerance=None to disable this "
+                "behaviour."
+            )
             values[correction_mask] += 0.5
         return values.astype(np.int32)
 
     if correction_mask:
-        warnings.warn('Correcting a rounding error in the calculation '
-                      'of the number of bins by incrementing the value by 1. '
-                      'You can set tolerance=None to disable this '
-                      'behaviour.')
+        logger.warning(
+            "Correcting a rounding error in the calculation "
+            "of the number of bins by incrementing the value by 1. "
+            "You can set tolerance=None to disable this "
+            "behaviour."
+        )
         values += 0.5
     return int(values)
 
@@ -315,7 +346,7 @@ def get_cuda_capability_major():
         CUDA capability major version.
     """
     cuda_success = 0
-    for libname in ('libcuda.so', 'libcuda.dylib', 'cuda.dll'):
+    for libname in ("libcuda.so", "libcuda.dylib", "cuda.dll"):
         try:
             cuda = ctypes.CDLL(libname)
         except OSError:
@@ -336,9 +367,9 @@ def get_cuda_capability_major():
 
     cc_major = ctypes.c_int()
     cc_minor = ctypes.c_int()
-    cuda.cuDeviceComputeCapability(ctypes.byref(cc_major),
-                                   ctypes.byref(cc_minor),
-                                   device)
+    cuda.cuDeviceComputeCapability(
+        ctypes.byref(cc_major), ctypes.byref(cc_minor), device
+    )
     return cc_major.value
 
 
@@ -354,6 +385,7 @@ def get_opencl_capability():
     """
     try:
         import pyopencl
+
         platforms = pyopencl.get_platforms()
 
         if len(platforms) == 0:
@@ -362,3 +394,55 @@ def get_opencl_capability():
         return True
     except ImportError:
         return False
+
+
+def trials_to_list_of_spiketrainlist(method):
+    """
+    Decorator to convert `Trials` object to a list of `SpikeTrainList` before
+    calling the wrapped method.
+
+    Parameters
+    ----------
+    method: callable
+    The method to be decorated.
+
+    Returns
+    -------
+    callable:
+    The decorated method.
+
+    Examples
+    --------
+    The decorator can be used as follows:
+
+        >>> @trials_to_list_of_spiketrainlist
+        ... def process_data(self, spiketrains):
+        ...     return None
+    """
+
+    @wraps(method)
+    def wrapper(*args, **kwargs):
+        new_args = tuple(
+            [
+                arg.get_spiketrains_from_trial_as_list(idx)
+                for idx in range(arg.n_trials)
+            ]
+            if isinstance(arg, Trials)
+            else arg
+            for arg in args
+        )
+        new_kwargs = {
+            key: (
+                [
+                    value.get_spiketrains_from_trial_as_list(idx)
+                    for idx in range(value.n_trials)
+                ]
+                if isinstance(value, Trials)
+                else value
+            )
+            for key, value in kwargs.items()
+        }
+
+        return method(*new_args, **new_kwargs)
+
+    return wrapper

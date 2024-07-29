@@ -2,81 +2,22 @@
     "creators": [
         {
             "orcid": "0000-0003-1255-7300",
-            "affiliation": "Institute of Neuroscience and Medicine (INM-6) and Institute for Advanced Simulation (IAS-6) and JARA-Institute Brain Structure-Function Relationships (INM-10), Jülich Research Centre, Jülich, Germany",
+            "affiliation": "Institute for Advanced Simulation (IAS-6), Jülich Research Centre, Jülich, Germany",
             "name": "Denker, Michael"
         },
         {
-            "orcid": "0000-0003-0503-5264",
-            "affiliation": "Institute of Neuroscience and Medicine (INM-6) and Institute for Advanced Simulation (IAS-6) and JARA-Institute Brain Structure-Function Relationships (INM-10), Jülich Research Centre, Jülich, Germany",
-            "name": "Köhler, Cristiano"
-        },
-        {
-            "orcid": "0000-0002-2403-928X",
-            "affiliation": "Institute of Neuroscience and Medicine (INM-6) and Institute for Advanced Simulation (IAS-6) and JARA-Institute Brain Structure-Function Relationships (INM-10), Jülich Research Centre, Jülich, Germany",
-            "name": "Morales-Gregorio, Aitor"
-        },
-        {
-            "orcid": "0000-0003-3776-4226",
-            "affiliation": "Institute of Neuroscience and Medicine (INM-6) and Institute for Advanced Simulation (IAS-6) and JARA-Institute Brain Structure-Function Relationships (INM-10), Jülich Research Centre, Jülich, Germany",
-            "name": "Kleinjohann, Alexander"
-        },
-        {
-            "orcid": "0000-0003-2498-0536",
-            "affiliation": "Institute of Neuroscience and Medicine (INM-6) and Institute for Advanced Simulation (IAS-6) and JARA-Institute Brain Structure-Function Relationships (INM-10), Jülich Research Centre, Jülich, Germany",
-            "name": "Bouss, Peter"
-        },
-        {
-            "orcid": "0000-0002-3818-5587",
-            "affiliation": "Institute of Neuroscience and Medicine (INM-6) and Institute for Advanced Simulation (IAS-6) and JARA-Institute Brain Structure-Function Relationships (INM-10), Jülich Research Centre, Jülich, Germany",
-            "name": "Stella, Alessandra"
-        },
-        {
-            "orcid": "0000-0003-0789-6279",
-            "affiliation": "Institute of Neuroscience and Medicine (INM-6) and Institute for Advanced Simulation (IAS-6) and JARA-Institute Brain Structure-Function Relationships (INM-10), Jülich Research Centre, Jülich, Germany",
-            "name": "Jurkus, Regimantas"
-        },
-        {
-            "orcid": "0000-0002-9302-5893",
-            "affiliation": "Institute of Neuroscience and Medicine (INM-6) and Institute for Advanced Simulation (IAS-6) and JARA-Institute Brain Structure-Function Relationships (INM-10), Jülich Research Centre, Jülich, Germany",
-            "name": "Kramer, Maximilian"
-        },
-        {
-            "affiliation": "Institute of Neuroscience and Medicine (INM-6) and Institute for Advanced Simulation (IAS-6) and JARA-Institute Brain Structure-Function Relationships (INM-10), Jülich Research Centre, Jülich, Germany",
-            "name": "Kloß, Oliver"
-        },
-        {
-            "orcid": "0000-0002-5555-3206",
-            "affiliation": "Institute of Neuroscience and Medicine (INM-6) and Institute for Advanced Simulation (IAS-6) and JARA-Institute Brain Structure-Function Relationships (INM-10), Jülich Research Centre, Jülich, Germany",
-            "name": "Dąbrowska, Paulina"
-        },
-        {
             "orcid": "0000-0001-7292-1982",
-            "affiliation": "Institute of Neuroscience and Medicine (INM-6) and Institute for Advanced Simulation (IAS-6) and JARA-Institute Brain Structure-Function Relationships (INM-10), Jülich Research Centre, Jülich, Germany",
+            "affiliation": "Institute for Advanced Simulation (IAS-6), Jülich Research Centre, Jülich, Germany",
             "name": "Kern, Moritz"
         },
         {
-            "orcid": "0000-0002-9557-1003",
-            "affiliation": "Institute of Neuroscience and Medicine (INM-6) and Institute for Advanced Simulation (IAS-6) and JARA-Institute Brain Structure-Function Relationships (INM-10), Jülich Research Centre, Jülich, Germany",
-            "name": "Kurth, Anno Christopher"
-        },
-        {
-            "orcid": "0000-0001-7373-5962",
-            "affiliation": "Institute of Neuroscience and Medicine (INM-6) and Institute for Advanced Simulation (IAS-6) and JARA-Institute Brain Structure-Function Relationships (INM-10), Jülich Research Centre, Jülich, Germany",
-            "name": "Gutzen, Robin"
-        },
-        {
-            "orcid": "0000-0003-2401-7862",
-            "affiliation": "Cognitronics and Sensor Systems, CITEC, Bielefeld University, Bielefeld, Germany",
-            "name": "Porrmann, Florian"
-        },
-        {
-            "orcid": "0000-0002-3168-7365",
-            "affiliation": "Cognitronics and Sensor Systems, CITEC, Bielefeld University, Bielefeld, Germany",
-            "name": "Pilz, Sarah"
+            "orcid": "0009-0003-9352-9826",
+            "affiliation": "BioMEMS Lab, University of Applied Sciences Aschaffenburg, Germany",
+            "name": "Richter, Felician"
         }
     ],
 
-    "title": "Elephant 0.11.2",
+    "title": "Elephant 1.1.0",
 
     "keywords": [
     "neuroscience",

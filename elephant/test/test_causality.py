@@ -2,7 +2,7 @@
 """
 Unit tests for the causality module.
 
-:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2024 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 from __future__ import division, print_function
@@ -14,7 +14,9 @@ import quantities as pq
 from neo.core import AnalogSignal
 from numpy.testing import assert_array_almost_equal
 
+from elephant.spectral import multitaper_cross_spectrum, multitaper_coherence
 import elephant.causality.granger
+from elephant.datasets import download_datasets, ELEPHANT_TMP_DIR
 
 
 class PairwiseGrangerTestCase(unittest.TestCase):
@@ -199,6 +201,13 @@ class PairwiseGrangerTestCase(unittest.TestCase):
         assert_array_almost_equal(coefficients, ground_truth_coefficients,
                                   decimal=4)
 
+    def test_wrong_kwarg_optimal_vector_arm(self):
+        wrong_ic_criterion = 'cic'
+
+        self.assertRaises(ValueError,
+                          elephant.causality.granger._optimal_vector_arm,
+                          self.ground_truth.T, 2, 10, wrong_ic_criterion)
+
 
 class ConditionalGrangerTestCase(unittest.TestCase):
 
@@ -280,9 +289,266 @@ class ConditionalGrangerTestCase(unittest.TestCase):
         self.assertEqual(elephant.causality.granger.conditional_granger(
             self.ground_truth, 10, 'bic'), 0.0)
 
+    def test_ground_truth_zero_value_conditional_causality_anasig(self):
+        signals = AnalogSignal(self.ground_truth, sampling_rate=1*pq.Hz,
+                               units='V')
+        self.assertEqual(elephant.causality.granger.conditional_granger(
+            signals, 10, 'bic'), 0.0)
+
     def test_non_zero_conditional_causality(self):
         self.assertGreater(elephant.causality.granger.conditional_granger(
             self.non_zero_signal, 10, 'bic'), 0.0)
+
+    def test_conditional_causality_wrong_input_shape(self):
+        signals = np.random.normal(0, 1, (4, 10, 1))
+
+        self.assertRaises(ValueError,
+                          elephant.causality.granger.conditional_granger,
+                          signals, 10, 'bic')
+
+
+class PairwiseSpectralGrangerTestCase(unittest.TestCase):
+    def test_bracket_operator_one_signal(self):
+        # Generate a spectrum from random dataset and test bracket operator
+        np.random.seed(10)
+        n = 10
+        spectrum = np.random.normal(0, 1, n)
+
+        # Generate causal part according to The Factorization of Matricial
+        # Spectral Densities', Wilson 1972, SiAM J Appl Math, Definition 1.2
+        # (ii).
+
+        spectrum_causal = np.fft.ifft(spectrum, axis=0)
+        spectrum_causal[(n + 1) // 2:] = 0
+        spectrum_causal[0] /= 2
+
+        spectrum_causal_ground_truth = np.fft.fft(spectrum_causal, axis=0)
+
+        spectrum_causal_est = elephant.causality.granger._bracket_operator(
+            spectrum=spectrum,
+            num_freqs=n,
+            num_signals=1)
+
+        np.testing.assert_array_almost_equal(spectrum_causal_est,
+                                             spectrum_causal_ground_truth)
+
+    def test_bracket_operator_mult_signal(self):
+        # Generate a spectrum from random dataset and test bracket operator
+        np.random.seed(10)
+        n = 10
+        num_signals = 3
+        spectrum = np.random.normal(0, 1, (n, num_signals, num_signals))
+
+        # Generate causal part according to The Factorization of Matricial
+        # Spectral Densities', Wilson 1972, SiAM J Appl Math, Definition 1.2
+        # (ii).
+
+        spectrum_causal = np.fft.ifft(spectrum, axis=0)
+        spectrum_causal[(n + 1) // 2:] = 0
+        spectrum_causal[0] /= 2
+
+        spectrum_causal_ground_truth = np.fft.fft(spectrum_causal, axis=0)
+
+        # Set element below diagonal at zero frequency to zero
+        spectrum_causal_ground_truth[0, 1, 0] = 0
+        spectrum_causal_ground_truth[0, 2, 0] = 0
+        spectrum_causal_ground_truth[0, 2, 1] = 0
+
+        spectrum_causal_est = elephant.causality.granger._bracket_operator(
+            spectrum=spectrum,
+            num_freqs=n,
+            num_signals=num_signals)
+
+        np.testing.assert_array_almost_equal(spectrum_causal_est,
+                                             spectrum_causal_ground_truth)
+
+    def test_spectral_factorization(self):
+        np.random.seed(11)
+        n = 100
+        num_signals = 2
+        signals = np.random.normal(0, 1, (num_signals, n))
+
+        _, cross_spec = multitaper_cross_spectrum(signals,
+                                                  return_onesided=True)
+
+        cross_spec = np.transpose(cross_spec, (2, 0, 1))
+
+        cov_matrix, transfer_function = \
+            elephant.causality.granger._spectral_factorization(
+                cross_spec, num_iterations=100)
+
+        cross_spec_est = np.matmul(np.matmul(transfer_function, cov_matrix),
+                                   elephant.causality.granger._dagger(
+                                       transfer_function))
+
+        np.testing.assert_array_almost_equal(cross_spec, cross_spec_est)
+
+    def test_spectral_factorization_non_conv_exception(self):
+        np.random.seed(11)
+        n = 10
+        num_signals = 2
+        signals = np.random.normal(0, 1, (num_signals, n))
+
+        _, cross_spec = multitaper_cross_spectrum(signals,
+                                                  return_onesided=True)
+
+        cross_spec = np.transpose(cross_spec, (2, 0, 1))
+
+        self.assertRaises(Exception,
+                          elephant.causality.granger._spectral_factorization,
+                          cross_spec, num_iterations=1)
+
+    def test_spectral_factorization_initial_cond(self):
+        # Cross spectrum at zero frequency must always be symmetric
+        wrong_cross_spec = np.array([[[1, 2], [-1, 1]], [[1, 1], [1, 1]]])
+        self.assertRaises(ValueError,
+                          elephant.causality.granger._spectral_factorization,
+                          wrong_cross_spec, num_iterations=10)
+
+    def test_dagger_2d(self):
+        matrix_array = np.array([[1j, 0], [2, 3]], dtype=complex)
+
+        true_dagger = np.array([[-1j, 2], [0, 3]], dtype=complex)
+
+        dagger_matrix_array = elephant.causality.granger._dagger(matrix_array)
+
+        np.testing.assert_array_equal(true_dagger, dagger_matrix_array)
+
+    def test_total_channel_interdependence_equals_transformed_coherence(self):
+        np.random.seed(11)
+        n = int(2**8)
+        num_signals = 2
+        signals = np.random.normal(0, 1, (num_signals, n))
+
+        freqs, coh, phase_lag = multitaper_coherence(signals[0], signals[1],
+                                                     len_segment=2**7,
+                                                     num_tapers=2)
+        f, spectral_causality = \
+            elephant.causality.granger.pairwise_spectral_granger(
+                signals[0], signals[1], len_segment=2**7, num_tapers=2)
+
+        total_interdependence = spectral_causality[3]
+        # Cut last frequency due to length of segment being even and
+        # multitaper_coherence using the real FFT in contrast to
+        # pairwise_spectral_granger which has to use the full FFT.
+        true_total_interdependence = -np.log(1 - coh)[:-1]
+        np.testing.assert_allclose(total_interdependence,
+                                   true_total_interdependence, atol=1e-5)
+
+    def test_pairwise_spectral_granger_against_ground_truth(self):
+        """
+        Test pairwise_spectral_granger using an example from Ding et al. 2006
+
+        Please follow the link below for more details:
+        https://gin.g-node.org/NeuralEnsemble/elephant-data/src/master/unittest/causality/granger/pairwise_spectral_granger  # noqa
+
+        """
+
+        repo_path = \
+            r"unittest/causality/granger/pairwise_spectral_granger/data"
+
+        files_to_download = [
+            ("time_series.npy", "54e0b3fbd904ccb48c75228c070a1a2a"),
+            ("weights.npy", "eb1fc5590da5507293c63b25b1e3a7fc"),
+            ("noise_covariance.npy", "6f80ccff2b2aa9485dc9c01d81570bf5")
+        ]
+
+        for filename, checksum in files_to_download:
+            download_datasets(repo_path=f"{repo_path}/{filename}",
+                              checksum=checksum)
+        signals = np.load(ELEPHANT_TMP_DIR / 'time_series.npy')
+        weights = np.load(ELEPHANT_TMP_DIR / 'weights.npy')
+        cov = np.load(ELEPHANT_TMP_DIR / 'noise_covariance.npy')
+
+        # Estimate spectral Granger Causality
+        f, spectral_causality = \
+            elephant.causality.granger.pairwise_spectral_granger(
+                signals[0], signals[1], len_segment=2**7, num_tapers=3)
+
+        # Calculate ground truth spectral Granger Causality
+        # Formulae taken from Ding et al., Granger Causality: Basic Theory and
+        # Application to Neuroscience, 2006
+        fn = np.linspace(0, np.pi, len(f))
+        freqs_for_theo = np.array([1, 2])[:, np.newaxis] * fn
+        A_theo = (np.identity(2)[np.newaxis]
+                  - weights[0] * np.exp(
+                      - 1j * freqs_for_theo[0][:, np.newaxis, np.newaxis]))
+        A_theo -= weights[1] * np.exp(
+            - 1j * freqs_for_theo[1][:, np.newaxis, np.newaxis])
+
+        H_theo = np.array([[A_theo[:, 1, 1], -A_theo[:, 0, 1]],
+                          [-A_theo[:, 1, 0], A_theo[:, 0, 0]]])
+        H_theo /= np.linalg.det(A_theo)
+        H_theo = np.moveaxis(H_theo, 2, 0)
+
+        S_theo = np.matmul(np.matmul(H_theo, cov),
+                           elephant.causality.granger._dagger(H_theo))
+
+        H_tilde_xx = (H_theo[:, 0, 0] + (cov[0, 1] /
+                                         cov[0, 0] * H_theo[:, 0, 1]))
+        H_tilde_yy = (H_theo[:, 1, 1] + (cov[0, 1] /
+                                         cov[1, 1] * H_theo[:, 1, 0]))
+
+        true_directional_causality_y_x = np.log(S_theo[:, 0, 0].real /
+                                                (H_tilde_xx
+                                                 * cov[0, 0]
+                                                 * H_tilde_xx.conj()).real)
+
+        true_directional_causality_x_y = np.log(S_theo[:, 1, 1].real /
+                                                (H_tilde_yy * cov[1, 1] *
+                                                 H_tilde_yy.conj()).real)
+
+        true_instantaneous_causality = np.log(
+            (H_tilde_xx * cov[0, 0] * H_tilde_xx.conj()).real
+            * (H_tilde_yy * cov[1, 1] * H_tilde_yy.conj()).real)
+        true_instantaneous_causality -= np.linalg.slogdet(S_theo)[1]
+
+        np.testing.assert_allclose(
+            spectral_causality.directional_causality_x_y,
+            true_directional_causality_x_y, atol=0.06)
+
+        np.testing.assert_allclose(
+            spectral_causality.directional_causality_y_x,
+            true_directional_causality_y_x, atol=0.06)
+
+        np.testing.assert_allclose(
+            spectral_causality.instantaneous_causality,
+            true_instantaneous_causality, atol=0.06)
+
+    def test_pairwise_spectral_granger_against_r_grangers(self):
+        """
+        Test pairwise_spectral_granger against R grangers implementation
+
+        Please follow the link below for more details:
+        https://gin.g-node.org/NeuralEnsemble/elephant-data/src/master/unittest/causality/granger/pairwise_spectral_granger  # noqa
+
+        """
+
+        repo_path = \
+            r"unittest/causality/granger/pairwise_spectral_granger/data"
+
+        files_to_download = [
+            ("time_series_small.npy", "b33dc12d4291db7c2087dd8429f15ab4"),
+            ("gc_matrix.npy", "c57262145e74a178588ff0a1004879e2")
+        ]
+
+        for filename, checksum in files_to_download:
+            download_datasets(repo_path=f"{repo_path}/{filename}",
+                              checksum=checksum)
+        signal = np.load(ELEPHANT_TMP_DIR / 'time_series_small.npy')
+        gc_matrix = np.load(ELEPHANT_TMP_DIR / 'gc_matrix.npy')
+
+        denom = 20
+        f, spectral_causality = \
+            elephant.causality.granger.pairwise_spectral_granger(
+                signal[0], signal[1], len_segment=int(len(signal[0]) / denom),
+                num_tapers=15, fs=1, num_iterations=50)
+
+        np.testing.assert_allclose(gc_matrix[::denom, 0], f, atol=4e-5)
+        np.testing.assert_allclose(gc_matrix[::denom, 1],
+                                   spectral_causality[0], atol=0.085)
+        np.testing.assert_allclose(gc_matrix[::denom, 2],
+                                   spectral_causality[1], atol=0.035)
 
 
 if __name__ == '__main__':

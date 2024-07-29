@@ -2,7 +2,7 @@
 """
 GPFA core functionality.
 
-:copyright: Copyright 2014-2022 by the Elephant team, see AUTHORS.txt.
+:copyright: Copyright 2014-2024 by the Elephant team, see AUTHORS.txt.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -494,7 +494,7 @@ def learn_gp_params(seqs_latent, params, verbose=False):
         res_opt = optimize.minimize(gpfa_util.grad_betgam, initp,
                                     args=(precomp[i], const),
                                     method='L-BFGS-B', jac=True)
-        param_opt['gamma'][i] = np.exp(res_opt.x)
+        param_opt['gamma'][i] = np.exp(res_opt.x.item())
 
         if verbose:
             print('\n Converged p; xDim:{}, p:{}'.format(i, res_opt.x))

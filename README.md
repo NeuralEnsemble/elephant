@@ -1,6 +1,5 @@
 # Elephant - Electrophysiology Analysis Toolkit
 
-[![Build Status](https://travis-ci.org/NeuralEnsemble/elephant.svg?branch=master)](https://travis-ci.org/NeuralEnsemble/elephant)
 [![Coverage Status](https://coveralls.io/repos/github/NeuralEnsemble/elephant/badge.svg?branch=master)](https://coveralls.io/github/NeuralEnsemble/elephant?branch=master)
 [![Documentation Status](https://readthedocs.org/projects/elephant/badge/?version=latest)](https://elephant.readthedocs.io/en/latest/?badge=latest)
 [![![PyPi]](https://img.shields.io/pypi/v/elephant)](https://pypi.org/project/elephant/)
@@ -9,6 +8,10 @@
 [![DOI Latest Release](https://zenodo.org/badge/10311278.svg)](https://zenodo.org/badge/latestdoi/10311278)
 [![tests](https://github.com/NeuralEnsemble/elephant/actions/workflows/CI.yml/badge.svg)](https://github.com/NeuralEnsemble/elephant/actions/workflows/CI.yml)
 [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/6191/badge)](https://bestpractices.coreinfrastructure.org/projects/6191)
+[![fair-software.eu](https://img.shields.io/badge/fair--software.eu-%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F-green)](https://fair-software.eu)
+[![Twitter](https://img.shields.io/twitter/follow/PyElephant?style=social)](https://twitter.com/pyelephant)
+[![Fosstodon](https://img.shields.io/badge/@elephant-6364FF?logo=mastodon&logoColor=fff&style=flat)](https://fosstodon.org/@elephant)
+
 
 *Elephant* package analyses all sorts of neurophysiological data:
 spike trains, LFP, analog signals. The input-output data format is either
@@ -35,7 +38,7 @@ Modified BSD License, see [LICENSE.txt](LICENSE.txt) for details.
 
 #### Copyright
 
-:copyright: 2014-2022 by the [Elephant team](doc/authors.rst).
+:copyright: 2014-2024 by the [Elephant team](doc/authors.rst).
 
 
 #### Acknowledgments

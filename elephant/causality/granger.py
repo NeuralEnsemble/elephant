@@ -14,6 +14,12 @@ method tests whether the past values of one signal help to reduce the
 prediction error of another signal, compared to the past values of the latter
 signal alone. If it does reduce the prediction error, the first signal is said
 to Granger cause the other signal.
+Granger causality analysis can be extended to the spectral domain investigating
+the influnece signals have onto each other in a frequency resolved manner. It
+relies on estimating the cross-spectrum of time series and decomposing them
+into a transfer function and a noise covariance matrix. The method to estimate
+the spectral Granger causality is non-parametric in the sense that it does not
+require to fit an autoregressive model (see :cite:`granger-Dhamala08_354`).
 
 Limitations
 -----------
@@ -21,11 +27,17 @@ The user must be mindful of the method's limitations, which are assumptions of
 covariance stationary data, linearity imposed by the underlying autoregressive
 modelling as well as the fact that the variables not included in the model will
 not be accounted for :cite:`granger-Seth07_1667`.
+When estimating spectral Granger causality the user must be familiar with
+basics the multitaper method to estimate power- and cross-spectra (e.g.
+sampling frequency, DPSS, time-half bandwidth product).
 
 Implementation
 --------------
 The mathematical implementation of Granger causality methods in this module
 closely follows :cite:`granger-Ding06_0608035`.
+The implementation of spectral Granger causality follows
+:cite:`granger-Dhamala08_354`, :cite:`granger-Wen13_20110610` and
+:cite:`granger-Wilson72_420` for the spectral matrix factorization.
 
 
 Overview of Functions
@@ -43,6 +55,14 @@ Time-series Granger causality
     pairwise_granger
     conditional_granger
 
+Spectral Granger causality
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: _toctree/causality/
+
+    pairwise_spectral_granger
+
 
 Tutorial
 --------
@@ -55,7 +75,7 @@ Run tutorial interactively:
    :target: https://mybinder.org/v2/gh/NeuralEnsemble/elephant/master
             ?filepath=doc/tutorials/granger_causality.ipynb
 
-:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2024 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -65,17 +85,21 @@ import warnings
 from collections import namedtuple
 
 import numpy as np
+import quantities as pq
+import neo
 from neo.core import AnalogSignal
+from elephant.spectral import segmented_multitaper_cross_spectrum, multitaper_psd
 
 
 __all__ = (
     "Causality",
     "pairwise_granger",
-    "conditional_granger"
+    "conditional_granger",
+    "pairwise_spectral_granger"
 )
 
 
-# the return type of pairwise_granger() function
+# the return type of pairwise_granger(), pairwise_spectral_granger() function
 Causality = namedtuple('Causality',
                        ['directional_causality_x_y',
                         'directional_causality_y_x',
@@ -284,8 +308,9 @@ def _vector_arm(signals, dimension, order):
     positive_lag_covariances = np.reshape(lag_covariances[1:],
                                           (dimension*order, dimension))
 
-    lstsq_coeffs = \
-        np.linalg.lstsq(yule_walker_matrix, positive_lag_covariances)[0]
+    lstsq_coeffs = np.linalg.lstsq(yule_walker_matrix,
+                                   positive_lag_covariances,
+                                   rcond=None)[0]
 
     coeffs = []
     for index in range(order):
@@ -357,6 +382,167 @@ def _optimal_vector_arm(signals, dimension, max_order,
     return optimal_coeffs, optimal_cov_matrix, optimal_order
 
 
+def _bracket_operator(spectrum, num_freqs, num_signals):
+    r"""
+    Implementation of the $[ \cdot ]^{+}$ from 'The Factorization of Matricial
+    Spectral Densities', Wilson 1972, SiAM J Appl Math, Definition 1.2 (ii).
+
+    Paramaters
+    ----------
+    spectrum : np.ndarray
+        Cross-spectrum of multivariate time series
+    num_freqs : int
+        Number of frequencies
+    num_signals : int
+        Number of time series
+
+    Returns
+    -------
+    causal_part : np.ndarray
+        Causal part of cross-spectrum of multivariate time series
+    """
+    # Get coefficients from spectrum
+    causal_part = np.fft.ifft(spectrum, axis=0)
+
+    # Throw away acausal part
+    causal_part[(num_freqs + 1) // 2:] = 0
+
+    # Treat coefficient belonging to 0
+    causal_part[0] /= 2
+
+    # Back-transformation
+    causal_part = np.fft.fft(causal_part, axis=0)
+
+    # Adjust zero frequency part to ensure convergence by setting entries
+    # below diagonal to zero at zero-frequency
+    if num_signals > 1:
+        indices = np.tril_indices(num_signals, k=-1)
+        causal_part[0, indices[0], indices[1]] = 0
+
+    return causal_part
+
+
+def _dagger(matrix_array):
+    r"""
+    Return Hermitian conjugate of matrix array.
+
+    Parameters
+    ----------
+    matrix_array : np.ndarray
+        Array of matrices the Hermitian conjugate of which needs to be
+        determined
+
+    Returns
+    -------
+    matrix_array_dagger : np.ndarray
+        Hermitian conjugate of matrix_array
+    """
+
+    if matrix_array.ndim == 2:
+        matrix_array_dagger = np.transpose(matrix_array.conj(), axes=(1, 0))
+
+    else:
+        matrix_array_dagger = np.transpose(matrix_array.conj(), axes=(0, 2, 1))
+
+    return matrix_array_dagger
+
+
+def _spectral_factorization(cross_spectrum, num_iterations, term_crit=1e-12):
+    r"""
+    Determine the spectral matrix factorization of the cross-spectrum
+    (denoted by S) of multiple time series:
+        S = H \Sigma H^{\dagger}
+    Here, \Sigma is the covariance matrix, H the transfer function.
+    We follow the algorithm outlined in 'The Factorization of Matricial
+    Spectral Densities', Wilson 1972, SiAM J Appl Math.
+    The algorithm iteratively calculates approximations for the spectral
+    factorization and terminates if either the maximum number of iterations is
+    reached or the difference between the cross spectrum and the approximate
+    cross spectrum calculated from the covariance matrix and transfer function
+    is sufficiently small.
+
+    Parameters
+    ----------
+    cross_spectrum : np.ndarray
+        Cross spectrum to be decomposed in covariance matrix and transfer
+        function
+    num_iterations : int
+        Maximal number of iterations of iterative algorithm
+    term_crit : float
+        Termination criterion for iteration step in spectral matrix
+        factorization
+        Default: 1e-12
+
+
+    Returns
+    ------
+    cov_matrix : np.ndarray
+        Covariance matrix of spectral factorization
+    transfer_function : np.ndarray
+        Transfer function of spectral factorization
+    """
+    # spectral_density_function = np.fft.ifft(cross_spectrum, axis=0)
+    spectral_density_function = np.copy(cross_spectrum)
+
+    # Resolve dimensions
+    num_freqs = np.shape(spectral_density_function)[0]
+    num_signals = np.shape(spectral_density_function)[1]
+
+    # Initialization
+    identity = np.identity(num_signals)
+    factorization = np.zeros(np.shape(spectral_density_function),
+                             dtype='complex128')
+
+    # Estimate initial conditions
+    try:
+        initial_cond = np.linalg.cholesky(cross_spectrum[0].real)
+    except np.linalg.LinAlgError:
+        raise ValueError('Could not calculate Cholesky decomposition of real'
+                         + ' part of zero frequency estimate of cross-spectrum'
+                         + '. This might suggest a problem with the input')
+
+    factorization += initial_cond
+
+    converged = False
+    # Iteration for calculating spectral factorization
+    for i in range(num_iterations):
+
+        factorization_old = np.copy(factorization)
+
+        # Implementation of Eq. 3.1 from "The Factorization of Matricial
+        # Spectral Densities", Wilson 1972, SiAM J Appl Math
+        X = np.linalg.solve(factorization,
+                            spectral_density_function)
+        Y = np.linalg.solve(factorization,
+                            _dagger(X))
+        Y += identity
+        Y = _bracket_operator(Y, num_freqs, num_signals)
+
+        factorization = np.matmul(factorization, Y)
+
+        diff = factorization - factorization_old
+        error = np.max(np.abs(diff))
+        if error < term_crit:
+            print(f'Spectral factorization converged after {i} steps')
+            converged=True
+            break
+
+    if not converged:
+        raise Exception("Spectral factorization did not converge after "
+                        + f"{num_iterations} steps. Try to increase "
+                        + "'num_iterations', or lower the allowed error "
+                        + " in the termination criterion, currently "
+                        + f"{term_crit}")
+
+    cov_matrix = np.matmul(factorization[0],
+                           _dagger(factorization[0]))
+
+    transfer_function = np.matmul(factorization,
+                                  np.linalg.inv(factorization[0]))
+
+    return cov_matrix, transfer_function
+
+
 def pairwise_granger(signals, max_order, information_criterion='aic'):
     r"""
     Determine Granger Causality of two time series
@@ -370,8 +556,10 @@ def pairwise_granger(signals, max_order, information_criterion='aic'):
         Maximal order of autoregressive model.
     information_criterion : {'aic', 'bic'}, optional
         A function to compute the information criterion:
-            `bic` for Bayesian information_criterion,
-            `aic` for Akaike information criterion,
+
+        * `bic` for Bayesian information_criterion,
+        * `aic` for Akaike information criterion,
+
         Default: 'aic'
 
     Returns
@@ -538,8 +726,10 @@ def conditional_granger(signals, max_order, information_criterion='aic'):
         Maximal order of autoregressive model.
     information_criterion : {'aic', 'bic'}, optional
         A function to compute the information criterion:
-            `bic` for Bayesian information_criterion,
-            `aic` for Akaike information criterion,
+
+        * `bic` for Bayesian information_criterion,
+        * `aic` for Akaike information criterion,
+
         Default: 'aic'
 
     Returns
@@ -592,3 +782,173 @@ def conditional_granger(signals, max_order, information_criterion='aic'):
                                                  est_sig_figures)
 
     return conditional_causality_xy_z_round
+
+
+def pairwise_spectral_granger(signal_i, signal_j, fs=1, nw=4, num_tapers=None,
+                              peak_resolution=None, n_segments=1,
+                              len_segment=None, frequency_resolution=None,
+                              overlap=0.5, num_iterations=300,
+                              term_crit=1e-12):
+    r"""Determine spectral Granger Causality of two signals.
+
+    The spectral Granger Causality is obtained through the following steps:
+
+    1. Determine the cross spectrum of the two signals by applying
+       :func:`segmented_multitaper_cross_spectrum` to the joint signal. See the
+       documentation of this function for the hierarchy of the parameters used
+       for the estimation of the cross spectrum.
+
+    2. Calculate the spectral factorization of the cross spectrum decomposing
+       the cross spectrum into the covariance matrix and the transfer function.
+
+    3. Calculate the directional and instantaneous spectral Granger Causality
+       from the power spectra, the transfer function and the covariance matrix
+       (see e.g. Wen et al., 2013, Phil Trans R Soc, eq. 2.10 ff).
+
+    Parameters
+    ----------
+    signal_i : neo.AnalogSignal or pq.Quantity or np.ndarray
+        First time series data of the pair between which spectral Granger
+        Causality is computed.
+    signal_j : neo.AnalogSignal or pq.Quantity or np.ndarray
+        Second time series data of the pair between which spectral Granger
+        Causality is computed.
+        The shapes and the sampling frequencies of `signal_i` and `signal_j`
+        must be identical. When `signal_i` and `signal_j` are not
+        `neo.AnalogSignal`, sampling frequency should be specified through the
+        keyword argument `fs`. Otherwise, the default value is used
+        (`fs` = 1.0).
+    fs : float, optional
+        Specifies the sampling frequency of the input time series
+        Default: 1.0
+    nw : float, optional
+        Time bandwidth product
+        Default: 4.0
+    num_tapers : int, optional
+        Number of tapers used in 1. to obtain estimate of PSD. By default,
+        [2*nw] - 1 is chosen.
+        Default: None
+    peak_resolution : pq.Quantity float, optional
+        Quantity in Hz determining the number of tapers used for analysis.
+        Fine peak resolution --> low numerical value --> low number of tapers
+        High peak resolution --> high numerical value --> high number of tapers
+        When given as a `float`, it is taken as frequency in Hz.
+        Default: None.
+    n_segments : int, optional
+        Number of segments. The length of segments is adjusted so that
+        overlapping segments cover the entire stretch of the given data. This
+        parameter is ignored if `len_segment` or `frequency_resolution` is
+        given.
+        Default: 1
+    len_segment : int, optional
+        Length of segments. This parameter is ignored if `frequency_resolution`
+        is given. If None, it will be determined from other parameters.
+        Default: None
+    frequency_resolution : pq.Quantity or float, optional
+        Desired frequency resolution of the obtained spectral Granger Causality
+        estimate in terms of the interval between adjacent frequency bins. When
+        given as a `float`, it is taken as frequency in Hz.
+        If None, it will be determined from other parameters.
+        Default: None
+    overlap : float, optional
+        Overlap between segments represented as a float number between 0 (no
+        overlap) and 1 (complete overlap).
+        Default: 0.5 (half-overlapped)
+    num_iterations : int
+        Number of iterations for algorithm to estimate spectral factorization.
+        Default: 300
+    term_crit : float
+        Termination criterion for iteration step in spectral matrix
+        factorization
+        Default: 1e-12
+
+    Returns
+    -------
+    freqs : np.ndarray
+        Frequencies associated with the spectral Granger Causality estimate.
+    Causality
+        A `namedtuple` with the following attributes:
+            directional_causality_x_y : np.ndarray
+                Spectrally resolved Granger causality influence of `signal_i`,
+                abbreviated by  X, onto `signal_j`, abbreviated by Y.
+
+            directional_causality_y_x : np.ndarray
+                Spectrally resolved Granger causality influence of `signal_j`,
+                abbreviated by  Y, onto `signal_i`, abbreviated by Y.
+
+            instantaneous_causality : np.ndarray
+                The remaining spectrally resolved channel interdependence not
+                accounted for by the directional causalities (e.g. shared input
+                to X, i.e. `signal_i`, and Y, i.e. `signal_j`).
+
+            total_interdependence : np.ndarray
+                The sum of the former three metrics. It measures the dependence
+                of X, i.e. `signal_i` and Y, i.e. `signal_j`. If the total
+                interdependence is positive, X and Y are not independent.
+    """
+    if isinstance(signal_i, neo.core.AnalogSignal) and \
+            isinstance(signal_j, neo.core.AnalogSignal):
+        signals = signal_i.merge(signal_j)
+    elif isinstance(signal_i, np.ndarray) and isinstance(signal_j, np.ndarray):
+        signals = np.vstack([signal_i, signal_j])
+
+    # Calculate cross spectrum for signals
+    freqs, S = segmented_multitaper_cross_spectrum(
+        signals=signals, n_segments=n_segments, len_segment=len_segment,
+        frequency_resolution=frequency_resolution, overlap=overlap, fs=fs,
+        nw=nw, num_tapers=num_tapers, peak_resolution=peak_resolution,
+        return_onesided=False)
+
+    # Remove units attached by the multitaper_cross_spectrum
+    if isinstance(S, pq.Quantity):
+        S = S.magnitude
+
+    # Transpose cross spectrum due to different conventions used in
+    # segemented_multitaper_cross_spectrum and the calculations of spectral
+    # Granger causality
+    S = np.transpose(S, axes=(1, 0, 2))
+
+    # Move frequencies to first axis - Needed for _spectral_factorization
+    S = np.transpose(S, axes=(2, 0, 1))
+
+    # Decompose cross spectrum into covariance and transfer function
+    C, H = _spectral_factorization(S, num_iterations=num_iterations)
+
+    # Take positive frequencies
+    mask = (freqs >= 0)
+    freqs = freqs[mask]
+
+    S = S[mask]
+    H = H[mask]
+
+    # Calculate spectral Granger Causality.
+    # Formulae follow Wen et al., 2013, Phil Trans R Soc
+    H_tilde_xx = H[:, 0, 0] + C[0, 1]/C[0, 0]*H[:, 0, 1]
+    H_tilde_yy = H[:, 1, 1] + C[0, 1]/C[1, 1]*H[:, 1, 0]
+
+    directional_causality_y_x = np.log(S[:, 0, 0].real /
+                                       (H_tilde_xx
+                                        * C[0, 0]
+                                        * H_tilde_xx.conj()).real)
+
+    directional_causality_x_y = np.log(S[:, 1, 1].real /
+                                       (H_tilde_yy
+                                        * C[1, 1]
+                                        * H_tilde_yy.conj()).real)
+
+    instantaneous_causality = np.log(
+        (H_tilde_xx * C[0, 0] * H_tilde_xx.conj()).real
+        * (H_tilde_yy * C[1, 1] * H_tilde_yy.conj()).real)
+    instantaneous_causality -= np.linalg.slogdet(S)[1]
+
+    total_interdependence = (directional_causality_x_y
+                             + directional_causality_y_x
+                             + instantaneous_causality)
+
+    spectral_causality = Causality(
+        directional_causality_x_y=directional_causality_x_y,
+        directional_causality_y_x=directional_causality_y_x,
+        instantaneous_causality=instantaneous_causality,
+        total_interdependence=total_interdependence)
+
+    return freqs, spectral_causality

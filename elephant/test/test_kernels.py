@@ -2,7 +2,7 @@
 """
 Unit tests for the kernels module.
 
-:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2024 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -81,7 +81,7 @@ class kernel_TestCase(unittest.TestCase):
             restric_defdomain = np.linspace(
                 -b, b, num=n_points) * sigma.units
             kern = kernel(restric_defdomain)
-            norm = spint.cumtrapz(y=kern.magnitude,
+            norm = spint.cumulative_trapezoid(y=kern.magnitude,
                                   x=restric_defdomain.magnitude)[-1]
             self.assertAlmostEqual(norm, 1, delta=0.003)
 
@@ -104,11 +104,11 @@ class kernel_TestCase(unittest.TestCase):
                     -b, b, num=n_points) * sigma.units
                 kern = kernel(restric_defdomain)
                 av_integr = kern * restric_defdomain
-                average = spint.cumtrapz(
+                average = spint.cumulative_trapezoid(
                     y=av_integr.magnitude,
                     x=restric_defdomain.magnitude)[-1] * sigma.units
                 var_integr = (restric_defdomain - average) ** 2 * kern
-                variance = spint.cumtrapz(
+                variance = spint.cumulative_trapezoid(
                     y=var_integr.magnitude,
                     x=restric_defdomain.magnitude)[-1] * sigma.units ** 2
                 stddev = np.sqrt(variance)
@@ -132,7 +132,7 @@ class kernel_TestCase(unittest.TestCase):
                 restric_defdomain = np.linspace(
                     -b, b, num=n_points) * sigma.units
                 kern = kernel(restric_defdomain)
-                frac = spint.cumtrapz(y=kern.magnitude,
+                frac = spint.cumulative_trapezoid(y=kern.magnitude,
                                       x=restric_defdomain.magnitude)[-1]
                 self.assertAlmostEqual(frac, fraction, delta=0.002)
 

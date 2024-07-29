@@ -12,9 +12,9 @@ Neuroscience.)
 CSD is also called as Source Localization or Source Imaging in the EEG circles.
 Here are CSD methods for different types of electrode configurations.
 
-- 1D - laminar probe like electrodes.
-- 2D - Microelectrode Array like
-- 3D - UtahArray or multiple laminar probes.
+- 1D -laminar probe like electrodes.
+- 2D -Microelectrode Array like
+- 3D -UtahArray or multiple laminar probes.
 
 The following methods have been implemented so far
 
@@ -38,11 +38,10 @@ from __future__ import division, print_function, unicode_literals
 import neo
 import numpy as np
 import quantities as pq
-from scipy.integrate import simps
+from scipy.integrate import simpson
 
 import elephant.current_source_density_src.utility_functions as utils
 from elephant.current_source_density_src import KCSD, icsd
-from elephant.utils import deprecated_alias
 
 __all__ = [
     "estimate_csd",
@@ -61,7 +60,6 @@ icsd_methods = ['DeltaiCSD', 'StepiCSD', 'SplineiCSD']
 py_iCSD_toolbox = ['StandardCSD'] + icsd_methods
 
 
-@deprecated_alias(coords='coordinates')
 def estimate_csd(lfp, coordinates='coordinates', method=None,
                  process_estimate=True, **kwargs):
     """
@@ -71,7 +69,7 @@ def estimate_csd(lfp, coordinates='coordinates', method=None,
 
     Parameters
     ----------
-    lfp : neo.AnalogSignal
+    lfp : :class:`neo.core.AnalogSignal`
         Positions of electrodes can be added as an array annotation
     coordinates : array-like Quantity or string
         Specifies the corresponding spatial coordinates of the electrodes.
@@ -79,13 +77,13 @@ def estimate_csd(lfp, coordinates='coordinates', method=None,
         with dimension of space, where M is the number of signals in 'lfp',
         and N is equal to the dimensionality of the method.
         Alternatively, if coordinates is a string, the function will fetch the
-        coordinates, supplied in the same format, as annotation of 'lfp' by that
-        name.
+        coordinates, supplied in the same format, as annotation of 'lfp' by
+        that name.
         Default: 'coordinates'
     method : string
         Pick a method corresponding to the setup, in this implementation
         For Laminar probe style (1D), use 'KCSD1D' or 'StandardCSD',
-         or 'DeltaiCSD' or 'StepiCSD' or 'SplineiCSD'
+        or 'DeltaiCSD' or 'StepiCSD' or 'SplineiCSD'
         For MEA probe style (2D),  use 'KCSD2D', or 'MoIKCSD'
         For array of laminar probes (3D), use 'KCSD3D'
         Defaults to None
@@ -182,14 +180,14 @@ def estimate_csd(lfp, coordinates='coordinates', method=None,
                 # All iCSD methods explicitly assume a source
                 # diameter in contrast to the stdCSD  that
                 # implicitly assume infinite source radius
-                raise ValueError("Parameter diam must be specified for iCSD \
-                                  methods: {}".format(", ".join(icsd_methods)))
+                raise ValueError(f"Parameter diam must be specified for iCSD "
+                                 f"methods: {', '.join(icsd_methods)}")
 
         if 'f_type' in kwargs:
             if (kwargs['f_type'] != 'identity') and  \
                (kwargs['f_order'] is None):
-                raise ValueError("The order of {} filter must be \
-                                  specified".format(kwargs['f_type']))
+                raise ValueError(f"The order of {kwargs['f_type']} filter must"
+                                 f" be specified")
 
         csd_method = getattr(icsd, method)  # fetch class from icsd.py file
         csd_estimator = csd_method(lfp=lfp.T.magnitude * lfp.units,
@@ -209,9 +207,6 @@ def estimate_csd(lfp, coordinates='coordinates', method=None,
     return output
 
 
-@deprecated_alias(ele_xx='x_positions', ele_yy='y_positions',
-                  ele_zz='z_positions', xlims='x_limits', ylims='y_limits',
-                  zlims='z_limits', res='resolution')
 def generate_lfp(csd_profile, x_positions, y_positions=None, z_positions=None,
                  x_limits=[0., 1.], y_limits=[0., 1.], z_limits=[0., 1.],
                  resolution=50):
@@ -228,12 +223,15 @@ def generate_lfp(csd_profile, x_positions, y_positions=None, z_positions=None,
         2D : large_source_2D and small_source_2D
         3D : gauss_3d_dipole
     x_positions : np.ndarray
-        Positions of the x coordinates of the electrodes
+        A 2D column vector (N x 1 array) containing the positions of the x
+        coordinates of the electrodes
     y_positions : np.ndarray, optional
-        Positions of the y coordinates of the electrodes
+        A 2D column vector (N x 1 array) containing the positions of the y
+        coordinates of the electrodes
         Defaults to None, use in 2D or 3D cases only
     z_positions : np.ndarray, optional
-        Positions of the z coordinates of the electrodes
+        A 2D column vector (N x 1 array) containing the positions of the z
+        coordinates of the electrodes
         Defaults to None, use in 3D case only
     x_limits : list, optional
         A list of [start, end].
@@ -253,16 +251,37 @@ def generate_lfp(csd_profile, x_positions, y_positions=None, z_positions=None,
 
     Returns
     -------
-    LFP : neo.AnalogSignal
+    LFP : :class:`neo.core.AnalogSignal`
        The potentials created by the csd profile at the electrode positions.
        The electrode positions are attached as an annotation named
        'coordinates'.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from elephant.current_source_density import generate_lfp, estimate_csd
+    >>> from elephant.current_source_density_src.utility_functions import gauss_1d_dipole  # noqa
+    >>> # 1. Define an array xs to x coordinate values with a length of 2304
+    >>> xs=np.linspace(0, 10, 2304)
+
+    >>> # 2. Run generate_lfp(gauss_1d_dipole, xs)
+    >>> lfp = generate_lfp(gauss_1d_dipole, xs)
+
+    >>> # 3. Run estimate_csd(lfp, method="StandardCSD")
+    >>> csd = estimate_csd(lfp, method="StandardCSD")  #doctest: +ELLIPSIS
+    discrete ...
+    >>> # 4. Print the results
+    >>> print(f"LFPs: {lfp}")
+    LFPs: [[-0.01483716 -0.01483396 -0.01483075 ...  0.01219233  0.0121911
+       0.01218986]] mV
+    >>> print(f"CSD estimate: {csd}")  #doctest: +ELLIPSIS
+    CSD estimate: [[-1.00025592e-04 -6.06684588e-05  ...
     """
 
     def integrate_1D(x0, csd_x, csd, h):
         m = np.sqrt((csd_x - x0) ** 2 + h ** 2) - abs(csd_x - x0)
         y = csd * m
-        I = simps(y, csd_x)
+        I = simpson(y, x=csd_x)
         return I
 
     def integrate_2D(x, y, xlin, ylin, csd, h, X, Y):
@@ -274,17 +293,17 @@ def generate_lfp(csd_profile, x_positions, y_positions=None, z_positions=None,
         m = np.sqrt((x - X) ** 2 + (y - Y) ** 2)
         np.clip(m, a_min=0.0000001, a_max=None, out=m)
         y = np.arcsinh(2 * h / m) * csd
-        I = simps(y.T, ylin)
-        F = simps(I, xlin)
+        I = simpson(y.T, x=ylin)
+        F = simpson(I, x=xlin)
         return F
 
     def integrate_3D(x, y, z, csd, xlin, ylin, zlin, X, Y, Z):
         m = np.sqrt((x - X) ** 2 + (y - Y) ** 2 + (z - Z) ** 2)
         np.clip(m, a_min=0.0000001, a_max=None, out=m)
         z = csd / m
-        Iy = simps(np.transpose(z, (1, 0, 2)), zlin)
-        Iy = simps(Iy, ylin)
-        F = simps(Iy, xlin)
+        Iy = simpson(np.transpose(z, (1, 0, 2)), x=zlin)
+        Iy = simpson(Iy, x=ylin)
+        F = simpson(Iy, x=xlin)
         return F
 
     dim = 1
@@ -297,6 +316,10 @@ def generate_lfp(csd_profile, x_positions, y_positions=None, z_positions=None,
     sigma = 1.0
     h = 50.
     if dim == 1:
+        # Handle one dimensional case,
+        # see https://github.com/NeuralEnsemble/elephant/issues/546
+        if len(x_positions.shape) == 1:
+            x_positions = np.expand_dims(x_positions, axis=1)
         chrg_x = x
         csd = csd_profile(chrg_x)
         pots = integrate_1D(x_positions, chrg_x, csd, h)

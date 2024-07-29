@@ -2,7 +2,7 @@
 """
 Unit tests for the signal_processing module.
 
-:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2024 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 from __future__ import division, print_function
@@ -15,7 +15,7 @@ import quantities as pq
 import scipy.signal as spsig
 import scipy.stats
 from numpy.ma.testutils import assert_array_equal, assert_allclose
-from numpy.testing.utils import assert_array_almost_equal
+from numpy.testing import assert_array_almost_equal
 
 import elephant.signal_processing
 
@@ -401,7 +401,7 @@ class ZscoreTestCase(unittest.TestCase):
         self.assertIs(result[0], signal_list[0])
         self.assertIs(result[1], signal_list[1])
 
-    def test_wrong_input(self):
+    def test_z_score_wrong_input(self):
         # wrong type
         self.assertRaises(TypeError, elephant.signal_processing.zscore,
                           signal=[1, 2] * pq.uV)
@@ -410,6 +410,23 @@ class ZscoreTestCase(unittest.TestCase):
         asig2 = neo.AnalogSignal([0, 1], units=pq.V, sampling_rate=1 * pq.ms)
         self.assertRaises(ValueError, elephant.signal_processing.zscore,
                           signal=[asig1, asig2])
+
+    def test_z_score_np_float32_64(self):
+        """
+        Regression test: Inplace operations for z_score failed when using
+        np.float32 or np.float64 types.
+        See Issue #591.
+        https://github.com/NeuralEnsemble/elephant/issues/591
+        """
+        test_types = (np.float32, np.float64)
+        for test_type in test_types:
+            with self.subTest(test_type):
+                signal = neo.AnalogSignal(self.test_seq1, units='mV',
+                                          t_start=0. * pq.ms,
+                                          sampling_rate=1000. * pq.Hz,
+                                          dtype=test_type)
+                # This should not raise a ValueError
+                elephant.signal_processing.zscore(signal, inplace=True)
 
 
 class ButterTestCase(unittest.TestCase):
@@ -472,8 +489,8 @@ class ButterTestCase(unittest.TestCase):
             sampling_rate=1000 * pq.Hz, units='mV',
             array_annotations=dict(valid=True, my_list=[0]))
 
-        kwds = {'signal': noise, 'highpass_freq': 250.0 * pq.Hz,
-                'lowpass_freq': None, 'filter_function': 'filtfilt'}
+        kwds = {'signal': noise, 'highpass_frequency': 250.0 * pq.Hz,
+                'lowpass_frequency': None, 'filter_function': 'filtfilt'}
         filtered_noise = elephant.signal_processing.butter(**kwds)
         _, psd_filtfilt = spsig.welch(
             filtered_noise.T, nperseg=1024, fs=1000.0, detrend=lambda x: x)
@@ -500,7 +517,7 @@ class ButterTestCase(unittest.TestCase):
         anasig_dummy = neo.AnalogSignal(
             np.zeros(5000), sampling_rate=1000 * pq.Hz, units='mV')
         # test exception upon invalid filtfunc string
-        kwds = {'signal': anasig_dummy, 'highpass_freq': 250.0 * pq.Hz,
+        kwds = {'signal': anasig_dummy, 'highpass_frequency': 250.0 * pq.Hz,
                 'filter_function': 'invalid_filter'}
         self.assertRaises(
             ValueError, elephant.signal_processing.butter, **kwds)
@@ -510,8 +527,8 @@ class ButterTestCase(unittest.TestCase):
         anasig_dummy = neo.AnalogSignal(
             np.zeros(5000), sampling_rate=1000 * pq.Hz, units='mV')
         # test a case where no cut-off frequencies are given
-        kwds = {'signal': anasig_dummy, 'highpass_freq': None,
-                'lowpass_freq': None}
+        kwds = {'signal': anasig_dummy, 'highpass_frequency': None,
+                'lowpass_frequency': None}
         self.assertRaises(
             ValueError, elephant.signal_processing.butter, **kwds)
 
@@ -632,7 +649,7 @@ class HilbertTestCase(unittest.TestCase):
 
         self.assertRaises(
             ValueError, elephant.signal_processing.hilbert,
-            self.long_signals, N=padding)
+            self.long_signals, padding=padding)
 
     def test_hilbert_output_shape(self):
         """
@@ -790,27 +807,30 @@ class WaveletTestCase(unittest.TestCase):
         Tests if errors are raised as expected.
         """
         # too high center frequency
-        kwds = {'signal': self.test_data, 'freq': self.fs / 2}
+        kwds = {'signal': self.test_data, 'frequency': self.fs / 2}
         self.assertRaises(
             ValueError, elephant.signal_processing.wavelet_transform, **kwds)
         kwds = {
             'signal': self.test_data_arr,
-            'freq': self.fs / 2,
-            'fs': self.fs}
+            'frequency': self.fs / 2,
+            'sampling_frequency': self.fs}
         self.assertRaises(
             ValueError, elephant.signal_processing.wavelet_transform, **kwds)
 
         # too high center frequency in a list
-        kwds = {'signal': self.test_data, 'freq': [self.fs / 10, self.fs / 2]}
+        kwds = {'signal': self.test_data,
+                'frequency': [self.fs / 10, self.fs / 2]}
         self.assertRaises(
             ValueError, elephant.signal_processing.wavelet_transform, **kwds)
         kwds = {'signal': self.test_data_arr,
-                'freq': [self.fs / 10, self.fs / 2], 'fs': self.fs}
+                'frequency': [self.fs / 10, self.fs / 2],
+                'sampling_frequency': self.fs}
         self.assertRaises(
             ValueError, elephant.signal_processing.wavelet_transform, **kwds)
 
         # nco is not positive
-        kwds = {'signal': self.test_data, 'freq': self.fs / 10, 'nco': 0}
+        kwds = {'signal': self.test_data, 'frequency': self.fs / 10,
+                'n_cycles': 0}
         self.assertRaises(
             ValueError, elephant.signal_processing.wavelet_transform, **kwds)
 

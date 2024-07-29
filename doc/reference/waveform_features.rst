@@ -8,7 +8,5 @@ Waveform features
 References
 ----------
 
-.. bibliography:: ../bib/elephant.bib
-   :labelprefix: wf
-   :keyprefix: waveforms-
-   :style: unsrt
+.. bibliography::
+    :keyprefix: waveforms-

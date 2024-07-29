@@ -10,7 +10,5 @@ Analysis of Sequences of Synchronous EvenTs (ASSET)
 References
 ----------
 
-.. bibliography:: ../bib/elephant.bib
-   :labelprefix: asset
-   :keyprefix: asset-
-   :style: unsrt
+.. bibliography::
+    :keyprefix: asset-

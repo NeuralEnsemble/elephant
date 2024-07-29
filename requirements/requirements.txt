@@ -1,6 +1,6 @@
 neo>=0.10.0
-numpy>=1.19.5
-quantities>=0.12.1
-scipy>=1.5.4
+numpy>=1.19.5, <2
+quantities>=0.14.1
+scipy>=1.10.0
 six>=1.10.0
 tqdm

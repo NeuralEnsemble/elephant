@@ -9,7 +9,5 @@ Signal processing
 References
 ----------
 
-.. bibliography:: ../bib/elephant.bib
-   :labelprefix: sig
-   :keyprefix: signal-
-   :style: unsrt
+.. bibliography::
+    :keyprefix: signal-

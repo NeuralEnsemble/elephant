@@ -10,7 +10,6 @@ dependencies:
   - numpy>=1.19.5
   - scipy
   - tqdm
-  - pandas
   - scikit-learn
   - statsmodels
   - jinja2

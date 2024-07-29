@@ -14,7 +14,7 @@ Below is the explanation of how to proceed with these two steps.
 Prerequisites
 *************
 
-Elephant requires `Python <http://python.org/>`_ 3.8, 3.9, 3.10 or 3.11.
+Elephant requires `Python <http://python.org/>`_ 3.8, 3.9, 3.10, 3.11 or 3.12.
 
 .. tabs::
 
@@ -202,16 +202,17 @@ You can have one, both, or none installed in your system.
         .. note::
 
             Make sure you've disabled GPU Hangcheck as described in the
-            `Intel GPU developers documentation <https://software.intel.com/
-            content/www/us/en/develop/documentation/get-started-with-intel-
-            oneapi-base-linux/top/before-you-begin.html>`_. Do it with caution -
+            `Intel GPU developers documentation <https://www.intel.com/content/
+            www/us/en/docs/oneapi/installation-guide-linux/2023-1/
+            gpu-disable-hangcheck.html>`_. Do it with caution -
             using your graphics card to perform computations may make the system
             unresponsive until the compute program terminates.
 
 .. _no-compile-spade:
-***********
+
+****************************
 Resolving compilation issues
-***********
+****************************
 
 Some modules in Elephant make use of C extensions to speed up computation.
 However, those extensions need to be compiled before use. In some cases, this

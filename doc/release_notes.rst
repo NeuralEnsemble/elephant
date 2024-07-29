@@ -2,8 +2,160 @@
 Release Notes
 =============
 
-Elephant 0.11.2 release notes
-=============================
+
+Release 1.1.0
+=============
+New functionality and features
+------------------------------
+* New method "Total spiking probability edges" (TPSE) for inferring functional connectivity (https://github.com/NeuralEnsemble/elephant/pull/560).
+
+Bug fixes
+---------
+* Fixed expired SciPy deprecations and breaking changes related to `sp.sqrt`, ensuring continued compatibility with the latest version of SciPy (https://github.com/NeuralEnsemble/elephant/pull/616).
+* Addressed failing unit tests for `neo_tools` with Neo 0.13.0, ensuring compatibility with the latest Neo release (https://github.com/NeuralEnsemble/elephant/pull/617).
+
+Documentation
+-------------
+* Fixed a bug in the CI docs runner to resolve formatting issues, ensuring documentation build is tested (https://github.com/NeuralEnsemble/elephant/pull/615).
+
+Other changes
+-------------
+* added Python 3.12 CI runner to ensure compatibility with the latest Python language features (https://github.com/NeuralEnsemble/elephant/pull/611).
+* Integrated `Trials` object with GPFA, allowing for a more formal way of specifying trials (https://github.com/NeuralEnsemble/elephant/pull/610).
+
+Selected dependency changes
+---------------------------
+* scipy>=1.10.0
+* Support for Python 3.12
+
+
+Release 1.0.0
+=============
+Elephant's first major release is focused on providing a stable and consistent API consistency that will be maintained over the 1.x series of releases. In order to provide future support, this release will remove all features and API specifications that have been deprecated over the course of the last releases of the 0.x line. While work on the next generation of Elephant will commence, all new analysis capabilities will be consistently back-ported to become available in the 1.x release line.
+
+Breaking changes
+----------------
+* Removed deprecated features and naming introduced in #316 with Elephant release v0.8.0 (#488).
+* Removed the `pandas_bridge` module from Elephant in line with the deprecation plan introduced with Elephant v0.7.0 (#530).
+
+Selected dependency changes
+---------------------------
+* removed pandas from the dependencies (#530).
+
+
+Release 0.14.0
+==============
+
+New functionality and features
+------------------------------
+* Added ASSET class initialization parameter to define the binning rounding error tolerance, allowing users to control the behavior of spike time binning (#585).
+* Enhanced ASSET function output messages and status information by replacing print statements with logging calls, introducing tqdm progress bars for looped steps, and providing control over INFO and DEBUG logging via parameters (#570).
+* Implemented logging instead of warnings in the round_binning_errors() function in elephant/utils.py (#571).
+* Implemented trial handling, providing a unified framework for representing and accessing trial data, supporting diverse trial structures and a common API (#579).
+* Improved `instantaneous_rate` function to support trial data (#579).
+
+Bug fixes
+---------
+* Added example to doc-string, handled one-dimensional arrays as input for x_positions, and added regression unit-tests in CSD.generate_lfp (#594).
+* Modified the check for signal type in z_score when using inplace option to ensure it works correctly with `np.float32` and `np.float64`  (#592).
+
+Documentation
+-------------
+* Fixed documentation build on readthedocs by updating deprecated configuration key `build.image` to `build.os` (#596).
+
+Validations
+-----------
+* Fixed spike time tiling coefficient calculation for unsorted spiketrains. The fix includes sorting the input spiketrains, additional input checks, and a validation test. (#564).
+
+Other changes
+-------------
+* Fixed several typos and grammatical errors in GPFA tutorial notebook (#587)
+* Updated the build_wheels action to use cibuildwheel version 2.13.1, enabling the building of wheels for Python 3.11 (#582).
+
+
+Release 0.13.0
+==============
+
+New functionality and features
+------------------------------
+* Implemented non-parametric spectral Granger causality analysis, extending the investigation of signal influence in the spectral domain. (#545)
+* Added functions to extract time bin and neuron information from Spike Sequence Events (SSEs) obtained using ASSET. (#549)
+
+Bug fixes
+---------
+* Resolved issue with old references to the gin repository INM-6/elephant-data, ensuring accurate repository information. (#547)
+* Fixed the usage of deprecated numpy functions, which were removed with numpy 1.25.0. (#568)
+* Rectified a bug in spade, addressing a missing call of `min_neu` to specify the minimum number of neurons in a pattern. Also, added a regression test to verify the fix. (#575)
+* Corrected a bug in the complexity class that resulted in unexpected behavior when binary=False and spread=0. (#554)
+* Resolved a bug in cell assembly detection (CAD) that produced different results compared to the original MATLAB implementation. (#576)
+
+Documentation
+-------------
+* Addressed various formatting issues in docstrings that were causing warnings during documentation builds. (#553)
+* Updated the contributors guide: The guide now includes a step to install Elephant itself by adding a "pip install -e ." command to the instructions for setting up a development environment. (#566)
+
+Validations
+-----------
+* No changes
+
+Other changes
+-------------
+* Added `codemeta.json` for automated publication of Elephant release to ebrains knowledge graph. (#561, #562)
+* Added "howfairis" badge to README.md, indicating Elephant's compliance with fair-software.eu recommendations. (#551)
+* CI: Enhance security of github actions by specifying a particular commit for third party actions, to improve security against re-tagging attacks.  (#565)
+* Separation of the `multitaper_psd()` function into `segmented_multitaper_psd()` and `multitaper_psd()` without segmentation. This restructuring was done to achieve consistency in the spectral module. (#556)
+* Improved reporting in test_multitaper_cohere_perfect_cohere: Updated the unittest to utilize the numpy assert array equal function. This enhancement aims to provide more detailed and informative traceback in case of failures. (#573)
+* Increased tolerance for Weigthed Phase-Lag Index (WPLI) ground truth test to avoid unitest to fail due minor differences in floating point operations (#572)
+* Added shields for twitter and fosstodon to README.md linking to Elephants accounts. (#532)
+
+Selected dependency changes
+---------------------------
+* no changes
+
+
+Release 0.12.0
+===============
+
+New functionality and features
+------------------------------
+* ASSET: map pairwise distances matrix to disk while computing the cluster matrix to reduce memory usage. #498
+* multitaper cross spectrum: calculate the cross spectrum and the coherence as well as phase lag with the multitaper method. #525
+* weighted_phase_lag_index (WLPI), a measure of phase-synchronization based on the imaginary part of the complex-valued cross-spectrum of two signals. #411
+
+Bug fixes
+---------
+* fixed and included additional unit tests for the `multitaper_psd`. #529
+* replaced deprecated numpy types with builtins to ensure compatibility with numpy >=1.24.0. #535
+
+Documentation
+-------------
+* fixed math rendering with sphinx 5.3.0. #527
+* added documentation for `multitaper_psd`.  #531
+* updated the elephant logo to the current version. #534
+* removed version cap for sphinx extension sphinxcontrib-bibtex (previously set to ==1.0.0): citation style changed to name - year.  #523
+* fixed various formatting issues in docstrings, e.g. indentations, missing quotation marks or missing citation references. #478
+* fixed documentation code examples and test code by introducing a doctest runner to CI. #503
+* changed heading "Spike-triggered LFP phase" to "Phase Analysis", remove wrong reference to tutorial from function reference. #540
+* add launch on ebrains button for elephant tutorials. #538
+
+Validations
+-----------
+* WPLI  ‘ground-truth’-testing with: MATLABs package FieldTrip and its function ft_connectivity_wpli() and its wrapper ft_connectivity(); as well as with python package MNE and its function spectral_connectivity(). #411
+
+Other changes
+-------------
+* Fix/CI: update deprecated actions and commands for github actions workflow. #522
+* added codemeta.json file for automatic registration of elephant releases to ebrains knowledge graph. #541
+
+Selected dependency changes
+---------------------------
+* Python >= 3.8. #536
+* numpy > 1.20. #536
+* quantities > 0.14.0. #542
+
+
+Release 0.11.2
+==============
 
 New functionality and features
 ------------------------------
@@ -46,8 +198,8 @@ Selected dependency changes
 * `nixio` added to test requirements, now nix files can be used in unit tests (#515)
 
 
-Elephant 0.11.1 release notes
-=============================
+Release 0.11.1
+==============
 
 Bug fixes
 ---------
@@ -70,8 +222,8 @@ Selected dependency changes
 ---------------------------
 * scipy >=1.5.4 (#473)
 
-Elephant 0.11.0 release notes
-=============================
+Release 0.11.0
+==============
 
 Breaking changes
 ----------------
@@ -129,8 +281,8 @@ Selected dependency changes
 * python >= 3.7
 
 
-Elephant 0.10.0 release notes
-=============================
+Release 0.10.0
+===============
 
 Documentation
 -------------
@@ -166,8 +318,8 @@ Bug fixes
 * Fix LvR values from being off when units are in seconds (https://github.com/NeuralEnsemble/elephant/pull/389)
 
 
-Elephant 0.9.0 release notes
-============================
+Release 0.9.0
+=============
 This release is titled to accompany the [2nd Elephant User Workshop](https://www.humanbrainproject.eu/en/education/participatecollaborate/infrastructure-events-trainings/2nd-elephant-user-workshop/)
 
 Viziphant
@@ -213,7 +365,7 @@ Breaking changes
   - now the users can directly access `.sparse_matrix` attribute of BinnedSpikeTrain to do efficient (yet unsafe in general) operations. For this reason, `to_sparse_array()` function, which does not make a copy, as one could think of, is deprecated.
 * `instantaneous_rate` function (https://github.com/NeuralEnsemble/elephant/pull/362):
   - in case of multiple input spike trains, the output of the instantaneous rate function is (always) a 2D matrix of shape `(time, len(spiketrains))` instead of a pseudo 1D array (previous behavior) of shape `(time, 1)` that contained the instantaneous rate summed across input spike trains;
-  - in case of multiple input spike trains, the user needs to manually provide the input kernel instead of `auto`, which is set by default, for the reason that it's currently not clear how to estimate the common kernel for a set of spike trains. If you have an idea how to do this, we`d appreciate if you let us know by [getting in touch with us](https://elephant.readthedocs.io/en/latest/get_in_touch.html).
+  - in case of multiple input spike trains, the user needs to manually provide the input kernel instead of `auto`, which is set by default, for the reason that it's currently not clear how to estimate the common kernel for a set of spike trains. If you have an idea how to do this, we`d appreciate if you let us know by [getting in touch with us](https://elephant.readthedocs.io/en/v0.7.0/get_in_touch.html).
 
 Other changes
 -------------
@@ -232,8 +384,8 @@ Bug fixes
   - surrogates get arbitrary sampling_rate (https://github.com/NeuralEnsemble/elephant/pull/353), which relates to the provenance tracking issue;
 
 
-Elephant 0.8.0 release notes
-============================
+Release 0.8.0
+=============
 New features
 ------------
 * The `parallel` module is a new experimental module (https://github.com/NeuralEnsemble/elephant/pull/307) to run python functions concurrently. Supports native (pythonic) ProcessPollExecutor and MPI. Not limited to Elephant functional.
@@ -258,8 +410,8 @@ Breaking changes
 ----------------
 * Naming convention changes (`binsize` -> `bin_size`, etc.) in almost all Elephant functions (https://github.com/NeuralEnsemble/elephant/pull/316).
 
-Elephant 0.7.0 release notes
-============================
+Release 0.7.0
+=============
 
 Breaking changes
 ----------------
@@ -304,8 +456,8 @@ Performance
 * [conversion] Use fast fftconvolve instead of np.correlate in `cross_correlation_histogram()` (https://github.com/NeuralEnsemble/elephant/pull/273).
 
 
-Elephant 0.6.4 release notes
-============================
+Release 0.6.4
+=============
 
 This release has been made for the "1st Elephant User Workshop" (https://www.humanbrainproject.eu/en/education/participatecollaborate/infrastructure-events-trainings/1st-elephant-user-workshop-accelerate-structured-and-reproducibl).
 
@@ -336,8 +488,8 @@ Improvements
 
 
 
-Elephant 0.6.3 release notes
-============================
+Release 0.6.3
+=============
 July 22nd 2019
 
 The release v0.6.3 is mostly about improving maintenance.
@@ -359,8 +511,8 @@ Other changes
 * Added issue templates (https://github.com/NeuralEnsemble/elephant/pull/226)
 * Single VERSION file (https://github.com/NeuralEnsemble/elephant/pull/231)
 
-Elephant 0.6.2 release notes
-============================
+Release 0.6.2
+=============
 April 23rd 2019
 
 New functions
@@ -374,8 +526,8 @@ Other changes
 * Multiple bug fixes
 
 
-Elephant 0.6.1 release notes
-============================
+Release 0.6.1
+=============
 April 1st 2019
 
 New functions
@@ -392,8 +544,8 @@ Other changes
 * Minor bug fixes
 
 
-Elephant 0.6.0 release notes
-============================
+Release 0.6.0
+=============
 October 12th 2018
 
 New functions
@@ -410,8 +562,8 @@ Other changes
 * Minor bug fixes
 
 
-Elephant 0.5.0 release notes
-============================
+Release 0.5.0
+=============
 April 4nd 2018
 
 New functions
@@ -430,8 +582,8 @@ Other changes
 * Minor bug fixes
 
 
-Elephant 0.4.3 release notes
-============================
+Release 0.4.3
+=============
 March 2nd 2018
 
 Other changes
@@ -440,8 +592,8 @@ Other changes
     * Fixed an incompatibility with the latest version of an external library
 
 
-Elephant 0.4.2 release notes
-============================
+Release 0.4.2
+=============
 March 1st 2018
 
 New functions
@@ -466,8 +618,8 @@ Other changes
 * Minor bug fixes
 
 
-Elephant 0.4.1 release notes
-============================
+Release 0.4.1
+=============
 March 23rd 2017
 
 Other changes
@@ -475,8 +627,8 @@ Other changes
 * Fix in `setup.py` to correctly import the current source density module
 
 
-Elephant 0.4.0 release notes
-============================
+Release 0.4.0
+=============
 March 22nd 2017
 
 New functions
@@ -492,7 +644,7 @@ API changes
 * Interoperability between Neo 0.5.0 and Elephant
     * Elephant has adapted its functions to the changes in Neo 0.5.0,
       most of the functionality behaves as before
-    * See Neo documentation for recent changes: http://neo.readthedocs.io/en/latest/whatisnew.html
+    * See Neo documentation for recent changes: http://neo.readthedocs.io/en/0.5.2/whatisnew.html
 
 Other changes
 -------------
@@ -501,8 +653,8 @@ Other changes
 * Added module `six` for Python 2.7 backwards compatibility
 
 
-Elephant 0.3.0 release notes
-============================
+Release 0.3.0
+=============
 April 12st 2016
 
 New functions
@@ -530,8 +682,8 @@ Other changes
 * Fixes to travis and readthedocs configuration files.
 
 
-Elephant 0.2.1 release notes
-============================
+Release 0.2.1
+=============
 February 18th 2016
 
 Other changes
@@ -539,8 +691,8 @@ Other changes
 Minor bug fixes.
 
 
-Elephant 0.2.0 release notes
-============================
+Release 0.2.0
+=============
 September 22nd 2015
 
 New functions

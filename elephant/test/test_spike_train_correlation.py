@@ -2,22 +2,27 @@
 """
 Unit tests for the spike_train_correlation module.
 
-:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2024 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
+import math
 import unittest
 
 import neo
+from neo.io import NixIO
 import numpy as np
 import quantities as pq
-from numpy.testing.utils import assert_array_equal, assert_array_almost_equal
+from numpy.testing import assert_array_equal, assert_array_almost_equal
 
 import elephant.conversion as conv
 import elephant.spike_train_correlation as sc
+from elephant.spike_train_generation import StationaryPoissonProcess, \
+    StationaryGammaProcess
+import math
+from elephant.datasets import download_datasets, ELEPHANT_TMP_DIR
 from elephant.spike_train_generation import homogeneous_poisson_process, \
     homogeneous_gamma_process
-import math
 
 
 class CovarianceTestCase(unittest.TestCase):
@@ -126,7 +131,8 @@ class CovarianceTestCase(unittest.TestCase):
 
     def test_covariance_fast_mode(self):
         np.random.seed(27)
-        st = homogeneous_poisson_process(rate=10 * pq.Hz, t_stop=10 * pq.s)
+        st = StationaryPoissonProcess(rate=10 * pq.Hz, t_stop=10 * pq.s
+                                      ).generate_spiketrain()
         binned_st = conv.BinnedSpikeTrain(st, n_bins=10)
         assert_array_almost_equal(sc.covariance(binned_st, fast=False),
                                   sc.covariance(binned_st, fast=True))
@@ -264,7 +270,8 @@ class CorrCoefTestCase(unittest.TestCase):
 
     def test_corrcoef_fast_mode(self):
         np.random.seed(27)
-        st = homogeneous_poisson_process(rate=10 * pq.Hz, t_stop=10 * pq.s)
+        st = StationaryPoissonProcess(rate=10 * pq.Hz, t_stop=10 * pq.s
+                                      ).generate_spiketrain()
         binned_st = conv.BinnedSpikeTrain(st, n_bins=10)
         assert_array_almost_equal(
             sc.correlation_coefficient(
@@ -727,8 +734,27 @@ class SpikeTimeTilingCoefficientTestCase(unittest.TestCase):
         self.st_2 = neo.SpikeTrain(
             self.test_array_1d_2, units='ms', t_stop=50.)
 
-    def test_sttc(self):
+    def test_sttc_dt_smaller_zero(self):
+        self.assertRaises(ValueError, sc.sttc, self.st_1, self.st_2,
+                          dt=0 * pq.s)
+        self.assertRaises(ValueError, sc.sttc, self.st_1, self.st_2,
+                          dt=-1 * pq.ms)
+
+    def test_sttc_different_t_stop(self):
+        st_1 = neo.SpikeTrain([1], units='ms', t_stop=10.)
+        st_2 = neo.SpikeTrain([5], units='ms', t_stop=10.)
+        st_2.t_stop = 1 * pq.ms
+        self.assertRaises(ValueError, sc.sttc, st_1, st_2)
+
+    def test_sttc_different_t_start(self):
+        st_1 = neo.SpikeTrain([1], units='ms', t_stop=10.)
+        st_2 = neo.SpikeTrain([5], units='ms', t_stop=10.)
+        st_2.t_start = 1 * pq.ms
+        self.assertRaises(ValueError, sc.sttc, st_1, st_2)
+
+    def test_sttc_different_units_dt(self):
         # test for result
+        # target obtained with pencil and paper according to original paper.
         target = 0.495860165593
         self.assertAlmostEqual(target, sc.sttc(self.st_1, self.st_2,
                                                0.005 * pq.s))
@@ -737,30 +763,111 @@ class SpikeTimeTilingCoefficientTestCase(unittest.TestCase):
         self.assertAlmostEqual(target, sc.sttc(self.st_1, self.st_2,
                                                5.0 * pq.ms))
 
+    def test_sttc_different_units_spiketrains(self):
+        st1 = neo.SpikeTrain([1], units='ms', t_stop=10.)
+        st2 = neo.SpikeTrain([5], units='s', t_stop=10.)
+        self.assertRaises(ValueError, sc.sttc, st1, st2)
+
+    def test_sttc_not_enough_spiketrains(self):
         # test no spiketrains
-        self.assertTrue(np.isnan(sc.sttc([], [])))
+        self.assertRaises(TypeError, sc.sttc, [], [])
 
         # test one spiketrain
-        self.assertTrue(np.isnan(sc.sttc(self.st_1, [])))
+        self.assertRaises(TypeError, sc.sttc, self.st_1, [])
 
+    def test_sttc_one_spike(self):
         # test for one spike in a spiketrain
-        st1 = neo.SpikeTrain([1], units='ms', t_stop=1.)
+        st1 = neo.SpikeTrain([1], units='ms', t_stop=10.)
         st2 = neo.SpikeTrain([5], units='ms', t_stop=10.)
         self.assertEqual(sc.sttc(st1, st2), 1.0)
         self.assertTrue(bool(sc.sttc(st1, st2, 0.1 * pq.ms) < 0))
 
+    def test_sttc_high_value_dt(self):
         # test for high value of dt
         self.assertEqual(sc.sttc(self.st_1, self.st_2, dt=5 * pq.s), 1.0)
 
+    def test_sttc_edge_cases(self):
         # test for TA = PB = 1 but TB /= PA /= 1 and vice versa
+        st2 = neo.SpikeTrain([5], units='ms', t_stop=10.)
         st3 = neo.SpikeTrain([1, 5, 9], units='ms', t_stop=10.)
         target2 = 1. / 3.
-        self.assertAlmostEqual(target2, sc.sttc(st3, st2,
-                                                0.003 * pq.s))
-        self.assertAlmostEqual(target2, sc.sttc(st2, st3,
-                                                0.003 * pq.s))
 
-    def test_exist_alias(self):
+        self.assertAlmostEqual(target2, sc.sttc(st3, st2, 0.003 * pq.s))
+        self.assertAlmostEqual(target2, sc.sttc(st2, st3, 0.003 * pq.s))
+
+    def test_sttc_unsorted_spiketimes(self):
+        # regression test for issue  #563
+        # https://github.com/NeuralEnsemble/elephant/issues/563
+        spiketrain_E7 = neo.SpikeTrain(
+            [1678., 23786.3, 34641.8, 71520.7, 73606.9, 78383.3,
+             97387.9, 144313.4, 4607.6, 19275.1, 152894.2, 44240.1],
+            units='ms', t_stop=300000 * pq.ms)
+
+        spiketrain_E3 = neo.SpikeTrain(
+            [1678., 23786.3, 34641.8, 71520.7, 73606.9, 78383.3,
+             97387.9, 144313.4, 4607.6, 19275.1, 152894.2, 44240.1],
+            units='ms', t_stop=300000 * pq.ms)
+        sttc_unsorted_E7_E3 = sc.sttc(spiketrain_E7,
+                                      spiketrain_E3, dt=0.10 * pq.s)
+        self.assertAlmostEqual(sttc_unsorted_E7_E3, 1)
+        spiketrain_E7.sort()
+        spiketrain_E3.sort()
+        sttc_sorted_E7_E3 = sc.sttc(spiketrain_E7,
+                                    spiketrain_E3, dt=0.10 * pq.s)
+        self.assertAlmostEqual(sttc_unsorted_E7_E3, sttc_sorted_E7_E3)
+
+        spiketrain_E8 = neo.SpikeTrain(
+            [20646.8, 25875.1, 26154.4, 35121., 55909.7, 79164.8,
+             110849.8, 117484.1, 3731.5, 4213.9, 119995.1, 123748.1,
+             171016.8, 172989., 185145.2, 12043.5, 185995.9, 186740.1,
+             12629.8, 23394.3, 34993.2], units='ms', t_stop=300000 * pq.ms)
+
+        spiketrain_B3 = neo.SpikeTrain(
+            [10600.7, 19699.6, 22803., 40769.3, 121385.7, 127402.9,
+             130829.2, 134363.8, 1193.5, 8012.7, 142037.3, 146628.2,
+             165925.3, 168489.3, 175194.3, 10339.8, 178676.4, 180807.2,
+             201431.3, 22231.1, 38113.4], units='ms', t_stop=300000 * pq.ms)
+
+        self.assertTrue(
+            sc.sttc(spiketrain_E8, spiketrain_B3, dt=0.10 * pq.s) < 1)
+
+        sttc_unsorted_E8_B3 = sc.sttc(spiketrain_E8,
+                                      spiketrain_B3, dt=0.10 * pq.s)
+        spiketrain_E8.sort()
+        spiketrain_B3.sort()
+        sttc_sorted_E8_B3 = sc.sttc(spiketrain_E8,
+                                    spiketrain_B3, dt=0.10 * pq.s)
+        self.assertAlmostEqual(sttc_unsorted_E8_B3, sttc_sorted_E8_B3)
+
+    def test_sttc_validation_test(self):
+        """This test checks the results of elephants implementation of
+        the spike time tiling coefficient against the results of the
+        original c-implementation.
+        The c-code and the test data is located at
+        NeuralEnsemble/elephant-data/unittest/spike_train_correlation/
+        spike_time_tiling_coefficient"""
+
+        repo_path = r"unittest/spike_train_correlation/spike_time_tiling_coefficient/data"  # noqa
+
+        files_to_download = [("spike_time_tiling_coefficient_results.nix",
+                              "e3749d79046622494660a03e89950f51")]
+
+        for filename, checksum in files_to_download:
+            filepath = download_datasets(repo_path=f"{repo_path}/{filename}",
+                                         checksum=checksum)
+
+        reader = NixIO(filepath, mode='ro')
+        test_data_block = reader.read()
+
+        for segment in test_data_block[0].segments:
+            spiketrain_i = segment.spiketrains[0]
+            spiketrain_j = segment.spiketrains[1]
+            dt = segment.annotations['dt']
+            sttc_result = segment.annotations['sttc_result']
+            self.assertAlmostEqual(sc.sttc(spiketrain_i, spiketrain_j, dt),
+                                   sttc_result)
+
+    def test_sttc_exist_alias(self):
         # Test if alias cch still exists.
         self.assertEqual(sc.spike_time_tiling_coefficient, sc.sttc)
 
@@ -788,7 +895,9 @@ class SpikeTrainTimescaleTestCase(unittest.TestCase):
         np.random.seed(35)
 
         for _ in range(10):
-            spikes = homogeneous_gamma_process(2, 2 * nu, 0 * pq.ms, T)
+            spikes = StationaryGammaProcess(rate=2 * nu / 2, shape_factor=2,
+                                            t_start=0 * pq.ms,
+                                            t_stop=T).generate_spiketrain()
             spikes_bin = conv.BinnedSpikeTrain(spikes, bin_size)
             timescale_i = sc.spike_train_timescale(spikes_bin, 10 * timescale)
             assert_array_almost_equal(timescale, timescale_i, decimal=3)

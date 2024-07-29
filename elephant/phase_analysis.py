@@ -9,8 +9,17 @@ Methods for performing phase analysis.
     phase_locking_value
     mean_phase_vector
     phase_difference
+    weighted_phase_lag_index
 
-:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
+References
+----------
+
+.. bibliography:: ../bib/elephant.bib
+   :labelprefix: ph
+   :keyprefix: phase-
+   :style: unsrt
+
+:copyright: Copyright 2014-2024 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -24,7 +33,8 @@ __all__ = [
     "spike_triggered_phase",
     "phase_locking_value",
     "mean_phase_vector",
-    "phase_difference"
+    "phase_difference",
+    "weighted_phase_lag_index"
 ]
 
 
@@ -172,8 +182,10 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
                     hilbert_transform[phase_i].sampling_period
 
                 # Save hilbert_transform (interpolate on circle)
-                p1 = np.angle(hilbert_transform[phase_i][ind_at_spike_j])
-                p2 = np.angle(hilbert_transform[phase_i][ind_at_spike_j + 1])
+                p1 = np.angle(hilbert_transform[phase_i][ind_at_spike_j]
+                              ).item()
+                p2 = np.angle(hilbert_transform[phase_i][ind_at_spike_j + 1]
+                              ).item()
                 interpolation = (1 - z) * np.exp(complex(0, p1)) \
                                     + z * np.exp(complex(0, p2))
                 p12 = np.angle([interpolation])
@@ -207,7 +219,7 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
 
 def phase_locking_value(phases_i, phases_j):
     r"""
-    Calculates the phase locking value (PLV).
+    Calculates the phase locking value (PLV) :cite:`phase-Lachaux99_194`.
 
     This function expects the phases of two signals (each containing multiple
     trials). For each trial pair, it calculates the phase difference at each
@@ -243,11 +255,6 @@ def phase_locking_value(phases_i, phases_j):
     where :math:`\theta(t, n) = \phi_x(t, n) - \phi_y(t, n)`
     is the phase difference at time `t` for trial `n`.
 
-    References
-    ----------
-    [1] Jean-Philippe Lachaux, Eugenio Rodriguez, Jacques Martinerie,
-    and Francisco J. Varela, "Measuring Phase Synchrony in Brain Signals"
-    Human Brain Mapping, vol 8, pp. 194-208, 1999.
     """
     if np.shape(phases_i) != np.shape(phases_j):
         raise ValueError("trial number and trial length of signal x and y "
@@ -324,3 +331,94 @@ def phase_difference(alpha, beta):
     delta = alpha - beta
     phase_diff = np.arctan2(np.sin(delta), np.cos(delta))
     return phase_diff
+
+
+def weighted_phase_lag_index(signal_i, signal_j, sampling_frequency=None,
+                             absolute_value=True):
+    r"""
+    Calculates the Weigthed Phase-Lag Index (WPLI) :cite:`phase-Vinck11_1548`.
+
+    This function estimates the WPLI, which is a measure of phase-synchrony. It
+    describes for two given signals i and j, which is leading/lagging the other
+    signal in the frequency domain across multiple trials.
+
+    Parameters
+    ----------
+    signal_i, signal_j : np.array, pq.quantity.Quantity, neo.AnalogSignal
+        Time-series of the first and second signals,
+        with `t` time points and `n` trials.
+    sampling_frequency : pq.quantity.Quantity (default: None)
+        Sampling frequency of the signals in Hz. Not needed if signal i and j
+        are neo.AnalogSignals.
+    absolute_value : boolean (default: True)
+        Takes the absolute value of the numerator in the WPLI-formula.
+        When set to `False`, the WPLI contains additional directionality
+        information about which signal leads/lags the other signal:
+
+        * wpli > 0 : first signal i leads second signal j
+        * wpli < 0 : first signal i lags second signal j
+
+    Returns
+    -------
+    freqs : pq.quantity.Quantity
+        Positive frequencies in Hz associated with the estimates of `wpli`.
+        Range: :math:`[0, sampling frequency/2]`
+    wpli : np.ndarray with dtype=float
+        Weighted phase-lag index of `signal_i` and `signal_j` across trials.
+        Range: :math:`[0, 1]`
+
+    Raises
+    ------
+    ValueError
+        If trial number or trial length are different for signal i and j.
+
+    Notes
+    -----
+    This implementation is based on the formula taken from
+    :cite:`phase-Vinck11_1548` (pp.1550, equation (8)) :
+
+    .. math::
+        WPLI = \frac{| E( |Im(X)| * sgn(Im(X)) ) |}{E( |Im(X)| )}
+
+    with:
+
+    * :math:`E{...}` : expected value operator
+    * :math:`Im{X}` : imaginary component of the cross-spectrum
+    * :math:`X = Z_i Z_{j}^{*}` : cross-spectrum, averaged across trials
+    * :math:`Z_i, Z_j`: complex-valued matrix, representing the Fourier
+      spectra of a particular frequency of the signals i and j.
+
+    """
+    if isinstance(signal_i, neo.AnalogSignal) and \
+            isinstance(signal_j, neo.AnalogSignal):  # neo.AnalogSignal input
+        if signal_i.sampling_rate.rescale("Hz") != \
+                signal_j.sampling_rate.rescale("Hz"):
+            raise ValueError("sampling rate of signal i and j must be equal")
+        sampling_frequency = signal_i.sampling_rate
+        signal_i = signal_i.magnitude
+        signal_j = signal_j.magnitude
+    else:  # np.array() or Quantity input
+        if sampling_frequency is None:
+            raise ValueError("sampling frequency must be given for np.array or"
+                             "Quantity input")
+
+    if np.shape(signal_i) != np.shape(signal_j):
+        if len(signal_i) != len(signal_j):
+            raise ValueError("trial number of signal i and j must be equal")
+        raise ValueError("trial length of signal i and j must be equal")
+
+    # calculate Fourier transforms
+    fft1 = np.fft.rfft(signal_i)
+    fft2 = np.fft.rfft(signal_j)
+    freqs = np.fft.rfftfreq(np.shape(signal_i)[1], d=1.0 / sampling_frequency)
+
+    # obtain cross-spectrum
+    cs = fft1 * np.conjugate(fft2)
+    # calculate WPLI
+    wpli_num = np.mean(np.abs(np.imag(cs)) * np.sign(np.imag(cs)), axis=0)
+    if absolute_value:
+        wpli_num = np.abs(wpli_num)
+    wpli_den = np.mean(np.abs(np.imag(cs)), axis=0)
+    wpli = wpli_num / wpli_den
+
+    return freqs, wpli

@@ -6,10 +6,9 @@ channels:
 dependencies:
   - python>=3.8
   - mpi4py
-  - numpy>=1.19.5
-  - scipy
+  - numpy>=1.19.5, <2
+  - scipy>=1.10.0
   - tqdm
-  - pandas
   - scikit-learn
   - statsmodels
   - jinja2

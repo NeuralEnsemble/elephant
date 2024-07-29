@@ -2,7 +2,7 @@
 """
 Tests for the spike train dissimilarity measures module.
 
-:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2024 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 import unittest
@@ -12,13 +12,13 @@ from numpy.testing import assert_array_equal, assert_array_almost_equal
 import scipy.integrate as spint
 from quantities import ms, s, Hz
 import elephant.kernels as kernels
-import elephant.spike_train_generation as stg
+from elephant.spike_train_generation import StationaryPoissonProcess
 import elephant.spike_train_dissimilarity as stds
 
 from elephant.datasets import download_datasets, ELEPHANT_TMP_DIR
 
 
-class TimeScaleDependSpikeTrainDissimMeasures_TestCase(unittest.TestCase):
+class TimeScaleDependSpikeTrainDissimMeasuresTestCase(unittest.TestCase):
     def setUp(self):
         self.st00 = SpikeTrain([], units='ms', t_stop=1000.0)
         self.st01 = SpikeTrain([1], units='ms', t_stop=1000.0)
@@ -38,9 +38,15 @@ class TimeScaleDependSpikeTrainDissimMeasures_TestCase(unittest.TestCase):
         self.st15 = SpikeTrain([0.01, 0.02, 0.03, 0.04, 0.05],
                                units='s', t_stop=1000.0)
         self.st16 = SpikeTrain([12, 16, 28, 30, 42], units='ms', t_stop=1000.0)
-        self.st21 = stg.homogeneous_poisson_process(50 * Hz, 0 * ms, 1000 * ms)
-        self.st22 = stg.homogeneous_poisson_process(40 * Hz, 0 * ms, 1000 * ms)
-        self.st23 = stg.homogeneous_poisson_process(30 * Hz, 0 * ms, 1000 * ms)
+        self.st21 = StationaryPoissonProcess(rate=50 * Hz, t_start=0 * ms,
+                                             t_stop=1000 * ms
+                                             ).generate_spiketrain()
+        self.st22 = StationaryPoissonProcess(rate=40 * Hz, t_start=0 * ms,
+                                             t_stop=1000 * ms
+                                             ).generate_spiketrain()
+        self.st23 = StationaryPoissonProcess(rate=30 * Hz, t_start=0 * ms,
+                                             t_stop=1000 * ms
+                                             ).generate_spiketrain()
         self.rd_st_list = [self.st21, self.st22, self.st23]
         self.st31 = SpikeTrain([12.0], units='ms', t_stop=1000.0)
         self.st32 = SpikeTrain([12.0, 12.0], units='ms', t_stop=1000.0)
@@ -485,7 +491,7 @@ class TimeScaleDependSpikeTrainDissimMeasures_TestCase(unittest.TestCase):
                 -((self.t - self.st08[1]) / self.tau3).simplified) -
             (self.t > self.st09[0]) * np.exp(
                 -((self.t - self.st09[0]) / self.tau3).simplified)) ** 2
-        distance = np.sqrt(2.0 * spint.cumtrapz(
+        distance = np.sqrt(2.0 * spint.cumulative_trapezoid(
             y=f_minus_g_squared, x=self.t.magnitude)[-1] /
                            self.tau3.rescale(self.t.units).magnitude)
         self.assertAlmostEqual(stds.van_rossum_distance(
@@ -567,7 +573,7 @@ class TimeScaleDependSpikeTrainDissimMeasures_TestCase(unittest.TestCase):
                 -((self.t - self.st34[0]) / self.tau3).simplified) -
               (self.t > self.st34[1]) * np.exp(
                 -((self.t - self.st34[1]) / self.tau3).simplified)) ** 2
-        distance = np.sqrt(2.0 * spint.cumtrapz(
+        distance = np.sqrt(2.0 * spint.cumulative_trapezoid(
             y=f_minus_g_squared, x=self.t.magnitude)[-1] /
                            self.tau3.rescale(self.t.units).magnitude)
         self.assertAlmostEqual(stds.van_rossum_distance([self.st31, self.st34],

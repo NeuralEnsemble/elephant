@@ -1,0 +1,75 @@
+{
+    "@context": "https://doi.org/10.5063/schema/codemeta-2.0",
+    "@type": "SoftwareSourceCode",
+    "license": "https://spdx.org/licenses/BSD-3-Clause",
+    "codeRepository": "git+https://github.com/NeuralEnsemble/elephant.git",
+    "contIntegration": "https://github.com/NeuralEnsemble/elephant/actions",
+    "dateCreated": "2022-03-14",
+    "datePublished": "2015-04-08",
+    "dateModified": "2024-03-19",
+    "downloadUrl": "https://files.pythonhosted.org/packages/cb/b5/893fadd5505e638a4c8788bf0a2f5a211f59f45203f3dfa3919469e83ed4/elephant-1.0.0.tar.gz",
+    "issueTracker": "https://github.com/NeuralEnsemble/elephant/issues",
+    "name": "Elephant",
+    "version": "1.1.0",
+    "identifier": "https://doi.org/10.5281/zenodo.1186602",
+    "description": "Elephant (Electrophysiology Analysis Toolkit) is an open-source, community centered library for the analysis of electrophysiological data in the Python programming language. The focus of Elephant is on generic analysis functions for spike train data and time series recordings from electrodes, such as the local field potentials (LFP) or intracellular voltages.In addition to providing a common platform for analysis code from different laboratories, the Elephant project aims to provide a consistent and homogeneous analysis framework that is built on a modular foundation. \nElephant is the direct successor to Neurotools and maintains ties to complementary projects such as OpenElectrophy and spykeviewer.",
+    "applicationCategory": "library",
+    "releaseNotes": "https://github.com/NeuralEnsemble/elephant/releases/tag/v1.1.0",
+    "funding": "EU Grant 604102 (HBP), EU Grant 720270(HBP), EU Grant 785907(HBP), EU Grant 945539(HBP)",
+    "developmentStatus": "active",
+    "keywords": [
+        "neuroscience",
+        "neurophysiology",
+        "electrophysiology",
+        "statistics",
+        "data-analysis"
+    ],
+    "programmingLanguage": [
+        "Python3",
+        ""
+    ],
+    "operatingSystem": [
+        "Linux",
+        "Windows",
+        "MacOS"
+    ],
+    "softwareRequirements": [
+        "https://github.com/NeuralEnsemble/elephant/tree/v1.1.0/requirements"
+    ],
+    "relatedLink": [
+        "http://python-elephant.org",
+        "http://elephant.readthedocs.org/"
+    ],
+    "author": [
+        {
+            "@type": "Person",
+            "@id": "https://orcid.org/0000-0003-1255-7300",
+            "givenName": "Michael",
+            "familyName": "Denker",
+            "affiliation": {
+                "@type": "Organization",
+                "name": "Institute for Advanced Simulation (IAS-6), Jülich Research Centre, Jülich, Germany"
+            }
+        },
+        {
+            "@type": "Person",
+            "@id": "https://orcid.org/0000-0001-7292-1982",
+            "givenName": "Moritz",
+            "familyName": "Kern",
+            "affiliation": {
+                "@type": "Organization",
+                "name": "Institute for Advanced Simulation (IAS-6), Jülich Research Centre, Jülich, Germany"
+            }
+        },
+        {
+            "@type": "Person",
+            "@id": "https://orcid.org/0009-0003-9352-9826",
+            "givenName": "Felician",
+            "familyName": "Richter",
+            "affiliation": {
+                "@type": "Organization",
+                "name": "BioMEMS Lab, University of Applied Sciences Aschaffenburg, Germany"
+            }
+        }
+    ]
+}

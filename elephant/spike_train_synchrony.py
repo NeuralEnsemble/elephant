@@ -13,7 +13,7 @@ Synchrony Measures
     Synchrotool
 
 
-:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2024 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 from __future__ import division, print_function, unicode_literals
@@ -87,7 +87,7 @@ def spike_contrast(spiketrains, t_start=None, t_stop=None,
         A list of input spike trains to calculate the synchrony from.
     t_start : pq.Quantity, optional
         The beginning of the spike train. If None, it's taken as the minimum
-        value of `t_start`s of the input spike trains.
+        value of `t_start` values of the input spike trains.
         Default: None
     t_stop : pq.Quantity, optional
         The end of the spike train. If None, it's taken as the maximum value
@@ -286,22 +286,26 @@ class Synchrotool(Complexity):
         threshold : int
             Threshold value for the deletion of spikes engaged in synchronous
             activity.
+
               * `deletion_threshold >= 2` leads to all spikes with a larger or
-                equal complexity value to be deleted/extracted.
+                 equal complexity value to be deleted/extracted.
               * `deletion_threshold <= 1` leads to a ValueError, since this
-              would delete/extract all spikes and there are definitely more
-              efficient ways of doing so.
+                 would delete/extract all spikes and there are definitely more
+                 efficient ways of doing so.
+
         in_place : bool, optional
             Determines whether the modification are made in place
             on ``self.input_spiketrains``.
             Default: False
         mode : {'delete', 'extract'}, optional
             Inversion of the mask for deletion of synchronous events.
+
               * ``'delete'`` leads to the deletion of all spikes with
                 complexity >= `threshold`,
                 i.e. deletes synchronous spikes.
               * ``'extract'`` leads to the deletion of all spikes with
                 complexity < `threshold`, i.e. extracts synchronous spikes.
+
             Default: 'delete'
 
         Raises
@@ -316,6 +320,7 @@ class Synchrotool(Complexity):
         list of neo.SpikeTrain
             List of spiketrains where the spikes with
             ``complexity >= threshold`` have been deleted/extracted.
+
               * If ``in_place`` is True, the returned list is the same as
                 ``self.input_spiketrains``.
               * If ``in_place`` is False, the returned list is a deepcopy of
@@ -351,11 +356,7 @@ class Synchrotool(Complexity):
                     # replace link to spiketrain in segment
                     new_index = self._get_spiketrain_index(
                         segment.spiketrains, st)
-                    # Todo: Simplify following lines once Neo SpikeTrainList
-                    # implments indexed assignment of entries (i.e., stl[i]=st)
-                    spiketrainlist = list(segment.spiketrains)
-                    spiketrainlist[new_index] = new_st
-                    segment.spiketrains = spiketrainlist
+                    segment.spiketrains[new_index] = new_st
                 except ValueError:
                     # st is not in this segment even though it points to it
                     warnings.warn(f"The SpikeTrain at index {idx} of the "

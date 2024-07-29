@@ -28,7 +28,7 @@ Surrogate types
     bin_shuffling
     trial_shifting
 
-:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2024 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -37,6 +37,7 @@ from __future__ import division, print_function, unicode_literals
 import random
 import warnings
 import copy
+from typing import Union, Optional, List
 
 import neo
 import numpy as np
@@ -66,14 +67,14 @@ SURR_METHODS = ('dither_spike_train', 'dither_spikes', 'jitter_spikes',
                 'bin_shuffling', 'isi_dithering')
 
 
-def _dither_spikes_with_refractory_period(spiketrain, dither, n_surrogates,
-                                          refractory_period):
+def _dither_spikes_with_refractory_period(spiketrain: neo.SpikeTrain,
+                                          dither: float,
+                                          n_surrogates: int,
+                                          refractory_period: float
+                                          ) -> np.array:
     units = spiketrain.units
     t_start = spiketrain.t_start.rescale(units).magnitude
     t_stop = spiketrain.t_stop.rescale(units).magnitude
-
-    dither = dither.rescale(units).magnitude
-    refractory_period = refractory_period.rescale(units).magnitude
     # The initially guesses refractory period is compared to the minimal ISI.
     # The smaller value is taken as the refractory to calculate with.
     refractory_period = np.min(np.diff(spiketrain.magnitude),
@@ -108,14 +109,45 @@ def _dither_spikes_with_refractory_period(spiketrain, dither, n_surrogates,
 
         dithered_spiketrains.append(dithered_st)
 
-    dithered_spiketrains = np.array(dithered_spiketrains) * units
+    dithered_spiketrains = np.array(dithered_spiketrains)
+
+    return dithered_spiketrains
+
+
+def _dither_spikes(spiketrain: neo.SpikeTrain, dither: float,
+                   n_surrogates: int, edges: bool) -> np.array:
+    units = spiketrain.units
+    t_start = spiketrain.t_start.rescale(units).magnitude.item()
+    t_stop = spiketrain.t_stop.rescale(units).magnitude.item()
+    # Main: generate the surrogates
+    dithered_spiketrains = \
+        spiketrain.magnitude.reshape((1, len(spiketrain))) \
+        + 2 * dither * np.random.random_sample(
+            (n_surrogates, len(spiketrain))) - dither
+    dithered_spiketrains.sort(axis=1)
+
+    if edges:
+        # Leave out all spikes outside [spiketrain.t_start, spiketrain.t_stop]
+        dithered_spiketrains = [
+            train[np.all([t_start < train, train < t_stop], axis=0)]
+            for train in dithered_spiketrains]
+    else:
+        # Move all spikes outside
+        # [spiketrain.t_start, spiketrain.t_stop] to the range's ends
+        dithered_spiketrains = np.minimum(
+            np.maximum(dithered_spiketrains, t_start), t_stop)
 
     return dithered_spiketrains
 
 
 @deprecated_alias(n='n_surrogates')
-def dither_spikes(spiketrain, dither, n_surrogates=1, decimals=None,
-                  edges=True, refractory_period=None):
+def dither_spikes(spiketrain: neo.SpikeTrain,
+                  dither: pq.Quantity,
+                  n_surrogates: Optional[int] = 1,
+                  decimals: Optional[int] = None,
+                  edges: Optional[bool] = True,
+                  refractory_period: Optional[Union[pq.Quantity, None]] = None
+                  ) -> List[neo.SpikeTrain]:
     """
     Generates surrogates of a spike train by spike dithering.
 
@@ -129,7 +161,7 @@ def dither_spikes(spiketrain, dither, n_surrogates=1, decimals=None,
 
     Parameters
     ----------
-    spiketrain : neo.SpikeTrain
+    spiketrain : :class:`neo.core.SpikeTrain`
         The spike train from which to generate the surrogates.
     dither : pq.Quantity
         Amount of dithering. A spike at time `t` is placed randomly within
@@ -161,8 +193,8 @@ def dither_spikes(spiketrain, dither, n_surrogates=1, decimals=None,
 
     Returns
     -------
-    list of neo.SpikeTrain
-        Each surrogate spike train obtained independently from `spiketrain` by
+    list of :class:`neo.core.SpikeTrain`
+        Each surrogate spike train obtained independently of `spiketrain` by
         randomly dithering its spikes. The range of the surrogate spike trains
         is the same as of `spiketrain`.
 
@@ -186,54 +218,40 @@ def dither_spikes(spiketrain, dither, n_surrogates=1, decimals=None,
         [0.0 ms, 1000.0 ms])>]
 
     """
+    # The trivial case
     if len(spiketrain) == 0:
-        # return the empty spiketrain n times
+        # return the empty spiketrain n_surrogates times
         return [spiketrain.copy() for _ in range(n_surrogates)]
 
+    # Handle units
     units = spiketrain.units
-    t_start = spiketrain.t_start.rescale(units).magnitude
-    t_stop = spiketrain.t_stop.rescale(units).magnitude
+    dither = dither.rescale(units).magnitude.item()
 
-    if refractory_period is None or refractory_period == 0:
-        # Main: generate the surrogates
-        dither = dither.rescale(units).magnitude
-        dithered_spiketrains = \
-            spiketrain.magnitude.reshape((1, len(spiketrain))) \
-            + 2 * dither * np.random.random_sample(
-                (n_surrogates, len(spiketrain))) - dither
-        dithered_spiketrains.sort(axis=1)
-
-        if edges:
-            # Leave out all spikes outside
-            # [spiketrain.t_start, spiketrain.t_stop]
-            dithered_spiketrains = \
-                [train[
-                    np.all([t_start < train, train < t_stop], axis=0)]
-                 for train in dithered_spiketrains]
-        else:
-            # Move all spikes outside
-            # [spiketrain.t_start, spiketrain.t_stop] to the range's ends
-            dithered_spiketrains = np.minimum(
-                np.maximum(dithered_spiketrains, t_start),
-                t_stop)
-
-        dithered_spiketrains = dithered_spiketrains * units
-
+    if not refractory_period:
+        dithered_spiketrains = _dither_spikes(
+            spiketrain, dither, n_surrogates, edges)
     elif isinstance(refractory_period, pq.Quantity):
+        refractory_period = refractory_period.rescale(units).magnitude.item()
+
         dithered_spiketrains = _dither_spikes_with_refractory_period(
             spiketrain, dither, n_surrogates, refractory_period)
     else:
         raise ValueError("refractory_period must be of type pq.Quantity")
 
     # Round the surrogate data to decimal position, if requested
-    if decimals is not None:
-        dithered_spiketrains = \
-            dithered_spiketrains.rescale(pq.ms).round(decimals).rescale(units)
-
-    # Return the surrogates as list of neo.SpikeTrain
-    return [neo.SpikeTrain(train, t_start=t_start, t_stop=t_stop,
-                           sampling_rate=spiketrain.sampling_rate)
-            for train in dithered_spiketrains]
+    if decimals:
+        return [neo.SpikeTrain(
+                (train * units).rescale(pq.ms).round(decimals).rescale(units),
+                t_start=spiketrain.t_start, t_stop=spiketrain.t_stop,
+                sampling_rate=spiketrain.sampling_rate)
+                for train in dithered_spiketrains]
+    else:
+        # Return the surrogates as list of neo.SpikeTrain
+        return [neo.SpikeTrain(
+                train * units,
+                t_start=spiketrain.t_start, t_stop=spiketrain.t_stop,
+                sampling_rate=spiketrain.sampling_rate)
+                for train in dithered_spiketrains]
 
 
 @deprecated_alias(n='n_surrogates')
@@ -393,7 +411,7 @@ def dither_spike_train(spiketrain, shift, n_surrogates=1, decimals=None,
 
     Parameters
     ----------
-    spiketrain : neo.SpikeTrain
+    spiketrain : :class:`neo.core.SpikeTrain`
         The spike train from which to generate the surrogates.
     shift : pq.Quantity
         Amount of shift. `spiketrain` is shifted by a random amount uniformly
@@ -413,8 +431,8 @@ def dither_spike_train(spiketrain, shift, n_surrogates=1, decimals=None,
 
     Returns
     -------
-    list of neo.SpikeTrain
-        Each surrogate spike train obtained independently from `spiketrain` by
+    list of :class:`neo.core.SpikeTrain`
+        Each surrogate spike train obtained independently of `spiketrain` by
         randomly dithering the whole spike train. The time range of the
         surrogate spike trains is the same as in `spiketrain`.
 
@@ -768,7 +786,7 @@ class JointISI(object):
         Default: False
     method : {'fast', 'window'}, optional
         * 'fast': the spike can move in the whole range between the
-            previous and subsequent spikes (computationally efficient).
+           previous and subsequent spikes (computationally efficient).
         * 'window': the spike movement is limited to the parameter `dither`.
 
         Default: 'window'
@@ -1029,7 +1047,7 @@ class JointISI(object):
             Default: 1
 
         Returns
-        ----------
+        -------
         dithered_sts : list of neo.SpikeTrain
             Spike trains, that are dithered versions of the given
             :attr:`spiketrain`.

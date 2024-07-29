@@ -88,6 +88,11 @@ your local machine.
             pip install -r requirements/requirements-extras.txt  # optional
             pip install -r requirements/requirements-tests.txt
 
+Install elephant development version:
+
+.. code-block:: sh
+
+    pip install -e .
 
 3. Before you make any changes, run the test suite to make sure all the tests
    pass on your system::
@@ -340,10 +345,8 @@ Each module in ``doc/reference`` folder ends with the reference section:
     References
     ----------
 
-    .. bibliography:: ../bib/elephant.bib
-       :labelprefix: <module name shortcut>
-       :keyprefix: <module name>-
-       :style: unsrt
+    .. bibliography::
+        :keyprefix: <module name>-
 
 where ``<module name>`` is (by convention) the Python source file name, and
 ``<module name shortcut>`` is what will be displayed to the users.

@@ -30,6 +30,17 @@ The API uses and extends the same structure as in Elephant to ensure intuitive
 usage for scientists that are used to Elephant.
 
 
+**Recording of Elephant analysis provenance**
+
+`Alpaca <https://alpaca-prov.readthedocs.io/en/latest/>`_ can be used to track
+the data flow of Elephant analysis results through minimal extra code in your
+analysis script, resulting in a PROV compatible provenance trail that can be
+used for archival and search. For a detailed example, see the tutorial of the
+Alpaca documentation demonstrating a full workflow of capturing analysis
+provenance using Elephant.
+
+
+
 *****************
 Table of Contents
 *****************

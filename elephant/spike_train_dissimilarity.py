@@ -16,21 +16,17 @@ mathematical sense and time-scale dependent.
     victor_purpura_distance
     van_rossum_distance
 
-:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2024 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
 from __future__ import division, print_function, unicode_literals
 
-import warnings
-
 import numpy as np
 import quantities as pq
-import scipy as sp
 from neo.core import SpikeTrain
 
 import elephant.kernels as kernels
-from elephant.utils import deprecated_alias
 
 __all__ = [
     "victor_purpura_distance",
@@ -51,7 +47,6 @@ def _create_matrix_from_indexed_function(
     return mat
 
 
-@deprecated_alias(trains='spiketrains', q='cost_factor')
 def victor_purpura_distance(spiketrains, cost_factor=1.0 * pq.Hz, kernel=None,
                             sort=True, algorithm='fast'):
     """
@@ -161,12 +156,6 @@ def victor_purpura_distance(spiketrains, cost_factor=1.0 * pq.Hz, kernel=None,
 
     return _create_matrix_from_indexed_function(
         (len(spiketrains), len(spiketrains)), compute, kernel.is_symmetric())
-
-
-def victor_purpura_dist(*args, **kwargs):
-    warnings.warn("'victor_purpura_dist' funcion is deprecated; "
-                  "use 'victor_purpura_distance'", DeprecationWarning)
-    return victor_purpura_distance(*args, **kwargs)
 
 
 def _victor_purpura_dist_for_st_pair_fast(spiketrain_a, spiketrain_b, kernel):
@@ -304,7 +293,6 @@ def _victor_purpura_dist_for_st_pair_intuitive(spiketrain_a, spiketrain_b,
     return scr[nspk_a, nspk_b]
 
 
-@deprecated_alias(trains='spiketrains', tau='time_constant')
 def van_rossum_distance(spiketrains, time_constant=1.0 * pq.s, sort=True):
     """
     Calculates the van Rossum distance :cite:`dissimilarity-Rossum2001_751`,
@@ -375,13 +363,7 @@ def van_rossum_distance(spiketrains, time_constant=1.0 * pq.s, sort=True):
     for i, j in np.ndindex(k_dist.shape):
         vr_dist[i, j] = (
             k_dist[i, i] + k_dist[j, j] - k_dist[i, j] - k_dist[j, i])
-    return sp.sqrt(vr_dist)
-
-
-def van_rossum_dist(*args, **kwargs):
-    warnings.warn("'van_rossum_dist' function is deprecated; "
-                  "use 'van_rossum_distance'", DeprecationWarning)
-    return van_rossum_distance(*args, **kwargs)
+    return np.sqrt(vr_dist)
 
 
 def _summed_dist_matrix(spiketrains, tau, presorted=False):

@@ -67,7 +67,7 @@ array([-0.        ,  0.        ,  0.48623347]) * 1/s
 >>> kernel.icdf(0.5)
 array(1.18677054) * s
 
-:copyright: Copyright 2014-2022 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2024 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -80,8 +80,6 @@ import quantities as pq
 import scipy.optimize
 import scipy.special
 import scipy.stats
-
-from elephant.utils import deprecated_alias
 
 __all__ = [
     'RectangularKernel', 'TriangularKernel', 'EpanechnikovLikeKernel',
@@ -166,7 +164,6 @@ class Kernel(object):
         return "{cls}(sigma={sigma}, invert={invert})".format(
             cls=self.__class__.__name__, sigma=self.sigma, invert=self.invert)
 
-    @deprecated_alias(t='times')
     def __call__(self, times):
         """
         Evaluates the kernel at all points in the array `times`.
@@ -287,7 +284,6 @@ class Kernel(object):
                             "Otherwise a normalization to 1 of the kernel "
                             "cannot be performed.")
 
-    @deprecated_alias(t='time')
     def cdf(self, time):
         r"""
         Cumulative Distribution Function, CDF.
@@ -323,7 +319,6 @@ class Kernel(object):
         """
         raise NotImplementedError
 
-    @deprecated_alias(t='times')
     def median_index(self, times):
         r"""
         Estimates the index of the Median of the kernel.
@@ -469,7 +464,6 @@ class RectangularKernel(SymmetricKernel):
         kernel = pq.Quantity(kernel, units=1 / t_units)
         return kernel
 
-    @deprecated_alias(t='time')
     def cdf(self, time):
         self._check_time_input(time)
         tau = math.sqrt(3) * self.sigma.rescale(time.units).magnitude
@@ -536,7 +530,6 @@ class TriangularKernel(SymmetricKernel):
         kernel = pq.Quantity(kernel, units=1 / times.units)
         return kernel
 
-    @deprecated_alias(t='time')
     def cdf(self, time):
         self._check_time_input(time)
         tau = math.sqrt(6) * self.sigma.rescale(time.units).magnitude
@@ -609,7 +602,6 @@ class EpanechnikovLikeKernel(SymmetricKernel):
         kernel = pq.Quantity(kernel, units=1 / times.units)
         return kernel
 
-    @deprecated_alias(t='time')
     def cdf(self, time):
         self._check_time_input(time)
         tau = math.sqrt(5) * self.sigma.rescale(time.units).magnitude
@@ -732,7 +724,6 @@ class GaussianKernel(SymmetricKernel):
         kernel = pq.Quantity(kernel, units=1 / times.units)
         return kernel
 
-    @deprecated_alias(t='time')
     def cdf(self, time):
         self._check_time_input(time)
         sigma = self.sigma.rescale(time.units).magnitude
@@ -794,7 +785,6 @@ class LaplacianKernel(SymmetricKernel):
         kernel = pq.Quantity(kernel, units=1 / times.units)
         return kernel
 
-    @deprecated_alias(t='time')
     def cdf(self, time):
         self._check_time_input(time)
         tau = self.sigma.rescale(time.units).magnitude / math.sqrt(2)
@@ -863,7 +853,6 @@ class ExponentialKernel(Kernel):
         kernel = pq.Quantity(kernel, units=1 / times.units)
         return kernel
 
-    @deprecated_alias(t='time')
     def cdf(self, time):
         self._check_time_input(time)
         tau = self.sigma.rescale(time.units).magnitude
@@ -936,7 +925,6 @@ class AlphaKernel(Kernel):
         kernel = pq.Quantity(kernel, units=1 / t_units)
         return kernel
 
-    @deprecated_alias(t='time')
     def cdf(self, time):
         self._check_time_input(time)
         tau = self.sigma.rescale(time.units).magnitude / math.sqrt(2)

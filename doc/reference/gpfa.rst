@@ -8,7 +8,5 @@ Gaussian-Process Factor Analysis (GPFA)
 References
 ----------
 
-.. bibliography:: ../bib/elephant.bib
-   :labelprefix: gpfa
-   :keyprefix: gpfa-
-   :style: unsrt
+.. bibliography::
+    :keyprefix: gpfa-
