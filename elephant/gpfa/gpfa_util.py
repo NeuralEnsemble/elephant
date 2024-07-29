@@ -17,13 +17,14 @@ import scipy as sp
 from elephant.conversion import BinnedSpikeTrain
 
 
+
 def get_seqs(data, bin_size, use_sqrt=True):
     """
     Converts the data into a rec array using internally BinnedSpikeTrain.
 
     Parameters
     ----------
-    data : list of list of neo.SpikeTrain
+    trials : list of list of neo.SpikeTrain
         The outer list corresponds to trials and the inner list corresponds to
         the neurons recorded in that trial, such that data[l][n] is the
         spike train of neuron n in trial l. Note that the number and order of
@@ -34,7 +35,7 @@ def get_seqs(data, bin_size, use_sqrt=True):
         Spike bin width
 
     use_sqrt: bool
-        Boolean specifying whether or not to use square-root transform on
+        Boolean specifying whether to use square-root transform on
         spike counts (see original paper for motivation).
         Default: True
 
@@ -56,17 +57,15 @@ def get_seqs(data, bin_size, use_sqrt=True):
     if not isinstance(bin_size, pq.Quantity):
         raise ValueError("'bin_size' must be of type pq.Quantity")
 
-    seqs = []
-    for dat in data:
-        sts = dat
-        binned_spiketrain = BinnedSpikeTrain(sts, bin_size=bin_size)
-        if use_sqrt:
-            binned = np.sqrt(binned_spiketrain.to_array())
-        else:
-            binned = binned_spiketrain.to_array()
-        seqs.append(
-            (binned_spiketrain.n_bins, binned))
-    seqs = np.array(seqs, dtype=[('T', int), ('y', 'O')])
+    # Create a np.recarray
+    # a generator that generates a tuple (n_bins, neural data)
+    seqs = ((BinnedSpikeTrain(trial, bin_size=bin_size).n_bins,
+             np.sqrt(BinnedSpikeTrain(trial, bin_size=bin_size).to_array())
+             if use_sqrt
+             else BinnedSpikeTrain(trial, bin_size=bin_size).to_array())
+            for trial in trials)
+    # create np.recarray by specifying dtype with np.array()
+    seqs = np.array(list(seqs), dtype=[('T', int), ('y', 'O')])
 
     # Remove trials that are shorter than one bin width
     if len(seqs) > 0:
@@ -86,12 +85,12 @@ def cut_trials(seq_in, seg_length=20):
     Parameters
     ----------
     seq_in : np.recarray
-        data structure, whose nth entry (corresponding to the nth experimental
+        trials structure, whose nth entry (corresponding to the nth experimental
         trial) has fields
         T : int
             number of timesteps in trial
         y : (yDim, T) np.ndarray
-            neural data
+            neural trials
 
     seg_length : int
         length of segments to extract, in number of timesteps. If infinite,
@@ -101,12 +100,12 @@ def cut_trials(seq_in, seg_length=20):
     Returns
     -------
     seqOut : np.recarray
-        data structure, whose nth entry (corresponding to the nth experimental
+        trials structure, whose nth entry (corresponding to the nth experimental
         trial) has fields
         T : int
             number of timesteps in segment
         y : (yDim, T) np.ndarray
-            neural data
+            neural trials
 
     Raises
     ------
@@ -498,7 +497,7 @@ def orthonormalize(x, l):
     """
     Orthonormalize the columns of the loading matrix and apply the
     corresponding linear transform to the latent variables.
-    In the following description, yDim and xDim refer to data dimensionality
+    In the following description, yDim and xDim refer to trials dimensionality
     and latent dimensionality, respectively.
 
     Parameters
@@ -534,7 +533,7 @@ def orthonormalize(x, l):
 
 def segment_by_trial(seqs, x, fn):
     """
-    Segment and store data by trial.
+    Segment and store trials by trial.
 
     Parameters
     ----------

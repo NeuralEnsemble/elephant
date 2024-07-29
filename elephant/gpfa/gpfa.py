@@ -2,7 +2,7 @@
 Gaussian-process factor analysis (GPFA) is a dimensionality reduction method
 :cite:`gpfa-Yu2008_1881` for neural trajectory visualization of parallel spike
 trains. GPFA applies factor analysis (FA) to time-binned spike count data to
-reduce the dimensionality and at the same time smoothes the resulting
+reduce the dimensionality and at the same time smooth the resulting
 low-dimensional trajectories by fitting a Gaussian process (GP) model to them.
 
 The input consists of a set of trials (Y), each containing a list of spike
@@ -20,18 +20,18 @@ Gaussian process are estimated from the data using an expectation-maximization
 
 Internally, the analysis consists of the following steps:
 
-0) bin the spike train data to get a sequence of N dimensional vectors of spike
-counts in respective time bins, and choose the reduced dimensionality x_dim
+#. bin the spike train data to get a sequence of N dimensional vectors of spike
+   counts in respective time bins, and choose the reduced dimensionality x_dim.
 
-1) expectation-maximization for fitting of the parameters C, d, R and the
-time-scales and variances of the Gaussian process, using all the trials
-provided as input (c.f., `gpfa_core.em()`)
+#. expectation-maximization for fitting of the parameters C, d, R and the
+   time-scales and variances of the Gaussian process, using all the trials
+   provided as input (c.f., `gpfa_core.em()`).
 
-2) projection of single trials in the low dimensional space (c.f.,
-`gpfa_core.exact_inference_with_ll()`)
+#. projection of single trials in the low dimensional space (c.f.,
+   `gpfa_core.exact_inference_with_ll()`).
 
-3) orthonormalization of the matrix C and the corresponding subspace, for
-visualization purposes: (c.f., `gpfa_core.orthonormalize()`)
+#. orthonormalization of the matrix C and the corresponding subspace, for
+   visualization purposes: (c.f., `gpfa_core.orthonormalize()`).
 
 
 .. autosummary::
@@ -315,9 +315,19 @@ class GPFA(sklearn.base.BaseEstimator):
             that `spiketrains[l][n]` is the spike train of neuron `n` in trial
             `l`.
             Note that the number and order of `neo.SpikeTrain` objects per
-            trial must be fixed such that `spiketrains[l][n]` and
-            `spiketrains[k][n]` refer to spike trains of the same neuron
+            trial must be fixed such that `trials[l][n]` and
+            `trials[k][n]` refer to spike trains of the same neuron
             for any choices of `l`, `k`, and `n`.
+
+            Continuous data
+            Alternatively, pass a pre-processed np.recarray.
+            This is a training data structure, whose n-th element
+            (corresponding to the n-th experimental trial) has fields
+
+            T : int
+                number of bins
+            y : (#units, T) np.ndarray
+                neural data
 
         Returns
         -------
@@ -327,12 +337,13 @@ class GPFA(sklearn.base.BaseEstimator):
         Raises
         ------
         ValueError
-            If `spiketrains` is an empty list.
+            If `trials` is an empty list.
 
-            If `spiketrains[0][0]` is not a `neo.SpikeTrain`.
+            If `trials[0][0]` is not a `neo.SpikeTrain`.
 
             If covariance matrix of input spike data is rank deficient.
         """
+
         if all(
             isinstance(item, neo.SpikeTrain)
             for sublist in spiketrains
@@ -394,6 +405,7 @@ class GPFA(sklearn.base.BaseEstimator):
         model and applying an orthonormalization on the latent variable space.
 
         Parameters
+
         ---------- # noqa
         spiketrains : list of list of :class:`neo.core.SpikeTrain`, list of :class:`neo.core.spiketrainlist.SpikeTrainList` or :class:`elephant.trials.Trials`
             Spike train data to be transformed to latent variables.
@@ -402,9 +414,20 @@ class GPFA(sklearn.base.BaseEstimator):
             that `spiketrains[l][n]` is the spike train of neuron `n` in trial
             `l`.
             Note that the number and order of `neo.SpikeTrain` objects per
-            trial must be fixed such that `spiketrains[l][n]` and
-            `spiketrains[k][n]` refer to spike trains of the same neuron
+            trial must be fixed such that `trials[l][n]` and
+            `trials[k][n]` refer to spike trains of the same neuron
             for any choices of `l`, `k`, and `n`.
+
+            Continuous data
+            Alternatively, pass a pre-processed np.recarray.
+            This is a training data structure, whose n-th element
+            (corresponding to the n-th experimental trial) has fields
+
+            T : int
+                number of bins
+            y : (#units, T) np.ndarray
+                neural data
+
         returned_data : list of str
             The dimensionality reduction transform generates the following
             resultant data:
@@ -450,12 +473,12 @@ class GPFA(sklearn.base.BaseEstimator):
                 `VsmGP`:  (#bins, #bins, #latent_vars) np.ndarray
 
             Note that the num. of bins (#bins) can vary across trials,
-            reflecting the trial durations in the given `spiketrains` data.
+            reflecting the trial durations in the given `trials` data.
 
         Raises
         ------
         ValueError
-            If the number of neurons in `spiketrains` is different from that
+            If the number of neurons in `trials` is different from that
             in the training spiketrain data.
 
             If `returned_data` contains keys different from the ones in
@@ -504,8 +527,8 @@ class GPFA(sklearn.base.BaseEstimator):
         returned_data: str = ["latent_variable_orth"],
     ) -> "GPFA":
         """
-        Fit the model with `spiketrains` data and apply the dimensionality
-        reduction on `spiketrains`.
+        Fit the model with `trials` data and apply the dimensionality
+        reduction on `trials`.
 
         Parameters
         ---------- # noqa
@@ -523,16 +546,14 @@ class GPFA(sklearn.base.BaseEstimator):
         Raises
         ------
         ValueError
-             Refer to :func:`GPFA.fit` and :func:`GPFA.transform`.
+            Refer to :func:`GPFA.fit` and :func:`GPFA.transform`.
 
         See Also
         --------
-        GPFA.fit : fit the model with `spiketrains`
-        GPFA.transform : transform `spiketrains` into trajectories
+        GPFA.fit : fit the model with `trials`
+        GPFA.transform : transform `trials` into trajectories
 
         """
-        self.fit(spiketrains)
-        return self.transform(spiketrains, returned_data=returned_data)
 
     @trials_to_list_of_spiketrainlist
     def score(
@@ -552,16 +573,16 @@ class GPFA(sklearn.base.BaseEstimator):
             Spike train data to be scored.
             The outer list corresponds to trials and the inner list corresponds
             to the neurons recorded in that trial, such that
-            `spiketrains[l][n]` is the spike train of neuron `n` in trial `l`.
+            `trials[l][n]` is the spike train of neuron `n` in trial `l`.
             Note that the number and order of `neo.SpikeTrain` objects per
-            trial must be fixed such that `spiketrains[l][n]` and
-            `spiketrains[k][n]` refer to spike trains of the same neuron
+            trial must be fixed such that `trials[l][n]` and
+            `trials[k][n]` refer to spike trains of the same neuron
             for any choice of `l`, `k`, and `n`.
 
         Returns
         -------
         log_likelihood : float
-            Log-likelihood of the given spiketrains under the fitted model.
+            Log-likelihood of the given trials under the fitted model.
         """
         self.transform(spiketrains)
         return self.transform_info["log_likelihood"]

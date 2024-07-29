@@ -14,6 +14,7 @@ import quantities as pq
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
 from elephant.spike_train_generation import StationaryPoissonProcess
+
 from elephant.trials import TrialsFromLists
 try:
     import sklearn
@@ -32,10 +33,9 @@ class GPFATestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         def gen_gamma_spike_train(k, theta, t_max):
-            x = []
-            for i in range(int(3 * t_max / (k * theta))):
-                x.append(np.random.gamma(k, theta))
-            s = np.cumsum(x)
+            x = (np.random.gamma(k, theta) for _ in
+                 range(int(3 * t_max / (k * theta))))
+            s = np.cumsum(list(x))
             return s[s < t_max]
 
         def gen_test_data(rates, durs, shapes=(1, 1, 1, 1)):
@@ -54,6 +54,7 @@ class GPFATestCase(unittest.TestCase):
         durs = (2.5, 2.5, 2.5, 2.5)
         np.random.seed(0)
         n_trials = 100
+
         cls.data0 = []
         for trial in range(n_trials):
             n1 = neo.SpikeTrain(gen_test_data(rates_a, durs), units=1 * pq.s,
@@ -79,6 +80,7 @@ class GPFATestCase(unittest.TestCase):
 
         # generate data2
         np.random.seed(27)
+
         cls.data2 = []
         n_trials = 10
         n_channels = 20
@@ -134,9 +136,9 @@ class GPFATestCase(unittest.TestCase):
             _ = GPFA(tau_init=invalid_tau_init)
         gpfa = GPFA()
         with self.assertRaises(ValueError):
-            gpfa.fit(spiketrains=invalid_data)
+            gpfa.fit(trials=invalid_data)
         with self.assertRaises(ValueError):
-            gpfa.fit(spiketrains=[])
+            gpfa.fit(trials=[])
 
     def test_data2(self):
         gpfa = GPFA(bin_size=self.bin_size, x_dim=8, em_max_iters=self.n_iters)
@@ -164,7 +166,7 @@ class GPFATestCase(unittest.TestCase):
         self.assertTrue(len(returned_data) == len(seqs))
         self.assertTrue(isinstance(seqs, dict))
         with self.assertRaises(ValueError):
-            seqs = gpfa.transform(self.data2, returned_data=['invalid_name'])
+            gpfa.transform(self.data2, returned_data=['invalid_name'])
 
     def test_fit_transform(self):
         gpfa1 = GPFA(bin_size=self.bin_size, x_dim=self.x_dim,
@@ -218,6 +220,7 @@ class GPFATestCase(unittest.TestCase):
         logdet_fast = gpfa_util.logdet(matrix)
         logdet_ground_truth = np.log(np.linalg.det(matrix))
         assert_array_almost_equal(logdet_fast, logdet_ground_truth)
+
 
     def test_trial_object_gpfa_fit(self):
         gpfa_trial_object = GPFA(bin_size=self.bin_size, x_dim=self.x_dim,
