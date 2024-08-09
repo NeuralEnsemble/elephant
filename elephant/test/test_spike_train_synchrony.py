@@ -197,8 +197,7 @@ class SynchrofactDetectionTestCase(unittest.TestCase):
             spiketrains,
             sampling_rate=sampling_rate,
             binary=binary,
-            spread=spread,
-            include_t_stop=False)
+            spread=spread)
 
         # test annotation
         synchrofact_obj.annotate_synchrofacts()
@@ -451,8 +450,7 @@ class SynchrofactDetectionTestCase(unittest.TestCase):
             [spiketrain],
             spread=0,
             sampling_rate=sampling_rate,
-            binary=False,
-            include_t_stop=False)
+            binary=False)
         synchrofact_obj.delete_synchrofacts(
             mode='delete',
             in_place=True,
