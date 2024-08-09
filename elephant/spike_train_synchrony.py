@@ -279,7 +279,6 @@ class Synchrotool(Complexity):
                  include_t_stop=True):
 
         self.annotated = False
-        initial_t_stop = copy(spiketrains[0].t_stop)
 
         super(Synchrotool, self).__init__(
             spiketrains=spiketrains,
@@ -290,9 +289,6 @@ class Synchrotool(Complexity):
             tolerance=tolerance,
             t_stop=spiketrains[0].t_stop + (1 / sampling_rate) if include_t_stop else None,
             )
-
-        for st in spiketrains:
-            st.t_stop = initial_t_stop
 
     def delete_synchrofacts(self, threshold, in_place=False, mode='delete'):
         """
