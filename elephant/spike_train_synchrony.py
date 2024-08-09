@@ -20,7 +20,7 @@ from __future__ import division, print_function, unicode_literals
 
 import warnings
 from collections import namedtuple
-from copy import deepcopy, copy
+from copy import deepcopy
 
 import neo
 import numpy as np
