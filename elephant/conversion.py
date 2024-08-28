@@ -294,17 +294,17 @@ class BinnedSpikeTrain(object):
         slicing and computations efficiently.
         Default: 'csr'
     ignore_shared_time : bool, optional
-        If `True`, the method allows `t_start` and `t_stop` to extend beyond 
-        the shared time interval across all spike trains. This means that the 
-        binning process can include spikes that occur outside the common 
+        If `True`, the method allows `t_start` and `t_stop` to extend beyond
+        the shared time interval across all spike trains. This means that the
+        binning process can include spikes that occur outside the common
         time range.
-        If `False` (default), the method enforces that `t_start` and `t_stop` 
-        must fall within the shared time interval of all spike trains. If 
-        either `t_start` or `t_stop` lies outside this range, a `ValueError` 
-        is raised, ensuring that only the time period where all spike trains 
+        If `False` (default), the method enforces that `t_start` and `t_stop`
+        must fall within the shared time interval of all spike trains. If
+        either `t_start` or `t_stop` lies outside this range, a `ValueError`
+        is raised, ensuring that only the time period where all spike trains
         overlap is considered for binning.
-        Use this parameter when you want to include spikes outside the common 
-        time interval, understanding that it may result in bins that do not 
+        Use this parameter when you want to include spikes outside the common
+        time interval, understanding that it may result in bins that do not
         have contributions from all spike trains.
 
     Raises
