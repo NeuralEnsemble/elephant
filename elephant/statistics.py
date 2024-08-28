@@ -1488,6 +1488,7 @@ class Complexity(object):
         time_hist = time_histogram(self.input_spiketrains,
                                    self.bin_size,
                                    binary=self.binary,
+                                   t_start=self.t_start,
                                    t_stop=self.t_stop)
 
         time_hist_magnitude = time_hist.magnitude.flatten()
