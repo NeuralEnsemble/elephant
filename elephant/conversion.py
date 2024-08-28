@@ -1246,7 +1246,18 @@ def discretise_spiketimes(spiketrains, sampling_rate):
 
     Examples
     --------
-    >>> import neo:
+    >>> import neo
+    >>> import numpy as np
+    >>> import quantities as pq
+    >>> from elephant import conversion
+    >>>
+    >>> np.random.seed(1)
+    >>> times = (np.arange(10) + np.random.uniform(size=10)) * pq.ms
+    >>> spiketrain = neo.SpikeTrain(times, t_stop=10*pq.ms)
+    >>>
+    >>> spiketrain.times
+    array([0.417022  , 1.72032449, 2.00011437, 3.30233257, 4.14675589,
+           5.09233859, 6.18626021, 7.34556073, 8.39676747, 9.53881673]) * ms
     >>>
     >>> discretised_spiketrain = conversion.discretise_spiketimes(spiketrain,
     ...                                                           1 / pq.ms)
