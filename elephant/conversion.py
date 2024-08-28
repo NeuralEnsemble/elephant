@@ -294,7 +294,18 @@ class BinnedSpikeTrain(object):
         slicing and computations efficiently.
         Default: 'csr'
     ignore_shared_time : bool, optional
-        If True, check for binning outside of common interval is possible.
+        If `True`, the method allows `t_start` and `t_stop` to extend beyond 
+        the shared time interval across all spike trains. This means that the 
+        binning process can include spikes that occur outside the common 
+        time range.
+        If `False` (default), the method enforces that `t_start` and `t_stop` 
+        must fall within the shared time interval of all spike trains. If 
+        either `t_start` or `t_stop` lies outside this range, a `ValueError` 
+        is raised, ensuring that only the time period where all spike trains 
+        overlap is considered for binning.
+        Use this parameter when you want to include spikes outside the common 
+        time interval, understanding that it may result in bins that do not 
+        have contributions from all spike trains.
 
     Raises
     ------
@@ -1235,18 +1246,7 @@ def discretise_spiketimes(spiketrains, sampling_rate):
 
     Examples
     --------
-    >>> import neo
-    >>> import numpy as np
-    >>> import quantities as pq
-    >>> from elephant import conversion
-    >>>
-    >>> np.random.seed(1)
-    >>> times = (np.arange(10) + np.random.uniform(size=10)) * pq.ms
-    >>> spiketrain = neo.SpikeTrain(times, t_stop=10*pq.ms)
-    >>>
-    >>> spiketrain.times
-    array([0.417022  , 1.72032449, 2.00011437, 3.30233257, 4.14675589,
-           5.09233859, 6.18626021, 7.34556073, 8.39676747, 9.53881673]) * ms
+    >>> import neo:
     >>>
     >>> discretised_spiketrain = conversion.discretise_spiketimes(spiketrain,
     ...                                                           1 / pq.ms)
