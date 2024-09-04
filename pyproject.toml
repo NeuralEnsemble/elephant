@@ -47,9 +47,6 @@ dependencies = {file = ["requirements/requirements.txt"]}
 
 [tool.setuptools]
 packages = ["elephant", "elephant.test"]
-ext-modules = [
-  {name = "elephant.spade_src.fim", sources = ["elephant/spade_src/src/fim.cpp"],include-dirs=["elephant/spade_src/include"],language="c++", extra-compile-args=['-DMODULE_NAME=fim', '-DUSE_OPENMP', '-DWITH_SIG_TERM','-Dfim_EXPORTS', '-O3', '-pedantic', '-Wextra','-Weffc++', '-Wunused-result', '-Werror','-fopenmp', '-std=gnu++17']}
-]
 
 # This file was created following this guide:
 # https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#writing-pyproject-toml
