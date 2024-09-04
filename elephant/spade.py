@@ -99,7 +99,7 @@ Time for pvalue spectrum computation: ...
 
 Refer to Viziphant documentation to check how to visualzie such patterns.
 
-:copyright: Copyright 2014-2023 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2024 by the Elephant team, see `doc/authors.rst`.
 :license: BSD, see LICENSE.txt for details.
 """
 from __future__ import division, print_function, unicode_literals
@@ -768,7 +768,7 @@ def _build_context(binary_matrix, winlen):
         (np.ones((len(windows_col)), dtype=bool),
          (windows_row, windows_col)),
         shape=(num_bins, winlen * num_neurons),
-        dtype=bool).A
+        dtype=bool).toarray()
     # Array containing all the possible attributes (each spike is indexed by
     # a number equal to neu idx*winlen + bin_idx)
     attributes = np.array(

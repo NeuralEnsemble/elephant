@@ -4,17 +4,17 @@
     "license": "https://spdx.org/licenses/BSD-3-Clause",
     "codeRepository": "git+https://github.com/NeuralEnsemble/elephant.git",
     "contIntegration": "https://github.com/NeuralEnsemble/elephant/actions",
-    "dateCreated": "2013-17-15",
+    "dateCreated": "2022-03-14",
     "datePublished": "2015-04-08",
-    "dateModified": "2023-11-10",
+    "dateModified": "2024-03-19",
     "downloadUrl": "https://files.pythonhosted.org/packages/cb/b5/893fadd5505e638a4c8788bf0a2f5a211f59f45203f3dfa3919469e83ed4/elephant-1.0.0.tar.gz",
     "issueTracker": "https://github.com/NeuralEnsemble/elephant/issues",
     "name": "Elephant",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "identifier": "https://doi.org/10.5281/zenodo.1186602",
     "description": "Elephant (Electrophysiology Analysis Toolkit) is an open-source, community centered library for the analysis of electrophysiological data in the Python programming language. The focus of Elephant is on generic analysis functions for spike train data and time series recordings from electrodes, such as the local field potentials (LFP) or intracellular voltages.In addition to providing a common platform for analysis code from different laboratories, the Elephant project aims to provide a consistent and homogeneous analysis framework that is built on a modular foundation. \nElephant is the direct successor to Neurotools and maintains ties to complementary projects such as OpenElectrophy and spykeviewer.",
     "applicationCategory": "library",
-    "releaseNotes": "https://github.com/NeuralEnsemble/elephant/releases/tag/v1.0.0",
+    "releaseNotes": "https://github.com/NeuralEnsemble/elephant/releases/tag/v1.1.0",
     "funding": "EU Grant 604102 (HBP), EU Grant 720270(HBP), EU Grant 785907(HBP), EU Grant 945539(HBP)",
     "developmentStatus": "active",
     "keywords": [
@@ -34,7 +34,7 @@
         "MacOS"
     ],
     "softwareRequirements": [
-        "https://github.com/NeuralEnsemble/elephant/tree/v1.0.0/requirements"
+        "https://github.com/NeuralEnsemble/elephant/tree/v1.1.0/requirements"
     ],
     "relatedLink": [
         "http://python-elephant.org",
@@ -48,7 +48,7 @@
             "familyName": "Denker",
             "affiliation": {
                 "@type": "Organization",
-                "name": "Institute of Neuroscience and Medicine (INM-6) and Institute for Advanced Simulation (IAS-6) and JARA-Institute Brain Structure-Function Relationships (INM-10), Jülich Research Centre, Jülich, Germany"
+                "name": "Institute for Advanced Simulation (IAS-6), Jülich Research Centre, Jülich, Germany"
             }
         },
         {
@@ -58,7 +58,17 @@
             "familyName": "Kern",
             "affiliation": {
                 "@type": "Organization",
-                "name": "Institute of Neuroscience and Medicine (INM-6) and Institute for Advanced Simulation (IAS-6) and JARA-Institute Brain Structure-Function Relationships (INM-10), Jülich Research Centre, Jülich, Germany"
+                "name": "Institute for Advanced Simulation (IAS-6), Jülich Research Centre, Jülich, Germany"
+            }
+        },
+        {
+            "@type": "Person",
+            "@id": "https://orcid.org/0009-0003-9352-9826",
+            "givenName": "Felician",
+            "familyName": "Richter",
+            "affiliation": {
+                "@type": "Organization",
+                "name": "BioMEMS Lab, University of Applied Sciences Aschaffenburg, Germany"
             }
         }
     ]

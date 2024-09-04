@@ -17,8 +17,8 @@ contribution, and may not be the current affiliation of a contributor.
 * Jan Gosmann [6, 8]
 * Julia Sprenger [1]
 * Junji Ito [1]
-* Michael Denker [1]
-* Moritz Kern [1]
+* Michael Denker [1, 14]
+* Moritz Kern [1, 14]
 * Paul Chorley [1]
 * Pierre Yger [2]
 * Pietro Quaglio [1]
@@ -66,5 +66,6 @@ contribution, and may not be the current affiliation of a contributor.
 11. Case Western Reserve University (CWRU), Cleveland, OH, USA
 12. BioMEMS Lab, TH Aschaffenburg University of applied sciences, Germany
 13. Cognitronics and Sensor Systems, CITEC, Bielefeld University, Bielefeld, Germany
+14. Institute for Advanced Simulation (IAS-6), Jülich Research Centre, Jülich, Germany
 
 If we've somehow missed you off the list we're very sorry - please let us know.

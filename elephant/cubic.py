@@ -39,7 +39,7 @@ Given a list of spike trains, the analysis comprises the following steps:
 >>> kappa # doctest: +SKIP
 [20.1, 22.656565656565657, 27.674706246134818]
 
-:copyright: Copyright 2014-2023 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2024 by the Elephant team, see `doc/authors.rst`.
 :license: BSD, see LICENSE.txt for details.
 """
 
@@ -237,5 +237,6 @@ def _kstat(data):
     """
     if len(data) == 0:
         raise ValueError('The input data must be a non-empty array')
-    moments = [scipy.stats.kstat(data, n=n) for n in [1, 2, 3]]
+    # Due to issues with precision, ensure float64 (default) is the precision of the data array. (scipy == 1.14.0)
+    moments = [scipy.stats.kstat(data.astype(np.float64), n=n) for n in [1, 2, 3]]
     return moments

@@ -2,7 +2,7 @@
 """
 Unit tests for the spike_train_generation module.
 
-:copyright: Copyright 2014-2023 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2024 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -13,6 +13,7 @@ import unittest
 import warnings
 
 import neo
+from neo.core.spiketrainlist import SpikeTrainList
 import numpy as np
 from numpy.testing import assert_array_almost_equal, assert_allclose
 import quantities as pq
@@ -37,9 +38,10 @@ def pdiff(a, b):
     return abs((a - b) / a)
 
 
-class AnalogSignalThresholdDetectionTestCase(unittest.TestCase):
+class ThresholdDetectionTestCase(unittest.TestCase):
 
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
         # Load membrane potential simulated using Brian2
         # according to make_spike_extraction_test_data.py.
         curr_dir = os.path.dirname(os.path.realpath(__file__))
@@ -49,10 +51,14 @@ class AnalogSignalThresholdDetectionTestCase(unittest.TestCase):
         with open(raw_data_file_loc, 'r') as f:
             for x in f.readlines():
                 raw_data.append(float(x))
-        self.vm = neo.AnalogSignal(
+        cls.vm = neo.AnalogSignal(
             raw_data, units=pq.V, sampling_period=0.1 * pq.ms)
-        self.true_time_stamps = [0.0123, 0.0354, 0.0712, 0.1191, 0.1694,
-                                 0.2200, 0.2711] * pq.s
+        cls.vm_3d = neo.AnalogSignal(np.array([raw_data,
+                                              raw_data,
+                                              raw_data]).T,
+                                     units=pq.V, sampling_period=0.1 * pq.ms)
+        cls.true_time_stamps = [0.0123, 0.0354, 0.0712, 0.1191, 0.1694,
+                                0.2200, 0.2711] * pq.s
 
     def test_threshold_detection(self):
         # Test whether spikes are extracted at the correct times from
@@ -81,15 +87,52 @@ class AnalogSignalThresholdDetectionTestCase(unittest.TestCase):
         except AttributeError:  # If numpy version too old to have allclose
             self.assertTrue(np.array_equal(spike_train, self.true_time_stamps))
 
-    def test_peak_detection_threshold(self):
+    def test_threshold_detection_threshold(self):
         # Test for empty SpikeTrain when threshold is too high
         result = threshold_detection(self.vm, threshold=30 * pq.mV)
         self.assertEqual(len(result), 0)
 
+    def test_threshold_raise_type_error(self):
+        with self.assertRaises(TypeError):
+            threshold_detection(self.vm, threshold=30)
 
-class AnalogSignalPeakDetectionTestCase(unittest.TestCase):
+    def test_sign_raise_value_error(self):
+        with self.assertRaises(ValueError):
+            threshold_detection(self.vm, sign="wrong input")
 
-    def setUp(self):
+    def test_return_is_neo_spike_train(self):
+        self.assertIsInstance(threshold_detection(self.vm),
+                              neo.core.SpikeTrain)
+
+    def test_signal_raise_type_error(self):
+        with self.assertRaises(TypeError):
+            threshold_detection(self.vm.magnitude)
+
+    def test_always_return_as_list(self):
+        self.assertIsInstance(threshold_detection(self.vm,
+                                                  always_as_list=True),
+                              SpikeTrainList)
+
+    def test_analog_signal_multiple_channels(self):
+        list_of_spike_trains = threshold_detection(self.vm_3d)
+        self.assertEqual(len(list_of_spike_trains), 3)
+        for spike_train in list_of_spike_trains:
+            with self.subTest(value=spike_train):
+                self.assertIsInstance(spike_train, neo.SpikeTrain)
+        self.assertIsInstance(list_of_spike_trains, SpikeTrainList)
+
+    def test_empty_analog_signal(self):
+        empty_analog_signal = neo.AnalogSignal([], units='V',
+                                               sampling_period=1*pq.ms)
+        self.assertEqual(empty_analog_signal.shape, (0, 1))
+        self.assertIsInstance(threshold_detection(empty_analog_signal),
+                              neo.core.SpikeTrain)
+
+
+class PeakDetectionTestCase(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
         curr_dir = os.path.dirname(os.path.realpath(__file__))
         raw_data_file_loc = os.path.join(
             curr_dir, 'spike_extraction_test_data.txt')
@@ -97,16 +140,19 @@ class AnalogSignalPeakDetectionTestCase(unittest.TestCase):
         with open(raw_data_file_loc, 'r') as f:
             for x in f.readlines():
                 raw_data.append(float(x))
-        self.vm = neo.AnalogSignal(
+        cls.vm = neo.AnalogSignal(
             raw_data, units=pq.V, sampling_period=0.1 * pq.ms)
-        self.true_time_stamps = [0.0124, 0.0354, 0.0713, 0.1192, 0.1695,
-                                 0.2201, 0.2711] * pq.s
+        cls.vm_3d = neo.AnalogSignal(np.array([raw_data,
+                                              raw_data,
+                                              raw_data]).T,
+                                     units=pq.V, sampling_period=0.1 * pq.ms)
+        cls.true_time_stamps = [0.0124, 0.0354, 0.0713, 0.1192, 0.1695,
+                                0.2201, 0.2711] * pq.s
 
-    def test_peak_detection_time_stamps(self):
+    def test_peak_detection_validate_result(self):
         # Test with default arguments
         result = peak_detection(self.vm)
         self.assertEqual(len(self.true_time_stamps), len(result))
-        self.assertIsInstance(result, neo.core.SpikeTrain)
 
         try:
             assert_array_almost_equal(result, self.true_time_stamps)
@@ -118,10 +164,48 @@ class AnalogSignalPeakDetectionTestCase(unittest.TestCase):
         result = peak_detection(self.vm, threshold=30 * pq.mV)
         self.assertEqual(len(result), 0)
 
+    def test_threshold_raise_type_error(self):
+        with self.assertRaises(TypeError):
+            peak_detection(self.vm, threshold=30)
 
-class AnalogSignalSpikeExtractionTestCase(unittest.TestCase):
+    def test_sign_raise_value_error(self):
+        with self.assertRaises(ValueError):
+            peak_detection(self.vm, sign="wrong input")
 
-    def setUp(self):
+    def test_return_is_neo_spike_train(self):
+        self.assertIsInstance(peak_detection(self.vm), neo.core.SpikeTrain)
+
+    def test_signal_raise_type_error(self):
+        with self.assertRaises(TypeError):
+            peak_detection(self.vm.magnitude)
+
+    def test_always_return_as_list(self):
+        self.assertIsInstance(peak_detection(self.vm, always_as_list=True),
+                              SpikeTrainList)
+
+    def test_analog_signal_multiple_channels(self):
+        list_of_spike_trains = peak_detection(self.vm_3d)
+        self.assertEqual(len(list_of_spike_trains), 3)
+        for spike_train in list_of_spike_trains:
+            with self.subTest(value=spike_train):
+                self.assertIsInstance(spike_train, neo.SpikeTrain)
+
+    def test_analog_signal_multiple_channels_as_array(self):
+        list_of_spike_trains = peak_detection(self.vm_3d, as_array=True)
+        self.assertEqual(len(list_of_spike_trains), 3)
+        for spike_train in list_of_spike_trains:
+            with self.subTest(value=spike_train):
+                self.assertIsInstance(spike_train, np.ndarray)
+
+    def test_analog_signal_single_channel_as_array(self):
+        array = peak_detection(self.vm, as_array=True)
+        self.assertIsInstance(array, np.ndarray)
+        self.assertEqual(array.ndim, 1)
+
+
+class SpikeExtractionTestCase(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
         curr_dir = os.path.dirname(os.path.realpath(__file__))
         raw_data_file_loc = os.path.join(
             curr_dir, 'spike_extraction_test_data.txt')
@@ -129,26 +213,57 @@ class AnalogSignalSpikeExtractionTestCase(unittest.TestCase):
         with open(raw_data_file_loc, 'r') as f:
             for x in f.readlines():
                 raw_data.append(float(x))
-        self.vm = neo.AnalogSignal(
+        cls.vm = neo.AnalogSignal(
             raw_data, units=pq.V, sampling_period=0.1 * pq.ms)
-        self.first_spike = np.array([-0.04084546, -0.03892033, -0.03664779,
-                                     -0.03392689, -0.03061474, -0.02650277,
-                                     -0.0212756, -0.01443531, -0.00515365,
-                                     0.00803962, 0.02797951, -0.07,
-                                     -0.06974495, -0.06950466, -0.06927778,
-                                     -0.06906314, -0.06885969, -0.06866651,
-                                     -0.06848277, -0.06830773, -0.06814071,
-                                     -0.06798113, -0.06782843, -0.06768213,
-                                     -0.06754178, -0.06740699, -0.06727737,
-                                     -0.06715259, -0.06703235, -0.06691635])
+        cls.vm_3d = neo.AnalogSignal(np.array([raw_data,
+                                              raw_data,
+                                              raw_data]).T,
+                                     units=pq.V, sampling_period=0.1 * pq.ms)
+        cls.first_spike = np.array([-0.04084546, -0.03892033, -0.03664779,
+                                    -0.03392689, -0.03061474, -0.02650277,
+                                    -0.0212756, -0.01443531, -0.00515365,
+                                    0.00803962, 0.02797951, -0.07,
+                                    -0.06974495, -0.06950466, -0.06927778,
+                                    -0.06906314, -0.06885969, -0.06866651,
+                                    -0.06848277, -0.06830773, -0.06814071,
+                                    -0.06798113, -0.06782843, -0.06768213,
+                                    -0.06754178, -0.06740699, -0.06727737,
+                                    -0.06715259, -0.06703235, -0.06691635])
 
     def test_spike_extraction_waveform(self):
-        spike_train = spike_extraction(self.vm.reshape(-1),
+        spike_train = spike_extraction(self.vm,
                                        interval=(-1 * pq.ms, 2 * pq.ms))
 
         assert_array_almost_equal(
             spike_train.waveforms[0][0].magnitude.reshape(-1),
             self.first_spike)
+
+    def test_threshold_raise_type_error(self):
+        with self.assertRaises(TypeError):
+            spike_extraction(self.vm, threshold=30)
+
+    def test_sign_raise_value_error(self):
+        with self.assertRaises(ValueError):
+            spike_extraction(self.vm, sign="wrong input")
+
+    def test_return_is_neo_spike_train(self):
+        self.assertIsInstance(spike_extraction(self.vm), neo.core.SpikeTrain)
+
+    def test_signal_raise_type_error(self):
+        with self.assertRaises(TypeError):
+            spike_extraction(self.vm.magnitude)
+
+    def test_always_return_as_list(self):
+        self.assertIsInstance(spike_extraction(self.vm, always_as_list=True),
+                              SpikeTrainList)
+
+    def test_analog_signal_multiple_channels(self):
+        list_of_spike_trains = spike_extraction(self.vm_3d)
+        self.assertEqual(len(list_of_spike_trains), 3)
+        for spike_train in list_of_spike_trains:
+            with self.subTest(value=spike_train):
+                self.assertIsInstance(spike_train, neo.SpikeTrain)
+        self.assertIsInstance(list_of_spike_trains, SpikeTrainList)
 
 
 class AbstractPointProcessTestCase(unittest.TestCase):

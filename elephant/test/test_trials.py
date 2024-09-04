@@ -2,7 +2,7 @@
 """
 Unit tests for the trials objects.
 
-:copyright: Copyright 2014-2023 by the Elephant team, see AUTHORS.txt.
+:copyright: Copyright 2014-2024 by the Elephant team, see AUTHORS.txt.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -29,7 +29,7 @@ def _create_trials_block(n_trials: int = 0,
             n_spiketrains=n_spiketrains)
         analogsignals = [AnalogSignal(signal=[.01, 3.3, 9.3], units='uV',
                                       sampling_rate=1 * pq.Hz)
-                         ] * n_analogsignals
+                         for _ in range(n_analogsignals)]
         for spiketrain in spiketrains:
             segment.spiketrains.append(spiketrain)
         for analogsignal in analogsignals:
