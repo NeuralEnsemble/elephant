@@ -37,8 +37,8 @@ jobs:
       - name: Build wheels
         run: python -m cibuildwheel --output-dir wheelhouse
         env:
-          CIBW_SKIP: "cp27-* cp33-* cp34-* cp35-* cp36-* cp37-* cp38-* cp39-* pp*"
-          CIBW_PROJECT_REQUIRES_PYTHON: ">=3.10"
+          CIBW_SKIP: "cp27-* cp33-* cp34-* cp35-* cp36-* cp37-* cp38-* cp39-* cp310-* pp*"
+          CIBW_PROJECT_REQUIRES_PYTHON: ">=3.11"
           CIBW_ARCHS: "auto64"
 
       - uses: actions/upload-artifact@v3
