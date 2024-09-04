@@ -21,7 +21,9 @@ env/
 .pytest_cache/
 **/*/__pycache__
 *.vscode
-
+.mypy_cache
+.ruff_cache
+.venv
 # Compiled source #
 ###################
 *.a
