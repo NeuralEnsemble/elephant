@@ -46,9 +46,9 @@ version = {file = "elephant/VERSION"}
 dependencies = {file = ["requirements/requirements.txt"]}
 
 [tool.setuptools]
-packages = ["elephant", "elephant.test"]
+packages = ["elephant", "elephant.test", "elephant.spade_src.src"]
 ext-modules = [
-  {name = "elephant.spade_src.fim", sources = ["elephant/spade_src/src/fim.cpp"],include-dirs=["elephant/spade_src/include"],language="c++", extra-compile-args=["-DMODULE_NAME=fim", "-DUSE_OPENMP", "-DWITH_SIG_TERM","-Dfim_EXPORTS", "-fopenmp", "/std:c++17"], optional=true}
+  {name = "elephant.spade_src.fim", sources = ["elephant/spade_src/src/fim.cpp"],include-dirs=["elephant/spade_src/include"],language="c++",libraries=["pthread", "gomp"], extra-compile-args=['-DMODULE_NAME=fim', '-DUSE_OPENMP', '-DWITH_SIG_TERM','-Dfim_EXPORTS', '-O3', '-pedantic', '-Wextra','-Weffc++', '-Wunused-result', '-Werror','-fopenmp', '-std=gnu++17']}
 ]
 
 # This file was created following this guide:
