@@ -15,7 +15,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-2019]
+        os: [ubuntu-22.04, windows-2019]
 
     steps:
       - uses: actions/checkout@v4
@@ -37,7 +37,7 @@ jobs:
       - name: Build wheels
         run: python -m cibuildwheel --output-dir wheelhouse
         env:
-          CIBW_SKIP: "cp27-* cp33-* cp34-* cp35-* cp36-* cp37-* pp*"
+          CIBW_SKIP: cp36-* cp37-* pp*"
           CIBW_PROJECT_REQUIRES_PYTHON: ">=3.8"
           CIBW_ARCHS: "auto64"
 
