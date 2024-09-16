@@ -15,7 +15,7 @@ if platform.system() == "Windows":
         extra_compile_args=[
             '-DMODULE_NAME=fim', '-DUSE_OPENMP', '-DWITH_SIG_TERM',
             '-Dfim_EXPORTS', '-fopenmp', '/std:c++17'],
-        optional=True
+        #optional=True
     )
 elif platform.system() == "Darwin":
     fim_module = Extension(
@@ -30,7 +30,7 @@ elif platform.system() == "Darwin":
             '-Weffc++', '-Wunused-result', '-Werror', '-Werror=return-type',
             '-Xpreprocessor',
             '-fopenmp', '-std=gnu++17'],
-        optional=True
+        #optional=True
     )
 elif platform.system() == "Linux":
     fim_module = Extension(
@@ -44,7 +44,7 @@ elif platform.system() == "Linux":
             '-Dfim_EXPORTS', '-O3', '-pedantic', '-Wextra',
             '-Weffc++', '-Wunused-result', '-Werror',
             '-fopenmp', '-std=gnu++17'],
-        optional=True
+        #optional=True
     )
 
 setup_kwargs = {}
