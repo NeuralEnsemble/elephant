@@ -369,7 +369,7 @@ class BinnedSpikeTrain(object):
         self.ignore_shared_time = ignore_shared_time
         # Check all parameter, set also missing values
         self._resolve_input_parameters(spiketrains)
-        # Now create the sparse matrix
+        # Now create the sparse matrix.
         self.sparse_matrix = self._create_sparse_matrix(
             spiketrains, sparse_format=sparse_format)
 
