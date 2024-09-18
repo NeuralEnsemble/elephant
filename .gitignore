@@ -17,6 +17,7 @@ nosetests.xml
 *.tmp*
 .idea/
 venv/
+.venv
 env/
 .pytest_cache/
 **/*/__pycache__
