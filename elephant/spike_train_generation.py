@@ -190,8 +190,8 @@ def spike_extraction(
         and many spike sorting tools choose values in this range:
         Spikes are typically about 1-2 ms in length. This is to include a small interval before
         the spike peak and a slightly larger interval after the spike peak to capture the dynamics following
-        the spike. Adjusting this interval will modify the waveforms stored in the neo :class:`neo.core.SpikeTrain`, but it will not
-        affect the spike times.
+        the spike. Adjusting this interval will modify the waveforms stored in the neo :class:`neo.core.SpikeTrain`,
+        but it will not affect the spike times.
         Default: (-2 * pq.ms, 4 * pq.ms)
     always_as_list: bool, optional
         If True, :class:`neo.core.spiketrainslist.SpikeTrainList` is returned.
