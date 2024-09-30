@@ -330,7 +330,7 @@ jobs:
 
           key: ${{ runner.os }}-pip-${{hashFiles('requirements/environment-tests.yml') }}-${{ hashFiles('**/CI.yml') }}-${{ steps.date.outputs.date }}
 
-      - uses: conda-incubator/setup-miniconda@a4260408e20b96e80095f42ff7f1a15b27dd94ca # corresponds to v3.0.4
+      - uses: conda-incubator/setup-miniconda@030178870c779d9e5e1b4e563269f3aa69b04081 # corresponds to v3.0.3
         with:
           auto-update-conda: true
           python-version: ${{ matrix.python-version }}
@@ -398,11 +398,11 @@ jobs:
           key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements-docs.txt') }}-${{ hashFiles('**/requirements-tutorials.txt') }}-${{ hashFiles('**/environment-docs.yml') }}
            -${{ hashFiles('**/CI.yml') }}-${{ steps.date.outputs.date }}
 
-      - uses: conda-incubator/setup-miniconda@a4260408e20b96e80095f42ff7f1a15b27dd94ca # corresponds to v3.0.4
+      - uses: conda-incubator/setup-miniconda@030178870c779d9e5e1b4e563269f3aa69b04081 # corresponds to v3.0.3
         with:
           auto-update-conda: true
           python-version: ${{ matrix.python-version }}
-          #mamba-version: "*"
+          mamba-version: "*"
           activate-environment: elephant
           environment-file: requirements/environment.yml
 
