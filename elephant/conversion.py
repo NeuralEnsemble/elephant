@@ -293,6 +293,19 @@ class BinnedSpikeTrain(object):
         The sparse matrix format. By default, CSR format is used to perform
         slicing and computations efficiently.
         Default: 'csr'
+    ignore_shared_time : bool, optional
+        If `True`, the method allows `t_start` and `t_stop` to extend beyond
+        the shared time interval across all spike trains. This means that the
+        binning process can include spikes that occur outside the common
+        time range.
+        If `False` (default), the method enforces that `t_start` and `t_stop`
+        must fall within the shared time interval of all spike trains. If
+        either `t_start` or `t_stop` lies outside this range, a `ValueError`
+        is raised, ensuring that only the time period where all spike trains
+        overlap is considered for binning.
+        Use this parameter when you want to include spikes outside the common
+        time interval, understanding that it may result in bins that do not
+        have contributions from all spike trains.
 
     Raises
     ------
@@ -335,7 +348,8 @@ class BinnedSpikeTrain(object):
     """
 
     def __init__(self, spiketrains, bin_size=None, n_bins=None, t_start=None,
-                 t_stop=None, tolerance=1e-8, sparse_format="csr"):
+                 t_stop=None, tolerance=1e-8, sparse_format="csr",
+                 ignore_shared_time=False):
         if sparse_format not in ("csr", "csc"):
             raise ValueError(f"Invalid 'sparse_format': {sparse_format}. "
                              "Available: 'csr' and 'csc'")
@@ -352,9 +366,10 @@ class BinnedSpikeTrain(object):
         self.n_bins = n_bins
         self._bin_size = bin_size
         self.units = None  # will be set later
+        self.ignore_shared_time = ignore_shared_time
         # Check all parameter, set also missing values
         self._resolve_input_parameters(spiketrains)
-        # Now create the sparse matrix
+        # Now create the sparse matrix.
         self.sparse_matrix = self._create_sparse_matrix(
             spiketrains, sparse_format=sparse_format)
 
@@ -531,14 +546,15 @@ class BinnedSpikeTrain(object):
         tolerance = self.tolerance
         if tolerance is None:
             tolerance = 0
-        if self._t_start < start_shared - tolerance \
-                or self._t_stop > stop_shared + tolerance:
-            raise ValueError("'t_start' ({t_start}) or 't_stop' ({t_stop}) is "
-                             "outside of the shared [{start_shared}, "
-                             "{stop_shared}] interval".format(
-                                 t_start=self.t_start, t_stop=self.t_stop,
-                                 start_shared=start_shared,
-                                 stop_shared=stop_shared))
+        if not self.ignore_shared_time:
+            if self._t_start < start_shared - tolerance \
+                    or self._t_stop > stop_shared + tolerance:
+                raise ValueError("'t_start' ({t_start}) or 't_stop' ({t_stop}) is "
+                                 "outside of the shared [{start_shared}, "
+                                 "{stop_shared}] interval".format(
+                                     t_start=self.t_start, t_stop=self.t_stop,
+                                     start_shared=start_shared,
+                                     stop_shared=stop_shared))
 
         if self.n_bins is None:
             # bin_size is provided
