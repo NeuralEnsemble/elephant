@@ -402,7 +402,7 @@ jobs:
         with:
           auto-update-conda: true
           python-version: ${{ matrix.python-version }}
-          mamba-version: "*"
+          #mamba-version: "*"
           activate-environment: elephant
           environment-file: requirements/environment.yml
 
