@@ -758,6 +758,29 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
         except ValueError:
             self.fail("BinnedSpikeTrain raised ValueError unexpectedly when ignore_shared_time=True")
 
+    def test_ignore_shared_time_correct_binning(self):
+        # Create spike trains with different time ranges
+        st1 = neo.SpikeTrain([0.5, 1.5, 2.5, 3.5] * pq.s, t_start=0.0 * pq.s, t_stop=4.0 * pq.s)
+        st2 = neo.SpikeTrain([1.0, 2.0, 3.0, 4.0] * pq.s, t_start=1.0 * pq.s, t_stop=5.0 * pq.s)
+        st3 = neo.SpikeTrain([1.5, 2.5, 3.5, 5.5] * pq.s, t_start=1.5 * pq.s, t_stop=5.5 * pq.s)
+
+        spiketrains = [st1, st2, st3]
+        bin_size = 1 * pq.s
+
+        # Test with ignore_shared_time=True
+        bst_ignore = cv.BinnedSpikeTrain(spiketrains, bin_size=bin_size,
+                                         t_start=0 * pq.s, t_stop=6 * pq.s,
+                                         ignore_shared_time=True)
+        self.assertEqual(bst_ignore.t_start, 0 * pq.s)
+        self.assertEqual(bst_ignore.t_stop, 6 * pq.s)
+        self.assertEqual(bst_ignore.n_bins, 6)
+        expected_array_ignore = np.array([
+            [1, 1, 1, 1, 0, 0],
+            [0, 1, 1, 1, 1, 0],
+            [0, 1, 1, 1, 0, 1]
+        ])
+        assert_array_equal(bst_ignore.to_array(), expected_array_ignore)
+
 
 class DiscretiseSpiketrainsTestCase(unittest.TestCase):
     def setUp(self):
