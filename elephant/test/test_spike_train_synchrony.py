@@ -168,7 +168,7 @@ class TestSpikeContrast(unittest.TestCase):
         checksum = "70e848500c1d9c6403b66de8c741d849"
         filepath_zip = download_datasets(repo_path=izhikevich_gin,
                                          checksum=checksum)
-        unzip(filepath_zip)
+        unzip(filepath_zip, outdir=filepath_zip.parent)
         filepath_json = filepath_zip.with_suffix(".json")
         with open(filepath_json) as read_file:
             data = json.load(read_file)
