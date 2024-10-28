@@ -809,7 +809,7 @@ def cross_correlation_histogram(
         signal=np.expand_dims(cross_corr, axis=1),
         units=pq.dimensionless,
         t_start=t_start,
-        sampling_period=binned_spiketrain_i.bin_size, copy=False,
+        sampling_period=binned_spiketrain_i.bin_size,
         **annotations)
     return cch_result, lags
 
