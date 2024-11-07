@@ -25,7 +25,8 @@ import numpy as np
 import quantities as pq
 import scipy.signal
 
-from elephant.utils import check_same_units
+from elephant.online import VarianceOnline
+from elephant.utils import check_neo_consistency
 
 __all__ = [
     "zscore",
@@ -65,7 +66,7 @@ def zscore(signal, inplace=True):
         Signals for which to calculate the z-score.
     inplace : bool, optional
         If True, the contents of the input `signal` is replaced by the
-        z-transformed signal, if possible, i.e when the signal type is float.
+        z-transformed signal, if possible, i.e. when the signal type is float.
         If the signal type is not float, an error is raised.
         If False, a copy of the original `signal` is returned.
         Default: True
@@ -154,17 +155,19 @@ def zscore(signal, inplace=True):
     # Transform input to a list
     if isinstance(signal, neo.AnalogSignal):
         signal = [signal]
-    check_same_units(signal, object_type=neo.AnalogSignal)
+    check_neo_consistency(signal, object_type=neo.AnalogSignal)
 
-    # Calculate mean and standard deviation
-    signal_stacked = np.vstack(signal).magnitude
-    mean = signal_stacked.mean(axis=0)
-    std = signal_stacked.std(axis=0)
+    # Calculate mean and standard deviation vectors
+    online = VarianceOnline(batch_mode=True)
+    for sig in signal:
+        online.update(sig.magnitude)
+    mean, std = online.get_mean_std(unbiased=False)
 
     signal_ztransformed = []
     for sig in signal:
         # Perform inplace operation only if array is of dtype float.
         # Otherwise, raise an error.
+
         if inplace and not np.issubdtype(sig.dtype, np.floating):
             raise ValueError(f"Cannot perform inplace operation as the "
                              f"signal dtype is not float. Source: {sig.name}")
@@ -290,6 +293,9 @@ def cross_correlation_function(signal, channel_pairs, hilbert_envelope=False,
 
         If `scaleopt` is not one of the predefined above keywords.
 
+    .. bibliography::
+        :keyprefix: signal-
+
     Examples
     --------
     .. plot::
@@ -335,9 +341,8 @@ def cross_correlation_function(signal, channel_pairs, hilbert_envelope=False,
                          "indices. Cannot define pairs for cross-correlation.")
     if not isinstance(hilbert_envelope, bool):
         raise ValueError("'hilbert_envelope' must be a boolean value")
-    if n_lags is not None:
-        if not isinstance(n_lags, int) or n_lags <= 0:
-            raise ValueError('n_lags must be a non-negative integer')
+    if n_lags is not None and (not isinstance(n_lags, int) or n_lags <= 0):
+        raise ValueError('n_lags must be a non-negative integer')
 
     # z-score analog signal and store channel time series in different arrays
     # Cross-correlation will be calculated between xsig and ysig
@@ -568,7 +573,7 @@ def wavelet_transform(signal, frequency, n_cycles=6.0, sampling_frequency=1.0,
     Parameters
     ----------
     signal : (Nt, Nch) neo.AnalogSignal or np.ndarray or list
-        Time series data to be wavelet-transformed. When multi-dimensional
+        Time series data to be wavelet-transformed. When multidimensional
         `np.ndarray` or list is given, the time axis must be the last
         dimension. If `neo.AnalogSignal`, `Nt` is the number of time points
         and `Nch` is the number of channels.
@@ -921,6 +926,7 @@ def rauc(signal, baseline=None, bin_duration=None, t_start=None, t_stop=None):
         raise ValueError('Input signal is not a neo.AnalogSignal!')
 
     if baseline is None:
+        # do nothing
         pass
     elif baseline == 'mean':
         # subtract mean from each channel
