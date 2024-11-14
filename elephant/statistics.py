@@ -320,6 +320,7 @@ def fanofactor(spiketrains: Union[List[neo.SpikeTrain], List[pq.Quantity], List[
     TypeError
         If the input spiketrains are neo.SpikeTrain objects, but
         `warn_tolerance` is not a quantity.
+        If the parameters `pool_trials` or `pool_spike_trains` are not of type bool.
 
     Notes
     -----
