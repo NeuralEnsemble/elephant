@@ -74,7 +74,7 @@ import scipy.stats
 import scipy.signal
 from numpy import ndarray
 from scipy.special import erf
-from typing import Union
+from typing import List, Union
 
 import elephant.conversion as conv
 import elephant.kernels as kernels
@@ -270,7 +270,8 @@ def mean_firing_rate(spiketrain, t_start=None, t_stop=None, axis=None):
     return rates
 
 
-def fanofactor(spiketrains, warn_tolerance=0.1 * pq.ms):
+def fanofactor(spiketrains: Union[List[neo.SpikeTrain], pq.Quantity, np.ndarray, elephant.trials.Trials],
+               warn_tolerance:pq.Quantity=0.1 * pq.ms, pool_trials:bool=False, pool_spike_trains:bool=False):
     r"""
     Evaluates the empirical Fano factor F of the spike counts of
     a list of `neo.SpikeTrain` objects or `elephant.trials.Trial` object.
@@ -291,12 +292,19 @@ def fanofactor(spiketrains, warn_tolerance=0.1 * pq.ms):
     spiketrains : list or elephant.trials.Trial
         List of `neo.SpikeTrain` or `pq.Quantity` or `np.ndarray` or list of
         spike times for which to compute the Fano factor of spike counts, or
-        an `elephant.trials.Trial` object containing multiple spiketrain lists.
+        an `elephant.trials.Trial` object, here the behavior can be controlled with the 
+        pool_trials and pool_spike_trains parameters.
     warn_tolerance : pq.Quantity
         In case of a list of input neo.SpikeTrains, if their durations vary by
         more than `warn_tolerence` in their absolute values, throw a warning
         (see Notes).
         Default: 0.1 ms
+    pool_trials : bool, optional
+        If True, pool spike trains across trials before computing the Fano factor.
+        Default: False
+    pool_spike_trains : bool, optional
+        If True, pool spike trains within each trial before computing the Fano factor.
+        Default: False
 
     Returns
     -------
@@ -304,7 +312,7 @@ def fanofactor(spiketrains, warn_tolerance=0.1 * pq.ms):
         The Fano factor of the spike counts of the input spike trains.
         Returns np.NaN if an empty list is specified, or if all spike trains
         are empty. If a `Trial` object is provided, returns a list of Fano
-        factors, one for each trial.
+        factors.
 
     Raises
     ------
@@ -330,7 +338,7 @@ def fanofactor(spiketrains, warn_tolerance=0.1 * pq.ms):
     0.07142857142857142
 
     """
-    def _compute_fano(spiketrains):
+    def _compute_fano(spiketrains: neo.SpikeTrain) -> float:
         # Build array of spike counts (one per spike train)
         spike_counts = np.array([len(st) for st in spiketrains])
 
@@ -356,9 +364,24 @@ def fanofactor(spiketrains, warn_tolerance=0.1 * pq.ms):
         return fano
 
     if isinstance(spiketrains, elephant.trials.Trials):
-        return [_compute_fano(spiketrains.get_spiketrains_from_trial_as_list(idx))
-                for idx in range(spiketrains.n_trials)]
-    else:
+        if not pool_trials and not pool_spike_trains:
+            return [[_compute_fano([spiketrain]) for spiketrain in spiketrains.get_spiketrains_from_trial_as_list(idx)]
+                    for idx in range(spiketrains.n_trials)]
+        if not pool_trials and pool_spike_trains:
+            return [_compute_fano(spiketrains.get_spiketrains_from_trial_as_list(idx))
+                    for idx in range(spiketrains.n_trials)]
+        if pool_trials and not pool_spike_trains:
+            list_of_lists_of_spiketrains = [
+                spiketrains.get_spiketrains_from_trial_as_list(trial_id=trial_no)
+                for trial_no in range(spiketrains.n_trials)]
+            return [_compute_fano([list_of_lists_of_spiketrains[trial_no][st_no]
+                                   for trial_no in range(len(list_of_lists_of_spiketrains))])
+                    for st_no in range(len(list_of_lists_of_spiketrains[0]))]
+        if pool_trials and pool_spike_trains:
+            return [_compute_fano(
+                [spiketrain for trial_no in range(spiketrains.n_trials)
+                    for spiketrain in spiketrains.get_spiketrains_from_trial_as_list(trial_id=trial_no)])]
+    else:  # Legacy behavior
         return _compute_fano(spiketrains)
 
 
