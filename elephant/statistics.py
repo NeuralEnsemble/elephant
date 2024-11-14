@@ -1203,7 +1203,7 @@ def time_histogram(spiketrains, bin_size, t_start=None, t_stop=None,
                             sampling_period=bin_size,
                             units=normalised_bin_hist.units,
                             t_start=binned_spiketrain.t_start,
-                            normalization=output, copy=False)
+                            normalization=output)
 
 
 @deprecated_alias(binsize='bin_size')
