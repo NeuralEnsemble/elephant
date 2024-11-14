@@ -364,23 +364,31 @@ def fanofactor(spiketrains: Union[List[neo.SpikeTrain], pq.Quantity, np.ndarray,
         return fano
 
     if isinstance(spiketrains, elephant.trials.Trials):
+        # Check if parameters are of the correct type
+        if not isinstance(pool_trials, bool):
+            raise TypeError(f"'pool_trials' must be of type bool, but got {type(pool_trials)}")
+        elif not isinstance(pool_spike_trains, bool):
+            raise TypeError(f"'pool_spike_trains' must be of type bool, but got {type(pool_spike_trains)}")
         if not pool_trials and not pool_spike_trains:
             return [[_compute_fano([spiketrain]) for spiketrain in spiketrains.get_spiketrains_from_trial_as_list(idx)]
                     for idx in range(spiketrains.n_trials)]
-        if not pool_trials and pool_spike_trains:
+        elif not pool_trials and pool_spike_trains:
             return [_compute_fano(spiketrains.get_spiketrains_from_trial_as_list(idx))
                     for idx in range(spiketrains.n_trials)]
-        if pool_trials and not pool_spike_trains:
+        elif pool_trials and not pool_spike_trains:
             list_of_lists_of_spiketrains = [
                 spiketrains.get_spiketrains_from_trial_as_list(trial_id=trial_no)
                 for trial_no in range(spiketrains.n_trials)]
             return [_compute_fano([list_of_lists_of_spiketrains[trial_no][st_no]
                                    for trial_no in range(len(list_of_lists_of_spiketrains))])
                     for st_no in range(len(list_of_lists_of_spiketrains[0]))]
-        if pool_trials and pool_spike_trains:
+        elif pool_trials and pool_spike_trains:
             return [_compute_fano(
                 [spiketrain for trial_no in range(spiketrains.n_trials)
                     for spiketrain in spiketrains.get_spiketrains_from_trial_as_list(trial_id=trial_no)])]
+        else:
+            raise TypeError(f"pool_spiketrains and pool_trials must be of type: bool, but are "
+                            f"{type(pool_spike_trains)} and {type(pool_trials)}")
     else:  # Legacy behavior
         return _compute_fano(spiketrains)
 
