@@ -269,27 +269,28 @@ class MeanFiringRateTestCase(unittest.TestCase):
 
 
 class FanoFactorTestCase(unittest.TestCase):
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
         np.random.seed(100)
         num_st = 300
-        self.test_spiketrains = []
-        self.test_array = []
-        self.test_quantity = []
-        self.test_list = []
-        self.sp_counts = np.zeros(num_st)
+        cls.test_spiketrains = []
+        cls.test_array = []
+        cls.test_quantity = []
+        cls.test_list = []
+        cls.sp_counts = np.zeros(num_st)
         for i in range(num_st):
             r = np.random.rand(np.random.randint(20) + 1)
             st = neo.core.SpikeTrain(r * pq.ms,
                                      t_start=0.0 * pq.ms,
                                      t_stop=20.0 * pq.ms)
-            self.test_spiketrains.append(st)
-            self.test_array.append(r)
-            self.test_quantity.append(r * pq.ms)
-            self.test_list.append(list(r))
+            cls.test_spiketrains.append(st)
+            cls.test_array.append(r)
+            cls.test_quantity.append(r * pq.ms)
+            cls.test_list.append(list(r))
             # for cross-validation
-            self.sp_counts[i] = len(st)
+            cls.sp_counts[i] = len(st)
 
-        self.test_trials = TrialsFromLists([self.test_spiketrains, self.test_spiketrains])
+        cls.test_trials = TrialsFromLists([cls.test_spiketrains, cls.test_spiketrains])
 
     def test_fanofactor_spiketrains(self):
         # Test with list of spiketrains
@@ -353,14 +354,26 @@ class FanoFactorTestCase(unittest.TestCase):
         self.assertRaises(TypeError, statistics.fanofactor, [st1],
                           warn_tolerance=1e-4)
 
-    def test_fanofactor_trials(self):
-        # Test with Trial object
-        self.assertEqual(
-            np.var(self.sp_counts) / np.mean(self.sp_counts),
-            statistics.fanofactor(self.test_trials)[0])
-        self.assertEqual(
-            np.var(self.sp_counts) / np.mean(self.sp_counts),
-            statistics.fanofactor(self.test_trials)[1])
+    def test_fanofactor_trials_pool_spiketrains(self):
+        results = statistics.fanofactor(self.test_trials, pool_spike_trains=True)
+        self.assertEqual(len(results), self.test_trials.n_trials)
+        for result in results:
+            self.assertEqual(
+                np.var(self.sp_counts) / np.mean(self.sp_counts), result)
+
+    def test_fanofactor_trials_pool_trials(self):
+        results = statistics.fanofactor(self.test_trials, pool_trials=True)
+        self.assertEqual(len(results), self.test_trials.n_spiketrains_trial_by_trial[0])
+
+    def test_fanofactor_trials_pool_trials_pool_spiketrains(self):
+        results = statistics.fanofactor(self.test_trials, pool_trials=True, pool_spike_trains=True)
+        self.assertEqual(len(results), 1)
+
+    def test_fanofactor_trials_pool_trials_false_pool_spiketrains_false(self):
+        results = statistics.fanofactor(self.test_trials, pool_trials=False, pool_spike_trains=False)
+        self.assertEqual(len(results), self.test_trials.n_trials)
+        for result in results:
+            self.assertEqual(len(result), self.test_trials.n_spiketrains_trial_by_trial[0])
 
 
 class LVTestCase(unittest.TestCase):
