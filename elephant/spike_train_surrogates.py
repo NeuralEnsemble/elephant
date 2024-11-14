@@ -736,7 +736,6 @@ def _continuous_time_bin_shuffling(spiketrain, max_displacement, bin_size,
             units=units,
             t_start=t_start,
             t_stop=t_stop,
-            copy=False,
         )
 
         surrogate_spiketrains.append(surrogate_spiketrain)
@@ -1252,8 +1251,7 @@ def trial_shifting(spiketrains, dither, n_surrogates=1):
             surrogate_spiketrain[trial_id] * pq.s,
             t_start=t_starts[trial_id] * pq.s,
             t_stop=t_stops[trial_id] * pq.s,
-            units=units,
-            sampling_rate=sampling_rates[trial_id])
+            sampling_rate=sampling_rates[trial_id]).rescale(units)
           for trial_id in range(len(surrogate_spiketrain))]
          for surrogate_spiketrain in surrogate_spiketrains]
 
@@ -1337,8 +1335,7 @@ def _trial_shifting_of_concatenated_spiketrain(
         np.hstack(surrogate_spiketrain) * pq.s,
         t_start=t_start * pq.s,
         t_stop=t_stop * pq.s,
-        units=units,
-        sampling_rate=spiketrain.sampling_rate)
+        sampling_rate=spiketrain.sampling_rate).rescale(units)
         for surrogate_spiketrain in surrogate_spiketrains]
     return surrogate_spiketrains
 
