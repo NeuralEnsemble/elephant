@@ -1182,13 +1182,13 @@ def time_histogram(spiketrains, bin_size, t_start=None, t_stop=None,
 
     def _mean() -> pq.Quantity:
         # 'mean': mean spike counts per spike train.
-        return pq.Quantity(bin_hist / len(spiketrains),
+        return pq.Quantity(bin_hist / binned_spiketrain.shape[0],
                            units=pq.dimensionless)
 
     def _rate() -> pq.Quantity:
         # 'rate': mean spike rate per spike train. Like 'mean', but the
         #         counts are additionally normalized by the bin width.
-        return bin_hist / (len(spiketrains) * bin_size)
+        return bin_hist / (binned_spiketrain.shape[0] * bin_size)
 
     output_mapping = {"counts": _counts, "mean": _mean, "rate": _rate}
     try:
