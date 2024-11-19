@@ -1178,12 +1178,12 @@ def time_histogram(spiketrains, bin_size, t_start=None, t_stop=None,
 
     def _counts() -> pq.Quantity:
         # 'counts': spike counts at each bin (as integer numbers).
-        return pq.Quantity(bin_hist, units=pq.dimensionless, copy=False)
+        return pq.Quantity(bin_hist, units=pq.dimensionless)
 
     def _mean() -> pq.Quantity:
         # 'mean': mean spike counts per spike train.
         return pq.Quantity(bin_hist / len(spiketrains),
-                           units=pq.dimensionless, copy=False)
+                           units=pq.dimensionless)
 
     def _rate() -> pq.Quantity:
         # 'rate': mean spike rate per spike train. Like 'mean', but the
