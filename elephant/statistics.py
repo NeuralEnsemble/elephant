@@ -1096,9 +1096,11 @@ def time_histogram(spiketrains: Union[List[neo.SpikeTrain], neo.SpikeTrain],
         Default: None
     output : {'counts', 'mean', 'rate'}, optional
         Normalization of the histogram. Can be one of:
+
         - 'counts': spike counts at each bin (as integer numbers).
         - 'mean': mean spike counts per spike train.
-        - 'rate': mean spike rate per spike train. Like 'mean', but the counts are additionally normalized by the bin width.
+        - 'rate': mean spike rate per spike train. Like 'mean', but the counts are additionally normalized
+          by the bin width.
 
         Default: 'counts'
     binary : bool, optional
