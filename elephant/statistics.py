@@ -1077,7 +1077,7 @@ def time_histogram(spiketrains: Union[List[neo.SpikeTrain], neo.SpikeTrain],
     Parameters
     ----------
     spiketrains : list of :class:`neo.core.SpikeTrain` or :class:`neo.core.SpikeTrain`
-        `neo.SpikeTrain`s with a common time axis (same `t_start` and `t_stop`)
+        `neo.SpikeTrain` objects with a common time axis (same `t_start` and `t_stop`)
     bin_size : pq.Quantity
         Width of the histogram's time bins.
     t_start : pq.Quantity, optional
