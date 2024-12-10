@@ -366,16 +366,12 @@ def fanofactor(spiketrains: Union[List[neo.SpikeTrain], List[pq.Quantity], List[
             return spike_counts.var()/spike_counts.mean()
 
     if isinstance(spiketrains, elephant.trials.Trials):
-        if not pool_trials:
-            return [[_compute_fano([spiketrain]) for spiketrain in spiketrains.get_spiketrains_from_trial_as_list(idx)]
-                    for idx in range(spiketrains.n_trials)]
-        elif pool_trials:
-            list_of_lists_of_spiketrains = [
-                spiketrains.get_spiketrains_from_trial_as_list(trial_id=trial_no)
-                for trial_no in range(spiketrains.n_trials)]
-            return [_compute_fano([list_of_lists_of_spiketrains[trial_no][st_no]
-                                   for trial_no in range(len(list_of_lists_of_spiketrains))])
-                    for st_no in range(len(list_of_lists_of_spiketrains[0]))]
+        list_of_lists_of_spiketrains = [
+            spiketrains.get_spiketrains_from_trial_as_list(trial_id=trial_no)
+            for trial_no in range(spiketrains.n_trials)]
+        return [_compute_fano([list_of_lists_of_spiketrains[trial_no][st_no]
+                               for trial_no in range(len(list_of_lists_of_spiketrains))])
+                for st_no in range(len(list_of_lists_of_spiketrains[0]))]
     else:  # Legacy behavior
         return _compute_fano(spiketrains)
 
