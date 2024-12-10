@@ -302,6 +302,7 @@ def fanofactor(spiketrains: Union[List[neo.SpikeTrain], List[pq.Quantity], List[
         Default: 0.1 ms
     pool_trials : bool, optional
         If True, pool spike trains across trials before computing the Fano factor.
+        Note: If `spiketrains` is a list, this parameter is ignored.
         Default: False
 
     Returns
