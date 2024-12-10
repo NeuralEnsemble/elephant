@@ -173,7 +173,7 @@ def roc_curve(estimate, original):
         tpr_list.append(sensitivity(*conf_matrix))
         fpr_list.append(fall_out(*conf_matrix))
 
-    auc = np.trapz(tpr_list, fpr_list)
+    auc = np.trapezoid(tpr_list, fpr_list)
 
     return tpr_list, fpr_list, thresholds, auc
 
