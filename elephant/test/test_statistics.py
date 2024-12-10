@@ -354,23 +354,12 @@ class FanoFactorTestCase(unittest.TestCase):
         self.assertRaises(TypeError, statistics.fanofactor, [st1],
                           warn_tolerance=1e-4)
 
-    def test_fanofactor_trials_pool_spiketrains(self):
-        results = statistics.fanofactor(self.test_trials, pool_spike_trains=True)
-        self.assertEqual(len(results), self.test_trials.n_trials)
-        for result in results:
-            self.assertEqual(
-                np.var(self.sp_counts) / np.mean(self.sp_counts), result)
-
     def test_fanofactor_trials_pool_trials(self):
         results = statistics.fanofactor(self.test_trials, pool_trials=True)
         self.assertEqual(len(results), self.test_trials.n_spiketrains_trial_by_trial[0])
 
-    def test_fanofactor_trials_pool_trials_pool_spiketrains(self):
-        results = statistics.fanofactor(self.test_trials, pool_trials=True, pool_spike_trains=True)
-        self.assertEqual(len(results), 1)
-
-    def test_fanofactor_trials_pool_trials_false_pool_spiketrains_false(self):
-        results = statistics.fanofactor(self.test_trials, pool_trials=False, pool_spike_trains=False)
+    def test_fanofactor_trials_pool_trials_false(self):
+        results = statistics.fanofactor(self.test_trials, pool_trials=False)
         self.assertEqual(len(results), self.test_trials.n_trials)
         for result in results:
             self.assertEqual(len(result), self.test_trials.n_spiketrains_trial_by_trial[0])

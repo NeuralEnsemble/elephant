@@ -271,7 +271,7 @@ def mean_firing_rate(spiketrain, t_start=None, t_stop=None, axis=None):
 
 
 def fanofactor(spiketrains: Union[List[neo.SpikeTrain], List[pq.Quantity], List[np.ndarray], elephant.trials.Trials],
-               warn_tolerance: pq.Quantity = 0.1 * pq.ms, pool_trials: bool = False, pool_spike_trains: bool = False
+               warn_tolerance: pq.Quantity = 0.1 * pq.ms, pool_trials: bool = False
                ) -> Union[float, List[float], List[List[float]]]:
     r"""
     Evaluates the empirical Fano factor F of the spike counts of
@@ -302,9 +302,6 @@ def fanofactor(spiketrains: Union[List[neo.SpikeTrain], List[pq.Quantity], List[
         Default: 0.1 ms
     pool_trials : bool, optional
         If True, pool spike trains across trials before computing the Fano factor.
-        Default: False
-    pool_spike_trains : bool, optional
-        If True, pool spike trains within each trial before computing the Fano factor.
         Default: False
 
     Returns
@@ -343,8 +340,6 @@ def fanofactor(spiketrains: Union[List[neo.SpikeTrain], List[pq.Quantity], List[
     # Check if parameters are of the correct type
     if not isinstance(pool_trials, bool):
         raise TypeError(f"'pool_trials' must be of type bool, but got {type(pool_trials)}")
-    elif not isinstance(pool_spike_trains, bool):
-        raise TypeError(f"'pool_spike_trains' must be of type bool, but got {type(pool_spike_trains)}")
     elif not is_time_quantity(warn_tolerance):
         raise TypeError(f"'warn_tolerance' must be a time quantity, but got {type(warn_tolerance)}")
 
@@ -374,23 +369,16 @@ def fanofactor(spiketrains: Union[List[neo.SpikeTrain], List[pq.Quantity], List[
             return spike_counts.var()/spike_counts.mean()
 
     if isinstance(spiketrains, elephant.trials.Trials):
-        if not pool_trials and not pool_spike_trains:
+        if not pool_trials:
             return [[_compute_fano([spiketrain]) for spiketrain in spiketrains.get_spiketrains_from_trial_as_list(idx)]
                     for idx in range(spiketrains.n_trials)]
-        elif not pool_trials and pool_spike_trains:
-            return [_compute_fano(spiketrains.get_spiketrains_from_trial_as_list(idx))
-                    for idx in range(spiketrains.n_trials)]
-        elif pool_trials and not pool_spike_trains:
+        elif pool_trials:
             list_of_lists_of_spiketrains = [
                 spiketrains.get_spiketrains_from_trial_as_list(trial_id=trial_no)
                 for trial_no in range(spiketrains.n_trials)]
             return [_compute_fano([list_of_lists_of_spiketrains[trial_no][st_no]
                                    for trial_no in range(len(list_of_lists_of_spiketrains))])
                     for st_no in range(len(list_of_lists_of_spiketrains[0]))]
-        elif pool_trials and pool_spike_trains:
-            return [_compute_fano(
-                [spiketrain for trial_no in range(spiketrains.n_trials)
-                    for spiketrain in spiketrains.get_spiketrains_from_trial_as_list(trial_id=trial_no)])]
     else:  # Legacy behavior
         return _compute_fano(spiketrains)
 
