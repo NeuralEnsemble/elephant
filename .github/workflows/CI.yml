@@ -171,6 +171,7 @@ jobs:
           channel-priority: true
           activate-environment: elephant
           environment-file: requirements/environment-tests.yml
+          conda-remove-defaults: true
 
       - name: Install dependencies
         shell: bash -l {0}
@@ -392,6 +393,7 @@ jobs:
           channel-priority: true
           activate-environment: elephant
           environment-file: requirements/environment-tests.yml
+          conda-remove-defaults: true
 
       - name: Install dependencies
         shell: bash -el {0}
@@ -462,6 +464,7 @@ jobs:
           mamba-version: "*"
           activate-environment: elephant
           environment-file: requirements/environment.yml
+          conda-remove-defaults: true
 
       - name: Install dependencies
         shell: bash -el {0} # enables conda incubator to activate environment
