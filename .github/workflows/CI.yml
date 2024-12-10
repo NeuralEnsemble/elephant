@@ -399,8 +399,8 @@ jobs:
         shell: bash -el {0}
         run: |
           python --version
-          conda install mpi4py openmpi
-          mamba install pytest pytest-cov coveralls
+          conda install -c conda-forge mpi4py openmpi
+          mamba install -c conda-forge pytest pytest-cov coveralls
           pip install -e .
 
       - name: List packages
