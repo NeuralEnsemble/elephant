@@ -352,10 +352,6 @@ def fanofactor(spiketrains: Union[List[neo.SpikeTrain], List[pq.Quantity], List[
                 warnings.warn(f"Fano factor calculated for spike trains of "
                               f"different duration (minimum: {np.min(durations)}s, maximum "
                               f"{np.max(durations)}s).")
-        else:
-            warnings.warn(f"Spiketrains was of type {type(spiketrains)}, which does not support automatic duration"
-                          f"check. The parameter 'warn_tolerance' will have no effect. Please ensure manually that"
-                          f"all spike trains have the same duration.")
 
     def _compute_fano(spiketrains: Union[List[neo.SpikeTrain], List[pq.Quantity], List[np.ndarray]]) -> float:
         # Check spike train durations

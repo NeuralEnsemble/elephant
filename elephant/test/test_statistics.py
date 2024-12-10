@@ -370,11 +370,6 @@ class FanoFactorTestCase(unittest.TestCase):
         self.assertRaises(TypeError, statistics.fanofactor, self.test_trials, pool_spike_trials="Wrong Type",
                           pool_spike_trains="Wrong Type")
 
-    def test_fanofactor_warn_durations_manual_check(self):
-        st1 = [1, 2, 3] * pq.s
-        st2 = [1, 2, 3] * pq.s
-        self.assertWarns(UserWarning, statistics.fanofactor, (st1, st2))
-
 
 class LVTestCase(unittest.TestCase):
     def setUp(self):
