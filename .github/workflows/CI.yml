@@ -399,8 +399,8 @@ jobs:
         shell: bash -el {0}
         run: |
           python --version
-          conda install -c conda-forge mpi4py openmpi
-          mamba install -c conda-forge pytest pytest-cov coveralls
+          # conda install mpi4py openmpi
+          mamba install -c conda-forge pytest pytest-cov coveralls mpi4py openmpi
           pip install -e .
 
       - name: List packages
@@ -472,7 +472,7 @@ jobs:
           sudo apt-get update
           sudo apt install -y libopenmpi-dev openmpi-bin
           
-          conda install -c conda-forge openmpi pandoc libstdcxx-ng # fix libstdc++.so.6: version for new scipy versions > 1.9.1
+          mamba install -c conda-forge openmpi pandoc libstdcxx-ng # fix libstdc++.so.6: version for new scipy versions > 1.9.1
           mamba env update --file requirements/environment-docs.yml --name elephant
           python -m pip install --upgrade pip
           pip install -e .[extras,tutorials,docs]
