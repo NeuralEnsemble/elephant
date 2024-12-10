@@ -13,7 +13,7 @@ import numpy as np
 import quantities as pq
 import scipy.io
 from neo import SpikeTrain, AnalogSignal
-from numpy.ma.testutils import assert_allclose
+from numpy.testing import assert_allclose
 
 import elephant.phase_analysis
 from elephant.datasets import download_datasets
@@ -45,7 +45,8 @@ class SpikeTriggeredPhaseTestCase(unittest.TestCase):
             interpolate=True)
 
         assert_allclose(phases[0], - np.pi / 2.)
-        assert_allclose(amps[0], 1, atol=0.1)
+        assert_allclose(amps[0].magnitude, 1, atol=0.1)
+        assert amps[0].dimensionality == pq.dimensionless
         assert_allclose(times[0].magnitude, self.st0.magnitude)
         self.assertEqual(len(phases[0]), len(self.st0))
         self.assertEqual(len(amps[0]), len(self.st0))
@@ -60,7 +61,8 @@ class SpikeTriggeredPhaseTestCase(unittest.TestCase):
             interpolate=True)
 
         assert_allclose(phases[0], -np.pi / 2.)
-        assert_allclose(amps[0], 1, atol=0.1)
+        assert_allclose(amps[0].magnitude, 1, atol=0.1)
+        assert amps[0].dimensionality == pq.dimensionless
         assert_allclose(times[0].magnitude, self.st0.magnitude)
         self.assertEqual(len(phases[0]), len(self.st0))
         self.assertEqual(len(amps[0]), len(self.st0))
@@ -75,7 +77,8 @@ class SpikeTriggeredPhaseTestCase(unittest.TestCase):
             interpolate=True)
 
         assert_allclose(phases[0], -np.pi / 2.)
-        assert_allclose(amps[0], 1, atol=0.1)
+        assert_allclose(amps[0].magnitude, 1, atol=0.1)
+        assert amps[0].dimensionality == pq.dimensionless
         assert_allclose(times[0].magnitude, self.st0.magnitude)
         self.assertEqual(len(phases[0]), len(self.st0))
         self.assertEqual(len(amps[0]), len(self.st0))
@@ -88,7 +91,8 @@ class SpikeTriggeredPhaseTestCase(unittest.TestCase):
             interpolate=True)
 
         assert_allclose(phases[0], -np.pi / 2.)
-        assert_allclose(amps[0], 1, atol=0.1)
+        assert_allclose(amps[0].magnitude, 1, atol=0.1)
+        assert amps[0].dimensionality == pq.dimensionless
         assert_allclose(times[0].magnitude, self.st0.magnitude)
         self.assertEqual(len(phases[0]), len(self.st0))
         self.assertEqual(len(amps[0]), len(self.st0))
