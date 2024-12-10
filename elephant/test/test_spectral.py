@@ -20,7 +20,7 @@ from numpy.testing import assert_array_equal
 from packaging import version
 
 import elephant.spectral
-from elephant.datasets import download_datasets, ELEPHANT_TMP_DIR
+from elephant.datasets import download_datasets
 
 
 class WelchPSDTestCase(unittest.TestCase):
@@ -278,12 +278,15 @@ class MultitaperPSDTestCase(unittest.TestCase):
             ("psd_nitime.npy", "89d1f53957e66c786049ea425b53c0e8")
         ]
 
+        downloaded_files = {}
         for filename, checksum in files_to_download:
-            download_datasets(repo_path=f"{repo_path}/{filename}",
-                              checksum=checksum)
+            downloaded_files[filename] = {
+                'filename': filename,
+                'path': download_datasets(repo_path=f"{repo_path}/{filename}",
+                                          checksum=checksum)}
 
-        time_series = np.load(ELEPHANT_TMP_DIR / 'time_series.npy')
-        psd_nitime = np.load(ELEPHANT_TMP_DIR / 'psd_nitime.npy')
+        time_series = np.load(downloaded_files['time_series.npy']['path'])
+        psd_nitime = np.load(downloaded_files['psd_nitime.npy']['path'])
 
         freqs, psd_multitaper = elephant.spectral.multitaper_psd(
             signal=time_series, fs=0.1, nw=4, num_tapers=8)

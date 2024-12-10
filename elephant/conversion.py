@@ -854,7 +854,7 @@ class BinnedSpikeTrain(object):
                     array_ants = dict(bins=bin_indices)
                 spiketrain = neo.SpikeTrain(spiketrain, t_start=self._t_start,
                                             t_stop=self._t_stop,
-                                            units=self.units, copy=False,
+                                            units=self.units,
                                             description=description,
                                             array_annotations=array_ants,
                                             bin_size=self.bin_size)
