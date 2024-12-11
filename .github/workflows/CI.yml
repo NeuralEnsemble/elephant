@@ -144,7 +144,7 @@ jobs:
       - uses: actions/checkout@v4.1.6
 
       - name: Cache conda
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/conda_pkgs_dir
           key: ${{ runner.os }}-conda-${{hashFiles('requirements/environment.yml') }}-${{ hashFiles('**/CI.yml') }}-${{ steps.date.outputs.date }}
@@ -364,7 +364,7 @@ jobs:
           echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
 
       - name: Cache pip
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
 
@@ -449,7 +449,7 @@ jobs:
           echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
 
       - name: Cache pip
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
           # Look to see if there is a cache hit for the corresponding requirements files
@@ -515,7 +515,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Cache test_env
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/test_env
           # Look to see if there is a cache hit for the corresponding requirements files
