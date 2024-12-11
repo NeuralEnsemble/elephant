@@ -45,7 +45,7 @@ jobs:
         with:
           name: wheels-${{ matrix.os }}
           path: ./wheelhouse/*.whl
-  merge:
+  merge_wheels:
     runs-on: ubuntu-latest
     needs: build_wheels
     steps:
