@@ -41,6 +41,6 @@ jobs:
           CIBW_PROJECT_REQUIRES_PYTHON: ">=3.8"
           CIBW_ARCHS: "auto64"
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           path: ./wheelhouse/*.whl
