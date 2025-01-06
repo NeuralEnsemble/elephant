@@ -692,9 +692,13 @@ class BinnedSpikeTrain(object):
             the returned binned sparse matrix will affect the original data.
         """
         # taken from csr_matrix.__getitem__
-        row_col, idx_shape = self.sparse_matrix._validate_indices(item)
-        # _validate_indices returns two tuples since 1.15 , previously it was one tuple with row col
-        row, col = row_col
+        valid_indices = self.sparse_matrix._validate_indices(item)
+        if isinstance(valid_indices[0], tuple):
+            # New version of SciPy (1.15 and later)
+            row, col = valid_indices[0]
+        else:
+            # Previous version of SciPy
+            row, col = valid_indices
         spmat = self.sparse_matrix[item]
         if np.isscalar(spmat):
             # data with one element
