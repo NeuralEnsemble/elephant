@@ -1095,7 +1095,6 @@ class TimeHistogramTestCase(unittest.TestCase):
 
         # Run time_histogram with spiketrain directly and observe the incorrect result
         histogram_direct = statistics.time_histogram(spiketrain, output='rate', bin_size=0.5 * pq.s)
-        print("Histogram (direct):", histogram_direct)
 
         # Wrap spiketrain in a list and run time_histogram
         histogram_wrapped = statistics.time_histogram([spiketrain], output='rate', bin_size=0.5 * pq.s)
