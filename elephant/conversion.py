@@ -693,6 +693,10 @@ class BinnedSpikeTrain(object):
         """
         # taken from csr_matrix.__getitem__
         valid_indices = self.sparse_matrix._validate_indices(item)
+        # TODO: The following is a hot fix to compensate an API change in SciPy 1.15 (#653)
+        # Currently, we cannot set scipy>=1.15 since this would not allow for Python 3.9.
+        # Once we phase out support for Python 3.9, remove the if statement and the else 
+        # branch and require scipy>=1.15.
         if isinstance(valid_indices[0], tuple):
             # New version of SciPy (1.15 and later)
             row, col = valid_indices[0]
