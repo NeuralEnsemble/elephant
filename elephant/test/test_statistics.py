@@ -1098,8 +1098,10 @@ class TimeHistogramTestCase(unittest.TestCase):
 
         # Wrap spiketrain in a list and run time_histogram
         histogram_wrapped = statistics.time_histogram([spiketrain], output='rate', bin_size=0.5 * pq.s)
+        # Check if passing a single spiketrain directly vs in a list gives same result
         np.testing.assert_array_equal(histogram_direct.magnitude, histogram_wrapped.magnitude)
-        np.testing.assert_array_equal(histogram_wrapped.magnitude.flatten(), [2., 2., 2., 2., 2., 0.]*pq.Hz)
+        # Check if the spike rate calculation is correct for a single spike train
+        np.testing.assert_array_equal(histogram_direct.magnitude.flatten(), [2., 2., 2., 2., 2., 0.]*pq.Hz)
 
 
 class ComplexityTestCase(unittest.TestCase):
