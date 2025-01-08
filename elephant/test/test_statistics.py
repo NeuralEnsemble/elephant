@@ -1099,10 +1099,11 @@ class TimeHistogramTestCase(unittest.TestCase):
         # Wrap spiketrain in a list and run time_histogram
         histogram_wrapped = statistics.time_histogram([spiketrain], output='rate', bin_size=0.5 * pq.s)
         np.testing.assert_array_equal(histogram_direct.magnitude, histogram_wrapped.magnitude)
+        np.testing.assert_array_equal(histogram_wrapped.magnitude.flatten(), [2., 2., 2., 2., 2., 0.]*pq.Hz)
 
 
 class ComplexityTestCase(unittest.TestCase):
-    def test_complexity_pdf_deprecated(self):
+    def test_complexiy_pdf_deprecated(self):
         spiketrain_a = neo.SpikeTrain(
             [0.5, 0.7, 1.2, 2.3, 4.3, 5.5, 6.7] * pq.s, t_stop=10.0 * pq.s)
         spiketrain_b = neo.SpikeTrain(
