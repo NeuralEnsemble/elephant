@@ -271,8 +271,7 @@ def mean_firing_rate(spiketrain, t_start=None, t_stop=None, axis=None):
 
 
 def fanofactor(spiketrains: Union[List[neo.SpikeTrain], List[pq.Quantity], List[np.ndarray], elephant.trials.Trials],
-               warn_tolerance: pq.Quantity = 0.1 * pq.ms, pool_trials: bool = False
-               ) -> Union[float, List[float], List[List[float]]]:
+               warn_tolerance: pq.Quantity = 0.1 * pq.ms) -> Union[float, List[float], List[List[float]]]:
     r"""
     Evaluates the empirical Fano factor F of the spike counts of
     a list of `neo.SpikeTrain` objects or `elephant.trials.Trial` object.
@@ -293,32 +292,26 @@ def fanofactor(spiketrains: Union[List[neo.SpikeTrain], List[pq.Quantity], List[
     spiketrains : list or elephant.trials.Trial
         List of `neo.SpikeTrain` or `pq.Quantity` or `np.ndarray` or list of
         spike times for which to compute the Fano factor of spike counts, or
-        an `elephant.trials.Trial` object, here the behavior can be controlled with the
-        pool_trials and pool_spike_trains parameters.
+        an `elephant.trials.Trial` object. If a Trial object is used, spike trains are
+        pooled across trials before computing the Fano factor.
     warn_tolerance : pq.Quantity
         In case of a list of input neo.SpikeTrains, if their durations vary by
         more than `warn_tolerance` in their absolute values, throw a warning
         (see Notes).
         Default: 0.1 ms
-    pool_trials : bool, optional
-        If True, pool spike trains across trials before computing the Fano factor.
-        Note: If `spiketrains` is a list, this parameter is ignored.
-        Default: False
 
     Returns
     -------
     fano : float, list of floats or list of list of floats
         The Fano factor of the spike counts of the input spike trains.
         Returns np.NaN if an empty list is specified, or if all spike trains
-        are empty. If a `Trial` object is provided, returns a list of Fano
-        factors.
+        are empty.
 
     Raises
     ------
     TypeError
         If the input spiketrains are neo.SpikeTrain objects, but
         `warn_tolerance` is not a quantity.
-        If the parameters `pool_trials` or `pool_spike_trains` are not of type bool.
 
     Notes
     -----
@@ -339,9 +332,7 @@ def fanofactor(spiketrains: Union[List[neo.SpikeTrain], List[pq.Quantity], List[
 
     """
     # Check if parameters are of the correct type
-    if not isinstance(pool_trials, bool):
-        raise TypeError(f"'pool_trials' must be of type bool, but got {type(pool_trials)}")
-    elif not is_time_quantity(warn_tolerance):
+    if not is_time_quantity(warn_tolerance):
         raise TypeError(f"'warn_tolerance' must be a time quantity, but got {type(warn_tolerance)}")
 
     def _check_input_spiketrains_durations(spiketrains: Union[List[neo.SpikeTrain], List[pq.Quantity],

@@ -355,14 +355,8 @@ class FanoFactorTestCase(unittest.TestCase):
                           warn_tolerance=1e-4)
 
     def test_fanofactor_trials_pool_trials(self):
-        results = statistics.fanofactor(self.test_trials, pool_trials=True)
+        results = statistics.fanofactor(self.test_trials)
         self.assertEqual(len(results), self.test_trials.n_spiketrains_trial_by_trial[0])
-
-    def test_fanofactor_trials_pool_trials_false(self):
-        results = statistics.fanofactor(self.test_trials, pool_trials=False)
-        self.assertEqual(len(results), self.test_trials.n_trials)
-        for result in results:
-            self.assertEqual(len(result), self.test_trials.n_spiketrains_trial_by_trial[0])
 
     def test_fanofactor_trials_pool_spike_trains_wrong_type(self):
         self.assertRaises(TypeError, statistics.fanofactor, self.test_trials, pool_spike_trains="Wrong Type")
