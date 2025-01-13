@@ -302,7 +302,7 @@ def fanofactor(spiketrains: Union[List[neo.SpikeTrain], List[pq.Quantity], List[
 
     Returns
     -------
-    fano : float, list of floats or list of list of floats
+    fano : float, list of floats
         The Fano factor of the spike counts of the input spike trains.
         Returns np.NaN if an empty list is specified, or if all spike trains
         are empty.
