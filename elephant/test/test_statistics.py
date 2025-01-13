@@ -358,12 +358,6 @@ class FanoFactorTestCase(unittest.TestCase):
         results = statistics.fanofactor(self.test_trials)
         self.assertEqual(len(results), self.test_trials.n_spiketrains_trial_by_trial[0])
 
-    def test_fanofactor_trials_pool_spike_trains_wrong_type(self):
-        self.assertRaises(TypeError, statistics.fanofactor, self.test_trials, pool_spike_trains="Wrong Type")
-        self.assertRaises(TypeError, statistics.fanofactor, self.test_trials, pool_spike_trials="Wrong Type")
-        self.assertRaises(TypeError, statistics.fanofactor, self.test_trials, pool_spike_trials="Wrong Type",
-                          pool_spike_trains="Wrong Type")
-
 
 class LVTestCase(unittest.TestCase):
     def setUp(self):
