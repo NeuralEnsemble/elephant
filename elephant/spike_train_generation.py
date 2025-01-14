@@ -164,9 +164,8 @@ def spike_extraction(
         always_as_list: bool = False
         ) -> Union[neo.core.SpikeTrain, SpikeTrainList]:
     """
-    Return the peak times for all events that cross threshold and the
-    waveforms. Usually used for extracting spikes from a membrane
-    potential to calculate waveform properties.
+    Return the peak times for all events that cross threshold and the waveforms. Usually used for extracting spikes from
+    a membrane potential to calculate waveform properties.
 
     Parameters
     ----------
@@ -176,22 +175,19 @@ def spike_extraction(
         Contains a value that must be reached for an event to be detected.
         Default: 0.0 * pq.mV
     sign : {'above', 'below'}, optional
-        Determines whether to count threshold crossings that cross above or
-        below the threshold.
+        Determines whether to count threshold crossings that cross above or below the threshold.
         Default: 'above'
     time_stamps : :class:`neo.core.SpikeTrain` , optional
-        Provides the time stamps around which the waveform is extracted. If it
-        is None, the function `peak_detection` is used to calculate the
-        `time_stamps` from signal.
+        Provides the time stamps around which the waveform is extracted. If it is None, the function `peak_detection` is
+        used to calculate the `time_stamps` from signal.
         Default: None
     interval : tuple of :class:`pq.Quantity`
-        Specifies the time interval around the `time_stamps` where the waveform
-        is extracted. The default time interval [-2ms, 4ms] are based on experience,
-        and many spike sorting tools choose values in this range as the
-        spikes are typically about 1-2 ms in length. This choice of default values includes a small interval before
-        the spike peak and a slightly larger interval after the spike peak to capture the dynamics following
-        the spike. Adjusting this interval will modify the waveforms stored in the neo :class:`neo.core.SpikeTrain`,
-        but it will not affect the spike times.
+        Specifies the time interval around the `time_stamps` where the waveform is extracted. The default time interval
+        [-2ms, 4ms] are based on experience, and many spike sorting tools choose values in this range as the spikes are
+        typically about 1-2 ms in length. This choice of default values includes a small interval before the spike peak
+        and a slightly larger interval after the spike peak to capture the dynamics following the spike. Adjusting this
+        interval will modify the waveforms stored in the neo :class:`neo.core.SpikeTrain`, but it will not affect the
+        spike times.
         Default: (-2 * pq.ms, 4 * pq.ms)
     always_as_list: bool, optional
         If True, :class:`neo.core.spiketrainslist.SpikeTrainList` is returned.
@@ -200,8 +196,7 @@ def spike_extraction(
     Returns
     -------
     result_st : :class:`neo.core.SpikeTrain`, :class:`neo.core.spiketrainslist.SpikeTrainList`.
-        Contains the time_stamps of each of the spikes and the waveforms in
-        `result_st.waveforms`.
+        Contains the time_stamps of each of the spikes and the waveforms in `result_st.waveforms`.
 
     See Also
     --------
@@ -209,12 +204,12 @@ def spike_extraction(
 
     Notes
     -----
-    If `time_stamps` is set to None, peaks are extracted using NumPy's peak finder. Therefore, the spike times will
-    not be affected by the `interval` parameter. However, the dimensions of the array containing the waveforms, which
-    is stored in the Neo :class:`neo.core.SpikeTrain`
-    object in `result_st.waveforms`, will differ depending on the interval parameter. The extracted waveforms are 
-    stored as an NxM matrix for the N spikes, each row containing a waveform. For example, if the sampling frequency is 10KHz, and 123 spikes
-    were detected, then `result_st.waveforms` should be size 123x200 for an interval of [-10ms, 10ms].
+    If `time_stamps` is set to None, peaks are extracted using NumPy's peak finder. Therefore, the spike times will not
+    be affected by the `interval` parameter. However, the dimensions of the array containing the waveforms, which is
+    stored in the Neo :class:`neo.core.SpikeTrain` object in `result_st.waveforms`, will differ depending on the
+    interval parameter. The extracted waveforms are stored as an NxM matrix for the N spikes, each row containing a
+    waveform. For example, if the sampling frequency is 10KHz, and 123 spikes were detected, then `result_st.waveforms`
+    should be size 123x200 for an interval of [-10ms, 10ms].
     """
     if isinstance(signal, neo.core.AnalogSignal):
         if signal.shape[1] == 1:
