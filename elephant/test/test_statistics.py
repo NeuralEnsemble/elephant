@@ -354,9 +354,17 @@ class FanoFactorTestCase(unittest.TestCase):
         self.assertRaises(TypeError, statistics.fanofactor, [st1],
                           warn_tolerance=1e-4)
 
-    def test_fanofactor_trials_pool_trials(self):
+    def test_fanofactor_trials(self):
         results = statistics.fanofactor(self.test_trials)
         self.assertEqual(len(results), self.test_trials.n_spiketrains_trial_by_trial[0])
+
+    def test_fanofactor_trials_result(self):
+        results = statistics.fanofactor(self.test_trials)
+        for st_idx, result in enumerate(results):
+            spiketrains = [trial.spiketrains[st_idx] for trial in self.test_trials.get_trials_as_list()]
+            sp_count = sum([len(spiketrain) for spiketrain in spiketrains])
+            self.assertEqual(np.var(sp_count) / np.mean(sp_count),
+                             result)
 
 
 class LVTestCase(unittest.TestCase):
