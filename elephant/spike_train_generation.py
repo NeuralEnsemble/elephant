@@ -186,7 +186,7 @@ def spike_extraction(
         Default: None
     interval : tuple of :class:`pq.Quantity`
         Specifies the time interval around the `time_stamps` where the waveform
-        is extracted. The default values [-2ms, 4ms] are based on experience,
+        is extracted. The default time interval [-2ms, 4ms] are based on experience,
         and many spike sorting tools choose values in this range:
         Spikes are typically about 1-2 ms in length. This is to include a small interval before
         the spike peak and a slightly larger interval after the spike peak to capture the dynamics following
