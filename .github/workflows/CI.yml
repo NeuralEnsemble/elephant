@@ -135,19 +135,13 @@ jobs:
       matrix:
         # OS [ubuntu-latest, macos-latest, windows-latest]
         os: [macos-13,macos-14]
-        python-version: [3.11]
+        python-version: [3.12]
     steps:
       - name: Get current year-month
         id: date
         run: echo "date=$(date +'%Y-%m')" >> $GITHUB_OUTPUT
 
       - uses: actions/checkout@v4.1.6
-
-      - name: Cache conda
-        uses: actions/cache@v4
-        with:
-          path: ~/conda_pkgs_dir
-          key: ${{ runner.os }}-conda-${{hashFiles('requirements/environment.yml') }}-${{ hashFiles('**/CI.yml') }}-${{ steps.date.outputs.date }}
 
       - name: Get current hash (SHA) of the elephant_data repo
         id: elephant-data
@@ -162,29 +156,17 @@ jobs:
           key: datasets-${{ steps.elephant-data.outputs.dataset_hash }}
           restore-keys: datasets-      
 
-      - uses: conda-incubator/setup-miniconda@d2e6a045a86077fb6cad6f5adf368e9076ddaa8d # corresponds to v3.1.0
-        with:
-          auto-update-conda: true
-          python-version: ${{ matrix.python-version }}
-          mamba-version: "*"
-          channels: conda-forge
-          channel-priority: true
-          activate-environment: elephant
-          environment-file: requirements/environment-tests.yml
-          conda-remove-defaults: true
-
       - name: Install dependencies
         shell: bash -l {0}
         run: |
           python --version
-          mamba install pytest pytest-cov coveralls
           pip install -e .[extras]
+          pip install pytest-cov coveralls
 
       - name: List packages
         shell: bash -l {0}
         run: |
           pip list
-          mamba list
           python --version
 
       - name: Test with pytest
