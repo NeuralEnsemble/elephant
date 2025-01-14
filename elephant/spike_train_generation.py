@@ -210,9 +210,10 @@ def spike_extraction(
     Notes
     -----
     If `time_stamps` is set to None, peaks are extracted using NumPy's peak finder. Therefore, the spike times will
-    not be affected by the `interval` parameter. However, the waveforms stored in the Neo :class:`neo.core.SpikeTrain`
-    object (in `result_st.waveforms`, an NxM matrix for the N spikes, each row containing a waveform) should be
-    different depending on the `interval` parameter. For example, if the sampling frequency is 10KHz, and 123 spikes
+    not be affected by the `interval` parameter. However, the dimensions of the array containing the waveforms, which
+    is stored in the Neo :class:`neo.core.SpikeTrain`
+    object in `result_st.waveforms`, will differ depending on the interval parameter. The extracted waveforms are 
+    stored as an NxM matrix for the N spikes, each row containing a waveform. For example, if the sampling frequency is 10KHz, and 123 spikes
     were detected, then `result_st.waveforms` should be size 123x200 for an interval of [-10ms, 10ms].
     """
     if isinstance(signal, neo.core.AnalogSignal):
