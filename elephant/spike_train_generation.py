@@ -187,8 +187,8 @@ def spike_extraction(
     interval : tuple of :class:`pq.Quantity`
         Specifies the time interval around the `time_stamps` where the waveform
         is extracted. The default time interval [-2ms, 4ms] are based on experience,
-        and many spike sorting tools choose values in this range:
-        Spikes are typically about 1-2 ms in length. This choice of default values includes a small interval before
+        and many spike sorting tools choose values in this range as the
+        spikes are typically about 1-2 ms in length. This choice of default values includes a small interval before
         the spike peak and a slightly larger interval after the spike peak to capture the dynamics following
         the spike. Adjusting this interval will modify the waveforms stored in the neo :class:`neo.core.SpikeTrain`,
         but it will not affect the spike times.
