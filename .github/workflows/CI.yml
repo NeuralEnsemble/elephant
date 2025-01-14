@@ -160,7 +160,7 @@ jobs:
         shell: bash -l {0}
         run: |
           python --version
-          pip install -e .[extras, tests]
+          pip install -e .[extras,tests]
           pip install pytest-cov coveralls
 
       - name: List packages
