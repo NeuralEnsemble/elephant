@@ -1031,7 +1031,7 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
                              sigma=str(kernel.sigma),
                              invert=kernel.invert)
 
-    if isinstance(spiketrains, neo.core.spiketrainlist.SpikeTrainList) and (
+    if isinstance(spiketrains, (neo.core.spiketrainlist.SpikeTrainList, list, tuple)) and (
                   pool_spike_trains):
         rate = np.mean(rate, axis=1)
 
