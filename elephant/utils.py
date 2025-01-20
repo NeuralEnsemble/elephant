@@ -468,7 +468,7 @@ def is_list_neo_spiketrains(obj: object) -> bool:
     ------
     TypeError
         If obj is not an iterable, or if any element is not a neo.SpikeTrain.
-    
+
     """
 
     if not isinstance(obj, collections.abc.Iterable):
