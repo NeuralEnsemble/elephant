@@ -468,14 +468,7 @@ def is_list_neo_spiketrains(obj: object) -> bool:
     ------
     TypeError
         If obj is not an iterable, or if any element is not a neo.SpikeTrain.
-    Examples
-    --------
-    >>> import neo
-    >>> spiketrain = neo.SpikeTrain([1, 2, 3], t_stop=4, units='s')
-    >>> check_neo_spiketrains([spiketrain])
-    True
-    >>> check_neo_spiketrains("not an iterable")
-    Raises TypeError
+    
     """
 
     if not isinstance(obj, collections.abc.Iterable):
