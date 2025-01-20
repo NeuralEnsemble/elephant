@@ -33,6 +33,7 @@ __all__ = [
     "check_neo_consistency",
     "check_same_units",
     "round_binning_errors",
+    "is_list_neo_spiketrains",
 ]
 
 
