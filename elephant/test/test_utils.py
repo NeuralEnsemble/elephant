@@ -168,6 +168,10 @@ class TestIsListNeoSpiketrains(unittest.TestCase):
     def test_none_input(self):
         self.assertFalse(utils.is_list_spiketrains(None))
 
+    def test_single_spiketrain_input(self):
+        single_spiketrain = neo.SpikeTrain([1, 2, 3] * pq.s, t_stop=4 * pq.s)
+        self.assertFalse(utils.is_list_spiketrains(single_spiketrain))
+
 
 if __name__ == '__main__':
     unittest.main()
