@@ -144,33 +144,29 @@ class TestIsListNeoSpiketrains(unittest.TestCase):
 
     def test_valid_list_input(self):
         valid_list = [self.spiketrain1, self.spiketrain2]
-        self.assertTrue(utils.is_list_neo_spiketrains(valid_list))
+        self.assertTrue(utils.is_list_spiketrains(valid_list))
 
     def test_valid_tuple_input(self):
         valid_tuple = (self.spiketrain1, self.spiketrain2)
-        self.assertTrue(utils.is_list_neo_spiketrains(valid_tuple))
+        self.assertTrue(utils.is_list_spiketrains(valid_tuple))
 
     def test_valid_spiketrainlist_input(self):
         valid_spiketrainlist = neo.core.spiketrainlist.SpikeTrainList(items=(self.spiketrain1, self.spiketrain2))
-        self.assertTrue(utils.is_list_neo_spiketrains(valid_spiketrainlist))
+        self.assertTrue(utils.is_list_spiketrains(valid_spiketrainlist))
 
     def test_non_iterable_input(self):
-        with self.assertRaises(TypeError):
-            utils.is_list_neo_spiketrains(42)
+        self.assertFalse(utils.is_list_spiketrains(42))
 
     def test_non_spiketrain_objects(self):
         invalid_list = [self.spiketrain1, "not a spiketrain"]
-        with self.assertRaises(TypeError):
-            utils.is_list_neo_spiketrains(invalid_list)
+        self.assertFalse(utils.is_list_spiketrains(invalid_list))
 
     def test_mixed_types_input(self):
         invalid_mixed = [self.spiketrain1, 42, self.spiketrain2]
-        with self.assertRaises(TypeError):
-            utils.is_list_neo_spiketrains(invalid_mixed)
+        self.assertFalse(utils.is_list_spiketrains(invalid_mixed))
 
     def test_none_input(self):
-        with self.assertRaises(TypeError):
-            utils.is_list_neo_spiketrains(None)
+        self.assertFalse(utils.is_list_spiketrains(None))
 
 
 if __name__ == '__main__':
