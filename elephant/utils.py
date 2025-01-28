@@ -463,7 +463,8 @@ def is_list_spiketrains(obj: object) -> bool:
     Returns
     -------
     bool
-        True if obj is an iterable containing only neo.SpikeTrain objects.
+        True if obj is an iterable containing only neo.SpikeTrain objects. A single `neo.SpikeTrain` object (not inside
+        an iterable) will return `False`.
 
     """
 
