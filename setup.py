@@ -1,24 +1,9 @@
-# -*- coding: utf-8 -*-
-import os.path
 import platform
 import sys
 
 from setuptools import setup, Extension
 from setuptools.command.install import install
 from setuptools.command.develop import develop
-
-with open(os.path.join(os.path.dirname(__file__),
-                       "elephant", "VERSION")) as version_file:
-    version = version_file.read().strip()
-
-with open("README.md") as f:
-    long_description = f.read()
-with open('requirements/requirements.txt') as fp:
-    install_requires = fp.read().splitlines()
-extras_require = {}
-for extra in ['extras', 'docs', 'tests', 'tutorials', 'cuda', 'opencl']:
-    with open('requirements/requirements-{0}.txt'.format(extra)) as fp:
-        extras_require[extra] = fp.read()
 
 if platform.system() == "Windows":
     fim_module = Extension(
@@ -30,7 +15,7 @@ if platform.system() == "Windows":
         extra_compile_args=[
             '-DMODULE_NAME=fim', '-DUSE_OPENMP', '-DWITH_SIG_TERM',
             '-Dfim_EXPORTS', '-fopenmp', '/std:c++17'],
-        optional=True
+        #optional=True
     )
 elif platform.system() == "Darwin":
     fim_module = Extension(
@@ -45,7 +30,7 @@ elif platform.system() == "Darwin":
             '-Weffc++', '-Wunused-result', '-Werror', '-Werror=return-type',
             '-Xpreprocessor',
             '-fopenmp', '-std=gnu++17'],
-        optional=True
+        #optional=True
     )
 elif platform.system() == "Linux":
     fim_module = Extension(
@@ -59,43 +44,10 @@ elif platform.system() == "Linux":
             '-Dfim_EXPORTS', '-O3', '-pedantic', '-Wextra',
             '-Weffc++', '-Wunused-result', '-Werror',
             '-fopenmp', '-std=gnu++17'],
-        optional=True
+        #optional=True
     )
 
-setup_kwargs = {
-    "name": "elephant",
-    "version": version,
-    "packages": ['elephant', 'elephant.test'],
-    "include_package_data": True,
-    "install_requires": install_requires,
-    "extras_require": extras_require,
-    "author": "Elephant authors and contributors",
-    "author_email": "contact@python-elephant.org",
-    "description": "Elephant is a package for analysis of electrophysiology data in Python",  # noqa
-    "long_description": long_description,
-    "long_description_content_type": "text/markdown",
-    "license": "BSD",
-    "url": 'http://python-elephant.org',
-    "project_urls": {
-            "Bug Tracker": "https://github.com/NeuralEnsemble/elephant/issues",
-            "Documentation": "https://elephant.readthedocs.io/en/latest/",
-            "Source Code": "https://github.com/NeuralEnsemble/elephant",
-        },
-    "python_requires": ">=3.8",
-    "classifiers": [
-        'Development Status :: 5 - Production/Stable',
-        'Intended Audience :: Science/Research',
-        'License :: OSI Approved :: BSD License',
-        'Natural Language :: English',
-        'Operating System :: OS Independent',
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.8',
-        'Programming Language :: Python :: 3.9',
-        'Programming Language :: Python :: 3.10',
-        'Programming Language :: Python :: 3.11',
-        'Programming Language :: Python :: 3 :: Only',
-        'Topic :: Scientific/Engineering']
-}
+setup_kwargs = {}
 
 # no compile options and corresponding extensions
 options = {"--no-compile": None, "--no-compile-spade": fim_module}
