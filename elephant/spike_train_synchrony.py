@@ -16,6 +16,7 @@ Synchrony Measures
 :copyright: Copyright 2014-2024 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
+
 from __future__ import division, print_function, unicode_literals
 
 import warnings
@@ -29,15 +30,12 @@ import quantities as pq
 from elephant.statistics import Complexity
 from elephant.utils import is_time_quantity, check_same_units
 
-SpikeContrastTrace = namedtuple("SpikeContrastTrace", (
-    "contrast", "active_spiketrains", "synchrony", "bin_size"))
+SpikeContrastTrace = namedtuple(
+    "SpikeContrastTrace", ("contrast", "active_spiketrains", "synchrony", "bin_size")
+)
 
 
-__all__ = [
-    "SpikeContrastTrace",
-    "spike_contrast",
-    "Synchrotool"
-]
+__all__ = ["SpikeContrastTrace", "spike_contrast", "Synchrotool"]
 
 
 def _get_theta_and_n_per_bin(spiketrains, t_start, t_stop, bin_size):
@@ -48,10 +46,9 @@ def _get_theta_and_n_per_bin(spiketrains, t_start, t_stop, bin_size):
     bin_step = bin_size / 2
     edges = np.arange(t_start, t_stop + bin_step, bin_step)
     # Calculate histogram for every spike train
-    histogram = np.vstack([
-        _binning_half_overlap(st, edges=edges)
-        for st in spiketrains
-    ])
+    histogram = np.vstack(
+        [_binning_half_overlap(st, edges=edges) for st in spiketrains]
+    )
     # Amount of spikes per bin
     theta = histogram.sum(axis=0)
     # Amount of active spike trains per bin
@@ -69,9 +66,14 @@ def _binning_half_overlap(spiketrain, edges):
     return histogram
 
 
-def spike_contrast(spiketrains, t_start=None, t_stop=None,
-                   min_bin=10 * pq.ms, bin_shrink_factor=0.9,
-                   return_trace=False):
+def spike_contrast(
+    spiketrains,
+    t_start=None,
+    t_stop=None,
+    min_bin=10 * pq.ms,
+    bin_shrink_factor=0.9,
+    return_trace=False,
+):
     """
     Calculates the synchrony of spike trains, according to
     :cite:`synchrony-Ciba18_136`. The spike trains can have different lengths.
@@ -156,12 +158,14 @@ def spike_contrast(spiketrains, t_start=None, t_stop=None,
     0.419
 
     """
-    if not 0. < bin_shrink_factor < 1.:
-        raise ValueError(f"'bin_shrink_factor' ({bin_shrink_factor}) must be "
-                         "in range (0, 1).")
+    if not 0.0 < bin_shrink_factor < 1.0:
+        raise ValueError(
+            f"'bin_shrink_factor' ({bin_shrink_factor}) must be in range (0, 1)."
+        )
     if not len(spiketrains) > 1:
-        raise ValueError("Spike contrast measure requires more than 1 input "
-                         "spiketrain.")
+        raise ValueError(
+            "Spike contrast measure requires more than 1 input spiketrain."
+        )
     check_same_units(spiketrains, object_type=neo.SpikeTrain)
     if not is_time_quantity(t_start, t_stop, allow_none=True):
         raise TypeError("'t_start' and 't_stop' must be time quantities.")
@@ -180,8 +184,9 @@ def spike_contrast(spiketrains, t_start=None, t_stop=None,
     t_stop = t_stop.rescale(units).item()
     min_bin = min_bin.rescale(units).item()
 
-    spiketrains = [times[(times >= t_start) & (times <= t_stop)]
-                   for times in spiketrains]
+    spiketrains = [
+        times[(times >= t_start) & (times <= t_stop)] for times in spiketrains
+    ]
 
     n_spiketrains = len(spiketrains)
     n_spikes_total = sum(map(len, spiketrains))
@@ -208,14 +213,12 @@ def spike_contrast(spiketrains, t_start=None, t_stop=None,
     while bin_size >= bin_min:
         bin_sizes.append(bin_size)
         # Calculate Theta and n
-        theta_k, n_k = _get_theta_and_n_per_bin(spiketrains,
-                                                t_start=t_start,
-                                                t_stop=t_stop,
-                                                bin_size=bin_size)
+        theta_k, n_k = _get_theta_and_n_per_bin(
+            spiketrains, t_start=t_start, t_stop=t_stop, bin_size=bin_size
+        )
 
         # calculate synchrony_curve = contrast * active_st
-        active_st = (np.sum(n_k * theta_k) / np.sum(theta_k) - 1) / (
-                    n_spiketrains - 1)
+        active_st = (np.sum(n_k * theta_k) / np.sum(theta_k) - 1) / (n_spiketrains - 1)
         contrast = np.sum(np.abs(np.diff(theta_k))) / (2 * n_spikes_total)
         # Contrast: sum(|derivation|) / (2*#Spikes)
         synchrony = contrast * active_st
@@ -261,23 +264,27 @@ class Synchrotool(Complexity):
 
     """
 
-    def __init__(self, spiketrains,
-                 sampling_rate,
-                 bin_size=None,
-                 binary=True,
-                 spread=0,
-                 tolerance=1e-8):
-
+    def __init__(
+        self,
+        spiketrains,
+        sampling_rate,
+        bin_size=None,
+        binary=True,
+        spread=0,
+        tolerance=1e-8,
+    ):
         self.annotated = False
 
-        super(Synchrotool, self).__init__(spiketrains=spiketrains,
-                                          bin_size=bin_size,
-                                          sampling_rate=sampling_rate,
-                                          binary=binary,
-                                          spread=spread,
-                                          tolerance=tolerance)
+        super(Synchrotool, self).__init__(
+            spiketrains=spiketrains,
+            bin_size=bin_size,
+            sampling_rate=sampling_rate,
+            binary=binary,
+            spread=spread,
+            tolerance=tolerance,
+        )
 
-    def delete_synchrofacts(self, threshold, in_place=False, mode='delete'):
+    def delete_synchrofacts(self, threshold, in_place=False, mode="delete"):
         """
         Delete or extract synchronous spiking events.
 
@@ -331,13 +338,15 @@ class Synchrotool(Complexity):
         if not self.annotated:
             self.annotate_synchrofacts()
 
-        if mode not in ['delete', 'extract']:
-            raise ValueError(f"Invalid mode '{mode}'. Valid modes are: "
-                             f"'delete', 'extract'")
+        if mode not in ["delete", "extract"]:
+            raise ValueError(
+                f"Invalid mode '{mode}'. Valid modes are: 'delete', 'extract'"
+            )
 
         if threshold <= 1:
-            raise ValueError('A deletion threshold <= 1 would result '
-                             'in the deletion of all spikes.')
+            raise ValueError(
+                "A deletion threshold <= 1 would result in the deletion of all spikes."
+            )
 
         if in_place:
             spiketrain_list = self.input_spiketrains
@@ -345,8 +354,8 @@ class Synchrotool(Complexity):
             spiketrain_list = deepcopy(self.input_spiketrains)
 
         for idx, st in enumerate(spiketrain_list):
-            mask = st.array_annotations['complexity'] < threshold
-            if mode == 'extract':
+            mask = st.array_annotations["complexity"] < threshold
+            if mode == "extract":
                 mask = np.invert(mask)
             new_st = st[mask]
             if in_place and st.segment is not None:
@@ -354,29 +363,28 @@ class Synchrotool(Complexity):
 
                 try:
                     # replace link to spiketrain in segment
-                    new_index = self._get_spiketrain_index(
-                        segment.spiketrains, st)
+                    new_index = self._get_spiketrain_index(segment.spiketrains, st)
                     segment.spiketrains[new_index] = new_st
                 except ValueError:
                     # st is not in this segment even though it points to it
-                    warnings.warn(f"The SpikeTrain at index {idx} of the "
-                                  "input list spiketrains has a "
-                                  "unidirectional uplink to a segment in "
-                                  "whose segment.spiketrains list it does not "
-                                  "appear. Only the spiketrains in the input "
-                                  "list will be replaced. You can suppress "
-                                  "this warning by setting "
-                                  "spiketrain.segment=None for the input "
-                                  "spiketrains.")
+                    warnings.warn(
+                        f"The SpikeTrain at index {idx} of the "
+                        "input list spiketrains has a "
+                        "unidirectional uplink to a segment in "
+                        "whose segment.spiketrains list it does not "
+                        "appear. Only the spiketrains in the input "
+                        "list will be replaced. You can suppress "
+                        "this warning by setting "
+                        "spiketrain.segment=None for the input "
+                        "spiketrains."
+                    )
 
                 block = segment.block
                 if block is not None:
                     # replace link to spiketrain in groups
                     for group in block.groups:
                         try:
-                            idx = self._get_spiketrain_index(
-                                group.spiketrains,
-                                st)
+                            idx = self._get_spiketrain_index(group.spiketrains, st)
                         except ValueError:
                             # st is not in this group, move to next group
                             continue
@@ -392,21 +400,20 @@ class Synchrotool(Complexity):
         Annotate the complexity of each spike in the
         ``self.epoch.array_annotations`` *in-place*.
         """
-        epoch_complexities = self.epoch.array_annotations['complexity']
+        epoch_complexities = self.epoch.array_annotations["complexity"]
         right_edges = (
             self.epoch.times.magnitude.flatten()
-            + self.epoch.durations.rescale(
-                self.epoch.times.units).magnitude.flatten()
+            + self.epoch.durations.rescale(self.epoch.times.units).magnitude.flatten()
         )
 
         for idx, st in enumerate(self.input_spiketrains):
-
             # all indices of spikes that are within the half-open intervals
             # defined by the boundaries
             # note that every second entry in boundaries is an upper boundary
             spike_to_epoch_idx = np.searchsorted(
                 right_edges,
-                st.times.rescale(self.epoch.times.units).magnitude.flatten())
+                st.times.rescale(self.epoch.times.units).magnitude.flatten(),
+            )
             complexity_per_spike = epoch_complexities[spike_to_epoch_idx]
 
             st.array_annotate(complexity=complexity_per_spike)
