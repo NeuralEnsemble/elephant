@@ -253,7 +253,7 @@ jobs:
     strategy:
       matrix:
         # python versions for elephant: [3.8, 3.9, 3.10, 3.11]
-        python-version: [3.9]
+        python-version: [3.12]
         # OS [ubuntu-latest, macos-latest, windows-latest]
         os: [ubuntu-latest]
 
