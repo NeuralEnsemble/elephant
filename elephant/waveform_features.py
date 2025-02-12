@@ -58,7 +58,7 @@ def waveform_width(waveform, cutoff=0.75):
     --------
     >>> from elephant.waveform_features import waveform_width
     >>> waveform_width([20, 25, 10, -5, -2, 7, 15], cutoff=0.75)
-    3
+    np.int64(3)
 
     """
     waveform = np.squeeze(waveform)
