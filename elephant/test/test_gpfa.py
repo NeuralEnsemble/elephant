@@ -188,7 +188,7 @@ class GPFATestCase(unittest.TestCase):
         self.assertEqual(seqs['y'].shape, seqs_not_sqrt['y'].shape)
 
     def test_cut_trials_inf(self):
-        same_data = gpfa_util.cut_trials(self.data2, seg_length=np.Inf)
+        same_data = gpfa_util.cut_trials(self.data2, seg_length=np.inf)
         assert same_data is self.data2
 
     def test_cut_trials_zero_length(self):

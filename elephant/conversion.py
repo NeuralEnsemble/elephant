@@ -62,7 +62,7 @@ Generate a realisation of spike trains from the binned version.
 Check the correctness of a spike trains realosation
 
 >>> BinnedSpikeTrain(bst.to_spike_trains(), bin_size=bst.bin_size) == bst
-True
+np.True_
 
 Rescale the units of a binned spike train without changing the data.
 

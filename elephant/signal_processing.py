@@ -475,7 +475,7 @@ def butter(signal, highpass_frequency=None, lowpass_frequency=None, order=4,
            ...,
            [ 1.12088277e-01],
            [-3.11053132e-01],
-           [ 2.63563988e-03]]) * mV, [0.0 s, 5.0 s], sampling rate: 1000.0 Hz)>
+           [ 2.63563988e-03]], shape=(5000, 1)) * mV, [0.0 s, 5.0 s], sampling rate: 1000.0 Hz)>
 
 
     Let's check that the normal noise power spectrum at zero frequency is close
@@ -964,7 +964,7 @@ def rauc(signal, baseline=None, bin_duration=None, t_start=None, t_stop=None):
     sig_binned = sig_binned.reshape(n_bins, samples_per_bin, n_channels)
 
     # rectify and integrate over each bin
-    rauc = np.trapz(np.abs(sig_binned), dx=signal.sampling_period, axis=1)
+    rauc = np.trapezoid(np.abs(sig_binned), dx=signal.sampling_period, axis=1)
 
     if n_bins == 1:
         # return a single value for each channel

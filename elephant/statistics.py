@@ -214,7 +214,7 @@ def mean_firing_rate(spiketrain, t_start=None, t_stop=None, axis=None):
     --------
     >>> from elephant import statistics
     >>> statistics.mean_firing_rate([0.3, 4.5, 6.7, 9.3])
-    0.4301075268817204
+    np.float64(0.4301075268817204)
 
     """
     if isinstance(spiketrain, neo.SpikeTrain) and t_start is None \
@@ -325,7 +325,7 @@ def fanofactor(spiketrains, warn_tolerance=0.1 * pq.ms):
     ...     neo.SpikeTrain([1.4, 3.3, 8.2], t_stop=10, units='s')
     ... ]
     >>> statistics.fanofactor(spiketrains)
-    0.07142857142857142
+    np.float64(0.07142857142857142)
 
     """
     # Build array of spike counts (one per spike train)
@@ -365,7 +365,7 @@ def __variation_check(v, with_nan):
             warnings.warn("The input size is too small. Please provide"
                           "an input with more than 1 entry. Returning `NaN`"
                           "since the argument `with_nan` is `True`")
-            return np.NaN
+            return np.nan
         raise ValueError("Input size is too small. Please provide "
                          "an input with more than 1 entry. Set 'with_nan' "
                          "to True to replace the error by a warning.")
@@ -427,7 +427,7 @@ def cv2(time_intervals, with_nan=False):
     --------
     >>> from elephant import statistics
     >>> statistics.cv2([0.3, 4.5, 6.7, 9.3])
-    0.8226190476190478
+    np.float64(0.8226190476190478)
 
     """
     # convert to array, cast to float
@@ -495,7 +495,7 @@ def lv(time_intervals, with_nan=False):
     --------
     >>> from elephant import statistics
     >>> statistics.lv([0.3, 4.5, 6.7, 9.3])
-    0.8306154336734695
+    np.float64(0.8306154336734695)
 
     """
     # convert to array, cast to float
@@ -569,7 +569,7 @@ def lvr(time_intervals, R=5*pq.ms, with_nan=False):
     --------
     >>> from elephant import statistics
     >>> statistics.lvr([0.3, 4.5, 6.7, 9.3], R=0.005)
-    0.833907445980624
+    np.float64(0.833907445980624)
     """
     if isinstance(R, pq.Quantity):
         R = R.rescale('ms').magnitude
