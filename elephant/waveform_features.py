@@ -116,7 +116,7 @@ def waveform_snr(waveforms):
     >>> from elephant.waveform_features import waveform_snr
     >>> waveforms = [[20, 25, 10, -5, -2, 7, 15], [17, 29, 11, -4, 0, 5, 20]]
     >>> waveform_snr(waveforms)
-    12.249999999999998
+    np.float64(12.249999999999998)
 
     """
     if isinstance(waveforms, neo.SpikeTrain):
