@@ -427,7 +427,7 @@ def cv2(time_intervals, with_nan=False):
     --------
     >>> from elephant import statistics
     >>> statistics.cv2([0.3, 4.5, 6.7, 9.3])
-    0.8226190476190478
+    np.float64(0.8226190476190478)
 
     """
     # convert to array, cast to float
