@@ -475,7 +475,7 @@ def butter(signal, highpass_frequency=None, lowpass_frequency=None, order=4,
            ...,
            [ 1.12088277e-01],
            [-3.11053132e-01],
-           [ 2.63563988e-03]]) * mV, [0.0 s, 5.0 s], sampling rate: 1000.0 Hz)>
+           [ 2.63563988e-03]], shape=(5000, 1)) * mV, [0.0 s, 5.0 s], sampling rate: 1000.0 Hz)>
 
 
     Let's check that the normal noise power spectrum at zero frequency is close
