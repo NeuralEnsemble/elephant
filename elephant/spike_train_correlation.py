@@ -884,7 +884,7 @@ def spike_time_tiling_coefficient(spiketrain_i: neo.core.SpikeTrain,
     >>> spiketrain2 = neo.SpikeTrain([1.02, 2.71, 18.82, 28.46, 28.79, 43.6],
     ...     units='ms', t_stop=50)
     >>> spike_time_tiling_coefficient(spiketrain1, spiketrain2)
-    0.4958601655933762
+    np.float64(0.4958601655933762)
 
     """
     # input checks
