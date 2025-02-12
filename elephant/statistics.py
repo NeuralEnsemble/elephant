@@ -569,7 +569,7 @@ def lvr(time_intervals, R=5*pq.ms, with_nan=False):
     --------
     >>> from elephant import statistics
     >>> statistics.lvr([0.3, 4.5, 6.7, 9.3], R=0.005)
-    0.833907445980624
+    np.float64(0.833907445980624)
     """
     if isinstance(R, pq.Quantity):
         R = R.rescale('ms').magnitude
