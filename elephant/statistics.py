@@ -495,7 +495,7 @@ def lv(time_intervals, with_nan=False):
     --------
     >>> from elephant import statistics
     >>> statistics.lv([0.3, 4.5, 6.7, 9.3])
-    0.8306154336734695
+    np.float64(0.8306154336734695)
 
     """
     # convert to array, cast to float
