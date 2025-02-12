@@ -332,7 +332,6 @@ class DeltaiCSD(CSD):
         """Calculate the F-matrix"""
         f_matrix = np.empty((self.coord_electrode.size,
                              self.coord_electrode.size)) * self.coord_electrode.units
-
         for j in range(self.coord_electrode.size):
             for i in range(self.coord_electrode.size):
                 f_matrix[j, i] = ((np.sqrt((self.coord_electrode[j] -
