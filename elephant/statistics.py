@@ -214,7 +214,7 @@ def mean_firing_rate(spiketrain, t_start=None, t_stop=None, axis=None):
     --------
     >>> from elephant import statistics
     >>> statistics.mean_firing_rate([0.3, 4.5, 6.7, 9.3])
-    0.4301075268817204
+    np.float64(0.4301075268817204)
 
     """
     if isinstance(spiketrain, neo.SpikeTrain) and t_start is None \
