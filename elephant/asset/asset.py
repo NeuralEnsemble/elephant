@@ -106,14 +106,14 @@ In this example we
 The ASSET found the following sequences of synchronous events:
 
 >>> pprint(sses)
-{1: {(36, 2): {5},
-     (37, 4): {1},
-     (40, 6): {4},
-     (41, 7): {8},
-     (43, 9): {2},
-     (47, 14): {7},
-     (48, 15): {0},
-     (50, 17): {9}}}
+{1: {(np.int64(36), np.int64(2)): {5},
+     (np.int64(37), np.int64(4)): {1},
+     (np.int64(40), np.int64(6)): {4},
+     (np.int64(41), np.int64(7)): {8},
+     (np.int64(43), np.int64(9)): {2},
+     (np.int64(47), np.int64(14)): {7},
+     (np.int64(48), np.int64(15)): {0},
+     (np.int64(50), np.int64(17)): {9}}}
 
 To visualize them, refer to Viziphant documentation and an example plot
 :func:`viziphant.asset.plot_synchronous_events`.
