@@ -325,7 +325,7 @@ def fanofactor(spiketrains, warn_tolerance=0.1 * pq.ms):
     ...     neo.SpikeTrain([1.4, 3.3, 8.2], t_stop=10, units='s')
     ... ]
     >>> statistics.fanofactor(spiketrains)
-    0.07142857142857142
+    np.float64(0.07142857142857142)
 
     """
     # Build array of spike counts (one per spike train)
