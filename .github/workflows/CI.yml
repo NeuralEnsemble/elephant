@@ -62,8 +62,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        # python versions for elephant: [3.8, 3.9, "3.10", 3.11, 3.12]
-        python-version: [3.9, "3.10", 3.11, 3.12]
+        # python versions for elephant: [3.8, 3.9, "3.10", 3.11, 3.12, 3.13]
+        python-version: [3.9, "3.10", 3.11, 3.12, 3.13]
         # OS [ubuntu-latest, macos-latest, windows-latest]
         os: [ubuntu-latest]
       # do not cancel all in-progress jobs if any matrix job fails
