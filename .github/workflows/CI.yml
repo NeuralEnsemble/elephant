@@ -346,7 +346,7 @@ jobs:
           echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
 
       - name: Cache pip
-        uses: actions/cache@v4
+        uses: actions/cache@v4.2.2
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
 
@@ -431,7 +431,7 @@ jobs:
           echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
 
       - name: Cache pip
-        uses: actions/cache@v4
+        uses: actions/cache@v4.2.2
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
           # Look to see if there is a cache hit for the corresponding requirements files
@@ -497,7 +497,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Cache test_env
-        uses: actions/cache@v4
+        uses: actions/cache@v4.2.2
         with:
           path: ~/test_env
           # Look to see if there is a cache hit for the corresponding requirements files
