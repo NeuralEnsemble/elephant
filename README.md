@@ -9,7 +9,7 @@
 [![tests](https://github.com/NeuralEnsemble/elephant/actions/workflows/CI.yml/badge.svg)](https://github.com/NeuralEnsemble/elephant/actions/workflows/CI.yml)
 [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/6191/badge)](https://bestpractices.coreinfrastructure.org/projects/6191)
 [![fair-software.eu](https://img.shields.io/badge/fair--software.eu-%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F-green)](https://fair-software.eu)
-[![Twitter](https://img.shields.io/twitter/follow/PyElephant?style=social)](https://twitter.com/pyelephant)
+[![Follow me on Bluesky](https://img.shields.io/badge/Bluesky-0285FF?logo=bluesky&logoColor=fff&label=Follow%20me%20on&color=0285FF)](https://bsky.app/profile/pyelephant.bsky.social)
 [![Fosstodon](https://img.shields.io/badge/@elephant-6364FF?logo=mastodon&logoColor=fff&style=flat)](https://fosstodon.org/@elephant)
 
 
