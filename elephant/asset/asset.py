@@ -119,6 +119,7 @@ To visualize them, refer to Viziphant documentation and an example plot
 :func:`viziphant.asset.plot_synchronous_events`.
 
 """
+
 from __future__ import division, print_function, unicode_literals
 
 import math
@@ -164,15 +165,18 @@ __all__ = [
     "synchronous_events_contains_all",
     "synchronous_events_overlap",
     "get_neurons_in_sse",
-    "get_sse_start_and_end_time_bins"
+    "get_sse_start_and_end_time_bins",
 ]
 
 # Create logger and set configuration
 logger = logging.getLogger(__file__)
 log_handler = logging.StreamHandler()
 log_handler.setFormatter(
-    logging.Formatter(f"[%(asctime)s] {__name__[__name__.rfind('.')+1::]} -"
-                      " %(levelname)s: %(message)s"))
+    logging.Formatter(
+        f"[%(asctime)s] {__name__[__name__.rfind('.') + 1 : :]} -"
+        " %(levelname)s: %(message)s"
+    )
+)
 logger.addHandler(log_handler)
 logger.propagate = False
 
@@ -206,12 +210,11 @@ def _signals_same_attribute(signals, attr_name):
         If `signals` have different `attr_name` attribute values.
     """
     if len(signals) == 0:
-        raise ValueError('Empty signals list')
+        raise ValueError("Empty signals list")
     attribute = getattr(signals[0], attr_name)
     for sig in signals[1:]:
         if getattr(sig, attr_name) != attribute:
-            raise ValueError(
-                "Signals have different '{}' values".format(attr_name))
+            raise ValueError("Signals have different '{}' values".format(attr_name))
     return attribute
 
 
@@ -307,17 +310,22 @@ def _transactions(spiketrains, bin_size, t_start, t_stop, ids=None):
         try:
             ids, trains = zip(*spiketrains)
         except TypeError:
-            raise TypeError('spiketrains must be either a list of ' +
-                            'SpikeTrains or a list of (id, SpikeTrain) pairs')
+            raise TypeError(
+                "spiketrains must be either a list of "
+                + "SpikeTrains or a list of (id, SpikeTrain) pairs"
+            )
 
     # Bin the spike trains and take for each of them the ids of filled bins
     binned = conv.BinnedSpikeTrain(
-        trains, bin_size=bin_size, t_start=t_start, t_stop=t_stop)
+        trains, bin_size=bin_size, t_start=t_start, t_stop=t_stop
+    )
     filled_bins = binned.spike_indices
 
     # Compute and return the transaction list
-    return [[train_id for train_id, b in zip(ids, filled_bins)
-             if bin_id in b] for bin_id in range(binned.n_bins)]
+    return [
+        [train_id for train_id, b in zip(ids, filled_bins) if bin_id in b]
+        for bin_id in range(binned.n_bins)
+    ]
 
 
 def _analog_signal_step_interp(signal, times):
@@ -347,8 +355,8 @@ def _analog_signal_step_interp(signal, times):
 
     # Compute the ids of the signal times to the left of each time in times
     time_ids = np.floor(
-        ((times - signal.t_start) / dt).rescale(
-            pq.dimensionless).magnitude).astype('i')
+        ((times - signal.t_start) / dt).rescale(pq.dimensionless).magnitude
+    ).astype("i")
 
     return (signal.magnitude[time_ids] * signal.units).rescale(signal.units)
 
@@ -358,8 +366,9 @@ def _analog_signal_step_interp(signal, times):
 # =============================================================================
 
 
-def _stretched_metric_2d(x, y, stretch, ref_angle, working_memory=None,
-                         mapped_array_file=None, verbose=None):
+def _stretched_metric_2d(
+    x, y, stretch, ref_angle, working_memory=None, mapped_array_file=None, verbose=None
+):
     r"""
     Given a list of points on the real plane, identified by their abscissa `x`
     and ordinate `y`, compute a stretched transformation of the Euclidean
@@ -432,12 +441,15 @@ def _stretched_metric_2d(x, y, stretch, ref_angle, working_memory=None,
 
     """
     if verbose is not None:
-        warnings.warn("The 'verbose' parameter is deprecated and will be "
-                      "removed in the future. Its functionality is still "
-                      "available by using the logging module from Python. "
-                      "We recommend transitioning to the logging module "
-                      "for improved control and flexibility in handling "
-                      "verbosity levels.", DeprecationWarning)
+        warnings.warn(
+            "The 'verbose' parameter is deprecated and will be "
+            "removed in the future. Its functionality is still "
+            "available by using the logging module from Python. "
+            "We recommend transitioning to the logging module "
+            "for improved control and flexibility in handling "
+            "verbosity levels.",
+            DeprecationWarning,
+        )
 
     alpha = np.deg2rad(ref_angle)  # reference angle in radians
 
@@ -467,7 +479,6 @@ def _stretched_metric_2d(x, y, stretch, ref_angle, working_memory=None,
         return _stretch_mat
 
     if working_memory is None:
-
         logger.info("Finding distances without chunking")
 
         # Compute the matrix D[i, j] of Euclidean distances among points
@@ -493,8 +504,7 @@ def _stretched_metric_2d(x, y, stretch, ref_angle, working_memory=None,
         # processed per iteration. Mininum is 1. Working memory size is in MB.
         # Size is computed for a float32 matrix. The function
         # `pairwise_distances_chunked` returns half of the possible size.
-        estimated_chunk = max(
-            ((working_memory * 1024 * 1024) // (len(y) * 4)) // 2, 1)
+        estimated_chunk = max(((working_memory * 1024 * 1024) // (len(y) * 4)) // 2, 1)
 
         # The number of rows in a chunk cannot be larger than the maximum
         estimated_chunk = min(len(x), estimated_chunk)
@@ -508,9 +518,11 @@ def _stretched_metric_2d(x, y, stretch, ref_angle, working_memory=None,
         if last_chunk > 0:
             it_todo += 1
 
-        logger.info(f"Estimated chunk size: {estimated_chunk}; "
-                    f"Dimension: ({len(x)}, {len(y)}), "
-                    f"Number of chunked iterations: {it_todo}")
+        logger.info(
+            f"Estimated chunk size: {estimated_chunk}; "
+            f"Dimension: ({len(x)}, {len(y)}), "
+            f"Number of chunked iterations: {it_todo}"
+        )
 
         # x and y sizes are the same
         if mapped_array_file is None:
@@ -519,11 +531,13 @@ def _stretched_metric_2d(x, y, stretch, ref_angle, working_memory=None,
             try:
                 stretch_mat = np.empty((len(x), len(y)), dtype=np.float32)
             except MemoryError:
-                required_size = (len(x) * len(y) * 4) / (1024 ** 3)
-                raise MemoryError("Can't allocate array in memory. Specify "
-                                  "a temporary disk file to map the array "
-                                  "to the disk. Operations will be slower. "
-                                  f"The required size is {required_size} GiB")
+                required_size = (len(x) * len(y) * 4) / (1024**3)
+                raise MemoryError(
+                    "Can't allocate array in memory. Specify "
+                    "a temporary disk file to map the array "
+                    "to the disk. Operations will be slower. "
+                    f"The required size is {required_size} GiB"
+                )
 
         else:
             # Using an array mapped to disk. Store in the file passed as
@@ -531,33 +545,36 @@ def _stretched_metric_2d(x, y, stretch, ref_angle, working_memory=None,
 
             logger.info(f"Creating disk array at '{mapped_array_file.name}'.")
 
-            stretch_mat = np.memmap(mapped_array_file, mode='w+',
-                                    shape=(len(x), len(y)),
-                                    dtype=np.float32)
+            stretch_mat = np.memmap(
+                mapped_array_file, mode="w+", shape=(len(x), len(y)), dtype=np.float32
+            )
 
             # Buffer to store the computations per iteration, to avoid
             # writing to the file after every single operation
             chunk_mat = np.empty((estimated_chunk, len(y)), dtype=np.float32)
 
         for D_chunk in tqdm(
-                pairwise_distances_chunked(points,
-                                           working_memory=working_memory),
-                desc='Pairwise distances chunked',
-                total=it_todo):
-
+            pairwise_distances_chunked(points, working_memory=working_memory),
+            desc="Pairwise distances chunked",
+            total=it_todo,
+        ):
             chunk_size = D_chunk.shape[0]
 
-            assert (chunk_size == estimated_chunk or
-                    chunk_size == last_chunk)  # Safety check
+            assert (
+                chunk_size == estimated_chunk or chunk_size == last_chunk
+            )  # Safety check
 
-            dX = x_array[:, start: start + chunk_size].T - x_array
-            dY = y_array[:, start: start + chunk_size].T - y_array
+            dX = x_array[:, start : start + chunk_size].T - x_array
+            dY = y_array[:, start : start + chunk_size].T - y_array
 
             # If not using an array mapped to the disk, the output of
             # the theta computations are written directly to the
             # stretch_mat. Otherwise, write to the buffer
-            out = stretch_mat[start: start + chunk_size, :] \
-                if mapped_array_file is None else chunk_mat[:chunk_size, :]
+            out = (
+                stretch_mat[start : start + chunk_size, :]
+                if mapped_array_file is None
+                else chunk_mat[:chunk_size, :]
+            )
 
             theta_chunk = np.arctan2(dY, dX, out=out)
 
@@ -566,7 +583,7 @@ def _stretched_metric_2d(x, y, stretch, ref_angle, working_memory=None,
 
             # If mapping to file, transfer from the buffer to stretch_mat
             if mapped_array_file is not None:
-                stretch_mat[start: start + chunk_size, :] = theta_chunk
+                stretch_mat[start : start + chunk_size, :] = theta_chunk
 
             start += chunk_size
 
@@ -579,25 +596,36 @@ def _interpolate_signals(signals, sampling_times, verbose=None):
     Interpolate signals at given sampling times.
     """
     if verbose is not None:
-        warnings.warn("The 'verbose' parameter is deprecated and will be "
-                      "removed in the future. Its functionality is still "
-                      "available by using the logging module from Python. "
-                      "We recommend transitioning to the logging module "
-                      "for improved control and flexibility in handling "
-                      "verbosity levels.", DeprecationWarning)
+        warnings.warn(
+            "The 'verbose' parameter is deprecated and will be "
+            "removed in the future. Its functionality is still "
+            "available by using the logging module from Python. "
+            "We recommend transitioning to the logging module "
+            "for improved control and flexibility in handling "
+            "verbosity levels.",
+            DeprecationWarning,
+        )
     # Reshape all signals to one-dimensional array object (e.g. AnalogSignal)
     for i, signal in enumerate(signals):
         if signal.ndim == 2:
             signals[i] = signal.flatten()
         elif signal.ndim > 2:
-            raise ValueError('elements in fir_rates must have 2 dimensions')
+            raise ValueError("elements in fir_rates must have 2 dimensions")
 
     logger.info("Create time slices of the rates...")
 
     # Interpolate in the time bins
-    interpolated_signal = np.vstack([_analog_signal_step_interp(
-        signal, sampling_times).rescale('Hz').magnitude
-                                     for signal in signals]) * pq.Hz
+    interpolated_signal = (
+        np.vstack(
+            [
+                _analog_signal_step_interp(signal, sampling_times)
+                .rescale("Hz")
+                .magnitude
+                for signal in signals
+            ]
+        )
+        * pq.Hz
+    )
 
     return interpolated_signal
 
@@ -639,8 +667,8 @@ class _GPUBackend:
         # If CUDA is detected, always use CUDA.
         # If OpenCL is detected, don't use it by default to avoid the system
         # becoming unresponsive until the program terminates.
-        use_cuda = int(os.getenv("ELEPHANT_USE_CUDA", '1'))
-        use_opencl = int(os.getenv("ELEPHANT_USE_OPENCL", '1'))
+        use_cuda = int(os.getenv("ELEPHANT_USE_CUDA", "1"))
+        use_opencl = int(os.getenv("ELEPHANT_USE_OPENCL", "1"))
         cuda_detected = get_cuda_capability_major() != 0
         opencl_detected = get_opencl_capability()
 
@@ -655,9 +683,11 @@ class _GPUBackend:
         if self.max_chunk_size is not None:
             chunk_size = min(chunk_size, self.max_chunk_size)
         if min_chunk_size is not None and chunk_size < min_chunk_size:
-            raise ValueError(f"[GPU not enough memory] Impossible to split "
-                             f"the array into chunks of size at least "
-                             f"{min_chunk_size} to fit into GPU memory")
+            raise ValueError(
+                f"[GPU not enough memory] Impossible to split "
+                f"the array into chunks of size at least "
+                f"{min_chunk_size} to fit into GPU memory"
+            )
         n_chunks = math.ceil(axis_size / chunk_size)
         chunk_size = math.ceil(axis_size / n_chunks)  # align in size
         if min_chunk_size is not None:
@@ -675,19 +705,30 @@ class _GPUBackend:
 
 
 class _JSFUniformOrderStat3D(_GPUBackend):
-    def __init__(self, n, d, precision='float', verbose=None,
-                 cuda_threads=64, cuda_cwr_loops=32, tolerance=1e-5,
-                 max_chunk_size=None):
+    def __init__(
+        self,
+        n,
+        d,
+        precision="float",
+        verbose=None,
+        cuda_threads=64,
+        cuda_cwr_loops=32,
+        tolerance=1e-5,
+        max_chunk_size=None,
+    ):
         super().__init__(max_chunk_size=max_chunk_size)
         if d > n:
             raise ValueError(f"d ({d}) must be less or equal n ({n})")
         if verbose is not None:
-            warnings.warn("The 'verbose' parameter is deprecated and will be "
-                          "removed in the future. Its functionality is still "
-                          "available by using the logging module from Python. "
-                          "We recommend transitioning to the logging module "
-                          "for improved control and flexibility in handling "
-                          "verbosity levels.", DeprecationWarning)
+            warnings.warn(
+                "The 'verbose' parameter is deprecated and will be "
+                "removed in the future. Its functionality is still "
+                "available by using the logging module from Python. "
+                "We recommend transitioning to the logging module "
+                "for improved control and flexibility in handling "
+                "verbosity levels.",
+                DeprecationWarning,
+            )
         self.n = n
         self.d = d
         self.precision = precision
@@ -750,14 +791,16 @@ class _JSFUniformOrderStat3D(_GPUBackend):
                 sequence_sorted[-1] = last_element
                 yield tuple(sequence_sorted)
             increment_id = self.d - 2
-            while increment_id > 0 and sequence_sorted[increment_id - 1] == \
-                    sequence_sorted[increment_id]:
+            while (
+                increment_id > 0
+                and sequence_sorted[increment_id - 1] == sequence_sorted[increment_id]
+            ):
                 increment_id -= 1
-            sequence_sorted[increment_id + 1:] = input_order[increment_id + 1:]
+            sequence_sorted[increment_id + 1 :] = input_order[increment_id + 1 :]
             sequence_sorted[increment_id] += 1
 
     def cpu(self, log_du):
-        log_1 = np.log(1.)
+        log_1 = np.log(1.0)
         # Compute the log of the integral's coefficient
         logK = np.sum(np.log(np.arange(1, self.n + 1)))
         # Add to the 3D matrix u a bottom layer equal to 0 and a
@@ -778,13 +821,16 @@ class _JSFUniformOrderStat3D(_GPUBackend):
         # initialise probabilities to 0
         P_total = np.zeros(
             log_du.shape[0],
-            dtype=np.float32 if self.precision == 'float' else np.float64
+            dtype=np.float32 if self.precision == "float" else np.float64,
         )
 
         for iter_id, matrix_entries in enumerate(
-                tqdm(self._combinations_with_replacement(),
-                     total=self.num_iterations,
-                     desc="Joint survival function")):
+            tqdm(
+                self._combinations_with_replacement(),
+                total=self.num_iterations,
+                desc="Joint survival function",
+            )
+        ):
             # if we are running with MPI
             if mpi_accelerated and iter_id % size != rank:
                 continue
@@ -819,12 +865,10 @@ class _JSFUniformOrderStat3D(_GPUBackend):
             totals = np.zeros_like(P_total)
 
             # exchange all the results
-            mpi_float_type = MPI.FLOAT \
-                if self.precision == 'float' else MPI.DOUBLE
+            mpi_float_type = MPI.FLOAT if self.precision == "float" else MPI.DOUBLE
             comm.Allreduce(
-                [P_total, mpi_float_type],
-                [totals, mpi_float_type],
-                op=MPI.SUM)
+                [P_total, mpi_float_type], [totals, mpi_float_type], op=MPI.SUM
+            )
 
             # We need to return the collected totals instead of the local
             # P_total
@@ -834,12 +878,16 @@ class _JSFUniformOrderStat3D(_GPUBackend):
 
     def _compile_template(self, template_name, **kwargs):
         from jinja2 import Template
+
         cu_template_path = Path(__file__).parent / template_name
         cu_template = Template(cu_template_path.read_text())
         asset_cu = cu_template.render(
             precision=self.precision,
             CWR_LOOPS=self.cuda_cwr_loops,
-            N=self.n, D=self.d, **kwargs)
+            N=self.n,
+            D=self.d,
+            **kwargs,
+        )
         return asset_cu
 
     def pyopencl(self, log_du, device_id=0):
@@ -859,39 +907,37 @@ class _JSFUniformOrderStat3D(_GPUBackend):
         # A queue bounded to the device
         queue = cl.CommandQueue(context)
 
-        max_l_block = device.local_mem_size // (
-                self.dtype.itemsize * (self.d + 2))
-        n_threads = min(self.cuda_threads, max_l_block,
-                        device.max_work_group_size)
+        max_l_block = device.local_mem_size // (self.dtype.itemsize * (self.d + 2))
+        n_threads = min(self.cuda_threads, max_l_block, device.max_work_group_size)
         if n_threads > 32:
             # It's more efficient to make the number of threads
             # a multiple of the warp size (32).
             n_threads -= n_threads % 32
 
-        iteration_table_str = ", ".join(f"{val}LU" for val in
-                                        self.map_iterations.flatten())
+        iteration_table_str = ", ".join(
+            f"{val}LU" for val in self.map_iterations.flatten()
+        )
         iteration_table_str = "{%s}" % iteration_table_str
 
         log_factorial = np.r_[0, np.cumsum(np.log(range(1, self.n + 1)))]
         logK = log_factorial[-1]
         log_factorial_str = ", ".join(f"{val:.10f}" for val in log_factorial)
         log_factorial_str = "{%s}" % log_factorial_str
-        atomic_int = 'int' if self.precision == 'float' else 'long'
+        atomic_int = "int" if self.precision == "float" else "long"
 
         # GPU_MAX_HEAP_SIZE OpenCL flag is set to 2 Gb (1 << 31) by default
-        mem_avail = min(device.max_mem_alloc_size, device.global_mem_size,
-                        1 << 31)
+        mem_avail = min(device.max_mem_alloc_size, device.global_mem_size, 1 << 31)
         # 4 * (D + 1) * size + 8 * size == mem_avail
         chunk_size = mem_avail // (4 * log_du.shape[1] + self.dtype.itemsize)
-        chunk_size, split_idx = self._split_axis(chunk_size=chunk_size,
-                                                 axis_size=u_length)
+        chunk_size, split_idx = self._split_axis(
+            chunk_size=chunk_size, axis_size=u_length
+        )
 
         P_total = np.empty(u_length, dtype=self.dtype)
         P_total_gpu = cl_array.Array(queue, shape=chunk_size, dtype=self.dtype)
 
         for i_start, i_end in split_idx:
-            log_du_gpu = cl_array.to_device(queue, log_du[i_start: i_end],
-                                            async_=True)
+            log_du_gpu = cl_array.to_device(queue, log_du[i_start:i_end], async_=True)
             P_total_gpu.fill(0, queue=queue)
             chunk_size = i_end - i_start
             l_block = min(n_threads, chunk_size)
@@ -904,9 +950,11 @@ class _JSFUniformOrderStat3D(_GPUBackend):
                 # grid_size must be at least l_num_blocks
                 grid_size = l_num_blocks
 
-                logger.info(f"[Joint prob. matrix] it_todo={it_todo}, "
-                            f"grid_size={grid_size}, L_BLOCK={l_block}, "
-                            f"N_THREADS={n_threads}")
+                logger.info(
+                    f"[Joint prob. matrix] it_todo={it_todo}, "
+                    f"grid_size={grid_size}, L_BLOCK={l_block}, "
+                    f"N_THREADS={n_threads}"
+                )
 
             # OpenCL defines unsigned long as uint64, therefore we're adding
             # the LU suffix, not LLU, which would indicate unsupported uint128
@@ -921,7 +969,7 @@ class _JSFUniformOrderStat3D(_GPUBackend):
                 iteration_table=iteration_table_str,
                 log_factorial=log_factorial_str,
                 ATOMIC_UINT=f"unsigned {atomic_int}",
-                ASSET_ENABLE_DOUBLE_SUPPORT=int(self.precision == "double")
+                ASSET_ENABLE_DOUBLE_SUPPORT=int(self.precision == "double"),
             )
 
             program = cl.Program(context, asset_cl).build()
@@ -930,10 +978,16 @@ class _JSFUniformOrderStat3D(_GPUBackend):
             cl.enqueue_barrier(queue)
 
             kernel = program.jsf_uniform_orderstat_3d_kernel
-            kernel(queue, (grid_size,), (n_threads,),
-                   P_total_gpu.data, log_du_gpu.data, g_times_l=True)
+            kernel(
+                queue,
+                (grid_size,),
+                (n_threads,),
+                P_total_gpu.data,
+                log_du_gpu.data,
+                g_times_l=True,
+            )
 
-            P_total_gpu[:chunk_size].get(ary=P_total[i_start: i_end])
+            P_total_gpu[:chunk_size].get(ary=P_total[i_start:i_end])
 
         return P_total
 
@@ -946,8 +1000,7 @@ class _JSFUniformOrderStat3D(_GPUBackend):
             import pycuda.driver as drv
             from pycuda.compiler import SourceModule
         except ImportError as err:
-            raise ImportError(
-                "Install pycuda with 'pip install pycuda'") from err
+            raise ImportError("Install pycuda with 'pip install pycuda'") from err
 
         self._check_input(log_du)
 
@@ -957,9 +1010,9 @@ class _JSFUniformOrderStat3D(_GPUBackend):
         device = pycuda.autoinit.device
 
         max_l_block = device.MAX_SHARED_MEMORY_PER_BLOCK // (
-                self.dtype.itemsize * (self.d + 2))
-        n_threads = min(self.cuda_threads, max_l_block,
-                        device.MAX_THREADS_PER_BLOCK)
+            self.dtype.itemsize * (self.d + 2)
+        )
+        n_threads = min(self.cuda_threads, max_l_block, device.MAX_THREADS_PER_BLOCK)
         if n_threads > device.WARP_SIZE:
             # It's more efficient to make the number of threads
             # a multiple of the warp size (32).
@@ -972,15 +1025,16 @@ class _JSFUniformOrderStat3D(_GPUBackend):
         free, total = drv.mem_get_info()
         # 4 * (D + 1) * size + 8 * size == mem_avail
         chunk_size = free // (4 * log_du.shape[1] + self.dtype.itemsize)
-        chunk_size, split_idx = self._split_axis(chunk_size=chunk_size,
-                                                 axis_size=u_length)
+        chunk_size, split_idx = self._split_axis(
+            chunk_size=chunk_size, axis_size=u_length
+        )
 
         P_total = np.empty(u_length, dtype=self.dtype)
         P_total_gpu = gpuarray.GPUArray(chunk_size, dtype=self.dtype)
         log_du_gpu = drv.mem_alloc(4 * chunk_size * log_du.shape[1])
 
         for i_start, i_end in split_idx:
-            drv.memcpy_htod_async(dest=log_du_gpu, src=log_du[i_start: i_end])
+            drv.memcpy_htod_async(dest=log_du_gpu, src=log_du[i_start:i_end])
             P_total_gpu.fill(0)
             chunk_size = i_end - i_start
             l_block = min(n_threads, chunk_size)
@@ -994,9 +1048,11 @@ class _JSFUniformOrderStat3D(_GPUBackend):
                 # grid_size must be at least l_num_blocks
                 grid_size = l_num_blocks
 
-                logger.info(f"[Joint prob. matrix] it_todo={it_todo}, "
-                            f"grid_size={grid_size}, L_BLOCK={l_block}, "
-                            f"N_THREADS={n_threads}")
+                logger.info(
+                    f"[Joint prob. matrix] it_todo={it_todo}, "
+                    f"grid_size={grid_size}, L_BLOCK={l_block}, "
+                    f"N_THREADS={n_threads}"
+                )
 
             asset_cu = self._compile_template(
                 template_name="joint_pmat.cu",
@@ -1019,10 +1075,14 @@ class _JSFUniformOrderStat3D(_GPUBackend):
             drv.Context.synchronize()
 
             kernel = module.get_function("jsf_uniform_orderstat_3d_kernel")
-            kernel(P_total_gpu.gpudata, log_du_gpu, grid=(grid_size, 1),
-                   block=(n_threads, 1, 1))
+            kernel(
+                P_total_gpu.gpudata,
+                log_du_gpu,
+                grid=(grid_size, 1),
+                block=(n_threads, 1, 1),
+            )
 
-            P_total_gpu[:chunk_size].get(ary=P_total[i_start: i_end])
+            P_total_gpu[:chunk_size].get(ary=P_total[i_start:i_end])
 
         return P_total
 
@@ -1041,40 +1101,41 @@ class _JSFUniformOrderStat3D(_GPUBackend):
             template_name="joint_pmat_old.cu",
             L=f"{log_du.shape[0]}LLU",
             N_THREADS=self.cuda_threads,
-            ITERATIONS_TODO=f"{self.num_iterations}LLU"
+            ITERATIONS_TODO=f"{self.num_iterations}LLU",
         )
         with tempfile.TemporaryDirectory() as asset_tmp_folder:
-            asset_cu_path = os.path.join(asset_tmp_folder, 'asset.cu')
-            asset_bin_path = os.path.join(asset_tmp_folder, 'asset.o')
-            with open(asset_cu_path, 'w') as f:
+            asset_cu_path = os.path.join(asset_tmp_folder, "asset.cu")
+            asset_bin_path = os.path.join(asset_tmp_folder, "asset.o")
+            with open(asset_cu_path, "w") as f:
                 f.write(asset_cu)
             # -O3 optimization flag is for the host code only;
             # by default, GPU device code is optimized with -O3.
             # -w to ignore warnings.
-            compile_cmd = ['nvcc', '-w', '-O3', '-o', asset_bin_path,
-                           asset_cu_path]
-            if self.precision == 'double' and get_cuda_capability_major() >= 6:
+            compile_cmd = ["nvcc", "-w", "-O3", "-o", asset_bin_path, asset_cu_path]
+            if self.precision == "double" and get_cuda_capability_major() >= 6:
                 # atomicAdd(double) requires compute capability 6.x
-                compile_cmd.extend(['-arch', 'sm_60'])
+                compile_cmd.extend(["-arch", "sm_60"])
             compile_status = subprocess.run(
-                compile_cmd,
-                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                compile_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            )
 
             logger.info(compile_status.stdout.decode())
             logger.info(compile_status.stderr.decode())
             compile_status.check_returncode()
             log_du_path = os.path.join(asset_tmp_folder, "log_du.dat")
             P_total_path = os.path.join(asset_tmp_folder, "P_total.dat")
-            with open(log_du_path, 'wb') as f:
+            with open(log_du_path, "wb") as f:
                 log_du.tofile(f)
             run_status = subprocess.run(
                 [asset_bin_path, log_du_path, P_total_path],
-                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
 
             logger.info(run_status.stdout.decode())
             logger.info(run_status.stderr.decode())
             run_status.check_returncode()
-            with open(P_total_path, 'rb') as f:
+            with open(P_total_path, "rb") as f:
                 P_total = np.fromfile(f, dtype=self.dtype)
 
         return P_total
@@ -1082,21 +1143,28 @@ class _JSFUniformOrderStat3D(_GPUBackend):
     def _check_input(self, log_du):
         it_todo = self.num_iterations
         if it_todo > np.iinfo(np.uint64).max:
-            raise ValueError(f"it_todo ({it_todo}) is larger than MAX_UINT64."
-                             " Only Python backend is supported.")
+            raise ValueError(
+                f"it_todo ({it_todo}) is larger than MAX_UINT64."
+                " Only Python backend is supported."
+            )
         # Don't convert log_du to float32 transparently for the user to avoid
         # situations when the user accidentally passes an array with float64.
         # Doing so wastes memory for nothing.
         if log_du.dtype != np.float32:
             raise ValueError("'log_du' must be a float32 array")
         if log_du.shape[1] != self.d + 1:
-            raise ValueError(f"log_du.shape[1] ({log_du.shape[1]}) must be "
-                             f"equal to D+1 ({self.d + 1})")
+            raise ValueError(
+                f"log_du.shape[1] ({log_du.shape[1]}) must be "
+                f"equal to D+1 ({self.d + 1})"
+            )
 
     def compute(self, u):
         if u.shape[1] != self.d:
-            raise ValueError("Invalid input data shape axis 1: expected {}, "
-                             "got {}".format(self.d, u.shape[1]))
+            raise ValueError(
+                "Invalid input data shape axis 1: expected {}, got {}".format(
+                    self.d, u.shape[1]
+                )
+            )
         # A faster and memory efficient implementation of
         # du = np.diff(u, prepend=0, append=1, axis=1).astype(np.float32)
         du = np.empty((u.shape[0], u.shape[1] + 1), dtype=np.float32)
@@ -1110,7 +1178,7 @@ class _JSFUniformOrderStat3D(_GPUBackend):
         # the remaining infinities correctly evaluate to
         # exp(ln(0)) = exp(-inf) = 0
         with warnings.catch_warnings():
-            warnings.simplefilter('ignore', RuntimeWarning)
+            warnings.simplefilter("ignore", RuntimeWarning)
             log_du = np.log(du, out=du)
 
         jsf_backend = self._choose_backend()
@@ -1122,15 +1190,17 @@ class _JSFUniformOrderStat3D(_GPUBackend):
         outside_vals = P_total[~inside]
         if len(outside_vals) > 0:
             # A watchdog for unexpected results.
-            warnings.warn(f"{len(outside_vals)}/{P_total.shape[0]} values of "
-                          "the computed joint prob. matrix lie outside of the "
-                          f"valid [0, 1] interval:\n{outside_vals}\nIf you're "
-                          "using PyOpenCL backend, make sure you've disabled "
-                          "GPU Hangcheck as described here https://www.intel."
-                          "com/content/www/us/en/docs/oneapi/installation-"
-                          "guide-linux/2023-1/gpu-disable-hangcheck.html \n"
-                          "Clipping the output array to 0 and 1.")
-            P_total = np.clip(P_total, a_min=0., a_max=1., out=P_total)
+            warnings.warn(
+                f"{len(outside_vals)}/{P_total.shape[0]} values of "
+                "the computed joint prob. matrix lie outside of the "
+                f"valid [0, 1] interval:\n{outside_vals}\nIf you're "
+                "using PyOpenCL backend, make sure you've disabled "
+                "GPU Hangcheck as described here https://www.intel."
+                "com/content/www/us/en/docs/oneapi/installation-"
+                "guide-linux/2023-1/gpu-disable-hangcheck.html \n"
+                "Clipping the output array to 0 and 1."
+            )
+            P_total = np.clip(P_total, a_min=0.0, a_max=1.0, out=P_total)
 
         return P_total
 
@@ -1145,36 +1215,41 @@ class _PMatNeighbors(_GPUBackend):
         The number of largest neighbors to collect for each entry in `mat`.
     """
 
-    def __init__(self, filter_shape, n_largest, max_chunk_size=None,
-                 verbose=None):
+    def __init__(self, filter_shape, n_largest, max_chunk_size=None, verbose=None):
         super().__init__(max_chunk_size=max_chunk_size)
         self.n_largest = n_largest
         self.max_chunk_size = max_chunk_size
         if verbose is not None:
-            warnings.warn("The 'verbose' parameter is deprecated and will be "
-                          "removed in the future. Its functionality is still "
-                          "available by using the logging module from Python. "
-                          "We recommend transitioning to the logging module "
-                          "for improved control and flexibility in handling "
-                          "verbosity levels.", DeprecationWarning)
+            warnings.warn(
+                "The 'verbose' parameter is deprecated and will be "
+                "removed in the future. Its functionality is still "
+                "available by using the logging module from Python. "
+                "We recommend transitioning to the logging module "
+                "for improved control and flexibility in handling "
+                "verbosity levels.",
+                DeprecationWarning,
+            )
         self.verbose = verbose
 
         filter_size, filter_width = filter_shape
         if filter_width >= filter_size:
-            raise ValueError('filter_shape width must be lower than length')
+            raise ValueError("filter_shape width must be lower than length")
         if not ((filter_width % 2) and (filter_size % 2)):
             warnings.warn(
-                'The kernel is not centered on the datapoint in whose'
-                'calculation it is used. Consider using odd values'
-                'for both entries of filter_shape.')
+                "The kernel is not centered on the datapoint in whose"
+                "calculation it is used. Consider using odd values"
+                "for both entries of filter_shape."
+            )
 
         # Construct the kernel
         filt = np.ones((filter_size, filter_size), dtype=bool)
         filt = np.triu(filt, -filter_width)
         filt = np.tril(filt, filter_width)
         if n_largest > len(filt.nonzero()[0]):
-            raise ValueError(f"Too small filter shape {filter_shape} to "
-                             f"select {n_largest} largest elements.")
+            raise ValueError(
+                f"Too small filter shape {filter_shape} to "
+                f"select {n_largest} largest elements."
+            )
 
         self.filter_kernel = filt
 
@@ -1182,11 +1257,14 @@ class _PMatNeighbors(_GPUBackend):
         symmetric = np.all(np.diagonal(mat) == 0.5)
         # Check consistent arguments
         filter_size = self.filter_kernel.shape[0]
-        if (symmetric and mat.shape[0] < 2 * filter_size - 1) \
-                or (not symmetric and min(mat.shape) < filter_size):
-            raise ValueError(f"'filter_shape' {self.filter_kernel.shape} is "
-                             f"too large for the input matrix of shape "
-                             f"{mat.shape}")
+        if (symmetric and mat.shape[0] < 2 * filter_size - 1) or (
+            not symmetric and min(mat.shape) < filter_size
+        ):
+            raise ValueError(
+                f"'filter_shape' {self.filter_kernel.shape} is "
+                f"too large for the input matrix of shape "
+                f"{mat.shape}"
+            )
         if mat.dtype != np.float32:
             raise ValueError("The input matrix dtype must be float32.")
 
@@ -1209,37 +1287,38 @@ class _PMatNeighbors(_GPUBackend):
         filt_rows = "{%s}" % ", ".join(f"{row}U" for row in filt_rows)
         filt_cols = "{%s}" % ", ".join(f"{col}U" for col in filt_cols)
 
-        lmat_padded = np.zeros((mat.shape[0], mat.shape[1], self.n_largest),
-                               dtype=np.float32)
+        lmat_padded = np.zeros(
+            (mat.shape[0], mat.shape[1], self.n_largest), dtype=np.float32
+        )
         if symmetric:
             mat = mat[filt_size:]
-            lmat = lmat_padded[filt_size + filt_size // 2: -filt_size // 2 + 1]
+            lmat = lmat_padded[filt_size + filt_size // 2 : -filt_size // 2 + 1]
         else:
-            lmat = lmat_padded[filt_size // 2: -filt_size // 2 + 1]
+            lmat = lmat_padded[filt_size // 2 : -filt_size // 2 + 1]
 
         # GPU_MAX_HEAP_SIZE OpenCL flag is set to 2 Gb (1 << 31) by default
-        mem_avail = min(device.max_mem_alloc_size, device.global_mem_size,
-                        1 << 31)
+        mem_avail = min(device.max_mem_alloc_size, device.global_mem_size, 1 << 31)
         # 4 * size * n_cols * n_largest + 4 * (size + filt_size) * n_cols
         chunk_size = (mem_avail // 4 - filt_size * lmat.shape[1]) // (
-                lmat.shape[1] * (self.n_largest + 1))
-        chunk_size, split_idx = self._split_axis(chunk_size=chunk_size,
-                                                 axis_size=lmat.shape[0],
-                                                 min_chunk_size=filt_size)
+            lmat.shape[1] * (self.n_largest + 1)
+        )
+        chunk_size, split_idx = self._split_axis(
+            chunk_size=chunk_size, axis_size=lmat.shape[0], min_chunk_size=filt_size
+        )
 
         pmat_cl_path = Path(__file__).parent / "pmat_neighbors.cl"
         pmat_cl_template = Template(pmat_cl_path.read_text())
 
         lmat_gpu = cl_array.Array(
-            queue, shape=(chunk_size, lmat.shape[1], self.n_largest),
-            dtype=np.float32
+            queue, shape=(chunk_size, lmat.shape[1], self.n_largest), dtype=np.float32
         )
 
-        for i_start, i_end in tqdm(split_idx, total=len(split_idx),
-                                   desc="Largest neighbors OpenCL"):
-            mat_gpu = cl_array.to_device(queue,
-                                         mat[i_start: i_end + filt_size],
-                                         async_=True)
+        for i_start, i_end in tqdm(
+            split_idx, total=len(split_idx), desc="Largest neighbors OpenCL"
+        ):
+            mat_gpu = cl_array.to_device(
+                queue, mat[i_start : i_end + filt_size], async_=True
+            )
             lmat_gpu.fill(0, queue=queue)
             chunk_size = i_end - i_start
             it_todo = chunk_size * (lmat.shape[1] - filt_size + 1)
@@ -1252,7 +1331,7 @@ class _PMatNeighbors(_GPUBackend):
                 NONZERO_SIZE=self.filter_kernel.sum(),
                 SYMMETRIC=int(symmetric),
                 filt_rows=filt_rows,
-                filt_cols=filt_cols
+                filt_cols=filt_cols,
             )
 
             program = cl.Program(context, pmat_neighbors_cl).build()
@@ -1267,12 +1346,13 @@ class _PMatNeighbors(_GPUBackend):
             # work items exactly matches the desired number of iterations.
             kernel(queue, (it_todo,), None, lmat_gpu.data, mat_gpu.data)
 
-            lmat_gpu[:chunk_size].get(ary=lmat[i_start: i_end])
+            lmat_gpu[:chunk_size].get(ary=lmat[i_start:i_end])
 
         return lmat_padded
 
     def pycuda(self, mat):
         from jinja2 import Template
+
         try:
             # PyCuda should not be in requirements-extra because CPU limited
             # users won't be able to install Elephant.
@@ -1281,8 +1361,7 @@ class _PMatNeighbors(_GPUBackend):
             import pycuda.driver as drv
             from pycuda.compiler import SourceModule
         except ImportError as err:
-            raise ImportError(
-                "Install pycuda with 'pip install pycuda'") from err
+            raise ImportError("Install pycuda with 'pip install pycuda'") from err
 
         # if the matrix is symmetric the diagonal was set to 0.5
         # when computing the probability matrix
@@ -1295,35 +1374,38 @@ class _PMatNeighbors(_GPUBackend):
         filt_size = self.filter_kernel.shape[0]
         filt_rows, filt_cols = self.filter_kernel.nonzero()
 
-        lmat_padded = np.zeros((mat.shape[0], mat.shape[1], self.n_largest),
-                               dtype=np.float32)
+        lmat_padded = np.zeros(
+            (mat.shape[0], mat.shape[1], self.n_largest), dtype=np.float32
+        )
         if symmetric:
             mat = mat[filt_size:]
-            lmat = lmat_padded[filt_size + filt_size // 2: -filt_size // 2 + 1]
+            lmat = lmat_padded[filt_size + filt_size // 2 : -filt_size // 2 + 1]
         else:
-            lmat = lmat_padded[filt_size // 2: -filt_size // 2 + 1]
+            lmat = lmat_padded[filt_size // 2 : -filt_size // 2 + 1]
 
         free, total = drv.mem_get_info()
 
         # 4 * size * n_cols * n_largest + 4 * (size + filt_size) * n_cols
         chunk_size = (free // 4 - filt_size * lmat.shape[1]) // (
-                lmat.shape[1] * (self.n_largest + 1))
-        chunk_size, split_idx = self._split_axis(chunk_size=chunk_size,
-                                                 axis_size=lmat.shape[0],
-                                                 min_chunk_size=filt_size)
+            lmat.shape[1] * (self.n_largest + 1)
+        )
+        chunk_size, split_idx = self._split_axis(
+            chunk_size=chunk_size, axis_size=lmat.shape[0], min_chunk_size=filt_size
+        )
 
         pmat_cu_path = Path(__file__).parent / "pmat_neighbors.cu"
         pmat_cu_template = Template(pmat_cu_path.read_text())
 
         lmat_gpu = gpuarray.GPUArray(
-            (chunk_size, lmat.shape[1], self.n_largest), dtype=np.float32)
+            (chunk_size, lmat.shape[1], self.n_largest), dtype=np.float32
+        )
 
         mat_gpu = drv.mem_alloc(4 * (chunk_size + filt_size) * mat.shape[1])
 
-        for i_start, i_end in tqdm(split_idx, total=len(split_idx),
-                                   desc="Largest neighbors CUDA"):
-            drv.memcpy_htod_async(dest=mat_gpu,
-                                  src=mat[i_start: i_end + filt_size])
+        for i_start, i_end in tqdm(
+            split_idx, total=len(split_idx), desc="Largest neighbors CUDA"
+        ):
+            drv.memcpy_htod_async(dest=mat_gpu, src=mat[i_start : i_end + filt_size])
             lmat_gpu.fill(0)
             chunk_size = i_end - i_start
             it_todo = chunk_size * (lmat.shape[1] - filt_size + 1)
@@ -1350,15 +1432,18 @@ class _PMatNeighbors(_GPUBackend):
 
             grid_size = math.ceil(it_todo / n_threads)
             if grid_size > device.MAX_GRID_DIM_X:
-                raise ValueError("Cannot launch a CUDA kernel with "
-                                 f"{grid_size} num. of blocks. Adjust the "
-                                 "'max_chunk_size' parameter.")
+                raise ValueError(
+                    "Cannot launch a CUDA kernel with "
+                    f"{grid_size} num. of blocks. Adjust the "
+                    "'max_chunk_size' parameter."
+                )
 
             kernel = module.get_function("pmat_neighbors")
-            kernel(lmat_gpu.gpudata, mat_gpu, grid=(grid_size, 1),
-                   block=(n_threads, 1, 1))
+            kernel(
+                lmat_gpu.gpudata, mat_gpu, grid=(grid_size, 1), block=(n_threads, 1, 1)
+            )
 
-            lmat_gpu[:chunk_size].get(ary=lmat[i_start: i_end])
+            lmat_gpu[:chunk_size].get(ary=lmat[i_start:i_end])
 
         return lmat_padded
 
@@ -1401,8 +1486,7 @@ class _PMatNeighbors(_GPUBackend):
         filter_size = self.filter_kernel.shape[0]
 
         # Initialize the matrix of d-largest values as a matrix of zeroes
-        lmat = np.zeros((mat.shape[0], mat.shape[1], self.n_largest),
-                        dtype=np.float32)
+        lmat = np.zeros((mat.shape[0], mat.shape[1], self.n_largest), dtype=np.float32)
 
         N_bin_y = mat.shape[0]
         N_bin_x = mat.shape[1]
@@ -1415,22 +1499,22 @@ class _PMatNeighbors(_GPUBackend):
             bin_range_x = range(N_bin_x - filter_size + 1)
 
         # compute matrix of largest values
-        for y in tqdm(bin_range_y, total=len(bin_range_y),
-                      desc="Largest neighbors CPU"):
+        for y in tqdm(
+            bin_range_y, total=len(bin_range_y), desc="Largest neighbors CPU"
+        ):
             if symmetric:
                 # x range depends on y position
                 bin_range_x = range(y - filter_size + 1)
             for x in bin_range_x:
-                patch = mat[y: y + filter_size, x: x + filter_size]
+                patch = mat[y : y + filter_size, x : x + filter_size]
                 mskd = patch[self.filter_kernel]
-                largest_vals = np.sort(mskd)[-self.n_largest:]
-                lmat[y + (filter_size // 2), x + (filter_size // 2), :] = \
-                    largest_vals
+                largest_vals = np.sort(mskd)[-self.n_largest :]
+                lmat[y + (filter_size // 2), x + (filter_size // 2), :] = largest_vals
 
         return lmat
 
 
-def synchronous_events_intersection(sse1, sse2, intersection='linkwise'):
+def synchronous_events_intersection(sse1, sse2, intersection="linkwise"):
     """
     Given two sequences of synchronous events (SSEs) `sse1` and `sse2`, each
     consisting of a pool of positions `(iK, jK)` of matrix entries and
@@ -1480,23 +1564,24 @@ def synchronous_events_intersection(sse1, sse2, intersection='linkwise'):
         if pixel1 not in sse2.keys():
             del sse_new[pixel1]
 
-    if intersection == 'linkwise':
+    if intersection == "linkwise":
         for pixel1, link1 in sse_new.items():
             sse_new[pixel1] = link1.intersection(sse2[pixel1])
             if len(sse_new[pixel1]) == 0:
                 del sse_new[pixel1]
-    elif intersection == 'pixelwise':
+    elif intersection == "pixelwise":
         # no action required
         pass
     else:
         raise ValueError(
-            "intersection (=%s) can only be" % intersection +
-            " 'pixelwise' or 'linkwise'")
+            "intersection (=%s) can only be" % intersection
+            + " 'pixelwise' or 'linkwise'"
+        )
 
     return sse_new
 
 
-def synchronous_events_difference(sse1, sse2, difference='linkwise'):
+def synchronous_events_difference(sse1, sse2, difference="linkwise"):
     """
     Given two sequences of synchronous events (SSEs) `sse1` and `sse2`, each
     consisting of a pool of pixel positions and associated synchronous events
@@ -1546,16 +1631,17 @@ def synchronous_events_difference(sse1, sse2, difference='linkwise'):
     sse_new = sse1.copy()
     for pixel1 in sse1.keys():
         if pixel1 in sse2.keys():
-            if difference == 'pixelwise':
+            if difference == "pixelwise":
                 del sse_new[pixel1]
-            elif difference == 'linkwise':
+            elif difference == "linkwise":
                 sse_new[pixel1] = sse_new[pixel1].difference(sse2[pixel1])
                 if len(sse_new[pixel1]) == 0:
                     del sse_new[pixel1]
             else:
                 raise ValueError(
-                    "difference (=%s) can only be" % difference +
-                    " 'pixelwise' or 'linkwise'")
+                    "difference (=%s) can only be" % difference
+                    + " 'pixelwise' or 'linkwise'"
+                )
 
     return sse_new
 
@@ -1919,24 +2005,32 @@ def get_sse_start_and_end_time_bins(sse):
 
 def _signals_t_start_stop(signals, t_start=None, t_stop=None):
     if t_start is None:
-        t_start = _signals_same_attribute(signals, 't_start')
+        t_start = _signals_same_attribute(signals, "t_start")
     if t_stop is None:
-        t_stop = _signals_same_attribute(signals, 't_stop')
+        t_stop = _signals_same_attribute(signals, "t_stop")
     return t_start, t_stop
 
 
-def _intersection_matrix(spiketrains, spiketrains_y, bin_size, t_start_x,
-                         t_start_y, t_stop_x, t_stop_y, normalization=None):
+def _intersection_matrix(
+    spiketrains,
+    spiketrains_y,
+    bin_size,
+    t_start_x,
+    t_start_y,
+    t_stop_x,
+    t_stop_y,
+    normalization=None,
+):
     if spiketrains_y is None:
         spiketrains_y = spiketrains
 
     # Compute the binned spike train matrices, along both time axes
     spiketrains_binned = conv.BinnedSpikeTrain(
-        spiketrains, bin_size=bin_size,
-        t_start=t_start_x, t_stop=t_stop_x)
+        spiketrains, bin_size=bin_size, t_start=t_start_x, t_stop=t_stop_x
+    )
     spiketrains_binned_y = conv.BinnedSpikeTrain(
-        spiketrains_y, bin_size=bin_size,
-        t_start=t_start_y, t_stop=t_stop_y)
+        spiketrains_y, bin_size=bin_size, t_start=t_start_y, t_stop=t_stop_y
+    )
 
     # Compute imat by matrix multiplication
     bsts_x = spiketrains_binned.sparse_matrix
@@ -1953,29 +2047,31 @@ def _intersection_matrix(spiketrains, spiketrains_y, bin_size, t_start_x,
         # Normalize the row
         col_sum = bsts_x[:, ii].sum()
         if normalization is None or col_sum == 0:
-            norm_coef = 1.
-        elif normalization == 'intersection':
-            norm_coef = np.minimum(
-                spikes_per_bin_x[ii], spikes_per_bin_y)
-        elif normalization == 'mean':
+            norm_coef = 1.0
+        elif normalization == "intersection":
+            norm_coef = np.minimum(spikes_per_bin_x[ii], spikes_per_bin_y)
+        elif normalization == "mean":
             # geometric mean
-            norm_coef = np.sqrt(
-                spikes_per_bin_x[ii] * spikes_per_bin_y)
-        elif normalization == 'union':
-            norm_coef = np.array([(bsts_x[:, ii]
-                                   + bsts_y[:, jj]).count_nonzero()
-                                  for jj in range(bsts_y.shape[1])])
+            norm_coef = np.sqrt(spikes_per_bin_x[ii] * spikes_per_bin_y)
+        elif normalization == "union":
+            norm_coef = np.array(
+                [
+                    (bsts_x[:, ii] + bsts_y[:, jj]).count_nonzero()
+                    for jj in range(bsts_y.shape[1])
+                ]
+            )
         else:
-            raise ValueError(
-                "Invalid parameter 'norm': {}".format(normalization))
+            raise ValueError("Invalid parameter 'norm': {}".format(normalization))
 
         # If normalization required, for each j such that bsts_y[j] is
         # identically 0 the code above sets imat[:, j] to identically nan.
         # Substitute 0s instead.
-        imat[ii, :] = np.divide(imat[ii, :], norm_coef,
-                                out=np.zeros(imat.shape[1],
-                                             dtype=np.float32),
-                                where=norm_coef != 0)
+        imat[ii, :] = np.divide(
+            imat[ii, :],
+            norm_coef,
+            out=np.zeros(imat.shape[1], dtype=np.float32),
+            where=norm_coef != 0,
+        )
 
     # Return the intersection matrix and the edges of the bins used for the
     # x and y axes, respectively.
@@ -2029,17 +2125,28 @@ class ASSET(object):
 
     """
 
-    def __init__(self, spiketrains_i, spiketrains_j=None, bin_size=3 * pq.ms,
-                 t_start_i=None, t_start_j=None, t_stop_i=None, t_stop_j=None,
-                 bin_tolerance='default', verbose=None):
-
+    def __init__(
+        self,
+        spiketrains_i,
+        spiketrains_j=None,
+        bin_size=3 * pq.ms,
+        t_start_i=None,
+        t_start_j=None,
+        t_stop_i=None,
+        t_stop_j=None,
+        bin_tolerance="default",
+        verbose=None,
+    ):
         if verbose is not None:
-            warnings.warn("The 'verbose' parameter is deprecated and will be "
-                          "removed in the future. Its functionality is still "
-                          "available by using the logging module from Python. "
-                          "We recommend transitioning to the logging module "
-                          "for improved control and flexibility in handling "
-                          "verbosity levels.", DeprecationWarning)
+            warnings.warn(
+                "The 'verbose' parameter is deprecated and will be "
+                "removed in the future. Its functionality is still "
+                "available by using the logging module from Python. "
+                "We recommend transitioning to the logging module "
+                "for improved control and flexibility in handling "
+                "verbosity levels.",
+                DeprecationWarning,
+            )
 
         self.spiketrains_i = spiketrains_i
         if spiketrains_j is None:
@@ -2047,29 +2154,29 @@ class ASSET(object):
         self.spiketrains_j = spiketrains_j
         self.bin_size = bin_size
         self.t_start_i, self.t_stop_i = _signals_t_start_stop(
-            spiketrains_i,
-            t_start=t_start_i,
-            t_stop=t_stop_i)
+            spiketrains_i, t_start=t_start_i, t_stop=t_stop_i
+        )
         self.t_start_j, self.t_stop_j = _signals_t_start_stop(
-            spiketrains_j,
-            t_start=t_start_j,
-            t_stop=t_stop_j)
+            spiketrains_j, t_start=t_start_j, t_stop=t_stop_j
+        )
         self.verbose = verbose and rank == 0
 
-        msg = 'The time intervals for x and y need to be either identical ' \
-              'or fully disjoint, but they are:\n' \
-              'x: ({}, {}) and y: ({}, {}).'.format(self.t_start_i,
-                                                    self.t_stop_i,
-                                                    self.t_start_j,
-                                                    self.t_stop_j)
+        msg = (
+            "The time intervals for x and y need to be either identical "
+            "or fully disjoint, but they are:\n"
+            "x: ({}, {}) and y: ({}, {}).".format(
+                self.t_start_i, self.t_stop_i, self.t_start_j, self.t_stop_j
+            )
+        )
 
         # the starts have to be perfectly aligned for the binning to work
         # the stops can differ without impacting the binning
         if self.t_start_i == self.t_start_j:
             if not _quantities_almost_equal(self.t_stop_i, self.t_stop_j):
                 raise ValueError(msg)
-        elif (self.t_start_i < self.t_start_j < self.t_stop_i) \
-                or (self.t_start_i < self.t_stop_j < self.t_stop_i):
+        elif (self.t_start_i < self.t_start_j < self.t_stop_i) or (
+            self.t_start_i < self.t_stop_j < self.t_stop_i
+        ):
             raise ValueError(msg)
 
         # Define the tolerance parameter for binning.
@@ -2077,16 +2184,25 @@ class ASSET(object):
         # called without passing the parameter, and it will take what is
         # defined by the behavior of that class. Otherwise, set to the value
         # specified by `bin_tolerance`
-        tolerance_param = {'tolerance': bin_tolerance} if \
-            bin_tolerance != 'default' else {}
+        tolerance_param = (
+            {"tolerance": bin_tolerance} if bin_tolerance != "default" else {}
+        )
 
         # Compute the binned spike train matrices, along both time axes
         self.spiketrains_binned_i = conv.BinnedSpikeTrain(
-            self.spiketrains_i, bin_size=self.bin_size,
-            t_start=self.t_start_i, t_stop=self.t_stop_i, **tolerance_param)
+            self.spiketrains_i,
+            bin_size=self.bin_size,
+            t_start=self.t_start_i,
+            t_stop=self.t_stop_i,
+            **tolerance_param,
+        )
         self.spiketrains_binned_j = conv.BinnedSpikeTrain(
-            self.spiketrains_j, bin_size=self.bin_size,
-            t_start=self.t_start_j, t_stop=self.t_stop_j, **tolerance_param)
+            self.spiketrains_j,
+            bin_size=self.bin_size,
+            t_start=self.t_start_j,
+            t_stop=self.t_stop_j,
+            **tolerance_param,
+        )
 
     @property
     def x_edges(self):
@@ -2161,16 +2277,25 @@ class ASSET(object):
             time was discretized in.
 
         """
-        imat = _intersection_matrix(self.spiketrains_i, self.spiketrains_j,
-                                    self.bin_size,
-                                    self.t_start_i, self.t_start_j,
-                                    self.t_stop_i, self.t_stop_j,
-                                    normalization=normalization)
+        imat = _intersection_matrix(
+            self.spiketrains_i,
+            self.spiketrains_j,
+            self.bin_size,
+            self.t_start_i,
+            self.t_start_j,
+            self.t_stop_i,
+            self.t_stop_j,
+            normalization=normalization,
+        )
         return imat
 
-    def probability_matrix_montecarlo(self, n_surrogates, imat=None,
-                                      surrogate_method='dither_spikes',
-                                      surrogate_dt=None):
+    def probability_matrix_montecarlo(
+        self,
+        n_surrogates,
+        imat=None,
+        surrogate_method="dither_spikes",
+        surrogate_dt=None,
+    ):
         """
         Given a list of parallel spike trains, estimate the cumulative
         probability of each entry in their intersection matrix by a Monte Carlo
@@ -2259,45 +2384,64 @@ class ASSET(object):
         for surr_id in trange(n_surrogates, desc="pmat_bootstrap"):
             if mpi_accelerated and surr_id % size != rank:
                 continue
-            surrogates = [spike_train_surrogates.surrogates(
-                st, n_surrogates=1,
-                method=surrogate_method,
-                dt=surrogate_dt,
-                decimals=None,
-                edges=True)[0]
-                          for st in self.spiketrains_i]
+            surrogates = [
+                spike_train_surrogates.surrogates(
+                    st,
+                    n_surrogates=1,
+                    method=surrogate_method,
+                    dt=surrogate_dt,
+                    decimals=None,
+                    edges=True,
+                )[0]
+                for st in self.spiketrains_i
+            ]
 
             if symmetric:
                 surrogates_y = surrogates
             else:
-                surrogates_y = [spike_train_surrogates.surrogates(
-                    st, n_surrogates=1, method=surrogate_method,
-                    dt=surrogate_dt, decimals=None, edges=True)[0]
-                                for st in self.spiketrains_j]
+                surrogates_y = [
+                    spike_train_surrogates.surrogates(
+                        st,
+                        n_surrogates=1,
+                        method=surrogate_method,
+                        dt=surrogate_dt,
+                        decimals=None,
+                        edges=True,
+                    )[0]
+                    for st in self.spiketrains_j
+                ]
 
-            imat_surr = _intersection_matrix(surrogates, surrogates_y,
-                                             self.bin_size,
-                                             self.t_start_i, self.t_start_j,
-                                             self.t_stop_i, self.t_stop_j)
+            imat_surr = _intersection_matrix(
+                surrogates,
+                surrogates_y,
+                self.bin_size,
+                self.t_start_i,
+                self.t_start_j,
+                self.t_stop_i,
+                self.t_stop_j,
+            )
 
-            pmat += (imat_surr <= (imat - 1))
+            pmat += imat_surr <= (imat - 1)
 
             del imat_surr
 
         if mpi_accelerated:
             pmat = comm.allreduce(pmat, op=MPI.SUM)
 
-        pmat = pmat * 1. / n_surrogates
+        pmat = pmat * 1.0 / n_surrogates
 
         if symmetric:
             np.fill_diagonal(pmat, 0.5)
 
         return pmat
 
-    def probability_matrix_analytical(self, imat=None,
-                                      firing_rates_x='estimate',
-                                      firing_rates_y='estimate',
-                                      kernel_width=100 * pq.ms):
+    def probability_matrix_analytical(
+        self,
+        imat=None,
+        firing_rates_x="estimate",
+        firing_rates_y="estimate",
+        kernel_width=100 * pq.ms,
+    ):
         r"""
         Given a list of spike trains, approximates the cumulative probability
         of each entry in their intersection matrix.
@@ -2363,51 +2507,49 @@ class ASSET(object):
 
             # Check that the nr. neurons is identical between the two axes
             if bsts_x_matrix.shape[0] != bsts_y_matrix.shape[0]:
-                raise ValueError(
-                    'Different number of neurons along the x and y axis!')
+                raise ValueError("Different number of neurons along the x and y axis!")
 
         # Define the firing rate profiles
-        if firing_rates_x == 'estimate':
+        if firing_rates_x == "estimate":
             # If rates are to be estimated, create the rate profiles as
             # Quantity objects obtained by boxcar-kernel convolution
-            fir_rate_x = self._rate_of_binned_spiketrain(bsts_x_matrix,
-                                                         kernel_width)
+            fir_rate_x = self._rate_of_binned_spiketrain(bsts_x_matrix, kernel_width)
         elif isinstance(firing_rates_x, list):
             # If rates provided as lists of AnalogSignals, create time slices
             # for both axes, interpolate in the time bins of interest and
             # convert to Quantity
             fir_rate_x = _interpolate_signals(
-                firing_rates_x, self.spiketrains_binned_i.bin_edges[:-1])
+                firing_rates_x, self.spiketrains_binned_i.bin_edges[:-1]
+            )
         else:
-            raise ValueError(
-                'fir_rates_x must be a list or the string "estimate"')
+            raise ValueError('fir_rates_x must be a list or the string "estimate"')
 
         if symmetric:
             fir_rate_y = fir_rate_x
-        elif firing_rates_y == 'estimate':
-            fir_rate_y = self._rate_of_binned_spiketrain(bsts_y_matrix,
-                                                         kernel_width)
+        elif firing_rates_y == "estimate":
+            fir_rate_y = self._rate_of_binned_spiketrain(bsts_y_matrix, kernel_width)
         elif isinstance(firing_rates_y, list):
             # If rates provided as lists of AnalogSignals, create time slices
             # for both axes, interpolate in the time bins of interest and
             # convert to Quantity
             fir_rate_y = _interpolate_signals(
-                firing_rates_y, self.spiketrains_binned_j.bin_edges[:-1])
+                firing_rates_y, self.spiketrains_binned_j.bin_edges[:-1]
+            )
         else:
-            raise ValueError(
-                'fir_rates_y must be a list or the string "estimate"')
+            raise ValueError('fir_rates_y must be a list or the string "estimate"')
 
         # For each neuron, compute the prob. that that neuron spikes in any bin
-        logger.info("Compute the probability that each neuron fires in "
-                    "each pair of bins...")
+        logger.info(
+            "Compute the probability that each neuron fires in each pair of bins..."
+        )
 
         rate_bins_x = (fir_rate_x * self.bin_size).simplified.magnitude
-        spike_probs_x = 1. - np.exp(-rate_bins_x)
+        spike_probs_x = 1.0 - np.exp(-rate_bins_x)
         if symmetric:
             spike_probs_y = spike_probs_x
         else:
             rate_bins_y = (fir_rate_y * self.bin_size).simplified.magnitude
-            spike_probs_y = 1. - np.exp(-rate_bins_y)
+            spike_probs_y = 1.0 - np.exp(-rate_bins_y)
 
         # Compute the matrix Mu[i, j] of parameters for the Poisson
         # distributions which describe, at each (i, j), the approximated
@@ -2415,8 +2557,7 @@ class ASSET(object):
         # matrices p_ijk computed for each neuron k:
         # p_ijk is the probability that neuron k spikes in both bins i and j.
         # The sum of outer products is equivalent to a dot product.
-        logger.info("Compute the probability matrix by Le Cam's "
-                    "approximation...")
+        logger.info("Compute the probability matrix by Le Cam's approximation...")
         Mu = spike_probs_x.T.dot(spike_probs_y)
         # A straightforward implementation is:
         # pmat_shape = spike_probs_x.shape[1], spike_probs_y.shape[1]
@@ -2430,16 +2571,22 @@ class ASSET(object):
 
         if symmetric:
             # Substitute 0.5 to the elements along the main diagonal
-            logger.info("Substitute 0.5 to elements along the main "
-                        "diagonal...")
+            logger.info("Substitute 0.5 to elements along the main diagonal...")
             np.fill_diagonal(pmat, 0.5)
 
         return pmat
 
-    def joint_probability_matrix(self, pmat, filter_shape, n_largest,
-                                 min_p_value=1e-5, precision='float',
-                                 cuda_threads=64, cuda_cwr_loops=32,
-                                 tolerance=1e-5):
+    def joint_probability_matrix(
+        self,
+        pmat,
+        filter_shape,
+        n_largest,
+        min_p_value=1e-5,
+        precision="float",
+        cuda_threads=64,
+        cuda_cwr_loops=32,
+        tolerance=1e-5,
+    ):
         """
         Map a probability matrix `pmat` to a joint probability matrix `jmat`,
         where `jmat[i, j]` is the joint p-value of the largest neighbors of
@@ -2542,37 +2689,38 @@ class ASSET(object):
         # Find for each P_ij in the probability matrix its neighbors and
         # maximize them by the maximum value 1-p_value_min
         pmat = np.asarray(pmat, dtype=np.float32)
-        pmat_neighb_obj = _PMatNeighbors(filter_shape=filter_shape,
-                                         n_largest=n_largest)
+        pmat_neighb_obj = _PMatNeighbors(filter_shape=filter_shape, n_largest=n_largest)
         pmat_neighb = pmat_neighb_obj.compute(pmat)
 
         logger.info("Finding unique set of values...")
 
-        pmat_neighb = np.minimum(pmat_neighb, 1. - min_p_value,
-                                 out=pmat_neighb)
+        pmat_neighb = np.minimum(pmat_neighb, 1.0 - min_p_value, out=pmat_neighb)
 
         # in order to avoid doing the same calculation multiple times:
         # find all unique sets of values in pmat_neighb
         # and store the corresponding indices
         # flatten the second and third dimension in order to use np.unique
         pmat_neighb = pmat_neighb.reshape(pmat.size, n_largest)
-        pmat_neighb, pmat_neighb_indices = np.unique(pmat_neighb, axis=0,
-                                                     return_inverse=True)
+        pmat_neighb, pmat_neighb_indices = np.unique(
+            pmat_neighb, axis=0, return_inverse=True
+        )
 
         # Compute the joint p-value matrix jpvmat
-        n = l * (1 + 2 * w) - w * (
-                w + 1)  # number of entries covered by kernel
-        jsf = _JSFUniformOrderStat3D(n=n, d=pmat_neighb.shape[1],
-                                     precision=precision,
-                                     cuda_threads=cuda_threads,
-                                     cuda_cwr_loops=cuda_cwr_loops,
-                                     tolerance=tolerance)
+        n = l * (1 + 2 * w) - w * (w + 1)  # number of entries covered by kernel
+        jsf = _JSFUniformOrderStat3D(
+            n=n,
+            d=pmat_neighb.shape[1],
+            precision=precision,
+            cuda_threads=cuda_threads,
+            cuda_cwr_loops=cuda_cwr_loops,
+            tolerance=tolerance,
+        )
         jpvmat = jsf.compute(u=pmat_neighb)
 
         # restore the original shape using the stored indices
         jpvmat = jpvmat[pmat_neighb_indices].reshape(pmat.shape)
 
-        return 1. - jpvmat
+        return 1.0 - jpvmat
 
     @staticmethod
     def mask_matrices(matrices, thresholds):
@@ -2617,11 +2765,10 @@ class ASSET(object):
         if isinstance(thresholds, float):
             thresholds = np.full(shape=len(matrices), fill_value=thresholds)
         if len(matrices) != len(thresholds):
-            raise ValueError(
-                '`matrices` and `thresholds` must have same length')
+            raise ValueError("`matrices` and `thresholds` must have same length")
 
         mask = np.ones_like(matrices[0], dtype=bool)
-        for (mat, thresh) in zip(matrices, thresholds):
+        for mat, thresh in zip(matrices, thresholds):
             mask &= mat > thresh
 
         # Replace nans, coming from False * np.inf, with zeros
@@ -2630,9 +2777,16 @@ class ASSET(object):
         return mask
 
     @staticmethod
-    def cluster_matrix_entries(mask_matrix, max_distance, min_neighbors,
-                               stretch, working_memory=None, array_file=None,
-                               keep_file=False, verbose=None):
+    def cluster_matrix_entries(
+        mask_matrix,
+        max_distance,
+        min_neighbors,
+        stretch,
+        working_memory=None,
+        array_file=None,
+        keep_file=False,
+        verbose=None,
+    ):
         r"""
         Given a matrix `mask_matrix`, replaces its positive elements with
         integers representing different cluster IDs. Each cluster comprises
@@ -2728,12 +2882,15 @@ class ASSET(object):
         """
 
         if verbose is not None:
-            warnings.warn("The 'verbose' parameter is deprecated and will be "
-                          "removed in the future. Its functionality is still "
-                          "available by using the logging module from Python. "
-                          "We recommend transitioning to the logging module "
-                          "for improved control and flexibility in handling "
-                          "verbosity levels.", DeprecationWarning)
+            warnings.warn(
+                "The 'verbose' parameter is deprecated and will be "
+                "removed in the future. Its functionality is still "
+                "available by using the logging module from Python. "
+                "We recommend transitioning to the logging module "
+                "for improved control and flexibility in handling "
+                "verbosity levels.",
+                DeprecationWarning,
+            )
         # Don't do anything if mat is identically zero
         if np.all(mask_matrix == 0):
             return mask_matrix
@@ -2744,34 +2901,38 @@ class ASSET(object):
         # Allocate temporary file if requested
         mapped_array_file = None
         if array_file:
-            file_path = Path(array_file) if isinstance(array_file, str) \
-                else array_file
+            file_path = Path(array_file) if isinstance(array_file, str) else array_file
             file_dir = file_path.parent
             file_name = file_path.stem
             mapped_array_file = tempfile.NamedTemporaryFile(
-                prefix=file_name, dir=file_dir,
-                delete=not keep_file)
+                prefix=file_name, dir=file_dir, delete=not keep_file
+            )
 
         # Compute the matrix D[i, j] of euclidean distances between pixels i
         # and j
         try:
             D = _stretched_metric_2d(
-                xpos_sgnf, ypos_sgnf, stretch=stretch, ref_angle=45,
+                xpos_sgnf,
+                ypos_sgnf,
+                stretch=stretch,
+                ref_angle=45,
                 working_memory=working_memory,
-                mapped_array_file=mapped_array_file)
+                mapped_array_file=mapped_array_file,
+            )
         except MemoryError as err:
-            raise MemoryError("Set 'working_memory=100' or another value to "
-                              "chunk the data. If this does not solve, use the"
-                              " 'array_file' parameter to pass a location for "
-                              "a temporary file to map the array to the disk."
-                              ) from err
+            raise MemoryError(
+                "Set 'working_memory=100' or another value to "
+                "chunk the data. If this does not solve, use the"
+                " 'array_file' parameter to pass a location for "
+                "a temporary file to map the array to the disk."
+            ) from err
 
         logger.info("Running DBSCAN")
 
         # Cluster positions of significant pixels via dbscan
         core_samples, config = dbscan(
-            D, eps=max_distance, min_samples=min_neighbors,
-            metric='precomputed')
+            D, eps=max_distance, min_samples=min_neighbors, metric="precomputed"
+        )
 
         logger.info("Building cluster matrix")
 
@@ -2780,8 +2941,9 @@ class ASSET(object):
         # * 0 if it is not significant,
         # * -1 if it is significant but does not belong to any cluster
         cluster_mat = np.zeros_like(mask_matrix, dtype=np.int32)
-        cluster_mat[xpos_sgnf, ypos_sgnf] = \
-            config * (config == -1) + (config + 1) * (config >= 0)
+        cluster_mat[xpos_sgnf, ypos_sgnf] = config * (config == -1) + (config + 1) * (
+            config >= 0
+        )
 
         return cluster_mat
 
@@ -2829,9 +2991,12 @@ class ASSET(object):
         # Compute the transactions associated to the two binnings
         logger.info("Finding transactions")
         tracts_x = _transactions(
-            self.spiketrains_i, bin_size=self.bin_size, t_start=self.t_start_i,
+            self.spiketrains_i,
+            bin_size=self.bin_size,
+            t_start=self.t_start_i,
             t_stop=self.t_stop_i,
-            ids=ids)
+            ids=ids,
+        )
 
         if self.spiketrains_j is self.spiketrains_i or self.is_symmetric():
             diag_id = 0
@@ -2839,25 +3004,26 @@ class ASSET(object):
         else:
             diag_id = None
             tracts_y = _transactions(
-                self.spiketrains_j, bin_size=self.bin_size,
-                t_start=self.t_start_j, t_stop=self.t_stop_j, ids=ids)
+                self.spiketrains_j,
+                bin_size=self.bin_size,
+                t_start=self.t_start_j,
+                t_stop=self.t_stop_j,
+                ids=ids,
+            )
 
         # Reconstruct each worm, link by link
         sse_dict = {}
-        for k in tqdm(range(1, nr_worms + 1),
-                      total=nr_worms,
-                      desc="Extracting SSEs"):  # for each worm
+        for k in tqdm(
+            range(1, nr_worms + 1), total=nr_worms, desc="Extracting SSEs"
+        ):  # for each worm
             # worm k is a list of links (each link will be 1 sublist)
             worm_k = {}
-            pos_worm_k = np.array(
-                np.where(cmat == k)).T  # position of all links
+            pos_worm_k = np.array(np.where(cmat == k)).T  # position of all links
             # if no link lies on the reference diagonal
             if all([y - x != diag_id for (x, y) in pos_worm_k]):
                 for bin_x, bin_y in pos_worm_k:  # for each link
-
                     # reconstruct the link
-                    link_l = set(tracts_x[bin_x]).intersection(
-                        tracts_y[bin_y])
+                    link_l = set(tracts_x[bin_x]).intersection(tracts_y[bin_y])
 
                     # and assign it to its pixel
                     worm_k[(bin_x, bin_y)] = link_l
@@ -2876,9 +3042,10 @@ class ASSET(object):
 
         # Create the boxcar kernel and convolve it with the binned spike trains
         k = int((kernel_width / self.bin_size).simplified.item())
-        kernel = np.full(k, fill_value=1. / k)
-        rate = np.vstack([np.convolve(bst, kernel, mode='same')
-                          for bst in binned_spiketrains])
+        kernel = np.full(k, fill_value=1.0 / k)
+        rate = np.vstack(
+            [np.convolve(bst, kernel, mode="same") for bst in binned_spiketrains]
+        )
 
         # The convolution results in an array decreasing at the borders due
         # to absence of spikes beyond the borders. Replace the first and last
@@ -2889,6 +3056,6 @@ class ASSET(object):
             rate[i, -k2:] = rate[i, -k2 - 1]
 
         # Multiply the firing rates by the proper unit
-        rate = rate * (1. / self.bin_size).rescale('Hz')
+        rate = rate * (1.0 / self.bin_size).rescale("Hz")
 
         return rate
