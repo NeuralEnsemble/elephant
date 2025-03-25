@@ -3,6 +3,24 @@ Release Notes
 =============
 
 
+Release 1.1.1
+=============
+Bug fixes
+---------
+- Resolved deprecated `.A` attribute in `scipy.sparse` matrices (scipy >=1.14.0).
+  Replaced usage of the deprecated `.A` attribute with `.toarray()` in SPADE, ensuring compatibility with SciPy 1.14.0 (https://github.com/NeuralEnsemble/elephant/pull/636).
+
+- Modified tests to accommodate Neo 0.13.1, where adding the same object multiple times to a container is no longer permitted. These changes fix the generation of test data without affecting Elephant’s core functionality (https://github.com/NeuralEnsemble/elephant/pull/634).
+
+- Fixed deprecated `copy` method for `neo` objects (neo >=0.13.4), updated Elephant to handle the removal of the `copy` method from `neo` objects in version 0.13.4 (https://github.com/NeuralEnsemble/elephant/pull/646).
+
+Selected dependency changes
+---------------------------
+- SciPy >= 1.14.0
+- Neo >= 0.13.1
+- Numpy < 2.0.0
+
+
 Release 1.1.0
 =============
 New functionality and features
