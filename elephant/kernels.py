@@ -46,9 +46,9 @@ array([0.00514093, 1.3298076 , 0.00514093]) * 1/s
 Cumulative Distribution Function
 
 >>> kernel.cdf(0 * pq.s)
-0.5
+np.float64(0.5)
 >>> kernel.cdf(1 * pq.s)
-0.9995709396668032
+np.float64(0.9995709396668032)
 
 Inverse Cumulative Distribution Function
 
@@ -63,7 +63,7 @@ Example 2. Alpha kernel
 >>> kernel(spiketrain)
 array([-0.        ,  0.        ,  0.48623347]) * 1/s
 >>> kernel.cdf(0 * pq.s)
-0.0
+np.float64(0.0)
 >>> kernel.icdf(0.5)
 array(1.18677054) * s
 
