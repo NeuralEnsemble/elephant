@@ -157,8 +157,7 @@ delay_matrix : (N, N) np.ndarray
     if normalize:
         for delay_time in delay_times:
             NCC_d[:, :, delay_time] /= np.sum(
-                NCC_d[:, :, delay_time][~np.identity(NCC_d.shape[0],
-                                                     dtype=bool)]
+                NCC_d[:, :, delay_time][~np.identity(NCC_d.shape[0], dtype=bool)]
             )
 
     # Apply edge and running total filter
@@ -168,30 +167,26 @@ delay_matrix : (N, N) np.ndarray
         NCC_window = NCC_d[
             :,
             :,
-            max_padding
-            - filter.needed_padding: max_delay
+            max_padding - filter.needed_padding : max_delay
             + max_padding
             + filter.needed_padding,
         ]
 
         # Compute two convolutions with edge- and running total filter
         x1 = oaconvolve(
-            NCC_window, np.expand_dims(filter.edge_filter, (0, 1)),
-            mode="valid", axes=2
+            NCC_window, np.expand_dims(filter.edge_filter, (0, 1)), mode="valid", axes=2
         )
         x2 = oaconvolve(
-            x1, np.expand_dims(filter.running_total_filter, (0, 1)),
-            mode="full", axes=2
+            x1, np.expand_dims(filter.running_total_filter, (0, 1)), mode="full", axes=2
         )
 
         tspe_matrix += x2
 
     # Take maxima of absolute of delays to get estimation for connectivity
-    connectivity_matrix_index = np.argmax(np.abs(tspe_matrix),
-                                          axis=2, keepdims=True)
-    connectivity_matrix = np.take_along_axis(tspe_matrix,
-                                             connectivity_matrix_index, axis=2
-                                             ).squeeze(axis=2)
+    connectivity_matrix_index = np.argmax(np.abs(tspe_matrix), axis=2, keepdims=True)
+    connectivity_matrix = np.take_along_axis(
+        tspe_matrix, connectivity_matrix_index, axis=2
+    ).squeeze(axis=2)
     delay_matrix = connectivity_matrix_index.squeeze()
 
     return connectivity_matrix, delay_matrix
@@ -242,8 +237,7 @@ def normalized_cross_correlation(
         # Uses theoretical zero-padding for shifted values,
         # but since $0 \cdot x = 0$ values can simply be omitted
         if delay_time == 0:
-            CC = spike_trains_array[:, :] @ spike_trains_array[:, :
-                                                               ].transpose()
+            CC = spike_trains_array[:, :] @ spike_trains_array[:, :].transpose()
 
         elif delay_time > 0:
             CC = (
@@ -305,8 +299,7 @@ def generate_edge_filter(
     conditions = [
         (i > 0) & (i <= surrounding_window_size),
         (i > (surrounding_window_size + crossover_window_size))
-        & (i <= surrounding_window_size + observed_window_size +
-           crossover_window_size),
+        & (i <= surrounding_window_size + observed_window_size + crossover_window_size),
         (
             i
             > surrounding_window_size

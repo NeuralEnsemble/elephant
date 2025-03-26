@@ -31,14 +31,24 @@ __all__ = [
     "multitaper_psd",
     "multitaper_cross_spectrum",
     "segmented_multitaper_cross_spectrum",
-    "multitaper_coherence"
+    "multitaper_coherence",
 ]
 
 
-def welch_psd(signal, n_segments=8, len_segment=None,
-              frequency_resolution=None, overlap=0.5, fs=1.0, window='hann',
-              nfft=None, detrend='constant', return_onesided=True,
-              scaling='density', axis=-1):
+def welch_psd(
+    signal,
+    n_segments=8,
+    len_segment=None,
+    frequency_resolution=None,
+    overlap=0.5,
+    fs=1.0,
+    window="hann",
+    nfft=None,
+    detrend="constant",
+    return_onesided=True,
+    scaling="density",
+    axis=-1,
+):
     """
     Estimates power spectrum density (PSD) of a given `neo.AnalogSignal`
     using Welch's method.
@@ -203,30 +213,37 @@ def welch_psd(signal, n_segments=8, len_segment=None,
     """
     # 'hanning' window was removed with release of scipy 1.9.0, it was
     # deprecated since 1.1.0.
-    if window == 'hanning':
-        warnings.warn("'hanning' is deprecated and was removed from scipy "
-                      "with release 1.9.0. Please use 'hann' instead",
-                      DeprecationWarning)
-        window = 'hann'
+    if window == "hanning":
+        warnings.warn(
+            "'hanning' is deprecated and was removed from scipy "
+            "with release 1.9.0. Please use 'hann' instead",
+            DeprecationWarning,
+        )
+        window = "hann"
     # initialize a parameter dict (to be given to scipy.signal.welch()) with
     # the parameters directly passed on to scipy.signal.welch()
-    params = {'window': window, 'nfft': nfft,
-              'detrend': detrend, 'return_onesided': return_onesided,
-              'scaling': scaling, 'axis': axis}
+    params = {
+        "window": window,
+        "nfft": nfft,
+        "detrend": detrend,
+        "return_onesided": return_onesided,
+        "scaling": scaling,
+        "axis": axis,
+    }
 
     # add the input data to params. When the input is AnalogSignal, the
     # data is added after rolling the axis for time index to the last
     data = np.asarray(signal)
     if isinstance(signal, neo.AnalogSignal):
         data = np.rollaxis(data, 0, len(data.shape))
-    params['x'] = data
+    params["x"] = data
 
     # if the data is given as AnalogSignal, use its attribute to specify
     # the sampling frequency
-    if hasattr(signal, 'sampling_rate'):
-        params['fs'] = signal.sampling_rate.rescale('Hz').magnitude
+    if hasattr(signal, "sampling_rate"):
+        params["fs"] = signal.sampling_rate.rescale("Hz").magnitude
     else:
-        params['fs'] = fs
+        params["fs"] = fs
 
     if overlap < 0:
         raise ValueError("overlap must be greater than or equal to 0")
@@ -239,13 +256,12 @@ def welch_psd(signal, n_segments=8, len_segment=None,
         if frequency_resolution <= 0:
             raise ValueError("frequency_resolution must be positive")
         if isinstance(frequency_resolution, pq.quantity.Quantity):
-            dF = frequency_resolution.rescale('Hz').magnitude
+            dF = frequency_resolution.rescale("Hz").magnitude
         else:
             dF = frequency_resolution
-        nperseg = int(params['fs'] / dF)
+        nperseg = int(params["fs"] / dF)
         if nperseg > data.shape[axis]:
-            raise ValueError("frequency_resolution is too high for the given "
-                             "data size")
+            raise ValueError("frequency_resolution is too high for the given data size")
     elif len_segment is not None:
         if len_segment <= 0:
             raise ValueError("len_seg must be a positive number")
@@ -263,16 +279,15 @@ def welch_psd(signal, n_segments=8, len_segment=None,
         #     data.shape[-1]
         #  --------------------   ===============================  ^^^^^^^^^^^
         # summed segment lengths        total overlap              data length
-        nperseg = int(data.shape[axis] / (n_segments - overlap * (
-            n_segments - 1)))
-    params['nperseg'] = nperseg
-    params['noverlap'] = int(nperseg * overlap)
+        nperseg = int(data.shape[axis] / (n_segments - overlap * (n_segments - 1)))
+    params["nperseg"] = nperseg
+    params["noverlap"] = int(nperseg * overlap)
 
     freqs, psd = scipy.signal.welch(**params)
 
     # attach proper units to return values
     if isinstance(signal, pq.quantity.Quantity):
-        if 'scaling' in params and params['scaling'] == 'spectrum':
+        if "scaling" in params and params["scaling"] == "spectrum":
             psd = psd * signal.units * signal.units
         else:
             psd = psd * signal.units * signal.units / pq.Hz
@@ -281,8 +296,9 @@ def welch_psd(signal, n_segments=8, len_segment=None,
     return freqs, psd
 
 
-def multitaper_psd(signal, fs=1, nw=4, num_tapers=None, peak_resolution=None,
-                   attach_units=True):
+def multitaper_psd(
+    signal, fs=1, nw=4, num_tapers=None, peak_resolution=None, attach_units=True
+):
     """
     Estimates power spectrum density (PSD) of a given 'neo.AnalogSignal'
     using the Multitaper method.
@@ -357,7 +373,7 @@ def multitaper_psd(signal, fs=1, nw=4, num_tapers=None, peak_resolution=None,
         fs = signal.sampling_rate
 
     if isinstance(fs, pq.Quantity):
-        fs = fs.rescale('Hz').magnitude
+        fs = fs.rescale("Hz").magnitude
 
     # Add a dim if data has only one dimension
     if data.ndim == 1:
@@ -367,17 +383,17 @@ def multitaper_psd(signal, fs=1, nw=4, num_tapers=None, peak_resolution=None,
 
     # If peak resolution is pq.Quantity, get magnitude
     if isinstance(peak_resolution, pq.quantity.Quantity):
-        peak_resolution = peak_resolution.rescale('Hz').magnitude
+        peak_resolution = peak_resolution.rescale("Hz").magnitude
 
     # Determine time-halfbandwidth product from given parameters
     if peak_resolution is not None:
         if peak_resolution <= 0:
             raise ValueError("peak_resolution must be positive")
         nw = length_signal / fs * peak_resolution / 2
-        num_tapers = int(np.floor(2*nw) - 1)
+        num_tapers = int(np.floor(2 * nw) - 1)
 
     if num_tapers is None:
-        num_tapers = int(np.floor(2*nw) - 1)
+        num_tapers = int(np.floor(2 * nw) - 1)
     else:
         if not isinstance(num_tapers, int):
             raise TypeError("num_tapers must be integer")
@@ -385,13 +401,12 @@ def multitaper_psd(signal, fs=1, nw=4, num_tapers=None, peak_resolution=None,
             raise ValueError("num_tapers must be positive")
 
     # Generate frequencies of PSD estimate
-    freqs = np.fft.rfftfreq(length_signal, d=1/fs)
+    freqs = np.fft.rfftfreq(length_signal, d=1 / fs)
 
     # Generate Slepian sequences
-    slepian_fcts = scipy.signal.windows.dpss(M=length_signal,
-                                             NW=nw,
-                                             Kmax=num_tapers,
-                                             sym=False)
+    slepian_fcts = scipy.signal.windows.dpss(
+        M=length_signal, NW=nw, Kmax=num_tapers, sym=False
+    )
 
     # Calculate approximately independent spectrum estimates
     # Use broadcasting to match dim for point-wise multiplication
@@ -399,7 +414,7 @@ def multitaper_psd(signal, fs=1, nw=4, num_tapers=None, peak_resolution=None,
     tapered_signal = data[:, np.newaxis, :] * slepian_fcts
 
     # Determine Fourier transform of tapered signal
-    spectrum_estimates = np.abs(np.fft.rfft(tapered_signal, axis=-1))**2
+    spectrum_estimates = np.abs(np.fft.rfft(tapered_signal, axis=-1)) ** 2
     spectrum_estimates[..., 1:] *= 2
 
     # Average Fourier transform windowed signal
@@ -413,9 +428,17 @@ def multitaper_psd(signal, fs=1, nw=4, num_tapers=None, peak_resolution=None,
     return freqs, psd
 
 
-def segmented_multitaper_psd(signal, n_segments=1, len_segment=None,
-                             frequency_resolution=None, overlap=0.5, fs=1,
-                             nw=4, num_tapers=None, peak_resolution=None):
+def segmented_multitaper_psd(
+    signal,
+    n_segments=1,
+    len_segment=None,
+    frequency_resolution=None,
+    overlap=0.5,
+    fs=1,
+    nw=4,
+    num_tapers=None,
+    peak_resolution=None,
+):
     """
     Estimates power spectrum density (PSD) of a given 'neo.AnalogSignal'
     using Multitaper method
@@ -537,16 +560,22 @@ def segmented_multitaper_psd(signal, n_segments=1, len_segment=None,
     length_signal = np.shape(data)[1]
 
     psd_params_dict = {
-        'nw': nw,
-        'num_tapers': num_tapers,
-        'peak_resolution': peak_resolution,
-        'attach_units': False
+        "nw": nw,
+        "num_tapers": num_tapers,
+        "peak_resolution": peak_resolution,
+        "attach_units": False,
     }
 
     freqs, psd = _segmented_apply_func(
-        data=data, fs=fs, n_segments=n_segments, len_segment=len_segment,
-        overlap=overlap, frequency_resolution=frequency_resolution,
-        func=multitaper_psd, func_params_dict=psd_params_dict)
+        data=data,
+        fs=fs,
+        n_segments=n_segments,
+        len_segment=len_segment,
+        overlap=overlap,
+        frequency_resolution=frequency_resolution,
+        func=multitaper_psd,
+        func_params_dict=psd_params_dict,
+    )
 
     # Attach proper units to return values
     if isinstance(signal, pq.quantity.Quantity):
@@ -556,9 +585,15 @@ def segmented_multitaper_psd(signal, n_segments=1, len_segment=None,
     return freqs, psd
 
 
-def multitaper_cross_spectrum(signals, fs=1.0, nw=4.0, num_tapers=None,
-                              peak_resolution=None, return_onesided=True,
-                              attach_units=True):
+def multitaper_cross_spectrum(
+    signals,
+    fs=1.0,
+    nw=4.0,
+    num_tapers=None,
+    peak_resolution=None,
+    return_onesided=True,
+    attach_units=True,
+):
     """
     Estimates the cross spectrum of a given `neo.AnalogSignal` using the
     Multitaper method.
@@ -655,24 +690,24 @@ def multitaper_cross_spectrum(signals, fs=1.0, nw=4.0, num_tapers=None,
 
     # If the data is given as AnalogSignal, use its attribute to specify the
     # sampling frequency
-    if hasattr(signals, 'sampling_rate'):
-        fs = signals.sampling_rate.rescale('Hz')
+    if hasattr(signals, "sampling_rate"):
+        fs = signals.sampling_rate.rescale("Hz")
 
     # If fs and peak resolution is pq.Quantity, get magnitude
     if isinstance(fs, pq.quantity.Quantity):
-        fs = fs.rescale('Hz').magnitude
+        fs = fs.rescale("Hz").magnitude
 
     # Determine time-halfbandwidth product from given parameters
     if peak_resolution is not None:
         if isinstance(peak_resolution, pq.quantity.Quantity):
-            peak_resolution = peak_resolution.rescale('Hz').magnitude
+            peak_resolution = peak_resolution.rescale("Hz").magnitude
         if peak_resolution <= 0:
             raise ValueError("peak_resolution must be positive")
         nw = length_signal / fs * peak_resolution / 2
-        num_tapers = int(np.floor(2*nw) - 1)
+        num_tapers = int(np.floor(2 * nw) - 1)
 
     if num_tapers is None:
-        num_tapers = int(np.floor(2*nw) - 1)
+        num_tapers = int(np.floor(2 * nw) - 1)
     else:
         if not isinstance(num_tapers, int):
             raise TypeError("num_tapers must be integer")
@@ -680,13 +715,12 @@ def multitaper_cross_spectrum(signals, fs=1.0, nw=4.0, num_tapers=None,
             raise ValueError("num_tapers must be positive")
 
     # Get slepian functions (sym='False' used for spectral analysis)
-    slepian_fcts = scipy.signal.windows.dpss(M=length_signal,
-                                             NW=nw,
-                                             Kmax=num_tapers,
-                                             sym=False)
+    slepian_fcts = scipy.signal.windows.dpss(
+        M=length_signal, NW=nw, Kmax=num_tapers, sym=False
+    )
 
     # Use broadcasting to match dime for point-wise multiplication
-    tapered_signals = (data[:, np.newaxis] * slepian_fcts)
+    tapered_signals = data[:, np.newaxis] * slepian_fcts
 
     if return_onesided:
         # Determine frequencies for real Fourier transform
@@ -700,8 +734,9 @@ def multitaper_cross_spectrum(signals, fs=1.0, nw=4.0, num_tapers=None,
         # Determine full Fourier transform of tapered signal
         spectrum_estimates = np.fft.fft(tapered_signals, axis=-1)
 
-    temp = (spectrum_estimates[np.newaxis, :, :, :]
-            * np.conjugate(spectrum_estimates[:, np.newaxis, :, :]))
+    temp = spectrum_estimates[np.newaxis, :, :, :] * np.conjugate(
+        spectrum_estimates[:, np.newaxis, :, :]
+    )
 
     # Average Fourier transform windowed signal
     cross_spec = np.mean(temp, axis=-2, dtype=np.complex64) / fs
@@ -713,9 +748,16 @@ def multitaper_cross_spectrum(signals, fs=1.0, nw=4.0, num_tapers=None,
     return freqs, cross_spec
 
 
-def _segmented_apply_func(data, func, fs=1.0, n_segments=1, len_segment=None,
-                          frequency_resolution=None, overlap=0.5,
-                          func_params_dict=None):
+def _segmented_apply_func(
+    data,
+    func,
+    fs=1.0,
+    n_segments=1,
+    len_segment=None,
+    frequency_resolution=None,
+    overlap=0.5,
+    func_params_dict=None,
+):
     """
     Estimate a spectral measure of a signal by applying it to segments of a
     signal and then averaging over the segments.
@@ -812,20 +854,19 @@ def _segmented_apply_func(data, func, fs=1.0, n_segments=1, len_segment=None,
 
     # If fs and peak resolution is pq.Quantity, get magnitude
     if isinstance(fs, pq.quantity.Quantity):
-        fs = fs.rescale('Hz').magnitude
+        fs = fs.rescale("Hz").magnitude
 
     # Determine length per segment - n_per_seg
     if frequency_resolution is not None:
         if frequency_resolution <= 0:
             raise ValueError("frequency_resolution must be positive")
         if isinstance(frequency_resolution, pq.quantity.Quantity):
-            dF = frequency_resolution.rescale('Hz').magnitude
+            dF = frequency_resolution.rescale("Hz").magnitude
         else:
             dF = frequency_resolution
         n_per_seg = int(fs / dF)
         if n_per_seg > data.shape[axis]:
-            raise ValueError("frequency_resolution is too high for the given "
-                             "data size")
+            raise ValueError("frequency_resolution is too high for the given data size")
     elif len_segment is not None:
         if len_segment <= 0:
             raise ValueError("len_seg must be a positive number")
@@ -843,42 +884,38 @@ def _segmented_apply_func(data, func, fs=1.0, n_segments=1, len_segment=None,
         #     data.shape[-1]
         #  --------------------   ===============================  ^^^^^^^^^^^
         # summed segment lengths        total overlap              data length
-        n_per_seg = int(data.shape[axis] /
-                        (n_segments - overlap * (n_segments - 1)))
+        n_per_seg = int(data.shape[axis] / (n_segments - overlap * (n_segments - 1)))
 
     n_overlap = int(n_per_seg * overlap)
     n_overlap_step = n_per_seg - n_overlap
     n_segments = int((length_signal - n_overlap) / (n_per_seg - n_overlap))
 
     # Generate frequencies for spectral measure estimate
-    if func_params_dict.get('return_onesided'):
-        freqs = np.fft.rfftfreq(n_per_seg, d=1/fs)
-    elif func_params_dict.get('return_onesided') is None:
+    if func_params_dict.get("return_onesided"):
+        freqs = np.fft.rfftfreq(n_per_seg, d=1 / fs)
+    elif func_params_dict.get("return_onesided") is None:
         # multitaper_psd uses rfft (i.e. no return_onesided parameter)
-        freqs = np.fft.rfftfreq(n_per_seg, d=1/fs)
+        freqs = np.fft.rfftfreq(n_per_seg, d=1 / fs)
     else:
-        freqs = np.fft.fftfreq(n_per_seg, d=1/fs)
+        freqs = np.fft.fftfreq(n_per_seg, d=1 / fs)
 
     # Zero-pad signal to fit segment length
     remainder = length_signal % n_overlap_step
 
-    data = np.pad(data, [(0, 0), (0, remainder)],
-                  mode='constant', constant_values=0)
+    data = np.pad(data, [(0, 0), (0, remainder)], mode="constant", constant_values=0)
 
     # Generate array for storing cross spectra estimates of segments
-    seg_estimates = np.zeros((n_segments,
-                              data.shape[0],
-                              data.shape[0],
-                              len(freqs)),
-                             dtype=np.complex64)
+    seg_estimates = np.zeros(
+        (n_segments, data.shape[0], data.shape[0], len(freqs)), dtype=np.complex64
+    )
 
     n_overlap_step = n_per_seg - n_overlap
 
     for i in range(n_segments):
-
         _, estimate = func(
-            data[:, i * n_overlap_step:i * n_overlap_step + n_per_seg],
-            **func_params_dict)
+            data[:, i * n_overlap_step : i * n_overlap_step + n_per_seg],
+            **func_params_dict,
+        )
 
         # Workaround for mismatched dimensions
         if estimate.ndim != seg_estimates.ndim - 1:  # Multitaper PSD
@@ -891,12 +928,18 @@ def _segmented_apply_func(data, func, fs=1.0, n_segments=1, len_segment=None,
     return freqs, avg_estimate
 
 
-def segmented_multitaper_cross_spectrum(signals, n_segments=1,
-                                        len_segment=None,
-                                        frequency_resolution=None, overlap=0.5,
-                                        fs=1.0, nw=4.0, num_tapers=None,
-                                        peak_resolution=None,
-                                        return_onesided=True):
+def segmented_multitaper_cross_spectrum(
+    signals,
+    n_segments=1,
+    len_segment=None,
+    frequency_resolution=None,
+    overlap=0.5,
+    fs=1.0,
+    nw=4.0,
+    num_tapers=None,
+    peak_resolution=None,
+    return_onesided=True,
+):
     """
     Estimates the cross spectrum of a given `neo.AnalogSignal` using the
     Multitaper method on segments of the data.
@@ -1008,18 +1051,24 @@ def segmented_multitaper_cross_spectrum(signals, n_segments=1,
     # Initialize argument dictionary for multitaper_cross_spectrum called on
     # segments
     cross_spec_params_dict = {
-        'nw': nw,
-        'num_tapers': num_tapers,
-        'peak_resolution': peak_resolution,
-        'return_onesided': return_onesided,
-        'attach_units': False}
+        "nw": nw,
+        "num_tapers": num_tapers,
+        "peak_resolution": peak_resolution,
+        "return_onesided": return_onesided,
+        "attach_units": False,
+    }
 
     # Apply segmentation
     freqs, cross_spec = _segmented_apply_func(
-        data=data, fs=fs, n_segments=n_segments, len_segment=len_segment,
-        overlap=overlap, frequency_resolution=frequency_resolution,
+        data=data,
+        fs=fs,
+        n_segments=n_segments,
+        len_segment=len_segment,
+        overlap=overlap,
+        frequency_resolution=frequency_resolution,
         func=multitaper_cross_spectrum,
-        func_params_dict=cross_spec_params_dict)
+        func_params_dict=cross_spec_params_dict,
+    )
 
     # Attach proper units to return values
     if isinstance(signals, pq.quantity.Quantity):
@@ -1029,9 +1078,18 @@ def segmented_multitaper_cross_spectrum(signals, n_segments=1,
     return freqs, cross_spec
 
 
-def multitaper_coherence(signal_i, signal_j, n_segments=1, len_segment=None,
-                         frequency_resolution=None, overlap=0.5, fs=1,
-                         nw=4, num_tapers=None, peak_resolution=None):
+def multitaper_coherence(
+    signal_i,
+    signal_j,
+    n_segments=1,
+    len_segment=None,
+    frequency_resolution=None,
+    overlap=0.5,
+    fs=1,
+    nw=4,
+    num_tapers=None,
+    peak_resolution=None,
+):
     """
     Estimates the magnitude-squared coherence and phase-lag of two given
     `neo.AnalogSignal` using the Multitaper method.
@@ -1101,16 +1159,24 @@ def multitaper_coherence(signal_i, signal_j, n_segments=1, len_segment=None,
         Phase lags associated with the magnitude-square coherence estimate
 
     """
-    if isinstance(signal_i, neo.core.AnalogSignal) and \
-            isinstance(signal_j, neo.core.AnalogSignal):
+    if isinstance(signal_i, neo.core.AnalogSignal) and isinstance(
+        signal_j, neo.core.AnalogSignal
+    ):
         signals = signal_i.merge(signal_j)
     elif isinstance(signal_i, np.ndarray) and isinstance(signal_j, np.ndarray):
         signals = np.vstack([signal_i, signal_j])
 
     freqs, Pxy = segmented_multitaper_cross_spectrum(
-        signals=signals, n_segments=n_segments, len_segment=len_segment,
-        frequency_resolution=frequency_resolution, overlap=overlap, fs=fs,
-        nw=nw, num_tapers=num_tapers, peak_resolution=peak_resolution)
+        signals=signals,
+        n_segments=n_segments,
+        len_segment=len_segment,
+        frequency_resolution=frequency_resolution,
+        overlap=overlap,
+        fs=fs,
+        nw=nw,
+        num_tapers=num_tapers,
+        peak_resolution=peak_resolution,
+    )
 
     # Calculate magnitude-squared coherence.
     coherence = np.abs(Pxy[0, 1]) ** 2 / (Pxy[0, 0].real * Pxy[1, 1].real)
@@ -1120,10 +1186,20 @@ def multitaper_coherence(signal_i, signal_j, n_segments=1, len_segment=None,
     return freqs, coherence, phase_lag
 
 
-def welch_coherence(signal_i, signal_j, n_segments=8, len_segment=None,
-                    frequency_resolution=None, overlap=0.5, fs=1.0,
-                    window='hann', nfft=None, detrend='constant',
-                    scaling='density', axis=-1):
+def welch_coherence(
+    signal_i,
+    signal_j,
+    n_segments=8,
+    len_segment=None,
+    frequency_resolution=None,
+    overlap=0.5,
+    fs=1.0,
+    window="hann",
+    nfft=None,
+    detrend="constant",
+    scaling="density",
+    axis=-1,
+):
     r"""
     Estimates coherence between a given pair of analog signals.
 
@@ -1277,15 +1353,22 @@ def welch_coherence(signal_i, signal_j, n_segments=8, len_segment=None,
     # TODO: code duplication with welch_psd()
     # 'hanning' window was removed with release of scipy 1.9.0, it was
     # deprecated since 1.1.0.
-    if window == 'hanning':
-        warnings.warn("'hanning' is deprecated and was removed from scipy "
-                      "with release 1.9.0. Please use 'hann' instead",
-                      DeprecationWarning)
-        window = 'hann'
+    if window == "hanning":
+        warnings.warn(
+            "'hanning' is deprecated and was removed from scipy "
+            "with release 1.9.0. Please use 'hann' instead",
+            DeprecationWarning,
+        )
+        window = "hann"
 
     # initialize a parameter dict for scipy.signal.csd()
-    params = {'window': window, 'nfft': nfft,
-              'detrend': detrend, 'scaling': scaling, 'axis': axis}
+    params = {
+        "window": window,
+        "nfft": nfft,
+        "detrend": detrend,
+        "scaling": scaling,
+        "axis": axis,
+    }
 
     # When the input is AnalogSignal, the axis for time index is rolled to
     # the last
@@ -1297,10 +1380,10 @@ def welch_coherence(signal_i, signal_j, n_segments=8, len_segment=None,
 
     # if the data is given as AnalogSignal, use its attribute to specify
     # the sampling frequency
-    if hasattr(signal_i, 'sampling_rate'):
-        params['fs'] = signal_i.sampling_rate.rescale('Hz').magnitude
+    if hasattr(signal_i, "sampling_rate"):
+        params["fs"] = signal_i.sampling_rate.rescale("Hz").magnitude
     else:
-        params['fs'] = fs
+        params["fs"] = fs
 
     if overlap < 0:
         raise ValueError("overlap must be greater than or equal to 0")
@@ -1311,13 +1394,12 @@ def welch_coherence(signal_i, signal_j, n_segments=8, len_segment=None,
     # parameters
     if frequency_resolution is not None:
         if isinstance(frequency_resolution, pq.quantity.Quantity):
-            dF = frequency_resolution.rescale('Hz').magnitude
+            dF = frequency_resolution.rescale("Hz").magnitude
         else:
             dF = frequency_resolution
-        nperseg = int(params['fs'] / dF)
+        nperseg = int(params["fs"] / dF)
         if nperseg > xdata.shape[axis]:
-            raise ValueError("frequency_resolution is too high for the given"
-                             "data size")
+            raise ValueError("frequency_resolution is too high for the givendata size")
     elif len_segment is not None:
         if len_segment <= 0:
             raise ValueError("len_seg must be a positive number")
@@ -1335,10 +1417,9 @@ def welch_coherence(signal_i, signal_j, n_segments=8, len_segment=None,
         #      data.shape[-1]
         #  -------------------    ===============================  ^^^^^^^^^^^
         # summed segment lengths        total overlap              data length
-        nperseg = int(xdata.shape[axis] / (n_segments - overlap * (
-            n_segments - 1)))
-    params['nperseg'] = nperseg
-    params['noverlap'] = int(nperseg * overlap)
+        nperseg = int(xdata.shape[axis] / (n_segments - overlap * (n_segments - 1)))
+    params["nperseg"] = nperseg
+    params["noverlap"] = int(nperseg * overlap)
 
     freqs, Pxx = scipy.signal.welch(xdata, **params)
     _, Pyy = scipy.signal.welch(ydata, **params)
@@ -1362,6 +1443,7 @@ def welch_coherence(signal_i, signal_j, n_segments=8, len_segment=None,
 
 
 def welch_cohere(*args, **kwargs):
-    warnings.warn("'welch_cohere' is deprecated; use 'welch_coherence'",
-                  DeprecationWarning)
+    warnings.warn(
+        "'welch_cohere' is deprecated; use 'welch_coherence'", DeprecationWarning
+    )
     return welch_coherence(*args, **kwargs)
