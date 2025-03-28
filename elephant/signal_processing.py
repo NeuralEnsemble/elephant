@@ -742,7 +742,8 @@ def wavelet_transform(signal: neo.AnalogSignal | np.ndarray | list,
     return signal_wt
 
 
-def hilbert(signal, padding='nextpow'):
+def hilbert(signal: neo.AnalogSignal, 
+            padding: str | int | None = 'nextpow') -> neo.AnalogSignal:
     """
     Apply a Hilbert transform to a `neo.AnalogSignal` object in order to
     obtain its (complex) analytic signal.
