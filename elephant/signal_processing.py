@@ -38,7 +38,9 @@ __all__ = [
 ]
 
 
-def zscore(signal, inplace=True):
+def zscore(signal: neo.AnalogSignal | list[neo.AnalogSignal],
+           inplace: bool = True
+           ) -> neo.AnalogSignal | list[neo.AnalogSignal]:
     r"""
     Apply a z-score operation to one or several `neo.AnalogSignal` objects.
 
@@ -195,8 +197,11 @@ def zscore(signal, inplace=True):
     return signal_ztransformed
 
 
-def cross_correlation_function(signal, channel_pairs, hilbert_envelope=False,
-                               n_lags=None, scaleopt='unbiased'):
+def cross_correlation_function(signal: neo.AnalogSignal,
+                               channel_pairs: list | np.ndarray,
+                               hilbert_envelope: bool = False,
+                               n_lags: int | None = None,
+                               scaleopt: str = 'unbiased') -> neo.AnalogSignal:
     r"""
     Computes an estimator of the cross-correlation function
     :cite:`signal-Stoica2005`.
@@ -387,8 +392,13 @@ def cross_correlation_function(signal, channel_pairs, hilbert_envelope=False,
     return cross_corr
 
 
-def butter(signal, highpass_frequency=None, lowpass_frequency=None, order=4,
-           filter_function='filtfilt', sampling_frequency=1.0, axis=-1):
+def butter(signal: neo.AnalogSignal | pq.Quantity | np.ndarray,
+           highpass_frequency: pq.Quantity | float | None = None,
+           lowpass_frequency: pq.Quantity | float | None = None,
+           order: int = 4, 
+           filter_function: str = 'filtfilt',
+           sampling_frequency: pq.Quantity | float = 1.0,
+           axis: int = -1) -> neo.AnalogSignal | pq.Quantity | np.ndarray:
     """
     Butterworth filtering function for `neo.AnalogSignal`.
 
@@ -558,8 +568,11 @@ def butter(signal, highpass_frequency=None, lowpass_frequency=None, order=4,
     return filtered_data
 
 
-def wavelet_transform(signal, frequency, n_cycles=6.0, sampling_frequency=1.0,
-                      zero_padding=True):
+def wavelet_transform(signal: neo.AnalogSignal | np.ndarray | list,
+                      frequency: float | list[float],
+                      n_cycles: float = 6.0,
+                      sampling_frequency: float | pq.Quantity = 1.0,
+                      zero_padding: bool = True) -> np.ndarray:
     r"""
     Compute the wavelet transform of a given signal with Morlet mother
     wavelet. The parametrization of the wavelet is based on
@@ -729,7 +742,8 @@ def wavelet_transform(signal, frequency, n_cycles=6.0, sampling_frequency=1.0,
     return signal_wt
 
 
-def hilbert(signal, padding='nextpow'):
+def hilbert(signal: neo.AnalogSignal, 
+            padding: str | int | None = 'nextpow') -> neo.AnalogSignal:
     """
     Apply a Hilbert transform to a `neo.AnalogSignal` object in order to
     obtain its (complex) analytic signal.
@@ -837,7 +851,11 @@ def hilbert(signal, padding='nextpow'):
     return output / output.units
 
 
-def rauc(signal, baseline=None, bin_duration=None, t_start=None, t_stop=None):
+def rauc(signal: neo.AnalogSignal,
+         baseline: pq.Quantity | str | None = None,
+         bin_duration: pq.Quantity | None = None,
+         t_start: pq.Quantity | None = None,
+         t_stop: pq.Quantity | None = None) -> pq.Quantity | neo.AnalogSignal:
     """
     Calculate the rectified area under the curve (RAUC) for a
     `neo.AnalogSignal`.
