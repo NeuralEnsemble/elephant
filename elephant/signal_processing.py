@@ -568,8 +568,12 @@ def butter(signal: neo.AnalogSignal | pq.Quantity | np.ndarray,
     return filtered_data
 
 
-def wavelet_transform(signal, frequency, n_cycles=6.0, sampling_frequency=1.0,
-                      zero_padding=True):
+def wavelet_transform(signal: neo.AnalogSignal | np.ndarray | list,
+                      frequency: float | list[float],
+                      n_cycles: float = 6.0,
+                      sampling_frequency: float | pq.Quantity = 1.0,
+                      zero_padding: bool = True
+                    ) -> np.ndarray:
     r"""
     Compute the wavelet transform of a given signal with Morlet mother
     wavelet. The parametrization of the wavelet is based on
