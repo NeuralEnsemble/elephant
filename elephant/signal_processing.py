@@ -851,7 +851,11 @@ def hilbert(signal: neo.AnalogSignal,
     return output / output.units
 
 
-def rauc(signal, baseline=None, bin_duration=None, t_start=None, t_stop=None):
+def rauc(signal: neo.AnalogSignal,
+         baseline: pq.Quantity | str | None = None,
+         bin_duration: pq.Quantity | None = None,
+         t_start: pq.Quantity | None = None,
+         t_stop: pq.Quantity | None = None) -> pq.Quantity | neo.AnalogSignal:
     """
     Calculate the rectified area under the curve (RAUC) for a
     `neo.AnalogSignal`.
