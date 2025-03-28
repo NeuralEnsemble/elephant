@@ -392,8 +392,13 @@ def cross_correlation_function(signal: neo.AnalogSignal,
     return cross_corr
 
 
-def butter(signal, highpass_frequency=None, lowpass_frequency=None, order=4,
-           filter_function='filtfilt', sampling_frequency=1.0, axis=-1):
+def butter(signal: neo.AnalogSignal | pq.Quantity | np.ndarray,
+           highpass_frequency: pq.Quantity | float | None = None,
+           lowpass_frequency: pq.Quantity | float | None = None,
+           order: int = 4, 
+           filter_function: str = 'filtfilt',
+           sampling_frequency: pq.Quantity | float = 1.0,
+           axis: int = -1) -> neo.AnalogSignal | pq.Quantity | np.ndarray:
     """
     Butterworth filtering function for `neo.AnalogSignal`.
 
