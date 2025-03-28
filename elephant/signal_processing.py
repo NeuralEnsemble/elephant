@@ -38,7 +38,9 @@ __all__ = [
 ]
 
 
-def zscore(signal, inplace=True):
+def zscore(signal: neo.core.AnalogSignal | list[neo.core.AnalogSignal],
+           inplace: bool = True
+           ) -> neo.core.AnalogSignal | list[neo.core.AnalogSignal]:
     r"""
     Apply a z-score operation to one or several `neo.AnalogSignal` objects.
 
