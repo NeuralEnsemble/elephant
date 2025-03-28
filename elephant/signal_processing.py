@@ -38,9 +38,9 @@ __all__ = [
 ]
 
 
-def zscore(signal: neo.core.AnalogSignal | list[neo.core.AnalogSignal],
+def zscore(signal: neo.AnalogSignal | list[neo.AnalogSignal],
            inplace: bool = True
-           ) -> neo.core.AnalogSignal | list[neo.core.AnalogSignal]:
+           ) -> neo.AnalogSignal | list[neo.AnalogSignal]:
     r"""
     Apply a z-score operation to one or several `neo.AnalogSignal` objects.
 
@@ -197,8 +197,11 @@ def zscore(signal: neo.core.AnalogSignal | list[neo.core.AnalogSignal],
     return signal_ztransformed
 
 
-def cross_correlation_function(signal, channel_pairs, hilbert_envelope=False,
-                               n_lags=None, scaleopt='unbiased'):
+def cross_correlation_function(signal: neo.AnalogSignal,
+                               channel_pairs: list | np.ndarray,
+                               hilbert_envelope: bool = False,
+                               n_lags: int | None = None,
+                               scaleopt: str = 'unbiased') -> neo.AnalogSignal:
     r"""
     Computes an estimator of the cross-correlation function
     :cite:`signal-Stoica2005`.
