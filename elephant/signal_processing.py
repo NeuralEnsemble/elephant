@@ -75,7 +75,7 @@ def zscore(signal: Union[neo.AnalogSignal, list[neo.AnalogSignal]],
 
     Returns
     -------
-    signal_ztransformed : neo.AnalogSignal or list of neo.AnalogSignal
+    out : neo.AnalogSignal or list of neo.AnalogSignal
         The output format matches the input format: for each input
         `neo.AnalogSignal`, a corresponding `neo.AnalogSignal` is returned,
         containing the z-transformed signal with dimensionless unit.
@@ -274,7 +274,7 @@ def cross_correlation_function(signal: neo.AnalogSignal,
 
     Returns
     -------
-    cross_corr : neo.AnalogSignal
+    out : neo.AnalogSignal
         Shape: `[2*n_lags+1, n]`
         Pairwise cross-correlation functions for channel pairs given by
         `channel_pairs`. If `hilbert_envelope` is True, the output is the
@@ -396,7 +396,7 @@ def cross_correlation_function(signal: neo.AnalogSignal,
 def butter(signal: Union[neo.AnalogSignal, pq.Quantity, np.ndarray],
            highpass_frequency: Union[pq.Quantity, float, None] = None,
            lowpass_frequency: Union[pq.Quantity, float, None] = None,
-           order: int = 4, 
+           order: int = 4,
            filter_function: str = 'filtfilt',
            sampling_frequency: Union[pq.Quantity, float] = 1.0,
            axis: int = -1) -> Union[neo.AnalogSignal, pq.Quantity, np.ndarray]:
@@ -457,7 +457,7 @@ def butter(signal: Union[neo.AnalogSignal, pq.Quantity, np.ndarray],
 
     Returns
     -------
-    filtered_signal : neo.AnalogSignal or pq.Quantity or np.ndarray
+    out : neo.AnalogSignal or pq.Quantity or np.ndarray
         Filtered input data. The shape and type is identical to those of the
         input `signal`.
 
@@ -614,7 +614,7 @@ def wavelet_transform(signal: Union[neo.AnalogSignal, np.ndarray, list],
 
     Returns
     -------
-    signal_wt : np.ndarray
+    out : np.ndarray
         Wavelet transform of the input data. When `frequency` was given as a
         list, the way how the wavelet transforms for different frequencies are
         returned depends on the input type:
@@ -743,7 +743,7 @@ def wavelet_transform(signal: Union[neo.AnalogSignal, np.ndarray, list],
     return signal_wt
 
 
-def hilbert(signal: neo.AnalogSignal, 
+def hilbert(signal: neo.AnalogSignal,
             padding: Union[str, int, None] = 'nextpow') -> neo.AnalogSignal:
     """
     Apply a Hilbert transform to a `neo.AnalogSignal` object in order to
@@ -775,7 +775,7 @@ def hilbert(signal: neo.AnalogSignal,
 
     Returns
     -------
-    neo.AnalogSignal
+    out : neo.AnalogSignal
         Contains the complex analytic signal(s) corresponding to the input
         `signal`. The unit of the returned `neo.AnalogSignal` is
         dimensionless.
@@ -902,7 +902,7 @@ def rauc(signal: neo.AnalogSignal,
 
     Returns
     -------
-    pq.Quantity or neo.AnalogSignal
+    out : pq.Quantity or neo.AnalogSignal
         If the number of bins is 1, the returned object is a scalar or
         vector `pq.Quantity` containing a single RAUC value for each channel.
         Otherwise, the returned object is a `neo.AnalogSignal` containing the
@@ -996,7 +996,7 @@ def rauc(signal: neo.AnalogSignal,
     return rauc_sig
 
 
-def derivative(signal):
+def derivative(signal: neo.AnalogSignal) -> neo.AnalogSignal:
     """
     Calculate the derivative of a `neo.AnalogSignal`.
 
@@ -1008,7 +1008,7 @@ def derivative(signal):
 
     Returns
     -------
-    derivative_sig : neo.AnalogSignal
+    out : neo.AnalogSignal
         The returned object is a `neo.AnalogSignal` containing the differences
         between each successive sample value of the input signal divided by
         the sampling period. Times are centered between the successive samples
