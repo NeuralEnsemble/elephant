@@ -24,6 +24,7 @@ import neo
 import numpy as np
 import quantities as pq
 import scipy.signal
+from typing import Union
 
 from elephant.utils import check_same_units
 
@@ -38,9 +39,9 @@ __all__ = [
 ]
 
 
-def zscore(signal: neo.AnalogSignal | list[neo.AnalogSignal],
+def zscore(signal: Union[neo.AnalogSignal, list[neo.AnalogSignal]],
            inplace: bool = True
-           ) -> neo.AnalogSignal | list[neo.AnalogSignal]:
+           ) -> Union[neo.AnalogSignal, list[neo.AnalogSignal]]:
     r"""
     Apply a z-score operation to one or several `neo.AnalogSignal` objects.
 
@@ -198,9 +199,9 @@ def zscore(signal: neo.AnalogSignal | list[neo.AnalogSignal],
 
 
 def cross_correlation_function(signal: neo.AnalogSignal,
-                               channel_pairs: list | np.ndarray,
+                               channel_pairs: Union[list, np.ndarray],
                                hilbert_envelope: bool = False,
-                               n_lags: int | None = None,
+                               n_lags: Union[int, None] = None,
                                scaleopt: str = 'unbiased') -> neo.AnalogSignal:
     r"""
     Computes an estimator of the cross-correlation function
@@ -392,13 +393,13 @@ def cross_correlation_function(signal: neo.AnalogSignal,
     return cross_corr
 
 
-def butter(signal: neo.AnalogSignal | pq.Quantity | np.ndarray,
-           highpass_frequency: pq.Quantity | float | None = None,
-           lowpass_frequency: pq.Quantity | float | None = None,
+def butter(signal: Union[neo.AnalogSignal, pq.Quantity, np.ndarray],
+           highpass_frequency: Union[pq.Quantity, float, None] = None,
+           lowpass_frequency: Union[pq.Quantity, float, None] = None,
            order: int = 4, 
            filter_function: str = 'filtfilt',
-           sampling_frequency: pq.Quantity | float = 1.0,
-           axis: int = -1) -> neo.AnalogSignal | pq.Quantity | np.ndarray:
+           sampling_frequency: Union[pq.Quantity, float] = 1.0,
+           axis: int = -1) -> Union[neo.AnalogSignal, pq.Quantity, np.ndarray]:
     """
     Butterworth filtering function for `neo.AnalogSignal`.
 
@@ -568,10 +569,10 @@ def butter(signal: neo.AnalogSignal | pq.Quantity | np.ndarray,
     return filtered_data
 
 
-def wavelet_transform(signal: neo.AnalogSignal | np.ndarray | list,
-                      frequency: float | list[float],
+def wavelet_transform(signal: Union[neo.AnalogSignal, np.ndarray, list],
+                      frequency: Union[float, list[float]],
                       n_cycles: float = 6.0,
-                      sampling_frequency: float | pq.Quantity = 1.0,
+                      sampling_frequency: Union[float, pq.Quantity] = 1.0,
                       zero_padding: bool = True) -> np.ndarray:
     r"""
     Compute the wavelet transform of a given signal with Morlet mother
@@ -743,7 +744,7 @@ def wavelet_transform(signal: neo.AnalogSignal | np.ndarray | list,
 
 
 def hilbert(signal: neo.AnalogSignal, 
-            padding: str | int | None = 'nextpow') -> neo.AnalogSignal:
+            padding: Union[str, int, None] = 'nextpow') -> neo.AnalogSignal:
     """
     Apply a Hilbert transform to a `neo.AnalogSignal` object in order to
     obtain its (complex) analytic signal.
@@ -852,10 +853,10 @@ def hilbert(signal: neo.AnalogSignal,
 
 
 def rauc(signal: neo.AnalogSignal,
-         baseline: pq.Quantity | str | None = None,
-         bin_duration: pq.Quantity | None = None,
-         t_start: pq.Quantity | None = None,
-         t_stop: pq.Quantity | None = None) -> pq.Quantity | neo.AnalogSignal:
+         baseline: Union[pq.Quantity, str, None] = None,
+         bin_duration: Union[pq.Quantity, None] = None,
+         t_start: Union[pq.Quantity, None] = None,
+         t_stop: Union[pq.Quantity, None] = None) -> Union[pq.Quantity, neo.AnalogSignal]:
     """
     Calculate the rectified area under the curve (RAUC) for a
     `neo.AnalogSignal`.
