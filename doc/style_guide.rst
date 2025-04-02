@@ -452,7 +452,7 @@ Class docstrings follow function docstring format. Here is an example.
         <!-- This section is rarely used in class docstrings, but often in
         function docs. Follow the general recommendation of numpydoc.
         If there is more than one returned value, use variable names for the
-        returned value, like `error_matrix` below. -->
+        returned value, like `error_matrix` below. If there is just one return, use `out`. -->
         error_matrix : np.ndarray
             A matrix is stored in a variable called `error_matrix`, containing
             errors estimated from some calculations. The function "return"
