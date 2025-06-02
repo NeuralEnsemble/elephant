@@ -214,7 +214,7 @@ def mean_firing_rate(spiketrain, t_start=None, t_stop=None, axis=None):
     --------
     >>> from elephant import statistics
     >>> statistics.mean_firing_rate([0.3, 4.5, 6.7, 9.3])
-    np.float64(0.4301075268817204)
+    0.4301075268817204
 
     """
     if isinstance(spiketrain, neo.SpikeTrain) and t_start is None \
@@ -325,7 +325,7 @@ def fanofactor(spiketrains, warn_tolerance=0.1 * pq.ms):
     ...     neo.SpikeTrain([1.4, 3.3, 8.2], t_stop=10, units='s')
     ... ]
     >>> statistics.fanofactor(spiketrains)
-    np.float64(0.07142857142857142)
+    0.07142857142857142
 
     """
     # Build array of spike counts (one per spike train)
@@ -427,7 +427,7 @@ def cv2(time_intervals, with_nan=False):
     --------
     >>> from elephant import statistics
     >>> statistics.cv2([0.3, 4.5, 6.7, 9.3])
-    np.float64(0.8226190476190478)
+    0.8226190476190478
 
     """
     # convert to array, cast to float
@@ -495,7 +495,7 @@ def lv(time_intervals, with_nan=False):
     --------
     >>> from elephant import statistics
     >>> statistics.lv([0.3, 4.5, 6.7, 9.3])
-    np.float64(0.8306154336734695)
+    0.8306154336734695
 
     """
     # convert to array, cast to float
@@ -569,7 +569,7 @@ def lvr(time_intervals, R=5*pq.ms, with_nan=False):
     --------
     >>> from elephant import statistics
     >>> statistics.lvr([0.3, 4.5, 6.7, 9.3], R=0.005)
-    np.float64(0.833907445980624)
+    0.833907445980624
     """
     if isinstance(R, pq.Quantity):
         R = R.rescale('ms').magnitude

@@ -58,7 +58,7 @@ def waveform_width(waveform, cutoff=0.75):
     --------
     >>> from elephant.waveform_features import waveform_width
     >>> waveform_width([20, 25, 10, -5, -2, 7, 15], cutoff=0.75)
-    np.int64(3)
+    3
 
     """
     waveform = np.squeeze(waveform)
@@ -116,7 +116,7 @@ def waveform_snr(waveforms):
     >>> from elephant.waveform_features import waveform_snr
     >>> waveforms = [[20, 25, 10, -5, -2, 7, 15], [17, 29, 11, -4, 0, 5, 20]]
     >>> waveform_snr(waveforms)
-    np.float64(12.249999999999998)
+    12.249999999999998
 
     """
     if isinstance(waveforms, neo.SpikeTrain):

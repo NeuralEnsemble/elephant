@@ -110,7 +110,7 @@ def hash_from_pattern(m, base=2):
 
     >>> import numpy as np
     >>> hash_from_pattern([0, 1, 1])
-    np.int64(3)
+    3
 
     >>> import numpy as np
     >>> m = np.array([[0, 1, 0, 0, 1, 1, 0, 1],
