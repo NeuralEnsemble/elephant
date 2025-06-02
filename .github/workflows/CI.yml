@@ -527,4 +527,5 @@ jobs:
       - name: Run doctests
         run: |
           source ~/test_env/bin/activate
+          printf "def pytest_configure(config):\n    import numpy as np\n    import builtins\n    np.set_printoptions(legacy='1.25')\n    builtins.np = np\n" > conftest.py
           pytest elephant --doctest-modules --ignore=elephant/test/
