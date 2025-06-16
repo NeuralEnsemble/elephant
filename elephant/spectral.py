@@ -203,14 +203,14 @@ def welch_psd(signal, n_segments=8, len_segment=None,
 
 
     """
-    # 'hanning' window was removed with release of scipy 1.9.0, it was
-    # deprecated since 1.1.0.
     if isinstance(signal,elephant.conversion.BinnedSpikeTrain):
         signal = neo.AnalogSignal(
             signal.to_array().transpose()/signal.bin_size.magnitude*pq.dimensionless,
             t_start=signal.t_start,
             sampling_period=signal.bin_size)
 
+    # 'hanning' window was removed with release of scipy 1.9.0, it was
+    # deprecated since 1.1.0.
     if window == 'hanning':
         warnings.warn("'hanning' is deprecated and was removed from scipy "
                       "with release 1.9.0. Please use 'hann' instead",
@@ -535,6 +535,12 @@ def segmented_multitaper_psd(signal, n_segments=1, len_segment=None,
     TypeError
         If `peak_resolution` is None and `num_tapers` is not an int.
     """
+    if isinstance(signal,elephant.conversion.BinnedSpikeTrain):
+        signal = neo.AnalogSignal(
+            signal.to_array().transpose()/signal.bin_size.magnitude*pq.dimensionless,
+            t_start=signal.t_start,
+            sampling_period=signal.bin_size)
+
 
     # When the input is AnalogSignal, the data is added after rolling the axis
     # for time index to the last
