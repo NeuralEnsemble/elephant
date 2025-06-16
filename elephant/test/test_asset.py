@@ -505,6 +505,7 @@ class AssetTestCase(unittest.TestCase):
 
     #  regression test Issue #481
     #  see: https://github.com/NeuralEnsemble/elephant/issues/481
+    @unittest.skipIf(HAVE_CUDA, "CUDA available, will be used instead of CPU")
     def test_asset_choose_backend_opencl(self):
         class TestClassBackend(asset._GPUBackend):
 
