@@ -34,6 +34,8 @@ __all__ = [
     "multitaper_coherence"
 ]
 
+import elephant.conversion
+
 
 def welch_psd(signal, n_segments=8, len_segment=None,
               frequency_resolution=None, overlap=0.5, fs=1.0, window='hann',
@@ -62,7 +64,7 @@ def welch_psd(signal, n_segments=8, len_segment=None,
 
     Parameters
     ----------
-    signal : neo.AnalogSignal or pq.Quantity or np.ndarray
+    signal : neo.AnalogSignal or pq.Quantity or np.ndarray or elephant.conversion.BinnedSpikeTrain
         Time series data, of which PSD is estimated. When `signal` is
         `pq.Quantity` or `np.ndarray`, sampling frequency should be given
         through the keyword argument `fs`. Otherwise, the default value is
@@ -203,6 +205,12 @@ def welch_psd(signal, n_segments=8, len_segment=None,
     """
     # 'hanning' window was removed with release of scipy 1.9.0, it was
     # deprecated since 1.1.0.
+    if isinstance(signal,elephant.conversion.BinnedSpikeTrain):
+        signal = neo.AnalogSignal(
+            signal.to_array().transpose()/signal.bin_size.magnitude*pq.dimensionless,
+            t_start=signal.t_start,
+            sampling_period=signal.bin_size)
+
     if window == 'hanning':
         warnings.warn("'hanning' is deprecated and was removed from scipy "
                       "with release 1.9.0. Please use 'hann' instead",
@@ -299,7 +307,7 @@ def multitaper_psd(signal, fs=1, nw=4, num_tapers=None, peak_resolution=None,
 
     Parameters
     ----------
-    signal : neo.AnalogSignal or pq.Quantity or np.ndarray
+    signal : neo.AnalogSignal or pq.Quantity or np.ndarray or elephant.conversion.BinnedSpikeTrain
         Time series data of which PSD is estimated. When `signal` is np.ndarray
         sampling frequency should be given through keyword argument `fs`.
         Signal should be passed as (n_channels, n_samples)
@@ -351,6 +359,12 @@ def multitaper_psd(signal, fs=1, nw=4, num_tapers=None, peak_resolution=None,
 
     # When the input is AnalogSignal, the data is added after rolling the axis
     # for time index to the last
+    if isinstance(signal,elephant.conversion.BinnedSpikeTrain):
+        signal = neo.AnalogSignal(
+            signal.to_array().transpose()/signal.bin_size.magnitude*pq.dimensionless,
+            t_start=signal.t_start,
+            sampling_period=signal.bin_size)
+
     data = np.asarray(signal)
     if isinstance(signal, neo.AnalogSignal):
         data = np.moveaxis(data, 0, 1)
