@@ -1146,10 +1146,11 @@ class _PMatNeighbors(_GPUBackend):
     """
 
     def __init__(self, filter_shape, n_largest, max_chunk_size=None,
-                 verbose=None):
+                 cuda_threads=None, verbose=None):
         super().__init__(max_chunk_size=max_chunk_size)
         self.n_largest = n_largest
         self.max_chunk_size = max_chunk_size
+        self.cuda_threads = cuda_threads
         if verbose is not None:
             warnings.warn("The 'verbose' parameter is deprecated and will be "
                           "removed in the future. Its functionality is still "
@@ -2483,7 +2484,7 @@ class ASSET(object):
             Double floating-point precision is typically x4 times slower than
             the single floating-point equivalent.
             Default: 'float'
-        cuda_threads : int, optional
+        cuda_threads : int or tuple of int, optional
             [CUDA/OpenCL performance parameter that does not influence the
             result.]
             The number of CUDA/OpenCL threads per block (in X axis) between 1
@@ -2539,11 +2540,21 @@ class ASSET(object):
 
         logger.info("Finding neighbors in probability matrix...")
 
+        # Get any override in the number of CUDA threads
+        if isinstance(cuda_threads, tuple) and len(cuda_threads) == 2:
+            jsf_threads, pmat_threads = cuda_threads
+        elif isinstance(cuda_threads, int):
+            jsf_threads = cuda_threads
+            pmat_threads = None
+        else:
+            raise ValueError("'cuda_threads' must be int or a tuple of int.")
+
         # Find for each P_ij in the probability matrix its neighbors and
         # maximize them by the maximum value 1-p_value_min
         pmat = np.asarray(pmat, dtype=np.float32)
         pmat_neighb_obj = _PMatNeighbors(filter_shape=filter_shape,
-                                         n_largest=n_largest)
+                                         n_largest=n_largest,
+                                         cuda_threads=pmat_threads)
         pmat_neighb = pmat_neighb_obj.compute(pmat)
 
         logger.info("Finding unique set of values...")
@@ -2564,7 +2575,7 @@ class ASSET(object):
                 w + 1)  # number of entries covered by kernel
         jsf = _JSFUniformOrderStat3D(n=n, d=pmat_neighb.shape[1],
                                      precision=precision,
-                                     cuda_threads=cuda_threads,
+                                     cuda_threads=jsf_threads,
                                      cuda_cwr_loops=cuda_cwr_loops,
                                      tolerance=tolerance)
         jpvmat = jsf.compute(u=pmat_neighb)
