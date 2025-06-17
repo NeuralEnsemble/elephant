@@ -808,7 +808,7 @@ class AssetTestJointProbabilityMatrixGPUThreads(unittest.TestCase):
                     cuda_threads=cuda_threads,
                 )
 
-    @unittest.skipUnless(HAVE_CUDA)
+    @unittest.skipUnless(HAVE_CUDA, "CUDA not available")
     def test_cuda_threads(self):
         os.environ["ELEPHANT_USE_CUDA"] = "1"
         os.environ["ELEPHANT_USE_OPENCL"] = "0"
@@ -822,7 +822,7 @@ class AssetTestJointProbabilityMatrixGPUThreads(unittest.TestCase):
             )
             assert_array_almost_equal(jmat, self.expected_jmat)
 
-    @unittest.skipUnless(HAVE_PYOPENCL)
+    @unittest.skipUnless(HAVE_PYOPENCL, "PyOpenCL not available")
     def test_pyopencl_threads(self):
         os.environ["ELEPHANT_USE_CUDA"] = "0"
         os.environ["ELEPHANT_USE_OPENCL"] = "1"
