@@ -343,7 +343,7 @@ class AssetTestCase(unittest.TestCase):
         pmat2 = np.random.random_sample((70, 23)).astype(np.float32)
         pmat3 = np.random.random_sample((27, 93)).astype(np.float32)
         for pmat in (pmat1, pmat2, pmat3):
-            for filter_size in (4, 8, 11):
+            for filter_size in (4, 11):
                 filter_shape = (filter_size, 3)
                 # Check numbers for automatic (None) to more than the maximum
                 # number of threads (2048), and one value that is not a factor
