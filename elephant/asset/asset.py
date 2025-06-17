@@ -1375,6 +1375,26 @@ class _PMatNeighbors(_GPUBackend):
                 # It's more efficient to make the number of threads
                 # a multiple of the warp size (32).
                 n_threads -= n_threads % device.WARP_SIZE
+
+            if logger.level == logging.DEBUG:
+                logger.debug(f"Registers per thread: {kernel.NUM_REGS}")
+
+                shared_memory = kernel.SHARED_SIZE_BYTES
+                local_memory = kernel.LOCAL_SIZE_BYTES
+                const_memory = kernel.CONST_SIZE_BYTES,
+                logger.debug(f"Memory: shared = {shared_memory}; "
+                             f"local = {local_memory}, const = {const_memory}")
+
+                logger.debug("Maximum per block: threads = "
+                             f"{device.MAX_THREADS_PER_BLOCK}; "
+                             "registers = "
+                             f"{device.MAX_REGISTERS_PER_BLOCK}; "
+                             "shared memory = "
+                             f"{device.MAX_SHARED_MEMORY_PER_BLOCK}")
+
+                logger.debug(f"Grid size: {grid_size}")
+                logger.debug(f"N threads: {n_threads}")
+
             grid_size = math.ceil(it_todo / n_threads)
             if grid_size > device.MAX_GRID_DIM_X:
                 raise ValueError("Cannot launch a CUDA kernel with "
