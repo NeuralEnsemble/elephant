@@ -1354,7 +1354,8 @@ class _PMatNeighbors(_GPUBackend):
             # needed for the kernel, to avoid exceeding the resources
             if self.cuda_threads:
                 # Override with the number in the parameter `cuda_threads`
-                n_threads = self.cuda_threads
+                n_threads = min(self.cuda_threads,
+                                device.MAX_THREADS_PER_BLOCK)
             else:
                 # Automatically determine the number of threads based on
                 # the register count.
