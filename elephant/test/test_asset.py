@@ -334,6 +334,36 @@ class AssetTestCase(unittest.TestCase):
                     array_file=Path(tmpdir) / f"test_dist_{working_memory}")
                 assert_array_equal(cmat, cmat_true)
 
+    def test_pmat_neighbors_gpu_threads(self):
+        # The number of threads must not influence the result.
+        np.random.seed(12)
+        n_largest = 3
+        pmat1 = np.random.random_sample((40, 40)).astype(np.float32)
+        np.fill_diagonal(pmat1, 0.5)
+        pmat2 = np.random.random_sample((70, 23)).astype(np.float32)
+        pmat3 = np.random.random_sample((27, 93)).astype(np.float32)
+        for pmat in (pmat1, pmat2, pmat3):
+            for filter_size in (4, 8, 11):
+                filter_shape = (filter_size, 3)
+                # Check numbers for automatic (None) to more than the maximum
+                # number of threads (2048), and one value that is not a factor
+                # of the warp size (500 % 32 != 0)
+                for n_threads in (None, 64, 128, 256, 500, 512, 1024, 2048):
+                    with warnings.catch_warnings():
+                        # ignore even filter sizes
+                        warnings.simplefilter('ignore', UserWarning)
+                        pmat_neigh = asset._PMatNeighbors(
+                            filter_shape=filter_shape, n_largest=n_largest,
+                            cuda_threads=n_threads
+                        )
+                    lmat_true = pmat_neigh.cpu(pmat)
+                    if HAVE_PYOPENCL:
+                        lmat_opencl = pmat_neigh.pyopencl(pmat)
+                        assert_array_almost_equal(lmat_opencl, lmat_true)
+                    if HAVE_CUDA:
+                        lmat_cuda = pmat_neigh.pycuda(pmat)
+                        assert_array_almost_equal(lmat_cuda, lmat_true)
+
     def test_pmat_neighbors_gpu(self):
         np.random.seed(12)
         n_largest = 3
