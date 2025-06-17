@@ -760,6 +760,91 @@ class TestJSFUniformOrderStat3D(unittest.TestCase):
         self.assertWarns(UserWarning, jsf.compute, u)
 
 
+@unittest.skipUnless(HAVE_SKLEARN and (HAVE_CUDA or HAVE_PYOPENCL),
+                     'requires sklearn and a GPU')
+class AssetTestJointProbabilityMatrixGPUThreads(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        # Save the state of the environment variables
+        cls.use_cuda = os.getenv("ELEPHANT_USE_CUDA", None)
+        cls.use_opencl = os.getenv("ELEPHANT_USE_OPENCL", None)
+
+        # Force using CPU to compute expected values
+        os.environ["ELEPHANT_USE_CUDA"] = "0"
+        os.environ["ELEPHANT_USE_OPENCL"] = "0"
+
+        # Generate spike train data
+        np.random.seed(1)
+        n_spiketrains = 50
+        spiketrains = [homogeneous_poisson_process(rate, t_stop=100 * pq.ms)
+                       for _ in range(n_spiketrains)]
+
+        # Initialize ASSET object and compute IMAT/PMAT
+        bin_size = 3 * pq.ms
+        kernel_width = 9 * pq.ms
+
+        asset_obj = asset.ASSET(spiketrains, bin_size=bin_size)
+        imat = asset_obj.intersection_matrix()
+        cls.pmat = asset_obj.probability_matrix_analytical(
+            kernel_width=kernel_width)
+
+        cls.filter_shape = (5, 1)
+        cls.n_largest = 3
+        cls.expected_jmat = asset_obj.joint_probability_matrix(
+            cls.pmat,
+            filter_shape=cls.filter_shape,
+            n_largest=cls.n_largest,
+        )
+        cls.asset_obj = asset_obj
+
+    def test_invalid_threads_parameter(self):
+        for cuda_threads in ("64", (64, 64, 64)):
+            with self.assertRaises(ValueError):
+                self.asset_obj.joint_probability_matrix(
+                    self.pmat,
+                    filter_shape=self.filter_shape,
+                    n_largest=self.n_largest,
+                    cuda_threads=cuda_threads,
+                )
+
+    @unittest.skipUnless(HAVE_CUDA)
+    def test_cuda_threads(self):
+        os.environ["ELEPHANT_USE_CUDA"] = "1"
+        os.environ["ELEPHANT_USE_OPENCL"] = "0"
+
+        for cuda_threads in (64, (64, None), (64, 512)):
+            jmat = self.asset_obj.joint_probability_matrix(
+                self.pmat,
+                filter_shape=self.filter_shape,
+                n_largest=self.n_largest,
+                cuda_threads=cuda_threads,
+            )
+            assert_array_almost_equal(jmat, self.expected_jmat)
+
+    @unittest.skipUnless(HAVE_PYOPENCL)
+    def test_pyopencl_threads(self):
+        os.environ["ELEPHANT_USE_CUDA"] = "0"
+        os.environ["ELEPHANT_USE_OPENCL"] = "1"
+
+        for cuda_threads in (64, (64, None), (64, 512)):
+            jmat = self.asset_obj.joint_probability_matrix(
+                self.pmat,
+                filter_shape=self.filter_shape,
+                n_largest=self.n_largest,
+                cuda_threads=cuda_threads,
+            )
+            assert_array_almost_equal(jmat, self.expected_jmat)
+
+    @classmethod
+    def cleanUpClass(cls):
+        # Restore environment flags
+        if cls.use_cuda:
+            os.environ["ELEPHANT_USE_CUDA"] = cls.use_cuda
+        if cls.use_opencl:
+            os.environ["ELEPHANT_USE_OPENCL"] = cls.use_opencl
+
+
 @unittest.skipUnless(HAVE_SKLEARN, 'requires sklearn')
 class AssetTestIntegration(unittest.TestCase):
     def setUp(self):
