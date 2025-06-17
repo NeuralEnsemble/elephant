@@ -1291,7 +1291,6 @@ class _PMatNeighbors(_GPUBackend):
         self._check_input(mat)
 
         device = pycuda.autoinit.device
-        n_threads = device.MAX_THREADS_PER_BLOCK
 
         filt_size = self.filter_kernel.shape[0]
         filt_rows, filt_cols = self.filter_kernel.nonzero()
@@ -1349,13 +1348,39 @@ class _PMatNeighbors(_GPUBackend):
 
             drv.Context.synchronize()
 
+            kernel = module.get_function("pmat_neighbors")
+
+            # Adjust number of threads depending on the number of registers
+            # needed for the kernel, to avoid exceeding the resources
+            if self.cuda_threads:
+                # Override with the number in the parameter `cuda_threads`
+                n_threads = self.cuda_threads
+            else:
+                # Automatically determine the number of threads based on
+                # the register count.
+                regs_per_thread = kernel.NUM_REGS
+                max_regs_per_block = device.MAX_REGISTERS_PER_BLOCK
+                max_threads_by_regs = max_regs_per_block // regs_per_thread
+
+                # A safety margin of 10% with respect to the number of threads
+                # computed for the kernel is used in order to account for a
+                # fraction of registers that might be used by the GPU for
+                # control purposes.
+                max_threads_by_regs = int(max_threads_by_regs * 0.9)
+
+                n_threads = min(max_threads_by_regs,
+                                device.MAX_THREADS_PER_BLOCK)
+
+            if n_threads > device.WARP_SIZE:
+                # It's more efficient to make the number of threads
+                # a multiple of the warp size (32).
+                n_threads -= n_threads % device.WARP_SIZE
             grid_size = math.ceil(it_todo / n_threads)
             if grid_size > device.MAX_GRID_DIM_X:
                 raise ValueError("Cannot launch a CUDA kernel with "
                                  f"{grid_size} num. of blocks. Adjust the "
                                  "'max_chunk_size' parameter.")
 
-            kernel = module.get_function("pmat_neighbors")
             kernel(lmat_gpu.gpudata, mat_gpu, grid=(grid_size, 1),
                    block=(n_threads, 1, 1))
 
