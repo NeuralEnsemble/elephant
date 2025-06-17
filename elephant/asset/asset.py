@@ -2538,6 +2538,18 @@ class ASSET(object):
             Old GPUs (Tesla K80) perform faster with `cuda_threads` larger
             than 64 while new series (Tesla T4) with capabilities 6.x and more
             work best with 32 threads.
+            The computation of the joint probability matrix consists of two
+            GPU-accelerated steps. In the first step, the optimal number of
+            CUDA threads is determined automatically. The `cuda_threads`
+            parameter primarily controls the number of threads used in the
+            second (main) computation step. However, if the `n_largest`
+            parameter is set to a high value, the first step may fail with a
+            "too many resources" CUDA error due to excessive register usage.
+            To avoid this, you can explicitly specify the number of threads
+            for both steps using a tuple for `cuda_threads`. In this case, the
+            first element of the tuple sets the thread count for the main
+            computation, and the second element overrides the automatically
+            determined thread count for the first step.
             Default: 64
         cuda_cwr_loops : int, optional
             [CUDA/OpenCL performance parameter that does not influence the
