@@ -1376,12 +1376,14 @@ class _PMatNeighbors(_GPUBackend):
                 # a multiple of the warp size (32).
                 n_threads -= n_threads % device.WARP_SIZE
 
+            grid_size = math.ceil(it_todo / n_threads)
+
             if logger.level == logging.DEBUG:
                 logger.debug(f"Registers per thread: {kernel.NUM_REGS}")
 
-                shared_memory = kernel.SHARED_SIZE_BYTES
-                local_memory = kernel.LOCAL_SIZE_BYTES
-                const_memory = kernel.CONST_SIZE_BYTES,
+                shared_memory = kernel.get_attribute(drv.function_attribute.SHARED_SIZE_BYTES)
+                local_memory = kernel.get_attribute(drv.function_attribute.LOCAL_SIZE_BYTES)
+                const_memory = kernel.get_attribute(drv.function_attribute.CONST_SIZE_BYTES)
                 logger.debug(f"Memory: shared = {shared_memory}; "
                              f"local = {local_memory}, const = {const_memory}")
 
@@ -1392,10 +1394,11 @@ class _PMatNeighbors(_GPUBackend):
                              "shared memory = "
                              f"{device.MAX_SHARED_MEMORY_PER_BLOCK}")
 
-                logger.debug(f"Grid size: {grid_size}")
+                logger.debug(f"It_todo: {it_todo}")
                 logger.debug(f"N threads: {n_threads}")
+                logger.debug(f"Max grid X: {device.MAX_GRID_DIM_X}")
+                logger.debug(f"Grid size: {grid_size}")
 
-            grid_size = math.ceil(it_todo / n_threads)
             if grid_size > device.MAX_GRID_DIM_X:
                 raise ValueError("Cannot launch a CUDA kernel with "
                                  f"{grid_size} num. of blocks. Adjust the "
