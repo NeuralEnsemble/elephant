@@ -777,6 +777,7 @@ class AssetTestJointProbabilityMatrixGPUThreads(unittest.TestCase):
         # Generate spike train data
         np.random.seed(1)
         n_spiketrains = 50
+        rate = 50 * pq.Hz
         spiketrains = [homogeneous_poisson_process(rate, t_stop=100 * pq.ms)
                        for _ in range(n_spiketrains)]
 
