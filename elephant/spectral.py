@@ -205,7 +205,7 @@ def welch_psd(signal, n_segments=8, len_segment=None,
     """
     if isinstance(signal,elephant.conversion.BinnedSpikeTrain):
         signal = neo.AnalogSignal(
-            signal.to_array().transpose()/signal.bin_size.magnitude*pq.dimensionless,
+            signal.to_array().transpose()/signal.bin_size.rescale(pq.s).magnitude*pq.dimensionless,
             t_start=signal.t_start,
             sampling_period=signal.bin_size)
 
@@ -361,7 +361,7 @@ def multitaper_psd(signal, fs=1, nw=4, num_tapers=None, peak_resolution=None,
     # for time index to the last
     if isinstance(signal,elephant.conversion.BinnedSpikeTrain):
         signal = neo.AnalogSignal(
-            signal.to_array().transpose()/signal.bin_size.magnitude*pq.dimensionless,
+            signal.to_array().transpose()/signal.bin_size.rescale(pq.s).magnitude*pq.dimensionless,
             t_start=signal.t_start,
             sampling_period=signal.bin_size)
 
@@ -537,7 +537,7 @@ def segmented_multitaper_psd(signal, n_segments=1, len_segment=None,
     """
     if isinstance(signal,elephant.conversion.BinnedSpikeTrain):
         signal = neo.AnalogSignal(
-            signal.to_array().transpose()/signal.bin_size.magnitude*pq.dimensionless,
+            signal.to_array().transpose()/signal.bin_size.rescale(pq.s).magnitude*pq.dimensionless,
             t_start=signal.t_start,
             sampling_period=signal.bin_size)
 
