@@ -1381,9 +1381,9 @@ class _PMatNeighbors(_GPUBackend):
             if logger.level == logging.DEBUG:
                 logger.debug(f"Registers per thread: {kernel.NUM_REGS}")
 
-                shared_memory = kernel.get_attribute(drv.function_attribute.SHARED_SIZE_BYTES)
-                local_memory = kernel.get_attribute(drv.function_attribute.LOCAL_SIZE_BYTES)
-                const_memory = kernel.get_attribute(drv.function_attribute.CONST_SIZE_BYTES)
+                shared_memory = kernel.SHARED_SIZE_BYTES
+                local_memory = kernel.LOCAL_SIZE_BYTES
+                const_memory = kernel.CONST_SIZE_BYTES
                 logger.debug(f"Memory: shared = {shared_memory}; "
                              f"local = {local_memory}, const = {const_memory}")
 
