@@ -842,8 +842,13 @@ class AssetTestJointProbabilityMatrixGPUThreads(unittest.TestCase):
         # Restore environment flags
         if cls.use_cuda:
             os.environ["ELEPHANT_USE_CUDA"] = cls.use_cuda
+        else:
+            os.environ.pop("ELEPHANT_USE_CUDA")
+
         if cls.use_opencl:
             os.environ["ELEPHANT_USE_OPENCL"] = cls.use_opencl
+        else:
+            os.environ.pop("ELEPHANT_USE_OPENCL")
 
 
 @unittest.skipUnless(HAVE_SKLEARN, 'requires sklearn')
