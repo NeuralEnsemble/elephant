@@ -872,9 +872,9 @@ class _JSFUniformOrderStat3D(_GPUBackend):
                 # grid_size must be at least l_num_blocks
                 grid_size = l_num_blocks
 
-                logger.info(f"[Joint prob. matrix] it_todo={it_todo}, "
-                            f"grid_size={grid_size}, L_BLOCK={l_block}, "
-                            f"N_THREADS={n_threads}")
+            logger.info(f"[Joint prob. matrix] it_todo={it_todo}, "
+                        f"grid_size={grid_size}, L_BLOCK={l_block}, "
+                        f"N_THREADS={n_threads}")
 
             # OpenCL defines unsigned long as uint64, therefore we're adding
             # the LU suffix, not LLU, which would indicate unsupported uint128
@@ -962,9 +962,9 @@ class _JSFUniformOrderStat3D(_GPUBackend):
                 # grid_size must be at least l_num_blocks
                 grid_size = l_num_blocks
 
-                logger.info(f"[Joint prob. matrix] it_todo={it_todo}, "
-                            f"grid_size={grid_size}, L_BLOCK={l_block}, "
-                            f"N_THREADS={n_threads}")
+            logger.info(f"[Joint prob. matrix] it_todo={it_todo}, "
+                        f"grid_size={grid_size}, L_BLOCK={l_block}, "
+                        f"N_THREADS={n_threads}")
 
             asset_cu = self._compile_template(
                 template_name="joint_pmat.cu",
