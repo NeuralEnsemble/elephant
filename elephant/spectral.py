@@ -204,10 +204,11 @@ def welch_psd(signal, n_segments=8, len_segment=None,
 
     """
     if isinstance(signal,elephant.conversion.BinnedSpikeTrain):
-        signal = neo.AnalogSignal(
-            signal.to_array().transpose()/signal.bin_size.rescale(pq.s).magnitude*pq.dimensionless,
-            t_start=signal.t_start,
-            sampling_period=signal.bin_size)
+        # signal = neo.AnalogSignal(
+        #     signal.to_array().transpose()/signal.bin_size.rescale(pq.s).magnitude*pq.dimensionless,
+        #     t_start=signal.t_start,
+        #     sampling_period=signal.bin_size)
+        signal = signal.to_analog_signal(scaling="normalized")
 
     # 'hanning' window was removed with release of scipy 1.9.0, it was
     # deprecated since 1.1.0.
@@ -360,10 +361,11 @@ def multitaper_psd(signal, fs=1, nw=4, num_tapers=None, peak_resolution=None,
     # When the input is AnalogSignal, the data is added after rolling the axis
     # for time index to the last
     if isinstance(signal,elephant.conversion.BinnedSpikeTrain):
-        signal = neo.AnalogSignal(
-            signal.to_array().transpose()/signal.bin_size.rescale(pq.s).magnitude*pq.dimensionless,
-            t_start=signal.t_start,
-            sampling_period=signal.bin_size)
+        # signal = neo.AnalogSignal(
+        #     signal.to_array().transpose()/signal.bin_size.rescale(pq.s).magnitude*pq.dimensionless,
+        #     t_start=signal.t_start,
+        #     sampling_period=signal.bin_size)
+        signal = signal.to_analog_signal(scaling="normalized")
 
     data = np.asarray(signal)
     if isinstance(signal, neo.AnalogSignal):
@@ -536,10 +538,11 @@ def segmented_multitaper_psd(signal, n_segments=1, len_segment=None,
         If `peak_resolution` is None and `num_tapers` is not an int.
     """
     if isinstance(signal,elephant.conversion.BinnedSpikeTrain):
-        signal = neo.AnalogSignal(
-            signal.to_array().transpose()/signal.bin_size.rescale(pq.s).magnitude*pq.dimensionless,
-            t_start=signal.t_start,
-            sampling_period=signal.bin_size)
+        # signal = neo.AnalogSignal(
+        #     signal.to_array().transpose()/signal.bin_size.rescale(pq.s).magnitude*pq.dimensionless,
+        #     t_start=signal.t_start,
+        #     sampling_period=signal.bin_size)
+        signal = signal.to_analog_signal(scaling="normalized")
 
 
     # When the input is AnalogSignal, the data is added after rolling the axis
