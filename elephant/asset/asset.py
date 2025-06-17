@@ -1982,6 +1982,19 @@ class ASSET(object):
 
           fully disjoint.
 
+    Notes
+    -----
+        To control the verbosity of log messages throughout the ASSET analysis,
+        please use the module's logger that is based on the standard `logging`
+        module. Logging is turned on by default with level INFO.
+        To restrict logging messages, use higher logging levels such as
+        WARNING or ERROR. To enable detailed debugging messages, use the lower
+        level DEBUG. The code below shows how to set the ASSET logger level:
+
+        >>> import logging
+        >>> from elephant.asset.asset import logger as asset_logger
+        >>> asset_logger.set_level(logging.WARNING)
+
     See Also
     --------
     :class:`elephant.conversion.BinnedSpikeTrain`
