@@ -27,9 +27,15 @@ def _create_trials_block(n_trials: int = 0,
                                                t_stop=1000 * pq.ms
                                                ).generate_n_spiketrains(
             n_spiketrains=n_spiketrains)
+        for idx, st in enumerate(spiketrains):
+            st.name = f"Spiketrain {idx}"
+            st.description = f"Trial {trial}"
+
         analogsignals = [AnalogSignal(signal=[.01, 3.3, 9.3], units='uV',
-                                      sampling_rate=1 * pq.Hz)
-                         for _ in range(n_analogsignals)]
+                                      sampling_rate=1 * pq.Hz,
+                                      name=f"Signal {idx}",
+                                      description=f"Trial {trial}")
+                         for idx in range(n_analogsignals)]
         for spiketrain in spiketrains:
             segment.spiketrains.append(spiketrain)
         for analogsignal in analogsignals:
