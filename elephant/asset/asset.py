@@ -1993,7 +1993,7 @@ class ASSET(object):
 
         >>> import logging
         >>> from elephant.asset.asset import logger as asset_logger
-        >>> asset_logger.set_level(logging.WARNING)
+        >>> asset_logger.setLevel(logging.WARNING)
 
     See Also
     --------
