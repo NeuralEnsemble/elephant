@@ -233,6 +233,58 @@ class Trials:
             the trial.
         """
 
+    @abstractmethod
+    def get_spiketrains_trial_by_trial(self, spiketrain_id: int) -> (
+                                       neo.core.spiketrainlist.SpikeTrainList):
+        """
+        Retrieve a spike train across all its trial repetitions.
+
+        This method returns a list containing :class:`neo.core.SpikeTrain`
+        objects corresponding to the same spike train (e.g., from a consistent
+        recording channel or neuronal source) across multiple trials.
+
+        Parameters
+        ----------
+        spiketrain_id : int
+            Index of the spike train to retrieve across trials. Indexing
+            starts at 0, so `spiketrain_id == 0` corresponds to the first
+            spike train in the trial data.
+
+        Returns
+        -------
+        list of :class:`neo.core.SpikeTrain`
+            A list-like container with the :class:`neo.core.SpikeTrain`
+            objects for the specified `spiketrain_id`, ordered from the first
+            trial (ID 0) to the last (ID `n_trials - 1`).
+        """
+        pass
+
+    @abstractmethod
+    def get_analogsignals_trial_by_trial(self, signal_id: int
+                                         ) -> List[neo.core.AnalogSignal]:
+        """
+        Retrieve an analog signal across all its trial repetitions.
+
+        This method returns a list containing :class:`neo.core.AnalogSignal`
+        objects corresponding to a continuous signal recorded from a consistent
+        recording channel or neuronal source across multiple trials.
+
+        Parameters
+        ----------
+        signal_id : int
+            Index of the analog signal to retrieve across trials. Indexing
+            starts at 0, so `signal_id == 0` corresponds to the first
+            analog signal in the trial data.
+
+        Returns
+        -------
+        list of :class:`neo.core.AnalogSignal`
+            A list with the :class:`neo.core.AnalogSignal` objects for the
+            specified `signal_id`, ordered from the first trial (ID 0) to the
+            last (ID `n_trials - 1`).
+        """
+        pass
+
 
 class TrialsFromBlock(Trials):
     """
