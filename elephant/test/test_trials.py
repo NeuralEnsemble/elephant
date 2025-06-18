@@ -148,8 +148,8 @@ class TrialsFromBlockTestCase(unittest.TestCase):
             self.trial_object.get_spiketrains_from_trial_as_list(0)[0],
             neo.core.SpikeTrain)
 
-    def test_trials_from_list_get_spiketrains_from_trial_as_segment(self
-                                                                    ) -> None:
+    def test_trials_from_block_get_spiketrains_from_trial_as_segment(self
+                                                                     ) -> None:
         """
         Test get spiketrains from trial as segment
         """
