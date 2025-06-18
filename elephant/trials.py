@@ -41,6 +41,7 @@ In the release, the classes :class:`TrialsFromBlock` and
 from abc import ABCMeta, abstractmethod
 from typing import List
 
+import numpy as np
 import neo.utils
 from neo.core import Segment, Block
 from neo.core.spiketrainlist import SpikeTrainList
@@ -309,6 +310,12 @@ class TrialsFromBlock(Trials):
             segment.spiketrains.append(spiketrain)
         return segment
 
+    def get_spiketrains_trial_by_trial(self, spiketrain_id: int) -> (
+            neo.core.spiketrainlist.SpikeTrainList):
+        # Return a list of all spike train repetitions across trials
+        return SpikeTrainList(items=[segment.spiketrains[spiketrain_id] for
+                                     segment in self.block.segments])
+
     def get_analogsignals_from_trial_as_list(self, trial_id: int) -> (
             List[neo.core.AnalogSignal]):
         # Return a list of all analogsignals from a trial
@@ -323,6 +330,12 @@ class TrialsFromBlock(Trials):
                 trial_id):
             segment.analogsignals.append(analogsignal)
         return segment
+
+    def get_analogsignals_trial_by_trial(self, signal_id: int) -> (
+            List[neo.core.AnalogSignal]):
+        # Return a list of all analog signal repetitions across trials
+        return [segment.analogsignals[signal_id]
+                for segment in self.block.segments]
 
 
 class TrialsFromLists(Trials):
@@ -345,6 +358,15 @@ class TrialsFromLists(Trials):
         # (actual documentation is in class documentation, see above!)
         self.list_of_trials = list_of_trials
         super().__init__(**kwargs)
+
+        # Save indexes for quick search of spike trains or analog signals
+        # in a trial. The order of elements in the inner list must be
+        # consistent across all trials (using the first list, corresponding
+        # to the first trial, to fetch the indexes).
+        is_spiketrain = np.array([isinstance(data_element, neo.SpikeTrain)
+                                  for data_element in list_of_trials[0]])
+        self._spiketrain_index = is_spiketrain.nonzero()[0]
+        self._analogsignal_index = (~is_spiketrain).nonzero()[0]
 
     def __getitem__(self, trial_number: int) -> neo.core.Segment:
         # Get a specific trial by number
@@ -410,6 +432,13 @@ class TrialsFromLists(Trials):
             segment.spiketrains.append(spiketrain)
         return segment
 
+    def get_spiketrains_trial_by_trial(self, spiketrain_id: int) -> (
+            neo.core.spiketrainlist.SpikeTrainList):
+        # Return a list of all spike train repetitions across trials
+        list_idx = self._spiketrain_index[spiketrain_id]
+        return SpikeTrainList(items=[trial[list_idx]
+                                     for trial in self.list_of_trials])
+
     def get_analogsignals_from_trial_as_list(self, trial_id: int) -> (
             List[neo.core.AnalogSignal]):
         # Return a list of all analogsignals from a trial
@@ -425,3 +454,9 @@ class TrialsFromLists(Trials):
                 trial_id):
             segment.analogsignals.append(analogsignal)
         return segment
+
+    def get_analogsignals_trial_by_trial(self, signal_id: int) -> (
+            List[neo.core.AnalogSignal]):
+        # Return a list of all analog signal repetitions across trials
+        list_idx = self._analogsignal_index[signal_id]
+        return [trial[list_idx] for trial in self.list_of_trials]
