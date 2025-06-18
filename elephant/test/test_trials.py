@@ -183,6 +183,70 @@ class TrialsFromBlockTestCase(unittest.TestCase):
             self.trial_object.get_analogsignals_from_trial_as_segment(
                 0).analogsignals[0], neo.core.AnalogSignal)
 
+    def test_trials_from_block_get_spiketrains_trial_by_trial(self) -> None:
+        """
+        Test accessing all the SpikeTrain objects corresponding to the
+        repetitions of a spiketrain across the trials.
+        """
+        for st_id in (0, 1):
+            spiketrains = self.trial_object.get_spiketrains_trial_by_trial(st_id)
+
+            # Return is neo.SpikeTrainList
+            self.assertIsInstance(spiketrains,
+                                  neo.core.spiketrainlist.SpikeTrainList)
+
+            # All elements are neo.SpikeTrain
+            self.assertTrue(all(map(lambda x: isinstance(x, neo.SpikeTrain),
+                                    spiketrains)
+                                )
+                            )
+
+            # Data for all trials is returned
+            self.assertEqual(len(spiketrains), self.trial_object.n_trials)
+
+            # Each trial-specific SpikeTrain object is from the same spiketrain
+            self.assertTrue(all([st.name == f"Spiketrain {st_id}"
+                                 for st in spiketrains]
+                                )
+                            )
+
+            # Order of spiketrains is the order of the trials
+            expected_trials = [f"Trial {i}"
+                               for i in range(self.trial_object.n_trials)]
+            self.assertListEqual([st.description for st in spiketrains],
+                                 expected_trials)
+
+    def test_trials_from_block_get_analogsignals_trial_by_trial(self) -> None:
+        """
+        Test accessing all the AnalogSignal objects corresponding to the
+        repetitions of an analog signal across the trials.
+        """
+        for as_id in (0, 1):
+            signals = self.trial_object.get_analogsignals_trial_by_trial(as_id)
+
+            # Return is list
+            self.assertIsInstance(signals, list)
+
+            # All elements are neo.AnalogSignal
+            self.assertTrue(all(map(lambda x: isinstance(x, neo.AnalogSignal),
+                                    signals)
+                                )
+                            )
+            # Data for all trials returned
+            self.assertEqual(len(signals), self.trial_object.n_trials)
+
+            # Each trial-specific AnalogSignal object is from the same signal
+            self.assertTrue(all([signal.name == f"Signal {as_id}"
+                                 for signal in signals]
+                                )
+                            )
+
+            # Order in the list is the order of the trials
+            expected_trials = [f"Trial {i}"
+                               for i in range(self.trial_object.n_trials)]
+            self.assertListEqual([signal.description for signal in signals],
+                                 expected_trials)
+
 
 class TrialsFromListTestCase(unittest.TestCase):
     """Tests for elephant.trials.TrialsFromList class"""
@@ -333,6 +397,71 @@ class TrialsFromListTestCase(unittest.TestCase):
         self.assertIsInstance(
             self.trial_object.get_analogsignals_from_trial_as_segment(
                 0).analogsignals[0], neo.core.AnalogSignal)
+
+    def test_trials_from_list_get_spiketrains_trial_by_trial(self) -> None:
+        """
+        Test accessing all the SpikeTrain objects corresponding to the
+        repetitions of a spiketrain across the trials.
+        """
+        for st_id in (0, 1):
+            spiketrains = self.trial_object.get_spiketrains_trial_by_trial(
+                st_id)
+
+            # Return is neo.SpikeTrainList
+            self.assertIsInstance(spiketrains,
+                                  neo.core.spiketrainlist.SpikeTrainList)
+
+            # All elements are neo.SpikeTrain
+            self.assertTrue(all(map(lambda x: isinstance(x, neo.SpikeTrain),
+                                    spiketrains)
+                                )
+                            )
+
+            # Data for all trials is returned
+            self.assertEqual(len(spiketrains), self.trial_object.n_trials)
+
+            # Each trial-specific SpikeTrain object is from the same spiketrain
+            self.assertTrue(all([st.name == f"Spiketrain {st_id}"
+                                 for st in spiketrains]
+                                )
+                            )
+
+            # Order of spiketrains is the order of the trials
+            expected_trials = [f"Trial {i}"
+                               for i in range(self.trial_object.n_trials)]
+            self.assertListEqual([st.description for st in spiketrains],
+                                 expected_trials)
+
+    def test_trials_from_list_get_analogsignals_trial_by_trial(self) -> None:
+        """
+        Test accessing all the AnalogSignal objects corresponding to the
+        repetitions of an analog signal across the trials.
+        """
+        for as_id in (0, 1):
+            signals = self.trial_object.get_analogsignals_trial_by_trial(as_id)
+
+            # Return is list
+            self.assertIsInstance(signals, list)
+
+            # All elements are neo.AnalogSignal
+            self.assertTrue(all(map(lambda x: isinstance(x, neo.AnalogSignal),
+                                    signals)
+                                )
+                            )
+            # Data for all trials returned
+            self.assertEqual(len(signals), self.trial_object.n_trials)
+
+            # Each trial-specific AnalogSignal object is from the same signal
+            self.assertTrue(all([signal.name == f"Signal {as_id}"
+                                 for signal in signals]
+                                )
+                            )
+
+            # Order in the list is the order of the trials
+            expected_trials = [f"Trial {i}"
+                               for i in range(self.trial_object.n_trials)]
+            self.assertListEqual([signal.description for signal in signals],
+                                 expected_trials)
 
 
 if __name__ == '__main__':
