@@ -20,21 +20,21 @@ spectrum).
 
 import warnings
 
-import neo
 import numpy as np
 import quantities as pq
 import scipy.signal
+import neo
+import elephant.conversion
 
 __all__ = [
     "welch_psd",
     "welch_coherence",
     "multitaper_psd",
+    "segmented_multitaper_psd",
     "multitaper_cross_spectrum",
     "segmented_multitaper_cross_spectrum",
     "multitaper_coherence"
 ]
-
-import elephant.conversion
 
 
 def welch_psd(signal, n_segments=8, len_segment=None,
