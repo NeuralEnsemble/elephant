@@ -415,10 +415,14 @@ class TrialsFromLists(Trials):
         # in a trial. The order of elements in the inner list must be
         # consistent across all trials (using the first list, corresponding
         # to the first trial, to fetch the indexes).
-        is_spiketrain = np.array([isinstance(data_element, neo.SpikeTrain)
-                                  for data_element in list_of_trials[0]])
-        self._spiketrain_index = is_spiketrain.nonzero()[0]
-        self._analogsignal_index = (~is_spiketrain).nonzero()[0]
+        if list_of_trials:
+            is_spiketrain = np.array([isinstance(data_element, neo.SpikeTrain)
+                                     for data_element in list_of_trials[0]])
+            self._spiketrain_index = is_spiketrain.nonzero()[0]
+            self._analogsignal_index = (~is_spiketrain).nonzero()[0]
+        else:
+            self._spiketrain_index = []
+            self._analogsignal_index = []
 
     def __getitem__(self, trial_number: int) -> neo.core.Segment:
         # Get a specific trial by number
