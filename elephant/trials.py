@@ -35,7 +35,6 @@ In the current implementation, classes :class:`TrialsFromBlock` and
     TrialsFromBlock
     TrialsFromLists
 
-:copyright: Copyright 2014-2024 by the Elephant team, see `doc/authors.rst`.
 Tutorial
 --------
 For a detailed example on the classes usage and trial handling for analyses
@@ -47,6 +46,7 @@ Run tutorial interactively:
    :target: https://mybinder.org/v2/gh/NeuralEnsemble/elephant/master
             ?filepath=doc/tutorials/trials.ipynb
 
+:copyright: Copyright 2014-2025 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
