@@ -143,6 +143,24 @@ class TrialsFromBlockTestCase(unittest.TestCase):
         Run before every test:
         """
 
+    def test_deprecations(self):
+        trial_object = self.trial_object
+        with self.assertWarns(DeprecationWarning):
+            trial_object.get_trial_as_segment(trial_id=0)
+        with self.assertWarns(DeprecationWarning):
+            trial_object.get_trials_as_block(trial_ids=[0, 1])
+        with self.assertWarns(DeprecationWarning):
+            trial_object.get_trials_as_list(trial_ids=[0, 1])
+        with self.assertWarns(DeprecationWarning):
+            trial_object.get_spiketrains_from_trial_as_list(trial_id=0)
+        with self.assertWarns(DeprecationWarning):
+            trial_object.get_spiketrains_from_trial_as_segment(trial_id=0)
+        with self.assertWarns(DeprecationWarning):
+            trial_object.get_analogsignals_from_trial_as_list(trial_id=0)
+        with self.assertWarns(DeprecationWarning):
+            trial_object.get_analogsignals_from_trial_as_segment(trial_id=0)
+
+
     def test_trials_from_block_description(self) -> None:
         """
         Test description of the trials object.
@@ -351,6 +369,23 @@ class TrialsFromListTestCase(unittest.TestCase):
         """
         Run before every test:
         """
+
+    def test_deprecations(self):
+        trial_object = self.trial_object
+        with self.assertWarns(DeprecationWarning):
+            trial_object.get_trial_as_segment(trial_id=0)
+        with self.assertWarns(DeprecationWarning):
+            trial_object.get_trials_as_block(trial_ids=[0, 1])
+        with self.assertWarns(DeprecationWarning):
+            trial_object.get_trials_as_list(trial_ids=[0, 1])
+        with self.assertWarns(DeprecationWarning):
+            trial_object.get_spiketrains_from_trial_as_list(trial_id=0)
+        with self.assertWarns(DeprecationWarning):
+            trial_object.get_spiketrains_from_trial_as_segment(trial_id=0)
+        with self.assertWarns(DeprecationWarning):
+            trial_object.get_analogsignals_from_trial_as_list(trial_id=0)
+        with self.assertWarns(DeprecationWarning):
+            trial_object.get_analogsignals_from_trial_as_segment(trial_id=0)
 
     def test_trials_from_list_description(self) -> None:
         """
