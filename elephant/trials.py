@@ -2,29 +2,30 @@
 This module defines the basic classes that represent trials in Elephant.
 
 Many neuroscience methods rely on the concept of repeated trials to improve the
-estimate of quantities measured from the data. In the simplest case, results
-from multiple trials are averaged, in other scenarios more intricate steps must
-be taken in order to pool information from each repetition of a trial. Typically,
-trials are considered as fixed time intervals tied to a specific event in the
-experiment, such as the onset of a stimulus.
+estimate of quantities measured from the data. Typically, trials are
+considered as fixed time intervals tied to a specific event in the experiment,
+such as the onset of a stimulus. In the simplest case, results from multiple
+trials are averaged. In other scenarios, more intricate steps must be taken
+in order to pool information from each repetition of a trial.
 
-Neo does not impose a specific way in which trials are to be represented. A
-natural way to represent trials is to have a :class:`neo.Block` containing multiple
-:class:`neo.Segment` objects, each representing the data of one trial. Another popular
-option is to store trials as lists of lists, where the outer refers to
-individual lists, and inner lists contain Neo data objects (:class:`neo.SpikeTrain`
-and :class:`neo.AnalogSignal` containing individual data of each trial.
+Neo does not impose a specific way to represent trial data. A natural way to
+represent trials is to have a :class:`neo.Block` containing multiple
+:class:`neo.Segment` objects, each representing the data of one trial. Another
+popular option is to store trials as lists of lists, where the outer refers to
+individual lists, and inner lists contain Neo data objects
+(:class:`neo.SpikeTrain` and :class:`neo.AnalogSignal`) containing individual
+data of each trial.
 
 The classes of this module abstract from these individual data representations
-by introducing a set of :class:`Trials` classes with a common API. These classes
-are initialized by a supported way of structuring trials, e.g.,
-:class:`TrialsFromBlock` for the first method described above. Internally,
+by introducing a set of :class:`Trials` classes with a common API. These
+classes are initialized by a supported way of structuring trials, e.g.,
+:class:`TrialsFromBlock` for the first method described above. Internally, the
 :class:`Trials` class will not convert this representation, but provide access
 to data in specific trials (e.g., all spike trains in trial 5) or general
-information about the trial structure (e.g., how many trials are there?)  via a
-fixed API. Trials are consecutively numbered, starting at a trial ID of 0.
+information about the trial structure (e.g., how many trials are there?) via a
+fixed API. Trials are indexed consecutively starting from 0.
 
-In the release, the classes :class:`TrialsFromBlock` and
+In the current implementation, classes :class:`TrialsFromBlock` and
 :class:`TrialsFromLists` provide this unified way to access trial data.
 
 .. autosummary::
