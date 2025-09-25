@@ -41,10 +41,64 @@ In the release, the classes :class:`TrialsFromBlock` and
 from abc import ABCMeta, abstractmethod
 from typing import List
 
+from functools import wraps
 import numpy as np
 import neo.utils
 from neo.core import Segment, Block
 from neo.core.spiketrainlist import SpikeTrainList
+from elephant.utils import deprecated_alias
+
+
+def trials_to_list_of_spiketrainlist(method):
+    """
+    Decorator to convert `Trials` object to a list of `SpikeTrainList` before
+    calling the wrapped method.
+
+    Parameters
+    ----------
+    method: callable
+        The method to be decorated.
+
+    Returns
+    -------
+    callable
+        The decorated method.
+
+    Examples
+    --------
+    The decorator can be used as follows:
+
+        >>> @trials_to_list_of_spiketrainlist
+        ... def process_data(self, spiketrains):
+        ...     return None
+    """
+
+    @wraps(method)
+    def wrapper(*args, **kwargs):
+        new_args = tuple(
+            [
+                arg.get_spiketrains_from_trial_as_list(idx)
+                for idx in range(arg.n_trials)
+            ]
+            if isinstance(arg, Trials)
+            else arg
+            for arg in args
+        )
+        new_kwargs = {
+            key: (
+                [
+                    value.get_spiketrains_from_trial_as_list(idx)
+                    for idx in range(value.n_trials)
+                ]
+                if isinstance(value, Trials)
+                else value
+            )
+            for key, value in kwargs.items()
+        }
+
+        return method(*new_args, **new_kwargs)
+
+    return wrapper
 
 
 class Trials:
