@@ -329,23 +329,21 @@ class TrialsFromBlockTestCase(TrialsBaseTestCase):
         """
         Test to get the number of trials.
         """
-        self.assertEqual(self.trial_object.n_trials, len(self.block.segments))
+        self.assertEqual(self.trial_object.n_trials, 36)
 
     def test_trials_from_block_n_spiketrains_trial_by_trial(self) -> None:
         """
         Test to get the number of `SpikeTrain` objects per trial.
         """
         self.assertEqual(self.trial_object.n_spiketrains_trial_by_trial,
-                         [len(trial.spiketrains) for trial in
-                          self.block.segments])
+                         [2] * 36)
 
     def test_trials_from_block_n_analogsignals_trial_by_trial(self) -> None:
         """
         Test to get the number of `AnalogSignal` objects per trial.
         """
         self.assertEqual(self.trial_object.n_analogsignals_trial_by_trial,
-                         [len(trial.analogsignals) for trial in
-                          self.block.segments])
+                         [2] * 36)
 
     def test_trials_from_block_get_spiketrains_from_trial_as_list(self
                                                                   ) -> None:
@@ -636,23 +634,21 @@ class TrialsFromListTestCase(TrialsBaseTestCase):
         """
         Test to get the number of trials.
         """
-        self.assertEqual(self.trial_object.n_trials, len(self.trial_list))
+        self.assertEqual(self.trial_object.n_trials, 36)
 
     def test_trials_from_list_n_spiketrains_trial_by_trial(self) -> None:
         """
         Test to get the number of `SpikeTrain` objects per trial.
         """
         self.assertEqual(self.trial_object.n_spiketrains_trial_by_trial,
-                         [sum(map(lambda x: isinstance(x, SpikeTrain),
-                                  trial)) for trial in self.trial_list])
+                         [self.n_spiketrains] * 36)
 
     def test_trials_from_list_n_analogsignals_trial_by_trial(self) -> None:
         """
         Test to get the number of `AnalogSignal` objects per trial.
         """
         self.assertEqual(self.trial_object.n_analogsignals_trial_by_trial,
-                         [sum(map(lambda x: isinstance(x, AnalogSignal),
-                                  trial)) for trial in self.trial_list])
+                         [self.n_analogsignals] * 36)
 
     def test_trials_from_list_get_spiketrains_from_trial_as_list(self) -> None:
         """
