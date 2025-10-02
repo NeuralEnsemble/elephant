@@ -116,23 +116,34 @@ def trials_to_list_of_spiketrainlist(method):
 
 class Trials(ABC):
     """
-    Base class for handling trials.
+    Abstract base class for handling trial-based data in Elephant.
 
-    This is the base class from which all trial objects inherit.
-    This class implements support for universally recommended arguments.
+    The `Trials` class defines a standardized interface for accessing and
+    manipulating trial data. It provides universally recommended methods and
+    attributes for trial handling, and serves as the base class for all
+    data-structure-specific implementations.
+
+    Child classes such as :class:`TrialsFromBlock` and :class:`TrialsFromLists`
+    support specific input data structures. Usage details and examples are
+    provided in their respective documentation.
 
     Parameters
     ----------
-    description : string, optional
-        A textual description of the set of trials. Can be accessed via the
-        class attribute `description`.
-        Default: None.
+    description : str, optional
+        A textual description of the set of trials. Accessible via the
+        `description` attribute.
+        Default: None
 
+    See Also
+    --------
+    :class:`TrialsFromBlock`
+    :class:`TrialsFromLists`
     """
 
-
-    def __init__(self, description: str = "Trials"):
-        """Create an instance of the trials class."""
+    def __init__(self, description: str = None):
+        """
+        Create an instance of the `Trials` class.
+        """
         self.description = description
 
     @abstractmethod
