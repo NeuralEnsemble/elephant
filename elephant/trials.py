@@ -50,7 +50,7 @@ Run tutorial interactively:
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
-from abc import ABCMeta, abstractmethod
+from abc import ABC, abstractmethod
 from typing import List
 
 from functools import wraps
@@ -113,7 +113,7 @@ def trials_to_list_of_spiketrainlist(method):
     return wrapper
 
 
-class Trials:
+class Trials(ABC):
     """
     Base class for handling trials.
 
@@ -129,7 +129,6 @@ class Trials:
 
     """
 
-    __metaclass__ = ABCMeta
 
     def __init__(self, description: str = "Trials"):
         """Create an instance of the trials class."""
