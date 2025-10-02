@@ -257,42 +257,49 @@ class TrialsFromBlockTestCase(TrialsBaseTestCase):
         Test to get a single trial from the `Trials` object using indexing
         with brackets. Return is a `Segment`.
         """
-        self.assertIsInstance(self.trial_object[0], Segment)
+        for trial_index in range(36):
+            trial_segment = self.trial_object[trial_index]
+            expected = self.block.segments[trial_index]
+            self.assertSegmentEqual(trial_segment, expected)
 
     def test_trials_from_block_get_trial_as_segment(self) -> None:
         """
         Test to get a single trial from the `Trials` object as a `Segment`.
         """
-        self.assertIsInstance(
-            self.trial_object.get_trial_as_segment(0),
-            Segment)
-        self.assertIsInstance(
-            self.trial_object.get_trial_as_segment(0).spiketrains[0],
-            SpikeTrain)
-        self.assertIsInstance(
-            self.trial_object.get_trial_as_segment(0).analogsignals[0],
-            AnalogSignal)
+        for trial_index in range(36):
+            trial_segment = self.trial_object.get_trial_as_segment(trial_index)
+            expected = self.block.segments[trial_index]
+            self.assertSegmentEqual(trial_segment, expected)
 
     def test_trials_from_block_get_trials_as_block(self) -> None:
         """
         Test to get a set of specific trials grouped as a `Block`. Each trial
         is a `Segment` containing all the data in the trial.
         """
-        block = self.trial_object.get_trials_as_block([0, 3, 5])
-        self.assertIsInstance(block, Block)
-        self.assertIsInstance(self.trial_object.get_trials_as_block(), Block)
-        self.assertEqual(len(block.segments), 3)
+        trial_block = self.trial_object.get_trials_as_block([0, 3, 5])
+        self.assertIsInstance(trial_block, Block)
+        self.assertEqual(len(trial_block.segments), 3)
+        self.assertSegmentEqual(trial_block.segments[0],
+                                self.block.segments[0])
+        self.assertSegmentEqual(trial_block.segments[1],
+                                self.block.segments[3])
+        self.assertSegmentEqual(trial_block.segments[2],
+                                self.block.segments[5])
 
     def test_trials_from_block_get_trials_as_list(self) -> None:
         """
         Test to get a set of specific trials grouped as list of `Segment`.
         Each trial is a single `Segment` containing all the data in the trial.
         """
-        list_of_trials = self.trial_object.get_trials_as_list([0, 3, 5])
+        list_of_trials = self.trial_object.get_trials_as_list([0, 5, 7])
         self.assertIsInstance(list_of_trials, list)
-        self.assertIsInstance(self.trial_object.get_trials_as_list(), list)
-        self.assertIsInstance(list_of_trials[0], Segment)
         self.assertEqual(len(list_of_trials), 3)
+        self.assertSegmentEqual(list_of_trials[0],
+                                self.block.segments[0])
+        self.assertSegmentEqual(list_of_trials[1],
+                                self.block.segments[5])
+        self.assertSegmentEqual(list_of_trials[2],
+                                self.block.segments[7])
 
     def test_trials_from_block_n_trials(self) -> None:
         """
@@ -321,12 +328,14 @@ class TrialsFromBlockTestCase(TrialsBaseTestCase):
         """
         Test to get all spiketrains from a single trial as a `SpikeTrainList`.
         """
-        self.assertIsInstance(
-            self.trial_object.get_spiketrains_from_trial_as_list(0),
-            SpikeTrainList)
-        self.assertIsInstance(
-            self.trial_object.get_spiketrains_from_trial_as_list(0)[0],
-            SpikeTrain)
+        for trial_index in range(36):
+            trial_spiketrains = (
+                self.trial_object.get_spiketrains_from_trial_as_list(
+                    trial_index
+                )
+            )
+            expected = self.block.segments[trial_index].spiketrains
+            self.assertSpikeTrainListEqual(trial_spiketrains, expected)
 
     def test_trials_from_block_get_spiketrains_from_trial_as_segment(self
                                                                      ) -> None:
@@ -334,23 +343,32 @@ class TrialsFromBlockTestCase(TrialsBaseTestCase):
         Test to get the all spiketrains from a single trial as a `Segment`.
         The `Segment.spiketrains` collection contains the spiketrains.
         """
-        self.assertIsInstance(
-            self.trial_object.get_spiketrains_from_trial_as_segment(0),
-            Segment)
-        self.assertIsInstance(
-            self.trial_object.get_spiketrains_from_trial_as_segment(
-                0).spiketrains[0], SpikeTrain)
+        for trial_index in range(36):
+            trial_spiketrains = (
+                self.trial_object.get_spiketrains_from_trial_as_segment(
+                    trial_index
+                )
+            )
+            expected = self.block.segments[trial_index].spiketrains
+            self.assertIsInstance(trial_spiketrains, Segment)
+            self.assertEqual(len(trial_spiketrains.analogsignals), 0)
+            self.assertSpikeTrainListEqual(trial_spiketrains.spiketrains,
+                                           expected)
 
     def test_trials_from_block_get_analogsignals_from_trial_as_list(self
                                                                     ) -> None:
         """
         Test to get all analog signals from a single trial as a list.
         """
-        self.assertIsInstance(
-            self.trial_object.get_analogsignals_from_trial_as_list(0), list)
-        self.assertIsInstance(
-            self.trial_object.get_analogsignals_from_trial_as_list(0)[0],
-            AnalogSignal)
+        for trial_index in range(36):
+            trial_signals = (
+                self.trial_object.get_analogsignals_from_trial_as_list(
+                    trial_index
+                )
+            )
+            expected = self.block.segments[trial_index].analogsignals
+            self.assertIsInstance(trial_signals, list)
+            self.assertAnalogSignalListEqual(trial_signals, expected)
 
     def test_trials_from_block_get_analogsignals_from_trial_as_segment(self) \
             -> None:
@@ -358,12 +376,17 @@ class TrialsFromBlockTestCase(TrialsBaseTestCase):
         Test to get all analog signals from a single trial as a `Segment`.
         The `Segment.analogsignals` collection contains the signals.
         """
-        self.assertIsInstance(
-            self.trial_object.get_analogsignals_from_trial_as_segment(0),
-            Segment)
-        self.assertIsInstance(
-            self.trial_object.get_analogsignals_from_trial_as_segment(
-                0).analogsignals[0], AnalogSignal)
+        for trial_index in range(36):
+            trial_signals = (
+                self.trial_object.get_analogsignals_from_trial_as_segment(
+                    trial_index
+                )
+            )
+            expected = self.block.segments[trial_index].analogsignals
+            self.assertIsInstance(trial_signals, Segment)
+            self.assertEqual(len(trial_signals.spiketrains), 0)
+            self.assertAnalogSignalListEqual(trial_signals.analogsignals,
+                                             expected)
 
     def test_trials_from_block_get_spiketrains_trial_by_trial(self) -> None:
         """
@@ -371,29 +394,22 @@ class TrialsFromBlockTestCase(TrialsBaseTestCase):
         repetitions of a spiketrain across the trials.
         """
         for st_id in (0, 1):
-            spiketrains = self.trial_object.get_spiketrains_trial_by_trial(st_id)
+            spiketrains = self.trial_object.get_spiketrains_trial_by_trial(
+                st_id)
+            expected_spiketrains = [trial.spiketrains[st_id]
+                                    for trial in self.block.segments]
+            self.assertEqual(len(spiketrains), 36)
+            self.assertSpikeTrainListEqual(spiketrains,
+                                           SpikeTrainList(expected_spiketrains))
 
-            # Return is neo.SpikeTrainList
-            self.assertIsInstance(spiketrains, SpikeTrainList)
-
-            # All elements are neo.SpikeTrain
-            self.assertTrue(all(map(lambda x: isinstance(x, SpikeTrain),
-                                    spiketrains)
-                                )
-                            )
-
-            # Data for all trials is returned
-            self.assertEqual(len(spiketrains), self.trial_object.n_trials)
-
-            # Each trial-specific SpikeTrain object is from the same spiketrain
+            # Each trial-specific `SpikeTrain` object is from the same spiketrain
             self.assertTrue(all([st.name == f"Spiketrain {st_id}"
                                  for st in spiketrains]
                                 )
                             )
 
             # Order of spiketrains is the order of the trials
-            expected_trials = [f"Trial {i}"
-                               for i in range(self.trial_object.n_trials)]
+            expected_trials = [f"Trial {i}" for i in range(36)]
             self.assertListEqual([st.description for st in spiketrains],
                                  expected_trials)
 
@@ -404,27 +420,20 @@ class TrialsFromBlockTestCase(TrialsBaseTestCase):
         """
         for as_id in (0, 1):
             signals = self.trial_object.get_analogsignals_trial_by_trial(as_id)
-
-            # Return is list
+            expected_signals = [trial.analogsignals[as_id]
+                                for trial in self.block.segments]
+            self.assertEqual(len(signals), 36)
             self.assertIsInstance(signals, list)
+            self.assertAnalogSignalListEqual(signals, expected_signals)
 
-            # All elements are neo.AnalogSignal
-            self.assertTrue(all(map(lambda x: isinstance(x, AnalogSignal),
-                                    signals)
-                                )
-                            )
-            # Data for all trials returned
-            self.assertEqual(len(signals), self.trial_object.n_trials)
-
-            # Each trial-specific AnalogSignal object is from the same signal
+            # Each trial-specific `AnalogSignal` object is from the same signal
             self.assertTrue(all([signal.name == f"Signal {as_id}"
                                  for signal in signals]
                                 )
                             )
 
             # Order in the list is the order of the trials
-            expected_trials = [f"Trial {i}"
-                               for i in range(self.trial_object.n_trials)]
+            expected_trials = [f"Trial {i}" for i in range(36)]
             self.assertListEqual([signal.description for signal in signals],
                                  expected_trials)
 
@@ -508,33 +517,46 @@ class TrialsFromListTestCase(TrialsBaseTestCase):
         Test to get a single trial from the `Trials` object using indexing
         with brackets. Return is a `Segment`.
         """
-        self.assertIsInstance(self.trial_object[0], Segment)
-        self.assertIsInstance(self.trial_object[0].spiketrains[0], SpikeTrain)
-        self.assertIsInstance(self.trial_object[0].analogsignals[0],
-                              AnalogSignal)
+        for trial_index in range(36):
+            trial_segment = self.trial_object[trial_index]
+            expected = self.trial_list[trial_index]
+            self.assertSegmentEqualToList(trial_segment,
+                                          expected,
+                                          n_spiketrains=self.n_spiketrains,
+                                          n_analogsignals=self.n_analogsignals)
 
     def test_trials_from_list_get_trial_as_segment(self) -> None:
         """
         Test to get a single trial from the `Trials` object as a `Segment`.
         """
-        self.assertIsInstance(
-            self.trial_object.get_trial_as_segment(0), Segment)
-        self.assertIsInstance(
-            self.trial_object.get_trial_as_segment(0).spiketrains[0],
-            SpikeTrain)
-        self.assertIsInstance(
-            self.trial_object.get_trial_as_segment(0).analogsignals[0],
-            AnalogSignal)
+        for trial_index in range(36):
+            trial_segment = self.trial_object[trial_index]
+            expected = self.trial_list[trial_index]
+            self.assertSegmentEqualToList(trial_segment,
+                                          expected,
+                                          n_spiketrains=self.n_spiketrains,
+                                          n_analogsignals=self.n_analogsignals)
 
     def test_trials_from_list_get_trials_as_block(self) -> None:
         """
         Test to get a set of specific trials grouped as a `Block`. Each trial
         is a `Segment` containing all the data in the trial.
         """
-        block = self.trial_object.get_trials_as_block([0, 3, 5])
-        self.assertIsInstance(block, Block)
-        self.assertIsInstance(self.trial_object.get_trials_as_block(), Block)
-        self.assertEqual(len(block.segments), 3)
+        trial_block = self.trial_object.get_trials_as_block([1, 6, 18])
+        self.assertIsInstance(trial_block, Block)
+        self.assertEqual(len(trial_block.segments), 3)
+        self.assertSegmentEqualToList(trial_block.segments[0],
+                                      self.trial_list[1],
+                                      n_spiketrains=self.n_spiketrains,
+                                      n_analogsignals=self.n_analogsignals)
+        self.assertSegmentEqualToList(trial_block.segments[1],
+                                      self.trial_list[6],
+                                      n_spiketrains=self.n_spiketrains,
+                                      n_analogsignals=self.n_analogsignals)
+        self.assertSegmentEqualToList(trial_block.segments[2],
+                                      self.trial_list[18],
+                                      n_spiketrains=self.n_spiketrains,
+                                      n_analogsignals=self.n_analogsignals)
 
     def test_trials_from_list_get_trials_as_list(self) -> None:
         """
@@ -543,9 +565,19 @@ class TrialsFromListTestCase(TrialsBaseTestCase):
         """
         list_of_trials = self.trial_object.get_trials_as_list([0, 3, 5])
         self.assertIsInstance(list_of_trials, list)
-        self.assertIsInstance(self.trial_object.get_trials_as_list(), list)
-        self.assertIsInstance(list_of_trials[0], Segment)
         self.assertEqual(len(list_of_trials), 3)
+        self.assertSegmentEqualToList(list_of_trials[0],
+                                      self.trial_list[0],
+                                      n_spiketrains=self.n_spiketrains,
+                                      n_analogsignals=self.n_analogsignals)
+        self.assertSegmentEqualToList(list_of_trials[1],
+                                      self.trial_list[3],
+                                      n_spiketrains=self.n_spiketrains,
+                                      n_analogsignals=self.n_analogsignals)
+        self.assertSegmentEqualToList(list_of_trials[2],
+                                      self.trial_list[5],
+                                      n_spiketrains=self.n_spiketrains,
+                                      n_analogsignals=self.n_analogsignals)
 
     def test_trials_from_list_n_trials(self) -> None:
         """
@@ -573,12 +605,15 @@ class TrialsFromListTestCase(TrialsBaseTestCase):
         """
         Test to get all spiketrains from a single trial as a `SpikeTrainList`.
         """
-        self.assertIsInstance(
-            self.trial_object.get_spiketrains_from_trial_as_list(0),
-            SpikeTrainList)
-        self.assertIsInstance(
-            self.trial_object.get_spiketrains_from_trial_as_list(0)[0],
-            SpikeTrain)
+        for trial_index in range(36):
+            trial_spiketrains = (
+                self.trial_object.get_spiketrains_from_trial_as_list(
+                    trial_index
+                )
+            )
+            expected = self.trial_list[trial_index][:self.n_spiketrains]
+            self.assertSpikeTrainListEqual(trial_spiketrains,
+                                           SpikeTrainList(expected))
 
     def test_trials_from_list_get_spiketrains_from_trial_as_segment(self
                                                                     ) -> None:
@@ -586,23 +621,32 @@ class TrialsFromListTestCase(TrialsBaseTestCase):
         Test to get the all spiketrains from a single trial as a `Segment`.
         The `Segment.spiketrains` collection contains the spiketrains.
         """
-        self.assertIsInstance(
-            self.trial_object.get_spiketrains_from_trial_as_segment(0),
-            Segment)
-        self.assertIsInstance(
-            self.trial_object.get_spiketrains_from_trial_as_segment(
-                0).spiketrains[0], SpikeTrain)
+        for trial_index in range(36):
+            trial_spiketrains = (
+                self.trial_object.get_spiketrains_from_trial_as_segment(
+                    trial_index
+                )
+            )
+            expected = self.trial_list[trial_index][:self.n_spiketrains]
+            self.assertIsInstance(trial_spiketrains, Segment)
+            self.assertEqual(len(trial_spiketrains.analogsignals), 0)
+            self.assertSpikeTrainListEqual(trial_spiketrains.spiketrains,
+                                           SpikeTrainList(expected))
 
     def test_trials_from_list_get_analogsignals_from_trial_as_list(self
                                                                    ) -> None:
         """
         Test to get all analog signals from a single trial as a list.
         """
-        self.assertIsInstance(
-            self.trial_object.get_analogsignals_from_trial_as_list(0), list)
-        self.assertIsInstance(
-            self.trial_object.get_analogsignals_from_trial_as_list(0)[0],
-            AnalogSignal)
+        for trial_index in range(36):
+            trial_signals = (
+                self.trial_object.get_analogsignals_from_trial_as_list(
+                    trial_index
+                )
+            )
+            expected = self.trial_list[trial_index][self.n_spiketrains:]
+            self.assertIsInstance(trial_signals, list)
+            self.assertAnalogSignalListEqual(trial_signals, expected)
 
     def test_trials_from_list_get_analogsignals_from_trial_as_segment(self
                                                                       ) \
@@ -611,12 +655,17 @@ class TrialsFromListTestCase(TrialsBaseTestCase):
         Test to get all analog signals from a single trial as a `Segment`.
         The `Segment.analogsignals` collection contains the signals.
         """
-        self.assertIsInstance(
-            self.trial_object.get_analogsignals_from_trial_as_segment(0),
-            Segment)
-        self.assertIsInstance(
-            self.trial_object.get_analogsignals_from_trial_as_segment(
-                0).analogsignals[0], AnalogSignal)
+        for trial_index in range(36):
+            trial_signals = (
+                self.trial_object.get_analogsignals_from_trial_as_segment(
+                    trial_index
+                )
+            )
+            expected = self.trial_list[trial_index][self.n_spiketrains:]
+            self.assertIsInstance(trial_signals, Segment)
+            self.assertEqual(len(trial_signals.spiketrains), 0)
+            self.assertAnalogSignalListEqual(trial_signals.analogsignals,
+                                             expected)
 
     def test_trials_from_list_get_spiketrains_trial_by_trial(self) -> None:
         """
@@ -626,28 +675,20 @@ class TrialsFromListTestCase(TrialsBaseTestCase):
         for st_id in (0, 1):
             spiketrains = self.trial_object.get_spiketrains_trial_by_trial(
                 st_id)
+            expected_spiketrains = [trial[:self.n_spiketrains][st_id]
+                                    for trial in self.trial_list]
+            self.assertEqual(len(spiketrains), 36)
+            self.assertSpikeTrainListEqual(spiketrains,
+                                           SpikeTrainList(expected_spiketrains))
 
-            # Return is neo.SpikeTrainList
-            self.assertIsInstance(spiketrains, SpikeTrainList)
-
-            # All elements are neo.SpikeTrain
-            self.assertTrue(all(map(lambda x: isinstance(x, SpikeTrain),
-                                    spiketrains)
-                                )
-                            )
-
-            # Data for all trials is returned
-            self.assertEqual(len(spiketrains), self.trial_object.n_trials)
-
-            # Each trial-specific SpikeTrain object is from the same spiketrain
+            # Each trial-specific `SpikeTrain` object is from the same spiketrain
             self.assertTrue(all([st.name == f"Spiketrain {st_id}"
                                  for st in spiketrains]
                                 )
                             )
 
             # Order of spiketrains is the order of the trials
-            expected_trials = [f"Trial {i}"
-                               for i in range(self.trial_object.n_trials)]
+            expected_trials = [f"Trial {i}" for i in range(36)]
             self.assertListEqual([st.description for st in spiketrains],
                                  expected_trials)
 
@@ -658,19 +699,13 @@ class TrialsFromListTestCase(TrialsBaseTestCase):
         """
         for as_id in (0, 1):
             signals = self.trial_object.get_analogsignals_trial_by_trial(as_id)
-
-            # Return is list
+            expected_signals = [trial[self.n_spiketrains:][as_id]
+                                for trial in self.trial_list]
+            self.assertEqual(len(signals), 36)
             self.assertIsInstance(signals, list)
+            self.assertAnalogSignalListEqual(signals, expected_signals)
 
-            # All elements are neo.AnalogSignal
-            self.assertTrue(all(map(lambda x: isinstance(x, AnalogSignal),
-                                    signals)
-                                )
-                            )
-            # Data for all trials returned
-            self.assertEqual(len(signals), self.trial_object.n_trials)
-
-            # Each trial-specific AnalogSignal object is from the same signal
+            # Each trial-specific `AnalogSignal` object is from the same signal
             self.assertTrue(all([signal.name == f"Signal {as_id}"
                                  for signal in signals]
                                 )
