@@ -137,7 +137,8 @@ class Trials(ABC):
 
     @abstractmethod
     def __getitem__(self, trial_index: int) -> neo.core.Segment:
-        pass
+        # Get a specific trial by its index as a Segment
+        raise NotImplementedError
 
     @abstractmethod
     def n_trials(self) -> int:
@@ -147,7 +148,7 @@ class Trials(ABC):
         -------
         int: Number of trials
         """
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def n_spiketrains_trial_by_trial(self) -> List[int]:
@@ -158,7 +159,7 @@ class Trials(ABC):
         list of int: For each trial, contains the number of spike trains in the
             trial.
         """
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def n_analogsignals_trial_by_trial(self) -> List[int]:
@@ -169,7 +170,7 @@ class Trials(ABC):
         list of int: For each trial, contains the number of analogsignal objects
             in the trial.
         """
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def get_trial_as_segment(self, trial_id: int) -> neo.core.Segment:
@@ -248,7 +249,7 @@ class Trials(ABC):
         list of :class:`neo.SpikeTrain`
             List of all spike trains of the trial.
         """
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     @deprecated_alias(trial_id="trial_index")
@@ -285,7 +286,7 @@ class Trials(ABC):
         list of :class`neo.AnalogSignal`: list of all analogsignal objects of
             the trial.
         """
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     @deprecated_alias(trial_id="trial_index")
@@ -330,7 +331,7 @@ class Trials(ABC):
             objects for the specified `spiketrain_id`, ordered from the first
             trial (ID 0) to the last (ID `n_trials - 1`).
         """
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def get_analogsignals_trial_by_trial(self, signal_index: int
@@ -356,7 +357,7 @@ class Trials(ABC):
             specified `signal_id`, ordered from the first trial (ID 0) to the
             last (ID `n_trials - 1`).
         """
-        pass
+        raise NotImplementedError
 
 
 class TrialsFromBlock(Trials):
