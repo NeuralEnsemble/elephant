@@ -224,7 +224,7 @@ class TrialsFromBlockTestCase(TrialsBaseTestCase):
         block = _create_trials_block(n_trials=36)
         cls.block = block
         cls.trial_object = TrialsFromBlock(block,
-                                           description='trials are segments')
+                                           description='trial is Segment')
 
     def test_deprecations(self) -> None:
         """
@@ -250,7 +250,7 @@ class TrialsFromBlockTestCase(TrialsBaseTestCase):
         """
         Test the description of the `Trials` object.
         """
-        self.assertEqual(self.trial_object.description, 'trials are segments')
+        self.assertEqual(self.trial_object.description, 'trial is Segment')
 
     def test_trials_from_block_get_item(self) -> None:
         """
