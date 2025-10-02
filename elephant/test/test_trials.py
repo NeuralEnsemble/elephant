@@ -19,7 +19,9 @@ from elephant.trials import (TrialsFromBlock, TrialsFromLists,
 def _create_trials_block(n_trials: int = 0,
                          n_spiketrains: int = 2,
                          n_analogsignals: int = 2) -> Block:
-    """ Create block with n_trials, n_spiketrains and n_analog_signals """
+    """
+    Create Neo `Block` with `n_trials`, `n_spiketrains` and `n_analogsignals`.
+    """
     block = Block(name='test_block')
     for trial in range(n_trials):
         segment = Segment(name=f'No. {trial}')
