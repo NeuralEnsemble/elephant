@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Unit tests for the trials objects.
+nit tests for the objects of the API handling trial data in Elephant.
 
-:copyright: Copyright 2014-2024 by the Elephant team, see AUTHORS.txt.
+:copyright: Copyright 2014-2025 by the Elephant team, see AUTHORS.txt.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
