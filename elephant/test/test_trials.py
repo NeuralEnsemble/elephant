@@ -131,6 +131,8 @@ class DecoratorTest:
 # Tests - test cases #
 ######################
 
+class TestTrialsToListOfSpiketrainlist(TrialsBaseTestCase):
+
     @classmethod
     def setUpClass(cls):
         cls.n_channels = 10
@@ -202,8 +204,8 @@ class DecoratorTest:
                 self.assertIsInstance(spiketrain, SpikeTrain)
 
 
-class TrialsFromBlockTestCase(unittest.TestCase):
     """Tests for elephant.trials.TrialsFromBlock class"""
+class TrialsFromBlockTestCase(TrialsBaseTestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -411,8 +413,8 @@ class TrialsFromBlockTestCase(unittest.TestCase):
                                  expected_trials)
 
 
-class TrialsFromListTestCase(unittest.TestCase):
     """Tests for elephant.trials.TrialsFromList class"""
+class TrialsFromListTestCase(TrialsBaseTestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -436,7 +438,27 @@ class TrialsFromListTestCase(unittest.TestCase):
         cls.trial_object = TrialsFromLists(trial_list,
                                            description='trial is a list')
 
-    def setUp(self) -> None:
+    def assertSegmentEqualToList(self, segment, list_data, n_spiketrains,
+                                 n_analogsignals):
+        """
+        This function compares trial data in a Segment to trial data in
+        a Python list. The order of objects is: `SpikeTrain`, `AnalogSignal`.
+        The number of spiketrains and analog signals must be informed to split
+        the data in the list.
+        """
+        self.assertIsInstance(segment, Segment)
+        self.assertIsInstance(list_data, list)
+
+        self.assertEqual(len(list_data), n_spiketrains + n_analogsignals)
+        self.assertEqual(len(segment.spiketrains), n_spiketrains)
+        self.assertEqual(len(segment.analogsignals), n_analogsignals)
+
+        spiketrains = list_data[:n_spiketrains]
+        signals = list_data[n_spiketrains:]
+        self.assertSpikeTrainListEqual(segment.spiketrains,
+                                       SpikeTrainList(spiketrains))
+        self.assertAnalogSignalListEqual(segment.analogsignals, signals)
+
     def test_deprecations(self) -> None:
         """
         Run before every test:
