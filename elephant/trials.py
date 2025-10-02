@@ -55,7 +55,8 @@ from typing import List
 
 from functools import wraps
 import numpy as np
-import neo.utils
+
+import neo
 from neo.core import Segment, Block
 from neo.core.spiketrainlist import SpikeTrainList
 from elephant.utils import deprecated_alias
