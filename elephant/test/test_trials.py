@@ -271,7 +271,7 @@ class TrialsFromBlockTestCase(TrialsBaseTestCase):
             expected = self.block.segments[trial_index]
             self.assertSegmentEqual(trial_segment, expected)
 
-    def test_trials_from_block_get_trials_as_block(self) -> None:
+    def test_trials_from_block_get_trials_as_block_indexes(self) -> None:
         """
         Test to get a set of specific trials grouped as a `Block`. Each trial
         is a `Segment` containing all the data in the trial.
@@ -286,7 +286,19 @@ class TrialsFromBlockTestCase(TrialsBaseTestCase):
         self.assertSegmentEqual(trial_block.segments[2],
                                 self.block.segments[5])
 
-    def test_trials_from_block_get_trials_as_list(self) -> None:
+    def test_trials_from_block_get_trials_as_block(self) -> None:
+        """
+        Test to get all trials grouped as a `Block`, where each trial is a
+        single `Segment`.
+        """
+        trial_block = self.trial_object.get_trials_as_block()
+        self.assertIsInstance(trial_block, Block)
+        self.assertEqual(len(trial_block.segments), 36)
+        for trial, expected_trial in zip(trial_block.segments,
+                                         self.block.segments):
+            self.assertSegmentEqual(trial, expected_trial)
+
+    def test_trials_from_block_get_trials_as_list_indexes(self) -> None:
         """
         Test to get a set of specific trials grouped as list of `Segment`.
         Each trial is a single `Segment` containing all the data in the trial.
@@ -300,6 +312,18 @@ class TrialsFromBlockTestCase(TrialsBaseTestCase):
                                 self.block.segments[5])
         self.assertSegmentEqual(list_of_trials[2],
                                 self.block.segments[7])
+
+    def test_trials_from_block_get_trials_as_list(self) -> None:
+        """
+        Test to get all the trials grouped as a list of `Segment`. Each trial
+        is a single `Segment` containing all the data in the trial.
+        """
+        list_of_trials = self.trial_object.get_trials_as_list()
+        self.assertIsInstance(list_of_trials, list)
+        self.assertEqual(len(list_of_trials), 36)
+        for trial, expected_trial in zip(list_of_trials,
+                                         self.block.segments):
+            self.assertSegmentEqual(trial, expected_trial)
 
     def test_trials_from_block_n_trials(self) -> None:
         """
@@ -537,7 +561,7 @@ class TrialsFromListTestCase(TrialsBaseTestCase):
                                           n_spiketrains=self.n_spiketrains,
                                           n_analogsignals=self.n_analogsignals)
 
-    def test_trials_from_list_get_trials_as_block(self) -> None:
+    def test_trials_from_list_get_trials_as_block_indexes(self) -> None:
         """
         Test to get a set of specific trials grouped as a `Block`. Each trial
         is a `Segment` containing all the data in the trial.
@@ -558,7 +582,22 @@ class TrialsFromListTestCase(TrialsBaseTestCase):
                                       n_spiketrains=self.n_spiketrains,
                                       n_analogsignals=self.n_analogsignals)
 
-    def test_trials_from_list_get_trials_as_list(self) -> None:
+    def test_trials_from_list_get_trials_as_block(self) -> None:
+        """
+        Test to get all trials grouped as a `Block`, where each trial is a
+        single `Segment`.
+        """
+        trial_block = self.trial_object.get_trials_as_block()
+        self.assertIsInstance(trial_block, Block)
+        self.assertEqual(len(trial_block.segments), 36)
+        for trial, expected_trial in zip(trial_block.segments,
+                                         self.trial_list):
+            self.assertSegmentEqualToList(trial,
+                                          expected_trial,
+                                          n_spiketrains=self.n_spiketrains,
+                                          n_analogsignals=self.n_analogsignals)
+
+    def test_trials_from_list_get_trials_as_list_indexes(self) -> None:
         """
         Test to get a set of specific trials grouped as list of `Segment`.
         Each trial is a single `Segment` containing all the data in the trial.
@@ -578,6 +617,20 @@ class TrialsFromListTestCase(TrialsBaseTestCase):
                                       self.trial_list[5],
                                       n_spiketrains=self.n_spiketrains,
                                       n_analogsignals=self.n_analogsignals)
+
+    def test_trials_from_list_get_trials_as_list(self) -> None:
+        """
+        Test to get all the trials grouped as a list of `Segment`. Each trial
+        is a single `Segment` containing all the data in the trial.
+        """
+        list_of_trials = self.trial_object.get_trials_as_list()
+        self.assertIsInstance(list_of_trials, list)
+        self.assertEqual(len(list_of_trials), 36)
+        for trial, expected_trial in zip(list_of_trials, self.trial_list):
+            self.assertSegmentEqualToList(trial,
+                                          expected_trial,
+                                          n_spiketrains=self.n_spiketrains,
+                                          n_analogsignals=self.n_analogsignals)
 
     def test_trials_from_list_n_trials(self) -> None:
         """
