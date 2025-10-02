@@ -47,9 +47,72 @@ def _create_trials_block(n_trials: int = 0,
     return block
 
 
-#########
-# Tests #
-#########
+##########################
+# Tests - helper classes #
+##########################
+
+class TrialsBaseTestCase(unittest.TestCase):
+    """
+    This is a base `unitest.TestCase` class to act as a helper when
+    constructing the specific test cases for each implementation of `Trials`.
+
+    This helper class facilitates comparing Neo objects, as custom assertions
+    are implemented to perform a series of tests to ensure two Neo objects are
+    indeed equal (e.g., checking metadata or contents of collections such as
+    spiketrains in a `Segment`).
+
+    As the `Trials` objects are based on references to the input data
+    structures, checks for `Segment`, `SpikeTrain`, and `AnalogSignal` objects
+    are enforcing instance equality (i.e., `(a is b) == True`).
+    """
+
+    def assertSegmentEqual(self, segment_1, segment_2) -> None:
+        self.assertIsInstance(segment_1, Segment)
+        self.assertIsInstance(segment_2, Segment)
+        self.assertIs(segment_1, segment_2)
+        self.assertEqual(segment_1.name, segment_2.name)
+        self.assertEqual(segment_2.description, segment_2.description)
+        self.assertDictEqual(segment_1.annotations, segment_2.annotations)
+        self.assertSpikeTrainListEqual(segment_1.spiketrains,
+                                       segment_2.spiketrains)
+        self.assertAnalogSignalListEqual(segment_1.analogsignals,
+                                         segment_2.analogsignals)
+
+    def assertSpikeTrainEqual(self, spiketrain_1, spiketrain_2) -> None:
+        self.assertIsInstance(spiketrain_1, SpikeTrain)
+        self.assertIsInstance(spiketrain_2, SpikeTrain)
+        self.assertIs(spiketrain_1, spiketrain_2)
+        self.assertTrue(np.all(spiketrain_1 == spiketrain_2))
+        self.assertEqual(spiketrain_1.name, spiketrain_2.name)
+        self.assertEqual(spiketrain_1.description, spiketrain_2.description)
+        self.assertDictEqual(spiketrain_1.annotations,
+                             spiketrain_2.annotations)
+
+    def assertSpikeTrainListEqual(self, spiketrains_1, spiketrains_2) -> None:
+        self.assertIsInstance(spiketrains_1, SpikeTrainList)
+        self.assertIsInstance(spiketrains_2, SpikeTrainList)
+        self.assertEqual(len(spiketrains_1), len(spiketrains_2))
+        for st1, st2 in zip(spiketrains_1, spiketrains_2):
+            self.assertSpikeTrainEqual(st1, st2)
+
+    def assertAnalogSignalEqual(self, signal_1, signal_2) -> None:
+        self.assertIsInstance(signal_1, AnalogSignal)
+        self.assertIsInstance(signal_2, AnalogSignal)
+        self.assertIs(signal_1, signal_2)
+        self.assertTrue(np.all(signal_1 == signal_2))
+        self.assertEqual(signal_1.name, signal_2.name)
+        self.assertEqual(signal_1.description, signal_2.description)
+        self.assertDictEqual(signal_1.annotations, signal_2.annotations)
+
+    def assertAnalogSignalListEqual(self, signals_1, signals_2) -> None:
+        # Not enforcing object type as `Segment.analogsignals` are
+        # `ObjectList`, and some of the functions return pure Python lists
+        # containing the `AnalogSignal` objects. Therefore, the type checking
+        # must be done in each test case accordingly.
+        self.assertEqual(len(signals_1), len(signals_2))
+        for signal_1, signal_2 in zip(signals_1, signals_2):
+            self.assertAnalogSignalEqual(signal_1, signal_2)
+
 
 class DecoratorTest:
     """
@@ -64,6 +127,10 @@ class DecoratorTest:
 
 
 class TestTrialsToListOfSpiketrainlist(unittest.TestCase):
+######################
+# Tests - test cases #
+######################
+
     @classmethod
     def setUpClass(cls):
         cls.n_channels = 10
