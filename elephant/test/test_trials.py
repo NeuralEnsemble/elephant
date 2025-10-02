@@ -74,6 +74,7 @@ class TestTrialsToListOfSpiketrainlist(unittest.TestCase):
 
     def test_decorator_applied(self):
         # Test that the decorator is applied correctly
+    def test_decorator_applied(self) -> None:
         self.assertTrue(hasattr(
             DecoratorTest.method_to_decorate, '__wrapped__'
             ))
@@ -81,6 +82,7 @@ class TestTrialsToListOfSpiketrainlist(unittest.TestCase):
     def test_decorator_return_with_trials_input_as_arg(self):
         # Test if decorator takes in trial-object and returns
         # list of spiketrainlists
+    def test_decorator_return_with_trials_input_as_arg(self) -> None:
         new_class = DecoratorTest()
         list_of_spiketrainlists = new_class.method_to_decorate(
             self.trial_object)
@@ -91,6 +93,7 @@ class TestTrialsToListOfSpiketrainlist(unittest.TestCase):
     def test_decorator_return_with_list_of_lists_input_as_arg(self):
         # Test if decorator takes in list of lists of spiketrains
         # and does not change input
+    def test_decorator_return_with_list_of_lists_input_as_arg(self) -> None:
         new_class = DecoratorTest()
         list_of_list_of_spiketrains = new_class.method_to_decorate(
             self.list_of_list_of_spiketrains)
@@ -103,6 +106,7 @@ class TestTrialsToListOfSpiketrainlist(unittest.TestCase):
     def test_decorator_return_with_trials_input_as_kwarg(self):
         # Test if decorator takes in trial-object and returns
         # list of spiketrainlists
+    def test_decorator_return_with_trials_input_as_kwarg(self) -> None:
         new_class = DecoratorTest()
         list_of_spiketrainlists = new_class.method_to_decorate(
             trials_obj=self.trial_object)
@@ -113,6 +117,7 @@ class TestTrialsToListOfSpiketrainlist(unittest.TestCase):
     def test_decorator_return_with_list_of_lists_input_as_kwarg(self):
         # Test if decorator takes in list of lists of spiketrains
         # and does not change input
+    def test_decorator_return_with_list_of_lists_input_as_kwarg(self) -> None:
         new_class = DecoratorTest()
         list_of_list_of_spiketrains = new_class.method_to_decorate(
             trials_obj=self.list_of_list_of_spiketrains)
@@ -137,9 +142,7 @@ class TrialsFromBlockTestCase(unittest.TestCase):
         cls.trial_object = TrialsFromBlock(block,
                                            description='trials are segments')
 
-    def setUp(self) -> None:
-        """
-        Run before every test:
+    def test_deprecations(self) -> None:
         """
 
     def test_deprecations(self):
@@ -363,6 +366,7 @@ class TrialsFromListTestCase(unittest.TestCase):
                                            description='trial is a list')
 
     def setUp(self) -> None:
+    def test_deprecations(self) -> None:
         """
         Run before every test:
         """
