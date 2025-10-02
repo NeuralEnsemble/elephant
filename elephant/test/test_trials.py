@@ -58,8 +58,7 @@ class DecoratorTest:
         # This is just a mock implementation for testing purposes
         if trials_obj:
             return trials_obj
-        else:
-            return trials
+        return trials
 
 
 class TestTrialsToListOfSpiketrainlist(unittest.TestCase):
