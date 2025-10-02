@@ -160,8 +160,10 @@ class TestTrialsToListOfSpiketrainlist(TrialsBaseTestCase):
         list_of_spiketrainlists = new_class.method_to_decorate(
             self.trial_object)
         self.assertEqual(len(list_of_spiketrainlists), self.n_trials)
-        for spiketrainlist in list_of_spiketrainlists:
-            self.assertIsInstance(spiketrainlist, SpikeTrainList)
+        for spiketrainlist, expected_list in zip(
+                list_of_spiketrainlists, self.list_of_list_of_spiketrains):
+            self.assertSpikeTrainListEqual(spiketrainlist,
+                                           SpikeTrainList(expected_list))
 
     def test_decorator_return_with_list_of_lists_input_as_arg(self) -> None:
         """
@@ -172,10 +174,13 @@ class TestTrialsToListOfSpiketrainlist(TrialsBaseTestCase):
         list_of_list_of_spiketrains = new_class.method_to_decorate(
             self.list_of_list_of_spiketrains)
         self.assertEqual(len(list_of_list_of_spiketrains), self.n_trials)
-        for list_of_spiketrains in list_of_list_of_spiketrains:
+        for list_of_spiketrains, expected_list in (
+                zip(list_of_list_of_spiketrains,
+                    self.list_of_list_of_spiketrains)):
             self.assertIsInstance(list_of_spiketrains, list)
-            for spiketrain in list_of_spiketrains:
-                self.assertIsInstance(spiketrain, SpikeTrain)
+            for spiketrain, expected_spiketrain in (
+                    zip(list_of_spiketrains, expected_list)):
+                self.assertSpikeTrainEqual(spiketrain, expected_spiketrain)
 
     def test_decorator_return_with_trials_input_as_kwarg(self) -> None:
         """
@@ -186,8 +191,10 @@ class TestTrialsToListOfSpiketrainlist(TrialsBaseTestCase):
         list_of_spiketrainlists = new_class.method_to_decorate(
             trials_obj=self.trial_object)
         self.assertEqual(len(list_of_spiketrainlists), self.n_trials)
-        for spiketrainlist in list_of_spiketrainlists:
-            self.assertIsInstance(spiketrainlist, SpikeTrainList)
+        for spiketrainlist, expected_list in zip(
+                list_of_spiketrainlists, self.list_of_list_of_spiketrains):
+            self.assertSpikeTrainListEqual(spiketrainlist,
+                                           SpikeTrainList(expected_list))
 
     def test_decorator_return_with_list_of_lists_input_as_kwarg(self) -> None:
         """
@@ -198,10 +205,13 @@ class TestTrialsToListOfSpiketrainlist(TrialsBaseTestCase):
         list_of_list_of_spiketrains = new_class.method_to_decorate(
             trials_obj=self.list_of_list_of_spiketrains)
         self.assertEqual(len(list_of_list_of_spiketrains), self.n_trials)
-        for list_of_spiketrains in list_of_list_of_spiketrains:
+        for list_of_spiketrains, expected_list in (
+                zip(list_of_list_of_spiketrains,
+                    self.list_of_list_of_spiketrains)):
             self.assertIsInstance(list_of_spiketrains, list)
-            for spiketrain in list_of_spiketrains:
-                self.assertIsInstance(spiketrain, SpikeTrain)
+            for spiketrain, expected_spiketrain in (
+                    zip(list_of_spiketrains, expected_list)):
+                self.assertSpikeTrainEqual(spiketrain, expected_spiketrain)
 
 
     """Tests for elephant.trials.TrialsFromBlock class"""
@@ -413,8 +423,10 @@ class TrialsFromBlockTestCase(TrialsBaseTestCase):
                                  expected_trials)
 
 
-    """Tests for elephant.trials.TrialsFromList class"""
 class TrialsFromListTestCase(TrialsBaseTestCase):
+    """
+    Tests for :class:`elephant.trials.TrialsFromList`.
+    """
 
     @classmethod
     def setUpClass(cls) -> None:
