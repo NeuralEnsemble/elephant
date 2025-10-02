@@ -133,10 +133,6 @@ class TrialsFromBlockTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        """
-        Run once before tests:
-        """
-
         block = _create_trials_block(n_trials=36)
         cls.block = block
         cls.trial_object = TrialsFromBlock(block,
@@ -346,22 +342,23 @@ class TrialsFromListTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        """
-        Run once before tests:
-        Download the dataset from elephant_data
-        """
-        block = _create_trials_block(n_trials=36)
+        cls.n_spiketrains = 2
+        cls.n_analogsignals = 3
+        block = _create_trials_block(n_trials=36,
+                                     n_spiketrains=cls.n_spiketrains,
+                                     n_analogsignals=cls.n_analogsignals)
 
-        # Create Trialobject as list of lists
-        # add spiketrains
+        # Create trial data as list of lists
+        # 1. Add spiketrains
         trial_list = [[spiketrain for spiketrain in trial.spiketrains]
                       for trial in block.segments]
-        # add analogsignals
+        # 2. Add analog signals
         for idx, trial in enumerate(block.segments):
             for analogsignal in trial.analogsignals:
                 trial_list[idx].append(analogsignal)
         cls.trial_list = trial_list
 
+        # Create TrialsFromLists object
         cls.trial_object = TrialsFromLists(trial_list,
                                            description='trial is a list')
 
