@@ -72,17 +72,19 @@ class TestTrialsToListOfSpiketrainlist(unittest.TestCase):
             for _ in range(cls.n_trials)]
         cls.trial_object = TrialsFromLists(cls.list_of_list_of_spiketrains)
 
-    def test_decorator_applied(self):
-        # Test that the decorator is applied correctly
     def test_decorator_applied(self) -> None:
+        """
+        Test that the decorator is applied correctly.
+        """
         self.assertTrue(hasattr(
             DecoratorTest.method_to_decorate, '__wrapped__'
             ))
 
-    def test_decorator_return_with_trials_input_as_arg(self):
-        # Test if decorator takes in trial-object and returns
-        # list of spiketrainlists
     def test_decorator_return_with_trials_input_as_arg(self) -> None:
+        """
+        Test if the decorator takes in a `Trials` object and returns a list of
+        `SpikeTrainList`.
+        """
         new_class = DecoratorTest()
         list_of_spiketrainlists = new_class.method_to_decorate(
             self.trial_object)
@@ -90,10 +92,11 @@ class TestTrialsToListOfSpiketrainlist(unittest.TestCase):
         for spiketrainlist in list_of_spiketrainlists:
             self.assertIsInstance(spiketrainlist, SpikeTrainList)
 
-    def test_decorator_return_with_list_of_lists_input_as_arg(self):
-        # Test if decorator takes in list of lists of spiketrains
-        # and does not change input
     def test_decorator_return_with_list_of_lists_input_as_arg(self) -> None:
+        """
+        Test if the decorator takes in a list of lists of `SpikeTrain` and
+        does not change the input.
+        """
         new_class = DecoratorTest()
         list_of_list_of_spiketrains = new_class.method_to_decorate(
             self.list_of_list_of_spiketrains)
@@ -103,10 +106,11 @@ class TestTrialsToListOfSpiketrainlist(unittest.TestCase):
             for spiketrain in list_of_spiketrains:
                 self.assertIsInstance(spiketrain, SpikeTrain)
 
-    def test_decorator_return_with_trials_input_as_kwarg(self):
-        # Test if decorator takes in trial-object and returns
-        # list of spiketrainlists
     def test_decorator_return_with_trials_input_as_kwarg(self) -> None:
+        """
+        Test if the decorator takes in a `Trials` object and returns a list of
+        `SpikeTrainList` when passed as kwarg.
+        """
         new_class = DecoratorTest()
         list_of_spiketrainlists = new_class.method_to_decorate(
             trials_obj=self.trial_object)
@@ -114,10 +118,11 @@ class TestTrialsToListOfSpiketrainlist(unittest.TestCase):
         for spiketrainlist in list_of_spiketrainlists:
             self.assertIsInstance(spiketrainlist, SpikeTrainList)
 
-    def test_decorator_return_with_list_of_lists_input_as_kwarg(self):
-        # Test if decorator takes in list of lists of spiketrains
-        # and does not change input
     def test_decorator_return_with_list_of_lists_input_as_kwarg(self) -> None:
+        """
+        Test if the decorator takes in a list of lists of `SpikeTrain`and does
+        not change the input if passed as a kwarg.
+        """
         new_class = DecoratorTest()
         list_of_list_of_spiketrains = new_class.method_to_decorate(
             trials_obj=self.list_of_list_of_spiketrains)
