@@ -214,8 +214,10 @@ class TestTrialsToListOfSpiketrainlist(TrialsBaseTestCase):
                 self.assertSpikeTrainEqual(spiketrain, expected_spiketrain)
 
 
-    """Tests for elephant.trials.TrialsFromBlock class"""
 class TrialsFromBlockTestCase(TrialsBaseTestCase):
+    """
+    Tests for :class:`elephant.trials.TrialsFromBlock`.
+    """
 
     @classmethod
     def setUpClass(cls) -> None:
