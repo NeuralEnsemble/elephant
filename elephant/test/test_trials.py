@@ -7,6 +7,7 @@ nit tests for the objects of the API handling trial data in Elephant.
 """
 
 import unittest
+import numpy as np
 import quantities as pq
 from neo.core import Block, Segment, AnalogSignal, SpikeTrain
 from neo.core.spiketrainlist import SpikeTrainList
@@ -126,7 +127,6 @@ class DecoratorTest:
         return trials
 
 
-class TestTrialsToListOfSpiketrainlist(unittest.TestCase):
 ######################
 # Tests - test cases #
 ######################
