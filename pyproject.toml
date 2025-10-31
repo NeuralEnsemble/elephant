@@ -1,0 +1,52 @@
+[build-system]
+requires = ["setuptools >= 61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "elephant"
+dynamic = [
+        "version",
+        "dependencies",
+        "optional-dependencies"]
+description = "Elephant (Electrophysiology Analysis Toolkit) is an open-source, community centered library for the analysis of electrophysiological data in the Python programming language. The focus of Elephant is on generic analysis functions for spike train data and time series recordings from electrodes, such as the local field potentials (LFP) or intracellular voltages.In addition to providing a common platform for analysis code from different laboratories, the Elephant project aims to provide a consistent and homogeneous analysis framework that is built on a modular foundation. \nElephant is the direct successor to Neurotools and maintains ties to complementary projects such as OpenElectrophy and spykeviewer."
+license = {file = "LICENSE.txt"}
+classifiers = [
+        "Development Status :: 5 - Production/Stable", 
+        "Intended Audience :: Science/Research",
+        "License :: OSI Approved :: BSD License",
+        "Natural Language :: English", "Operating System :: OS Independent",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3 :: Only",
+        "Topic :: Scientific/Engineering"]
+keywords = ["neuroscience", "neurophysiology", "electrophysiology", "statistics", "data-analysis"]
+readme = {file = "README.md", content-type = "text/markdown"}
+requires-python = ">= 3.8"
+
+[project.urls]
+Homepage = "http://python-elephant.org"
+Documentation = "https://elephant.readthedocs.io/en/latest/"
+Repository = "https://github.com/NeuralEnsemble/elephant"
+Issues = "https://github.com/NeuralEnsemble/elephant/issues"
+Changelog = "https://github.com/NeuralEnsemble/elephant/releases"
+
+[tool.setuptools.dynamic.optional-dependencies]
+docs = {file = ["requirements/requirements-docs.txt"]}
+extras = {file = ["requirements/requirements-extras.txt"]}
+opencl = {file = ["requirements/requirements-opencl.txt"]}
+cuda = {file = ["requirements/requirements-cuda.txt"]}
+tests = {file = ["requirements/requirements-tests.txt"]}
+tutorials = {file = ["requirements/requirements-tutorials.txt"]}
+
+[tool.setuptools.dynamic]
+version = {file = "elephant/VERSION"}
+dependencies = {file = ["requirements/requirements.txt"]}
+
+[tool.setuptools]
+packages = ["elephant", "elephant.test"]
+
+# This file was created following this guide:
+# https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#writing-pyproject-toml
