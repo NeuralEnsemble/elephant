@@ -171,7 +171,7 @@ jobs:
         run: |
           python --version
           python -m pip install --upgrade pip
-          pip install coveralls
+          pip install pytest-cov coveralls
           pip install -e .[extras,tests]
 
 #      - name: Install dependencies
