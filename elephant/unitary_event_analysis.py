@@ -60,7 +60,7 @@ import quantities as pq
 import scipy
 
 import elephant.conversion as conv
-from elephant.utils import is_binary
+from elephant.utils import is_binary, trials_to_list_of_spiketrainlist
 
 __all__ = [
     "hash_from_pattern",
@@ -689,6 +689,7 @@ def _UE(mat, pattern_hash, method='analytic_TrialByTrial', n_surrogates=1):
     return Js, rate_avg, n_exp, n_emp, indices
 
 
+@trials_to_list_of_spiketrainlist
 def jointJ_window_analysis(spiketrains, bin_size=5 * pq.ms,
                            win_size=100 * pq.ms, win_step=5 * pq.ms,
                            pattern_hash=None, method='analytic_TrialByTrial',
@@ -701,7 +702,7 @@ def jointJ_window_analysis(spiketrains, bin_size=5 * pq.ms,
 
     Parameters
     ----------
-    spiketrains : list
+    spiketrains : :class:`elephant.trials.Trials`, list
         A list of spike trains (`neo.SpikeTrain` objects) in different trials:
           * 0-axis --> Trials
 
