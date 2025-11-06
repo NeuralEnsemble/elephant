@@ -452,16 +452,16 @@ class TrialsFromBlock(Trials):
     >>> st_generator = StationaryPoissonProcess(rate=10*pq.Hz, t_stop=1*pq.s)
     >>> trial_block = neo.Block()
     >>> for _ in range(2):
-    >>>     trial = neo.Segment()
-    >>>     trial.spiketrains = st_generator.generate_n_spiketrains(3)
-    >>>     signal = np.sin(np.arange(0, 6*np.pi, 2*np.pi/1000))
-    >>>     signal += np.random.normal(size=signal.shape)
-    >>>     trial.analogsignals.append(
+    ...     trial = neo.Segment()
+    ...     trial.spiketrains = st_generator.generate_n_spiketrains(3)
+    ...     signal = np.sin(np.arange(0, 6*np.pi, 2*np.pi/1000))
+    ...     signal += np.random.normal(size=signal.shape)
+    ...     trial.analogsignals.append(
     ...         neo.AnalogSignal(signal, units=pq.mV,
     ...                          t_stop=1*pq.s,
     ...                          sampling_rate=(1/3000)*pq.Hz)
     ...     )
-    >>>     trial_block.segments.append(trial)
+    ...     trial_block.segments.append(trial)
     >>>
     >>> trials = TrialsFromBlock(trial_block)
 
@@ -587,9 +587,9 @@ class TrialsFromLists(Trials):
     >>> st_generator = StationaryPoissonProcess(rate=10*pq.Hz, t_stop=1*pq.s)
     >>> trial_list = [st_generator.generate_n_spiketrains(2) for _ in range(3)]
     >>> for trial in trial_list:
-    >>>     signal = np.sin(np.arange(0, 6*np.pi, 2*np.pi/1000))
-    >>>     signal += np.random.normal(size=signal.shape)
-    >>>     trial.append(
+    ...     signal = np.sin(np.arange(0, 6*np.pi, 2*np.pi/1000))
+    ...     signal += np.random.normal(size=signal.shape)
+    ...     trial.append(
     ...         neo.AnalogSignal(signal, units=pq.mV,
     ...                          t_stop=1*pq.s,
     ...                          sampling_rate=(1/3000)*pq.Hz)
