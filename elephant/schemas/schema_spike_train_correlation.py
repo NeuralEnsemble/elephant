@@ -122,7 +122,7 @@ class PydanticSpikeTimeTilingCoefficient(BaseModel):
 
     @model_validator(mode="after")
     def check_correctTypeCombination(self) -> Self:
-        fv.model_validate_spiketrains_sam_t_start_stop(self.spiketrain_i, self.spiketrain_j)
+        fv.model_validate_two_spiketrains_same_t_start_stop(self.spiketrain_i, self.spiketrain_j)
         return self
 
 
@@ -147,6 +147,8 @@ class PydanticSpikeTrainTimescale(BaseModel):
 
     @model_validator(mode="after")
     def check_correctTypeCombination(self) -> Self:
-        if self.max_tau % self.binned_spiketrain.bin_size != 0:
+        if self.max_tau % self.binned_spiketrain.bin_size > 0.00001:
             raise ValueError("max_tau has to be a multiple of binned_spiketrain.bin_size")
         return self
+
+
