@@ -83,6 +83,9 @@ from elephant.conversion import BinnedSpikeTrain
 from elephant.utils import deprecated_alias, check_neo_consistency, \
     is_time_quantity, round_binning_errors
 
+from elephant.schemas.function_validator import validate_with
+from elephant.schemas.schema_statistics import *;
+
 # do not import unicode_literals
 # (quantities rescale does not work with unicodes)
 
@@ -102,9 +105,12 @@ __all__ = [
     "optimal_kernel_bandwidth"
 ]
 
-cv = scipy.stats.variation
+@validate_with(PydanticCv)
+def cv(*args, **kwargs):
+    return scipy.stats.variation(*args, **kwargs)
 
 
+@validate_with(PydanticIsi)
 def isi(spiketrain, axis=-1):
     """
     Return an array containing the inter-spike intervals of the spike train.
@@ -155,7 +161,7 @@ def isi(spiketrain, axis=-1):
 
     return intervals
 
-
+@validate_with(PydanticMeanFiringRate)
 def mean_firing_rate(spiketrain, t_start=None, t_stop=None, axis=None):
     """
     Return the firing rate of the spike train.
@@ -270,6 +276,7 @@ def mean_firing_rate(spiketrain, t_start=None, t_stop=None, axis=None):
     return rates
 
 
+@validate_with(PydanticFanofactor)
 def fanofactor(spiketrains, warn_tolerance=0.1 * pq.ms):
     r"""
     Evaluates the empirical Fano factor F of the spike counts of
@@ -373,6 +380,7 @@ def __variation_check(v, with_nan):
     return None
 
 
+@validate_with(PydanticCv2)
 @deprecated_alias(v='time_intervals')
 def cv2(time_intervals, with_nan=False):
     r"""
@@ -441,6 +449,7 @@ def cv2(time_intervals, with_nan=False):
     return 2. * np.mean(np.abs(cv_i))
 
 
+@validate_with(PydanticLv)
 @deprecated_alias(v='time_intervals')
 def lv(time_intervals, with_nan=False):
     r"""
@@ -508,6 +517,7 @@ def lv(time_intervals, with_nan=False):
     return 3. * np.mean(np.power(cv_i, 2))
 
 
+@validate_with(PydanticLvr)
 def lvr(time_intervals, R=5*pq.ms, with_nan=False):
     r"""
     Calculate the measure of revised local variation LvR for a sequence of time
@@ -600,6 +610,7 @@ def lvr(time_intervals, R=5*pq.ms, with_nan=False):
     return lvr
 
 
+@validate_with(PydanticInstantaneousRate)
 @deprecated_alias(spiketrain='spiketrains')
 def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
                        cutoff=5.0, t_start=None, t_stop=None, trim=False,
@@ -1061,6 +1072,7 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
     return rate
 
 
+@validate_with(PydanticTimeHistogram)
 @deprecated_alias(binsize='bin_size')
 def time_histogram(spiketrains, bin_size, t_start=None, t_stop=None,
                    output='counts', binary=False):
@@ -1204,6 +1216,7 @@ def time_histogram(spiketrains, bin_size, t_start=None, t_stop=None,
                             normalization=output)
 
 
+@validate_with(PydanticComplexityPdf)
 @deprecated_alias(binsize='bin_size')
 def complexity_pdf(spiketrains, bin_size):
     """
@@ -1418,6 +1431,7 @@ class Complexity(object):
 
     """
 
+    @validate_with(PydanticComplexityInit)
     def __init__(self, spiketrains,
                  sampling_rate=None,
                  bin_size=None,
@@ -1716,6 +1730,7 @@ def cost_function(x, N, w, dt):
     return C, yh
 
 
+@validate_with(PydanticOptimalKernelBandwidth)
 @deprecated_alias(tin='times', w='bandwidth')
 def optimal_kernel_bandwidth(spiketimes, times=None, bandwidth=None,
                              bootstrap=False):
