@@ -12,16 +12,21 @@ def validate_with(model_class: type[BaseModel]):
 
         @wraps(func)
         def wrapper(*args, **kwargs):
+
+            if kwargs.pop("not_validate", False):
+            # skip validation, call inner function directly
+                return func(*args, **kwargs)
+
             # Bind args & kwargs to function parameters
             bound = sig.bind_partial(*args, **kwargs)
             bound.apply_defaults()
             data = bound.arguments
 
             # Validate using Pydantic
-            validated = model_class(**data)
+            model_class(**data)
 
-            # Call function with validated data unpacked
+            # Call function
             return func(*args, **kwargs)
-
+        wrapper._is_validate_with = True
         return wrapper
     return decorator
