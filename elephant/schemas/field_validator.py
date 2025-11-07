@@ -39,6 +39,8 @@ def get_length(obj) -> int:
         return obj.size
     elif isinstance(obj, (list,tuple)):
         return len(obj)
+    elif isinstance(obj, neo.core.spiketrainlist.SpikeTrainList):
+        return len(obj)
 
 
     
@@ -115,6 +117,7 @@ def validate_type_length(value, info, allowed_types: tuple, allow_none: bool, mi
 
 def validate_array_content(value, info, allowed_types: tuple, allow_none: bool, min_length: int, allowed_content_types: tuple, min_length_content: int = 0):
     validate_type_length(value, info, allowed_types, allow_none, min_length)
+    hasContentLength = False
     for i, item in enumerate(value):
         if not isinstance(item, allowed_content_types):
             raise TypeError(f"Element {i} in {info.field_name} must be {allowed_content_types}, not {type(item).__name__}")
@@ -144,7 +147,7 @@ def validate_spiketrains(value, info, allowed_types = (list,), allow_none = Fals
 
 def validate_spiketrains_matrix(value, info, allowed_types = (elephant.trials.Trials, list[neo.core.spiketrainlist.SpikeTrainList], list[list[neo.core.SpikeTrain]]), allow_none = False, min_length = 1, check_rank_deficient = False):
     if isinstance(value, list):
-        validate_spiketrains(value, info, allowed_content_types=(neo.core.spiketrainlist,list[neo.core.SpikeTrain],))
+        validate_spiketrains(value, info, allowed_content_types=(neo.core.spiketrainlist.SpikeTrainList,list[neo.core.SpikeTrain],))
     else:
         validate_type(value, info, (elephant.trials.Trials,), allow_none=False)
     if check_rank_deficient:
@@ -169,7 +172,7 @@ def validate_time_intervals(value, info, allowed_types = (list, pq.Quantity, np.
             raise ValueError(f"{info.field_name} is not allowed to be a matrix")
     return value
 
-def validate_array(value, info, allowed_types=(list, np.ndarray) , allow_none=False, min_length=1, allowed_content_types = None, min_length_content = 0):
+def validate_array(value, info, allowed_types=(list, np.ndarray, tuple) , allow_none=False, min_length=1, allowed_content_types = None, min_length_content = 0):
     if allowed_content_types is None:
         validate_type_length(value, info, allowed_types, allow_none, min_length)
     else:
@@ -202,10 +205,10 @@ def validate_key_in_tuple(value : str, info, t: tuple):
 
 # ---- Model validation helpers ----
 
-def model_validate_spiketrains_same_t_start_stop(spiketrain, t_start, t_stop, name: str = "spiketrains", warning: bool = False):
+def model_validate_spiketrains_same_t_start_stop(spiketrains, t_start, t_stop, name: str = "spiketrains", warning: bool = False):
     if(t_start is None or t_stop is None):
         first = True
-        for i, item in enumerate(spiketrain):
+        for i, item in enumerate(spiketrains):
             if first:
                 t_start = item.t_start
                 t_stop = item.t_stop
@@ -225,7 +228,7 @@ def model_validate_spiketrains_same_t_start_stop(spiketrain, t_start, t_stop, na
         if t_start>t_stop:
             raise ValueError(f"{name} has t_start > t_stop")
                 
-def model_validate_spiketrains_sam_t_start_stop(spiketrain_i, spiketrain_j):
+def model_validate_two_spiketrains_same_t_start_stop(spiketrain_i, spiketrain_j):
     if spiketrain_i.t_start != spiketrain_j.t_start:
             raise ValueError("spiketrain_i and spiketrain_j need to have the same t_start")
     if spiketrain_i.t_stop != spiketrain_j.t_stop:
