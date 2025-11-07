@@ -21,7 +21,7 @@ def validate_with(model_class: type[BaseModel]):
             validated = model_class(**data)
 
             # Call function with validated data unpacked
-            return func(**validated.model_dump())
+            return func(*args, **kwargs)
 
         return wrapper
     return decorator
