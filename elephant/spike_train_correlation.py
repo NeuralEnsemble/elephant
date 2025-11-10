@@ -26,7 +26,7 @@ from scipy import integrate
 from elephant.utils import check_neo_consistency
 
 from elephant.schemas.function_validator import validate_with
-from elephant.schemas.schema_spike_train_correlation import *;
+from elephant.schemas.schema_spike_train_correlation import *
 
 
 __all__ = [

@@ -84,7 +84,7 @@ from elephant.utils import deprecated_alias, check_neo_consistency, \
     is_time_quantity, round_binning_errors
 
 from elephant.schemas.function_validator import validate_with
-from elephant.schemas.schema_statistics import *;
+from elephant.schemas.schema_statistics import *
 
 # do not import unicode_literals
 # (quantities rescale does not work with unicodes)

@@ -8,9 +8,9 @@ import elephant
 
 from pydantic import ValidationError
 
-from elephant.schemas.schema_statistics import *;
-from elephant.schemas.schema_spike_train_correlation import *;
-from elephant.schemas.schema_spike_train_synchrony import *;
+from elephant.schemas.schema_statistics import *
+from elephant.schemas.schema_spike_train_correlation import *
+from elephant.schemas.schema_spike_train_synchrony import *
 
 
 def test_model_json_schema():

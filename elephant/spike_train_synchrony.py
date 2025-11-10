@@ -30,7 +30,7 @@ from elephant.statistics import Complexity
 from elephant.utils import is_time_quantity, check_same_units
 
 from elephant.schemas.function_validator import validate_with
-from elephant.schemas.schema_spike_train_synchrony import *;
+from elephant.schemas.schema_spike_train_synchrony import *
 
 SpikeContrastTrace = namedtuple("SpikeContrastTrace", (
     "contrast", "active_spiketrains", "synchrony", "bin_size"))
