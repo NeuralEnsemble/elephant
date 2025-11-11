@@ -3,7 +3,6 @@ import numpy as np
 from typing import (
     Any,
     Union,
-    Self,
     Optional
 )
 from pydantic import (
@@ -44,7 +43,7 @@ class PydanticMeanFiringRate(BaseModel):
         return fv.validate_time(v, info)
 
     @model_validator(mode="after")
-    def validate_model(self) -> Self:             
+    def validate_model(self):             
         if isinstance(self.spiketrain, (np.ndarray, list)):
             if isinstance(self.t_start, pq.Quantity) or isinstance(self.t_stop, pq.Quantity):
                 raise TypeError("spiketrain is a np.ndarray or list but t_start or t_stop is pq.Quantity")
@@ -101,7 +100,7 @@ class PydanticInstantaneousRate(BaseModel):
         return fv.validate_quantity(v, info, allow_none=True)
     
     @model_validator(mode="after")
-    def validate_model(self) -> Self:             
+    def validate_model(self):             
         if(isinstance(self.kernel, Kernel) and self.cutoff < self.kernel.min_cutoff):
             warnings.warn(f"cutoff {self.cutoff} is smaller than the minimum cutoff {self.kernel.min_cutoff} of the kernel", UserWarning)
         if isinstance(self.spiketrains, list):
@@ -142,7 +141,7 @@ class PydanticTimeHistogram(BaseModel):
         return fv.validate_quantity(v, info, allow_none=True)
     
     @model_validator(mode="after")
-    def validate_model(self) -> Self:             
+    def validate_model(self):             
         fv.model_validate_spiketrains_same_t_start_stop(self.spiketrains, self.t_start, self.t_stop, warning=True)
         return self
     
@@ -216,7 +215,7 @@ class PydanticCv2(BaseModel):
        return fv.validate_time_intervals(v, info, check_matrix=True)
     
     @model_validator(mode="after")
-    def validate_model(self) -> Self:             
+    def validate_model(self):             
         fv.model_validate_time_intervals_with_nan(self.time_intervals, self.with_nan)
         return self
     
@@ -235,7 +234,7 @@ class PydanticLv(BaseModel):
        return fv.validate_time_intervals(v, info, check_matrix=True)
     
     @model_validator(mode="after")
-    def validate_model(self) -> Self:             
+    def validate_model(self):             
         fv.model_validate_time_intervals_with_nan(self.time_intervals, self.with_nan)
         return self
     
@@ -267,7 +266,7 @@ class PydanticLvr(BaseModel):
         return v
     
     @model_validator(mode="after")
-    def validate_model(self) -> Self:             
+    def validate_model(self):             
         fv.model_validate_time_intervals_with_nan(self.time_intervals, self.with_nan)
         return self
     

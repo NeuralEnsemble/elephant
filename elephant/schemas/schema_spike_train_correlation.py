@@ -3,7 +3,6 @@ import numpy as np
 from typing import (
     Any,
     Union,
-    Self,
     Optional
 )
 from pydantic import (
@@ -35,7 +34,7 @@ class PydanticCovariance(BaseModel):
         return fv.validate_binned_spiketrain(v, info)
     
     @model_validator(mode="after")
-    def validate_model(self) -> Self:             
+    def validate_model(self):             
         fv.model_validate_binned_spiketrain_fast(self.binned_spiketrain, self.fast)
         return self
 
@@ -56,7 +55,7 @@ class PydanticCorrelationCoefficient(BaseModel):
         return fv.validate_binned_spiketrain(v, info)
     
     @model_validator(mode="after")
-    def validate_model(self) -> Self:             
+    def validate_model(self):             
         fv.model_validate_binned_spiketrain_fast(self.binned_spiketrain, self.fast)
         return self
 
@@ -121,7 +120,7 @@ class PydanticSpikeTimeTilingCoefficient(BaseModel):
         return fv.validate_quantity(v, info)
 
     @model_validator(mode="after")
-    def check_correctTypeCombination(self) -> Self:
+    def check_correctTypeCombination(self):
         fv.model_validate_two_spiketrains_same_t_start_stop(self.spiketrain_i, self.spiketrain_j)
         return self
 
@@ -146,7 +145,7 @@ class PydanticSpikeTrainTimescale(BaseModel):
         return fv.validate_quantity(v, info)
 
     @model_validator(mode="after")
-    def check_correctTypeCombination(self) -> Self:
+    def check_correctTypeCombination(self):
         if self.max_tau % self.binned_spiketrain.bin_size > 0.00001:
             raise ValueError("max_tau has to be a multiple of binned_spiketrain.bin_size")
         return self
