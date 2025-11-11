@@ -2,6 +2,8 @@ from functools import wraps
 from inspect import signature
 from pydantic import BaseModel
 
+skip_validation = False
+
 def validate_with(model_class: type[BaseModel]):
     """
     A decorator that validates the inputs of a function using a Pydantic model.
@@ -13,7 +15,7 @@ def validate_with(model_class: type[BaseModel]):
         @wraps(func)
         def wrapper(*args, **kwargs):
 
-            if kwargs.pop("not_validate", False):
+            if kwargs.pop("not_validate", False) or skip_validation:
             # skip validation, call inner function directly
                 return func(*args, **kwargs)
 
@@ -30,3 +32,9 @@ def validate_with(model_class: type[BaseModel]):
         wrapper._is_validate_with = True
         return wrapper
     return decorator
+
+def activate_validation():
+    skip_validation = False
+
+def deactivate_validation():
+    skip_validation = True
