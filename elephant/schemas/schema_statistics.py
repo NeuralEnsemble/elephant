@@ -65,7 +65,7 @@ class PydanticInstantaneousRate(BaseModel):
     kernel: Union[KernelOptions, Any] = Field(KernelOptions.auto, description="Kernel for convolution")
     cutoff: Optional[float] = Field(5.0, ge=0, description="cutoff of probability distribution")
     t_start: Optional[Any] = Field(None, description="Start time")
-    t_stop: Optional[Any] = Field(None, gt=0, description="Stop time")
+    t_stop: Optional[Any] = Field(None, description="Stop time")
     trim: Optional[bool] = Field(False, description="Only return region of convolved signal")
     center_kernel: Optional[bool] = Field(True, description="Center the kernel on spike")
     border_correction: Optional[bool] = Field(False, description="Apply border correction")
