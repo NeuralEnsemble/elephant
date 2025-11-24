@@ -15,6 +15,7 @@ def validate_with(model_class: type[BaseModel]):
         @wraps(func)
         def wrapper(*args, **kwargs):
 
+            print(skip_validation)
             if not skip_validation:
                 # Bind args & kwargs to function parameters
                 bound = sig.bind_partial(*args, **kwargs)
@@ -30,7 +31,9 @@ def validate_with(model_class: type[BaseModel]):
     return decorator
 
 def activate_validation():
+    global skip_validation
     skip_validation = False
 
 def deactivate_validation():
+    global skip_validation
     skip_validation = True

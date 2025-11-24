@@ -6,7 +6,8 @@ import numpy as np
 
 import elephant
 
-from elephant.schemas.function_validator import deactivate_validation
+from pydantic import ValidationError
+from elephant.schemas.function_validator import deactivate_validation, activate_validation
 
 from elephant.schemas.schema_statistics import *
 from elephant.schemas.schema_spike_train_correlation import *
@@ -48,10 +49,15 @@ Tests bypass validate_with decorator if it is already implemented for that funct
 so consistency is checked correctly
 """
 
-# Deactivate validation happening in the decorator of the elephant functions for all tests in this module to keep checking consistent behavior
-@pytest.fixture(autouse=True)
-def disable_validation_for_tests():
-	deactivate_validation()
+# Deactivate validation happening in the decorator of the elephant functions before all tests in this module to keep checking consistent behavior. Activates it again after all tests in this module have run.
+
+@pytest.fixture(scope="module", autouse=True)
+def module_setup_teardown():
+    deactivate_validation()
+
+    yield
+
+    activate_validation()
 
 @pytest.fixture
 def make_list():
@@ -119,9 +125,9 @@ def test_valid_spiketrain_input(elephant_fn, model_cls, fixture):
 ])
 def test_invalid_spiketrain(elephant_fn, model_cls, spiketrain):
 	invalid = {"spiketrain": spiketrain}
-	with pytest.raises(Exception):
+	with pytest.raises(TypeError):
 		model_cls(**invalid)
-	with pytest.raises(Exception):
+	with pytest.raises((TypeError, ValueError)):
 		elephant_fn(**invalid)
 
 
@@ -147,9 +153,9 @@ def test_valid_pq_quantity(elephant_fn, model_cls, make_spiketrains, make_pq_sin
 ])
 def test_invalid_pq_quantity(elephant_fn, model_cls, make_spiketrains, pq_quantity):
 	invalid = {"spiketrains": make_spiketrains, "bin_size": pq_quantity}
-	with pytest.raises(Exception):
+	with pytest.raises(TypeError):
 		model_cls(**invalid)
-	with pytest.raises(Exception):
+	with pytest.raises(AttributeError):
 		elephant_fn(**invalid)
 
 
@@ -164,9 +170,9 @@ def test_invalid_pq_quantity(elephant_fn, model_cls, make_spiketrains, pq_quanti
 ], indirect=["fixture"])
 def test_invalid_spiketrains(elephant_fn, model_cls, fixture, make_pq_single_quantity):
 	invalid = {"spiketrains": fixture, "sampling_period": make_pq_single_quantity}
-	with pytest.raises(Exception):
+	with pytest.raises(TypeError):
 		model_cls(**invalid)
-	with pytest.raises(Exception):
+	with pytest.raises(TypeError):
 		elephant_fn(**invalid)
 
 @pytest.mark.parametrize("output", [
@@ -190,9 +196,9 @@ def test_valid_enum(output, make_spiketrains, make_pq_single_quantity):
 ])
 def test_invalid_enum(output, make_spiketrains, make_pq_single_quantity):
 	invalid = {"spiketrains": make_spiketrains, "bin_size": make_pq_single_quantity, "output": output}
-	with pytest.raises(Exception):
+	with pytest.raises(ValidationError):
 		PydanticTimeHistogram(**invalid)
-	with pytest.raises(Exception):
+	with pytest.raises(ValueError):
 		elephant.statistics.time_histogram(**invalid)
 
 
@@ -204,21 +210,21 @@ def test_valid_binned_spiketrain(make_binned_spiketrain):
 
 def test_invalid_binned_spiketrain(make_spiketrain):
 	invalid = {"binned_spiketrain": make_spiketrain}
-	with pytest.raises(Exception):
+	with pytest.raises(TypeError):
 		PydanticCovariance(**invalid)
-	with pytest.raises(Exception):
+	with pytest.raises(AttributeError):
 		elephant.spike_train_correlation.covariance(**invalid)
 
-@pytest.mark.parametrize("elephant_fn,model_cls,parameter_name,empty_input", [
-	(elephant.statistics.instantaneous_rate, PydanticInstantaneousRate, "spiketrains", []),
-	(elephant.statistics.optimal_kernel_bandwidth, PydanticOptimalKernelBandwidth, "spiketimes", np.array([])),
-	(elephant.statistics.cv2, PydanticCv2, "time_intervals", np.array([])*pq.s),
+@pytest.mark.parametrize("elephant_fn,model_cls,invalid", [
+	(elephant.statistics.instantaneous_rate, PydanticInstantaneousRate, {"spiketrains": [], "sampling_period": 0.01 * pq.s}),
+	(elephant.statistics.optimal_kernel_bandwidth, PydanticOptimalKernelBandwidth, {"spiketimes": np.array([])}),
+	(elephant.statistics.cv2, PydanticCv2, {"time_intervals": np.array([])*pq.s}),
 ])
-def test_invalid_empty_input(elephant_fn, model_cls, parameter_name, empty_input):
-	invalid = {parameter_name: empty_input}
-	with pytest.raises(Exception):
+def test_invalid_empty_input(elephant_fn, model_cls, invalid):
+
+	with pytest.raises(ValueError):
 		model_cls(**invalid)
-	with pytest.raises(Exception):
+	with pytest.raises((ValueError,TypeError)):
 		elephant_fn(**invalid)
 
 @pytest.mark.parametrize("elephant_fn,model_cls,parameter_name,empty_input", [
@@ -226,9 +232,9 @@ def test_invalid_empty_input(elephant_fn, model_cls, parameter_name, empty_input
 ])
 def test_warning_empty_input(elephant_fn, model_cls, parameter_name, empty_input):
 	warning = {parameter_name: empty_input}
-	with pytest.warns(Warning):
+	with pytest.warns(UserWarning):
 		model_cls(**warning)
-	with pytest.warns(Warning):
+	with pytest.warns(UserWarning):
 		elephant_fn(**warning)
 
 
