@@ -72,7 +72,7 @@ class TrialsBaseTestCase(unittest.TestCase):
         self.assertIsInstance(segment_2, Segment)
         self.assertIs(segment_1, segment_2)
         self.assertEqual(segment_1.name, segment_2.name)
-        self.assertEqual(segment_2.description, segment_2.description)
+        self.assertEqual(segment_1.description, segment_2.description)
         self.assertDictEqual(segment_1.annotations, segment_2.annotations)
         self.assertSpikeTrainListEqual(segment_1.spiketrains,
                                        segment_2.spiketrains)
