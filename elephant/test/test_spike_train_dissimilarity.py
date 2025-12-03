@@ -14,7 +14,7 @@ from quantities import ms, s, Hz
 import elephant.kernels as kernels
 from elephant.spike_train_generation import StationaryPoissonProcess
 import elephant.spike_train_dissimilarity as stds
-
+import warnings
 from elephant.datasets import download_datasets
 
 
@@ -47,6 +47,7 @@ class TimeScaleDependSpikeTrainDissimMeasuresTestCase(unittest.TestCase):
         self.st23 = StationaryPoissonProcess(rate=30 * Hz, t_start=0 * ms,
                                              t_stop=1000 * ms
                                              ).generate_spiketrain()
+        self.st24 = SpikeTrain([0.1782, 0.2286, 0.2804, 0.4972, 0.5504], units='s',t_stop=4.0)
         self.rd_st_list = [self.st21, self.st22, self.st23]
         self.st31 = SpikeTrain([12.0], units='ms', t_stop=1000.0)
         self.st32 = SpikeTrain([12.0, 12.0], units='ms', t_stop=1000.0)
@@ -73,7 +74,7 @@ class TimeScaleDependSpikeTrainDissimMeasuresTestCase(unittest.TestCase):
         self.tau7 = 0.01 * s
         self.q7 = 1.0 / self.tau7
         self.t = np.linspace(0, 200, 20000001) * ms
-
+        self.tau8 = 0.1 * s
     def test_wrong_input(self):
         self.assertRaises(TypeError, stds.victor_purpura_distance,
                           [self.array1, self.array2], self.q3)
@@ -599,7 +600,15 @@ class TimeScaleDependSpikeTrainDissimMeasuresTestCase(unittest.TestCase):
         self.assertEqual(stds.van_rossum_distance(
             [self.st21], self.tau3)[0, 0], 0)
         self.assertEqual(len(stds.van_rossum_distance([], self.tau3)), 0)
-
+        
+        # Check small negative values edge case
+        with warnings.catch_warnings(record='True') as w:
+            warnings.simplefilter("always")
+            result = stds.van_rossum_distance([self.st24, self.st24], self.tau8)
+            self.assertTrue(any("very small negative values encountered" in str(warn.message)
+                       for warn in w))
+        self.assertEqual(result[0,1], 0.0)
+        self.assertFalse(np.any(np.isnan(result)))
 
 if __name__ == '__main__':
     unittest.main()
