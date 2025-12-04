@@ -455,8 +455,8 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt install -y libopenmpi-dev openmpi-bin
-          
-          micromamba install -y -c conda-forge openmpi pandoc libstdcxx-ng # fix libstdc++.so.6: version for new scipy versions > 1.9.1
+          # Moved openmpi pandoc and libstdcxx-ng to environment-docs file        
+          # micromamba install -y -c conda-forge openmpi pandoc libstdcxx-ng # fix libstdc++.so.6: version for new scipy versions > 1.9.1
           micromamba env update --file requirements/environment-docs.yml --name elephant
           python -m pip install --upgrade pip
           pip install -e .[extras,tutorials,docs]
