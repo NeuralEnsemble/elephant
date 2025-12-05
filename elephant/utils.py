@@ -39,7 +39,7 @@ logger = logging.getLogger(__file__)
 log_handler = logging.StreamHandler()
 log_handler.setFormatter(
     logging.Formatter(
-        f"[%(asctime)s] {__name__[__name__.rfind('.')+1::]} -"
+        f"[%(asctime)s] {__name__[__name__.rfind('.') + 1 : :]} -"
         " %(levelname)s: %(message)s"
     )
 )
@@ -104,12 +104,8 @@ def _rename_kwargs(func_name, kwargs, aliases):
     for old, new in aliases.items():
         if old in kwargs:
             if new in kwargs:
-                raise TypeError(
-                    f"{func_name} received both '{old}' and " f"'{new}'"
-                )
-            warnings.warn(
-                f"'{old}' is deprecated; use '{new}'", DeprecationWarning
-            )
+                raise TypeError(f"{func_name} received both '{old}' and '{new}'")
+            warnings.warn(f"'{old}' is deprecated; use '{new}'", DeprecationWarning)
             kwargs[new] = kwargs.pop(old)
 
 
@@ -174,12 +170,10 @@ def get_common_start_stop_times(neo_objects):
         t_stop = min(elem.t_stop for elem in neo_objects)
     except AttributeError:
         raise AttributeError(
-            "Input neo objects must have 't_start' and " "'t_stop' attributes"
+            "Input neo objects must have 't_start' and 't_stop' attributes"
         )
     if t_stop < t_start:
-        raise ValueError(
-            f"t_stop ({t_stop}) is smaller than t_start " f"({t_start})"
-        )
+        raise ValueError(f"t_stop ({t_stop}) is smaller than t_start ({t_start})")
     return t_start, t_stop
 
 
@@ -423,10 +417,7 @@ def trials_to_list_of_spiketrainlist(method):
     @wraps(method)
     def wrapper(*args, **kwargs):
         new_args = tuple(
-            [
-                arg.get_spiketrains_from_trial_as_list(idx)
-                for idx in range(arg.n_trials)
-            ]
+            [arg.get_spiketrains_from_trial_as_list(idx) for idx in range(arg.n_trials)]
             if isinstance(arg, Trials)
             else arg
             for arg in args

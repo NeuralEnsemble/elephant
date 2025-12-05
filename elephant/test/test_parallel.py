@@ -15,6 +15,7 @@ class TestParallel(unittest.TestCase):
         cls.executors_cls = [SingleProcess, ProcessPoolExecutor]
         try:
             from elephant.parallel.mpi import MPIPoolExecutor, MPICommExecutor
+
             cls.executors_cls.extend([MPIPoolExecutor, MPICommExecutor])
         except ImportError:
             # mpi4py is not installed
@@ -24,7 +25,8 @@ class TestParallel(unittest.TestCase):
         n_spiketrains = 10
         cls.spiketrains = tuple(
             StationaryPoissonProcess(
-                rate=10 * pq.Hz, t_stop=10 * pq.s).generate_spiketrain()
+                rate=10 * pq.Hz, t_stop=10 * pq.s
+            ).generate_spiketrain()
             for _ in range(n_spiketrains)
         )
         cls.mean_fr = tuple(map(mean_firing_rate, cls.spiketrains))
@@ -33,10 +35,11 @@ class TestParallel(unittest.TestCase):
         for executor_cls in self.executors_cls:
             with self.subTest(executor_cls=executor_cls):
                 executor = executor_cls()
-                mean_fr = executor.execute(handler=mean_firing_rate,
-                                           args_iterate=self.spiketrains)
+                mean_fr = executor.execute(
+                    handler=mean_firing_rate, args_iterate=self.spiketrains
+                )
                 assert_array_almost_equal(mean_fr, self.mean_fr)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
