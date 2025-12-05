@@ -87,25 +87,26 @@ class TotalSpikingProbabilityEdgesTestCase(unittest.TestCase):
                  "ER10/new_sim0_100.mat",
                  "ER15/new_sim0_100.mat",
                  ]
+        repo_base_path = 'unittest/functional_connectivity/' \
+                         'total_spiking_probability_edges/data/'
 
         for datafile in files:
-            repo_base_path = 'unittest/functional_connectivity/' \
-                             'total_spiking_probability_edges/data/'
-            downloaded_dataset_path = download_datasets(repo_base_path +
-                                                        datafile)
+            with self.subTest(datafile=datafile):
+                downloaded_dataset_path = download_datasets(repo_base_path +
+                                                            datafile)
 
-            spiketrains, original_data = load_spike_train_simulated(
-                downloaded_dataset_path)
+                spiketrains, original_data = load_spike_train_simulated(
+                    downloaded_dataset_path)
 
-            connectivity_matrix, delay_matrix = \
-                total_spiking_probability_edges(spiketrains)
+                connectivity_matrix, delay_matrix = \
+                    total_spiking_probability_edges(spiketrains)
 
-            # Remove self-connections
-            np.fill_diagonal(connectivity_matrix, 0)
+                # Remove self-connections
+                np.fill_diagonal(connectivity_matrix, 0)
 
-            _, _, _, auc = roc_curve(connectivity_matrix, original_data)
+                _, _, _, auc = roc_curve(connectivity_matrix, original_data)
 
-            self.assertGreater(auc, 0.95)
+                self.assertGreater(auc, 0.95)
 
 # ====== HELPER FUNCTIONS ======
 
@@ -173,7 +174,7 @@ def roc_curve(estimate, original):
         tpr_list.append(sensitivity(*conf_matrix))
         fpr_list.append(fall_out(*conf_matrix))
 
-    auc = np.trapz(tpr_list, fpr_list)
+    auc = np.trapezoid(tpr_list, fpr_list)
 
     return tpr_list, fpr_list, thresholds, auc
 
