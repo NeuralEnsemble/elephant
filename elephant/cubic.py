@@ -39,7 +39,7 @@ Given a list of spike trains, the analysis comprises the following steps:
 >>> kappa # doctest: +SKIP
 [20.1, 22.656565656565657, 27.674706246134818]
 
-:copyright: Copyright 2014-2024 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2025 by the Elephant team, see `doc/authors.rst`.
 :license: BSD, see LICENSE.txt for details.
 """
 

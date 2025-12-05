@@ -9,15 +9,10 @@
             "orcid": "0000-0001-7292-1982",
             "affiliation": "Institute for Advanced Simulation (IAS-6), Jülich Research Centre, Jülich, Germany",
             "name": "Kern, Moritz"
-        },
-        {
-            "orcid": "0009-0003-9352-9826",
-            "affiliation": "BioMEMS Lab, University of Applied Sciences Aschaffenburg, Germany",
-            "name": "Richter, Felician"
         }
     ],
 
-    "title": "Elephant 1.1.1",
+    "title": "Elephant 1.2.0",
 
     "keywords": [
     "neuroscience",
