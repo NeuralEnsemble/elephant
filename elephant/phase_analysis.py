@@ -34,7 +34,7 @@ __all__ = [
     "phase_locking_value",
     "mean_phase_vector",
     "phase_difference",
-    "weighted_phase_lag_index"
+    "weighted_phase_lag_index",
 ]
 
 
@@ -127,11 +127,11 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
     num_spiketrains = len(spiketrains)
     num_phase = len(hilbert_transform)
 
-    if num_spiketrains != 1 and num_phase != 1 and \
-            num_spiketrains != num_phase:
+    if num_spiketrains != 1 and num_phase != 1 and num_spiketrains != num_phase:
         raise ValueError(
             "Number of spike trains and number of phase signals"
-            "must match, or either of the two must be a single signal.")
+            "must match, or either of the two must be a single signal."
+        )
 
     # For each trial, select the first input
     start = [elem.t_start for elem in hilbert_transform]
@@ -153,17 +153,18 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
 
         # Take only spikes which lie directly within the signal segment -
         # ignore spikes sitting on the last sample
-        sttimeind = np.where(np.logical_and(
-            spiketrain >= start[phase_i], spiketrain < stop[phase_i]))[0]
+        sttimeind = np.where(
+            np.logical_and(spiketrain >= start[phase_i], spiketrain < stop[phase_i])
+        )[0]
 
         # Extract times for speed reasons
         times = hilbert_transform[phase_i].times
 
         # Find index into signal for each spike
         ind_at_spike = (
-            (spiketrain[sttimeind] - hilbert_transform[phase_i].t_start) /
-            hilbert_transform[phase_i].sampling_period). \
-            simplified.magnitude.astype(int)
+            (spiketrain[sttimeind] - hilbert_transform[phase_i].t_start)
+            / hilbert_transform[phase_i].sampling_period
+        ).simplified.magnitude.astype(int)
 
         # Append new list to the results for this spiketrain
         result_phases.append([])
@@ -172,37 +173,37 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
 
         # Step through all spikes
         for spike_i, ind_at_spike_j in enumerate(ind_at_spike):
-
-            if interpolate and ind_at_spike_j+1 < len(times):
+            if interpolate and ind_at_spike_j + 1 < len(times):
                 # Get relative spike occurrence between the two closest signal
                 # sample points
                 # if z->0 spike is more to the left sample
                 # if z->1 more to the right sample
-                z = (spiketrain[sttimeind[spike_i]] - times[ind_at_spike_j]) /\
-                    hilbert_transform[phase_i].sampling_period
+                z = (
+                    spiketrain[sttimeind[spike_i]] - times[ind_at_spike_j]
+                ) / hilbert_transform[phase_i].sampling_period
 
                 # Save hilbert_transform (interpolate on circle)
-                p1 = np.angle(hilbert_transform[phase_i][ind_at_spike_j]
-                              ).item()
-                p2 = np.angle(hilbert_transform[phase_i][ind_at_spike_j + 1]
-                              ).item()
-                interpolation = (1 - z) * np.exp(complex(0, p1)) \
-                                    + z * np.exp(complex(0, p2))
+                p1 = np.angle(hilbert_transform[phase_i][ind_at_spike_j]).item()
+                p2 = np.angle(hilbert_transform[phase_i][ind_at_spike_j + 1]).item()
+                interpolation = (1 - z) * np.exp(complex(0, p1)) + z * np.exp(
+                    complex(0, p2)
+                )
                 p12 = np.angle([interpolation])
                 result_phases[spiketrain_i].append(p12)
 
                 # Save amplitude
                 result_amps[spiketrain_i].append(
-                    (1 - z) * np.abs(
-                        hilbert_transform[phase_i][ind_at_spike_j]) +
-                    z * np.abs(hilbert_transform[phase_i][ind_at_spike_j + 1]))
+                    (1 - z) * np.abs(hilbert_transform[phase_i][ind_at_spike_j])
+                    + z * np.abs(hilbert_transform[phase_i][ind_at_spike_j + 1])
+                )
             else:
                 p1 = np.angle(hilbert_transform[phase_i][ind_at_spike_j])
                 result_phases[spiketrain_i].append(p1)
 
                 # Save amplitude
                 result_amps[spiketrain_i].append(
-                    np.abs(hilbert_transform[phase_i][ind_at_spike_j]))
+                    np.abs(hilbert_transform[phase_i][ind_at_spike_j])
+                )
 
             # Save time
             result_times[spiketrain_i].append(spiketrain[sttimeind[spike_i]])
@@ -257,8 +258,9 @@ def phase_locking_value(phases_i, phases_j):
 
     """
     if np.shape(phases_i) != np.shape(phases_j):
-        raise ValueError("trial number and trial length of signal x and y "
-                         "must be equal")
+        raise ValueError(
+            "trial number and trial length of signal x and y must be equal"
+        )
 
     # trial by trial and time-resolved
     # version 0.2: signal x and y have multiple trials
@@ -333,8 +335,9 @@ def phase_difference(alpha, beta):
     return phase_diff
 
 
-def weighted_phase_lag_index(signal_i, signal_j, sampling_frequency=None,
-                             absolute_value=True):
+def weighted_phase_lag_index(
+    signal_i, signal_j, sampling_frequency=None, absolute_value=True
+):
     r"""
     Calculates the Weigthed Phase-Lag Index (WPLI) :cite:`phase-Vinck11_1548`.
 
@@ -389,18 +392,19 @@ def weighted_phase_lag_index(signal_i, signal_j, sampling_frequency=None,
       spectra of a particular frequency of the signals i and j.
 
     """
-    if isinstance(signal_i, neo.AnalogSignal) and \
-            isinstance(signal_j, neo.AnalogSignal):  # neo.AnalogSignal input
-        if signal_i.sampling_rate.rescale("Hz") != \
-                signal_j.sampling_rate.rescale("Hz"):
+    if isinstance(signal_i, neo.AnalogSignal) and isinstance(
+        signal_j, neo.AnalogSignal
+    ):  # neo.AnalogSignal input
+        if signal_i.sampling_rate.rescale("Hz") != signal_j.sampling_rate.rescale("Hz"):
             raise ValueError("sampling rate of signal i and j must be equal")
         sampling_frequency = signal_i.sampling_rate
         signal_i = signal_i.magnitude
         signal_j = signal_j.magnitude
     else:  # np.array() or Quantity input
         if sampling_frequency is None:
-            raise ValueError("sampling frequency must be given for np.array or"
-                             "Quantity input")
+            raise ValueError(
+                "sampling frequency must be given for np.array orQuantity input"
+            )
 
     if np.shape(signal_i) != np.shape(signal_j):
         if len(signal_i) != len(signal_j):

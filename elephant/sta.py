@@ -24,10 +24,7 @@ from neo.core import AnalogSignal, SpikeTrain
 
 from .conversion import BinnedSpikeTrain
 
-__all__ = [
-    "spike_triggered_average",
-    "spike_field_coherence"
-]
+__all__ = ["spike_triggered_average", "spike_field_coherence"]
 
 
 def spike_triggered_average(signal, spiketrains, window):
@@ -81,32 +78,40 @@ def spike_triggered_average(signal, spiketrains, window):
     # window_stoptime: time to specify the stop time of the averaging
     # interval relative to a spike
     window_starttime, window_stoptime = window
-    if not (isinstance(window_starttime, pq.quantity.Quantity) and
-            window_starttime.dimensionality.simplified ==
-            pq.Quantity(1, "s").dimensionality):
-        raise TypeError("The start time of the window (window[0]) "
-                        "must be a time quantity.")
-    if not (isinstance(window_stoptime, pq.quantity.Quantity) and
-            window_stoptime.dimensionality.simplified ==
-            pq.Quantity(1, "s").dimensionality):
-        raise TypeError("The stop time of the window (window[1]) "
-                        "must be a time quantity.")
+    if not (
+        isinstance(window_starttime, pq.quantity.Quantity)
+        and window_starttime.dimensionality.simplified
+        == pq.Quantity(1, "s").dimensionality
+    ):
+        raise TypeError(
+            "The start time of the window (window[0]) must be a time quantity."
+        )
+    if not (
+        isinstance(window_stoptime, pq.quantity.Quantity)
+        and window_stoptime.dimensionality.simplified
+        == pq.Quantity(1, "s").dimensionality
+    ):
+        raise TypeError(
+            "The stop time of the window (window[1]) must be a time quantity."
+        )
     if window_stoptime <= window_starttime:
-        raise ValueError("The start time of the window (window[0]) must be "
-                         "earlier than the stop time of the window (window[1]).")
+        raise ValueError(
+            "The start time of the window (window[0]) must be "
+            "earlier than the stop time of the window (window[1])."
+        )
 
     # checks on signal
     if not isinstance(signal, AnalogSignal):
-        raise TypeError(
-            "Signal must be an AnalogSignal, not %s." % type(signal))
+        raise TypeError("Signal must be an AnalogSignal, not %s." % type(signal))
     if len(signal.shape) > 1:
         # num_signals: number of analog signals
         num_signals = signal.shape[1]
     else:
         raise ValueError("Empty analog signal, hence no averaging possible.")
     if window_stoptime - window_starttime > signal.t_stop - signal.t_start:
-        raise ValueError("The chosen time window is larger than the "
-                         "time duration of the signal.")
+        raise ValueError(
+            "The chosen time window is larger than the time duration of the signal."
+        )
 
     # spiketrains type check
     if isinstance(spiketrains, (np.ndarray, SpikeTrain)):
@@ -116,11 +121,13 @@ def spike_triggered_average(signal, spiketrains, window):
             if not isinstance(st, (np.ndarray, SpikeTrain)):
                 raise TypeError(
                     "spiketrains must be a SpikeTrain, a numpy ndarray, or a "
-                    "list of one of those, not %s." % type(spiketrains))
+                    "list of one of those, not %s." % type(spiketrains)
+                )
     else:
         raise TypeError(
             "spiketrains must be a SpikeTrain, a numpy ndarray, or a list of "
-            "one of those, not %s." % type(spiketrains))
+            "one of those, not %s." % type(spiketrains)
+        )
 
     # multiplying spiketrain in case only a single spiketrain is given
     if len(spiketrains) == 1 and num_signals != 1:
@@ -131,28 +138,34 @@ def spike_triggered_average(signal, spiketrains, window):
 
     # checking for matching numbers of signals and spiketrains
     if num_signals != len(spiketrains):
-        raise ValueError(
-            "The number of signals and spiketrains has to be the same.")
+        raise ValueError("The number of signals and spiketrains has to be the same.")
 
     # checking the times of signal and spiketrains
     for i in range(num_signals):
         if spiketrains[i].t_start < signal.t_start:
             raise ValueError(
                 "The spiketrain indexed by %i starts earlier than "
-                "the analog signal." % i)
+                "the analog signal." % i
+            )
         if spiketrains[i].t_stop > signal.t_stop:
             raise ValueError(
-                "The spiketrain indexed by %i stops later than "
-                "the analog signal." % i)
+                "The spiketrain indexed by %i stops later than the analog signal." % i
+            )
 
     # *** Main algorithm: ***
 
     # window_bins: number of bins of the chosen averaging interval
-    window_bins = int(np.ceil(((window_stoptime - window_starttime) *
-        signal.sampling_rate).simplified))
+    window_bins = int(
+        np.ceil(
+            ((window_stoptime - window_starttime) * signal.sampling_rate).simplified
+        )
+    )
     # result_sta: array containing finally the spike-triggered averaged signal
-    result_sta = AnalogSignal(np.zeros((window_bins, num_signals)),
-        sampling_rate=signal.sampling_rate, units=signal.units)
+    result_sta = AnalogSignal(
+        np.zeros((window_bins, num_signals)),
+        sampling_rate=signal.sampling_rate,
+        units=signal.units,
+    )
     # setting of correct times of the spike-triggered average
     # relative to the spike
     result_sta.t_start = window_starttime
@@ -164,15 +177,22 @@ def spike_triggered_average(signal, spiketrains, window):
         # summing over all respective signal intervals around spiketimes
         for spiketime in spiketrains[i]:
             # checks for sufficient signal data around spiketime
-            if (spiketime + window_starttime >= signal.t_start and
-                    spiketime + window_stoptime <= signal.t_stop):
+            if (
+                spiketime + window_starttime >= signal.t_start
+                and spiketime + window_stoptime <= signal.t_stop
+            ):
                 # calculating the startbin in the analog signal of the
                 # averaging window for spike
-                startbin = int(np.floor(((spiketime + window_starttime -
-                    signal.t_start) * signal.sampling_rate).simplified))
+                startbin = int(
+                    np.floor(
+                        (
+                            (spiketime + window_starttime - signal.t_start)
+                            * signal.sampling_rate
+                        ).simplified
+                    )
+                )
                 # adds the signal in selected interval relative to the spike
-                result_sta[:, i] += signal[
-                    startbin: startbin + window_bins, i]
+                result_sta[:, i] += signal[startbin : startbin + window_bins, i]
                 # counting of the used spikes
                 used_spikes[i] += 1
             else:
@@ -185,8 +205,7 @@ def spike_triggered_average(signal, spiketrains, window):
         total_used_spikes += used_spikes[i]
 
     if total_used_spikes == 0:
-        warnings.warn(
-            "No spike at all was either found or used for averaging")
+        warnings.warn("No spike at all was either found or used for averaging")
     result_sta.annotate(used_spikes=used_spikes, unused_spikes=unused_spikes)
 
     return result_sta
@@ -268,23 +287,25 @@ def spike_field_coherence(signal, spiketrain, **kwargs):
 
     """
 
-    if not hasattr(scipy.signal, 'coherence'):
-        raise AttributeError('scipy.signal.coherence is not available. The sfc '
-                             'function uses scipy.signal.coherence for '
-                             'the coherence calculation. This function is '
-                             'available for scipy version 0.16 or newer. '
-                             'Please update you scipy version.')
+    if not hasattr(scipy.signal, "coherence"):
+        raise AttributeError(
+            "scipy.signal.coherence is not available. The sfc "
+            "function uses scipy.signal.coherence for "
+            "the coherence calculation. This function is "
+            "available for scipy version 0.16 or newer. "
+            "Please update you scipy version."
+        )
 
     # spiketrains type check
     if not isinstance(spiketrain, (SpikeTrain, BinnedSpikeTrain)):
         raise TypeError(
             "spiketrain must be of type SpikeTrain or BinnedSpikeTrain, "
-            "not %s." % type(spiketrain))
+            "not %s." % type(spiketrain)
+        )
 
     # checks on analogsignal
     if not isinstance(signal, AnalogSignal):
-        raise TypeError(
-            "Signal must be an AnalogSignal, not %s." % type(signal))
+        raise TypeError("Signal must be an AnalogSignal, not %s." % type(signal))
     if len(signal.shape) > 1:
         # num_signals: number of individual traces in the analog signal
         num_signals = signal.shape[1]
@@ -296,22 +317,19 @@ def spike_field_coherence(signal, spiketrain, **kwargs):
 
     # bin spiketrain if necessary
     if isinstance(spiketrain, SpikeTrain):
-        spiketrain = BinnedSpikeTrain(
-            spiketrain, bin_size=signal.sampling_period)
+        spiketrain = BinnedSpikeTrain(spiketrain, bin_size=signal.sampling_period)
 
     # check the start and stop times of signal and spike trains
     if spiketrain.t_start < signal.t_start:
-        raise ValueError(
-            "The spiketrain starts earlier than the analog signal.")
+        raise ValueError("The spiketrain starts earlier than the analog signal.")
     if spiketrain.t_stop > signal.t_stop:
-        raise ValueError(
-            "The spiketrain stops later than the analog signal.")
+        raise ValueError("The spiketrain stops later than the analog signal.")
 
     # check equal time resolution for both signals
     if spiketrain.bin_size != signal.sampling_period:
         raise ValueError(
-            "The spiketrain and signal must have a "
-            "common sampling frequency / bin_size")
+            "The spiketrain and signal must have a common sampling frequency / bin_size"
+        )
 
     # calculate how many bins to add on the left of the binned spike train
     delta_t = spiketrain.t_start - signal.t_start
@@ -324,13 +342,20 @@ def spike_field_coherence(signal, spiketrain, **kwargs):
     # duplicate spike trains
     spiketrain_array = np.zeros((1, len_signals))
     spiketrain_array[0, left_edge:right_edge] = spiketrain.to_array()
-    spiketrains_array = np.repeat(spiketrain_array, repeats=num_signals, axis=0).transpose()
+    spiketrains_array = np.repeat(
+        spiketrain_array, repeats=num_signals, axis=0
+    ).transpose()
 
     # calculate coherence
     frequencies, sfc = scipy.signal.coherence(
-        spiketrains_array, signal.magnitude,
-        fs=signal.sampling_rate.rescale('Hz').magnitude,
-        axis=0, **kwargs)
+        spiketrains_array,
+        signal.magnitude,
+        fs=signal.sampling_rate.rescale("Hz").magnitude,
+        axis=0,
+        **kwargs,
+    )
 
-    return (pq.Quantity(sfc, units=pq.dimensionless),
-            pq.Quantity(frequencies, units=pq.Hz))
+    return (
+        pq.Quantity(sfc, units=pq.dimensionless),
+        pq.Quantity(frequencies, units=pq.Hz),
+    )
