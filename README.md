@@ -1,16 +1,18 @@
 # Elephant - Electrophysiology Analysis Toolkit
 
 [![Coverage Status](https://coveralls.io/repos/github/NeuralEnsemble/elephant/badge.svg?branch=master)](https://coveralls.io/github/NeuralEnsemble/elephant?branch=master)
+[![Test Status](https://github.com/NeuralEnsemble/elephant/actions/workflows/CI.yml/badge.svg)](https://github.com/NeuralEnsemble/elephant/actions/workflows/CI.yml)
 [![Documentation Status](https://readthedocs.org/projects/elephant/badge/?version=latest)](https://elephant.readthedocs.io/en/latest/?badge=latest)
-[![![PyPi]](https://img.shields.io/pypi/v/elephant)](https://pypi.org/project/elephant/)
-[![Statistics](https://img.shields.io/pypi/dm/elephant)](https://seladb.github.io/StarTrack-js/#/preload?r=neuralensemble,elephant)
-[![Gitter](https://badges.gitter.im/python-elephant/community.svg)](https://gitter.im/python-elephant/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
+[![![PyPi] Status](https://img.shields.io/pypi/v/elephant)](https://pypi.org/project/elephant/)
 [![DOI Latest Release](https://zenodo.org/badge/10311278.svg)](https://zenodo.org/badge/latestdoi/10311278)
-[![tests](https://github.com/NeuralEnsemble/elephant/actions/workflows/CI.yml/badge.svg)](https://github.com/NeuralEnsemble/elephant/actions/workflows/CI.yml)
-[![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/6191/badge)](https://bestpractices.coreinfrastructure.org/projects/6191)
-[![fair-software.eu](https://img.shields.io/badge/fair--software.eu-%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F-green)](https://fair-software.eu)
+[![Download Statistics](https://img.shields.io/pypi/dm/elephant)](https://seladb.github.io/StarTrack-js/#/preload?r=neuralensemble,elephant)<br>
+[![Chat on Gitter](https://badges.gitter.im/python-elephant/community.svg)](https://gitter.im/python-elephant/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 [![Follow me on Bluesky](https://img.shields.io/badge/Bluesky-0285FF?logo=bluesky&logoColor=fff&label=Follow%20me%20on&color=0285FF)](https://bsky.app/profile/pyelephant.bsky.social)
-[![Fosstodon](https://img.shields.io/badge/@elephant-6364FF?logo=mastodon&logoColor=fff&style=flat)](https://fosstodon.org/@elephant)
+[![Follow me on Fosstodon](https://img.shields.io/badge/@elephant-6364FF?logo=mastodon&logoColor=fff&style=flat)](https://fosstodon.org/@elephant)<br>
+[![fair-software.eu](https://img.shields.io/badge/fair--software.eu-%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F-green)](https://fair-software.eu)
+[![OpenSSF/CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/6191/badge)](https://bestpractices.coreinfrastructure.org/projects/6191)
+[![JURSE Code Pick](https://img.shields.io/badge/JuRSE_Code_Pick-Nov_2025-blue)](https://www.fz-juelich.de/en/rse/community-initiatives/jurse-code-of-the-month/november-2025)
+![HiRSE Code Promo](https://img.shields.io/badge/Promo-8db427?label=HiRSE&labelColor=005aa0&link=https%3A%2F%2Fgo.fzj.de%2FCodePromo)
 
 
 *Elephant* package analyses all sorts of neurophysiological data:
