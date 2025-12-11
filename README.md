@@ -24,6 +24,7 @@ spike trains, LFP, analog signals. The input-output data format is either
 
 * Documentation: https://elephant.readthedocs.io/en/latest/
 * Mailing list: https://groups.google.com/group/neuralensemble
+* Maintainer: contact@python-elephant.org
 
 
 #### Visualization of Elephant analysis objects
