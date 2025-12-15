@@ -2602,13 +2602,19 @@ class ASSET(object):
         logger.info("Finding neighbors in probability matrix...")
 
         # Get any override in the number of CUDA threads
-        if isinstance(cuda_threads, tuple) and len(cuda_threads) == 2:
+        if isinstance(cuda_threads, tuple) and len(cuda_threads) == 2 \
+                and all(isinstance(n_thr, int) or n_thr is None
+                        for n_thr in cuda_threads):
             jsf_threads, pmat_threads = cuda_threads
         elif isinstance(cuda_threads, int):
             jsf_threads = cuda_threads
             pmat_threads = None
         else:
             raise ValueError("'cuda_threads' must be int or a tuple of int.")
+
+        if jsf_threads < 1 or (pmat_threads is not None and pmat_threads < 1):
+            raise ValueError("The number of threads in 'cuda_threads' must be"
+                             "at least 1.")
 
         # Find for each P_ij in the probability matrix its neighbors and
         # maximize them by the maximum value 1-p_value_min
