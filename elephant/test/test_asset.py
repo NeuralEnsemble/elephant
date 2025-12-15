@@ -22,6 +22,7 @@ from numpy.testing import assert_array_almost_equal, assert_array_equal
 
 from elephant import statistics, kernels
 from elephant.spike_train_generation import homogeneous_poisson_process
+from elephant.utils import get_cuda_capability_major, get_opencl_capability
 
 try:
     import sklearn
@@ -33,17 +34,8 @@ else:
     HAVE_SKLEARN = True
     stretchedmetric2d = asset._stretched_metric_2d
 
-try:
-    import pyopencl
-    HAVE_PYOPENCL = asset.get_opencl_capability()
-except ImportError:
-    HAVE_PYOPENCL = False
-
-try:
-    import pycuda
-    HAVE_CUDA = asset.get_cuda_capability_major() > 0
-except ImportError:
-    HAVE_CUDA = False
+HAVE_PYOPENCL = get_opencl_capability()
+HAVE_CUDA = get_cuda_capability_major() != 0
 
 
 class AssetBinningTestCase(unittest.TestCase):
@@ -543,6 +535,7 @@ class AssetTestCase(unittest.TestCase):
 
     #  regression test Issue #481
     #  see: https://github.com/NeuralEnsemble/elephant/issues/481
+    @unittest.skipIf(HAVE_CUDA, "CUDA available, will be used instead of CPU")
     def test_asset_choose_backend_opencl(self):
         class TestClassBackend(asset._GPUBackend):
 
