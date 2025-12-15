@@ -359,7 +359,7 @@ def _analog_signal_step_interp(signal, times):
 
 
 def _stretched_metric_2d(x, y, stretch, ref_angle, working_memory=None,
-                         mapped_array_file=None, verbose=None):
+                         mapped_array_file=None):
     r"""
     Given a list of points on the real plane, identified by their abscissa `x`
     and ordinate `y`, compute a stretched transformation of the Euclidean
@@ -409,15 +409,6 @@ def _stretched_metric_2d(x, y, stretch, ref_angle, working_memory=None,
         array). This option should be used when there is not enough memory to
         allocate the full stretched distance matrix needed before DBSCAN.
         Default: None
-    verbose : bool, optional, .. deprecated:: 0.14.0
-        This parameter is no longer functional. To control the verbosity
-        of log messages, please use the module's logger that is based on the
-        standard logging module.
-        Logging is turned on by default (to level INFO).
-        To restrict logging messages, use a higher logging level to WARNING or
-        ERROR, e.g., import logging from elephant.asset.asset import logger as
-        asset_logger asset_logger.set_level(logging.WARNING).
-        Default: None
 
     Returns
     -------
@@ -431,14 +422,6 @@ def _stretched_metric_2d(x, y, stretch, ref_angle, working_memory=None,
         pairwise distances when using chunked computations.
 
     """
-    if verbose is not None:
-        warnings.warn("The 'verbose' parameter is deprecated and will be "
-                      "removed in the future. Its functionality is still "
-                      "available by using the logging module from Python. "
-                      "We recommend transitioning to the logging module "
-                      "for improved control and flexibility in handling "
-                      "verbosity levels.", DeprecationWarning)
-
     alpha = np.deg2rad(ref_angle)  # reference angle in radians
 
     # Create the array of points (one per row) for which to compute the
@@ -574,17 +557,10 @@ def _stretched_metric_2d(x, y, stretch, ref_angle, working_memory=None,
     return stretch_mat
 
 
-def _interpolate_signals(signals, sampling_times, verbose=None):
+def _interpolate_signals(signals, sampling_times):
     """
     Interpolate signals at given sampling times.
     """
-    if verbose is not None:
-        warnings.warn("The 'verbose' parameter is deprecated and will be "
-                      "removed in the future. Its functionality is still "
-                      "available by using the logging module from Python. "
-                      "We recommend transitioning to the logging module "
-                      "for improved control and flexibility in handling "
-                      "verbosity levels.", DeprecationWarning)
     # Reshape all signals to one-dimensional array object (e.g. AnalogSignal)
     for i, signal in enumerate(signals):
         if signal.ndim == 2:
@@ -675,23 +651,15 @@ class _GPUBackend:
 
 
 class _JSFUniformOrderStat3D(_GPUBackend):
-    def __init__(self, n, d, precision='float', verbose=None,
-                 cuda_threads=64, cuda_cwr_loops=32, tolerance=1e-5,
-                 max_chunk_size=None):
+    def __init__(self, n, d, precision='float', cuda_threads=64,
+                 cuda_cwr_loops=32, tolerance=1e-5, max_chunk_size=None):
         super().__init__(max_chunk_size=max_chunk_size)
         if d > n:
             raise ValueError(f"d ({d}) must be less or equal n ({n})")
-        if verbose is not None:
-            warnings.warn("The 'verbose' parameter is deprecated and will be "
-                          "removed in the future. Its functionality is still "
-                          "available by using the logging module from Python. "
-                          "We recommend transitioning to the logging module "
-                          "for improved control and flexibility in handling "
-                          "verbosity levels.", DeprecationWarning)
+
         self.n = n
         self.d = d
         self.precision = precision
-        self.verbose = verbose and rank == 0
         self.cuda_threads = cuda_threads
         self.cuda_cwr_loops = cuda_cwr_loops
         self.map_iterations = self._create_iteration_table()
@@ -904,9 +872,9 @@ class _JSFUniformOrderStat3D(_GPUBackend):
                 # grid_size must be at least l_num_blocks
                 grid_size = l_num_blocks
 
-                logger.info(f"[Joint prob. matrix] it_todo={it_todo}, "
-                            f"grid_size={grid_size}, L_BLOCK={l_block}, "
-                            f"N_THREADS={n_threads}")
+            logger.info(f"[Joint prob. matrix] it_todo={it_todo}, "
+                        f"grid_size={grid_size}, L_BLOCK={l_block}, "
+                        f"N_THREADS={n_threads}")
 
             # OpenCL defines unsigned long as uint64, therefore we're adding
             # the LU suffix, not LLU, which would indicate unsupported uint128
@@ -994,9 +962,9 @@ class _JSFUniformOrderStat3D(_GPUBackend):
                 # grid_size must be at least l_num_blocks
                 grid_size = l_num_blocks
 
-                logger.info(f"[Joint prob. matrix] it_todo={it_todo}, "
-                            f"grid_size={grid_size}, L_BLOCK={l_block}, "
-                            f"N_THREADS={n_threads}")
+            logger.info(f"[Joint prob. matrix] it_todo={it_todo}, "
+                        f"grid_size={grid_size}, L_BLOCK={l_block}, "
+                        f"N_THREADS={n_threads}")
 
             asset_cu = self._compile_template(
                 template_name="joint_pmat.cu",
@@ -1145,19 +1113,10 @@ class _PMatNeighbors(_GPUBackend):
         The number of largest neighbors to collect for each entry in `mat`.
     """
 
-    def __init__(self, filter_shape, n_largest, max_chunk_size=None,
-                 verbose=None):
+    def __init__(self, filter_shape, n_largest, max_chunk_size=None):
         super().__init__(max_chunk_size=max_chunk_size)
         self.n_largest = n_largest
         self.max_chunk_size = max_chunk_size
-        if verbose is not None:
-            warnings.warn("The 'verbose' parameter is deprecated and will be "
-                          "removed in the future. Its functionality is still "
-                          "available by using the logging module from Python. "
-                          "We recommend transitioning to the logging module "
-                          "for improved control and flexibility in handling "
-                          "verbosity levels.", DeprecationWarning)
-        self.verbose = verbose
 
         filter_size, filter_width = filter_shape
         if filter_width >= filter_size:
@@ -2023,6 +1982,19 @@ class ASSET(object):
 
           fully disjoint.
 
+    Notes
+    -----
+        To control the verbosity of log messages throughout the ASSET analysis,
+        please use the module's logger that is based on the standard `logging`
+        module. Logging is turned on by default with level INFO.
+        To restrict logging messages, use higher logging levels such as
+        WARNING or ERROR. To enable detailed debugging messages, use the lower
+        level DEBUG. The code below shows how to set the ASSET logger level:
+
+        >>> import logging
+        >>> from elephant.asset.asset import logger as asset_logger
+        >>> asset_logger.setLevel(logging.WARNING)
+
     See Also
     --------
     :class:`elephant.conversion.BinnedSpikeTrain`
@@ -2031,15 +2003,7 @@ class ASSET(object):
 
     def __init__(self, spiketrains_i, spiketrains_j=None, bin_size=3 * pq.ms,
                  t_start_i=None, t_start_j=None, t_stop_i=None, t_stop_j=None,
-                 bin_tolerance='default', verbose=None):
-
-        if verbose is not None:
-            warnings.warn("The 'verbose' parameter is deprecated and will be "
-                          "removed in the future. Its functionality is still "
-                          "available by using the logging module from Python. "
-                          "We recommend transitioning to the logging module "
-                          "for improved control and flexibility in handling "
-                          "verbosity levels.", DeprecationWarning)
+                 bin_tolerance='default'):
 
         self.spiketrains_i = spiketrains_i
         if spiketrains_j is None:
@@ -2054,7 +2018,6 @@ class ASSET(object):
             spiketrains_j,
             t_start=t_start_j,
             t_stop=t_stop_j)
-        self.verbose = verbose and rank == 0
 
         msg = 'The time intervals for x and y need to be either identical ' \
               'or fully disjoint, but they are:\n' \
@@ -2632,7 +2595,7 @@ class ASSET(object):
     @staticmethod
     def cluster_matrix_entries(mask_matrix, max_distance, min_neighbors,
                                stretch, working_memory=None, array_file=None,
-                               keep_file=False, verbose=None):
+                               keep_file=False):
         r"""
         Given a matrix `mask_matrix`, replaces its positive elements with
         integers representing different cluster IDs. Each cluster comprises
@@ -2727,13 +2690,6 @@ class ASSET(object):
 
         """
 
-        if verbose is not None:
-            warnings.warn("The 'verbose' parameter is deprecated and will be "
-                          "removed in the future. Its functionality is still "
-                          "available by using the logging module from Python. "
-                          "We recommend transitioning to the logging module "
-                          "for improved control and flexibility in handling "
-                          "verbosity levels.", DeprecationWarning)
         # Don't do anything if mat is identically zero
         if np.all(mask_matrix == 0):
             return mask_matrix

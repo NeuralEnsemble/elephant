@@ -337,40 +337,30 @@ def round_binning_errors(values, tolerance=1e-8):
 
 def get_cuda_capability_major():
     """
-    Extracts CUDA capability major version of the first available Nvidia GPU
-    card, if detected. Otherwise, return 0.
+    If PyCUDA is available, extracts CUDA capability major version of the
+    first available Nvidia GPU card, if detected. Otherwise, returns 0.
 
     Returns
     -------
     int
         CUDA capability major version.
     """
-    cuda_success = 0
-    for libname in ("libcuda.so", "libcuda.dylib", "cuda.dll"):
-        try:
-            cuda = ctypes.CDLL(libname)
-        except OSError:
-            continue
-        else:
-            break
-    else:
-        # not found
-        return 0
-    result = cuda.cuInit(0)
-    if result != cuda_success:
-        return 0
-    device = ctypes.c_int()
-    # parse the first GPU card only
-    result = cuda.cuDeviceGet(ctypes.byref(device), 0)
-    if result != cuda_success:
+    try:
+        import pycuda.driver as cuda
+    except ImportError:
         return 0
 
-    cc_major = ctypes.c_int()
-    cc_minor = ctypes.c_int()
-    cuda.cuDeviceComputeCapability(
-        ctypes.byref(cc_major), ctypes.byref(cc_minor), device
-    )
-    return cc_major.value
+    try:
+        import pycuda.autoinit
+    except (cuda.RuntimeError, AttributeError):
+        return 0
+
+    try:
+        device = cuda.Device(0)
+        major, _ = device.compute_capability()
+        return major
+    except cuda.Error:
+        return 0
 
 
 def get_opencl_capability():
@@ -380,7 +370,7 @@ def get_opencl_capability():
     Returns
     -------
     bool
-        True: if openCL platform detected and at least one device is found,
+        True: if OpenCL platform detected and at least one device is found,
         False: if OpenCL is not found or if no OpenCL devices are found
     """
     try:
