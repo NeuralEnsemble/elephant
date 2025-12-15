@@ -796,7 +796,8 @@ class AssetTestJointProbabilityMatrixGPUThreads(unittest.TestCase):
         for cuda_threads in ("64", (64, 64, 64),
                              0, (0, 0), (0, 64), (64, 0),
                              -1, (-1, -1), (-1, 64), (64, -1),
-                             (64, None)):
+                             (64, None), 1025, (1025, 1024),
+                             (1024, 1025)):
             with self.assertRaises(ValueError):
                 self.asset_obj.joint_probability_matrix(
                     self.pmat,
@@ -810,7 +811,7 @@ class AssetTestJointProbabilityMatrixGPUThreads(unittest.TestCase):
         os.environ["ELEPHANT_USE_CUDA"] = "1"
         os.environ["ELEPHANT_USE_OPENCL"] = "0"
 
-        for cuda_threads in (64, (64, 512)):
+        for cuda_threads in (64, (64, 512), 1024, (1024, 1024)):
             jmat = self.asset_obj.joint_probability_matrix(
                 self.pmat,
                 filter_shape=self.filter_shape,
@@ -824,7 +825,7 @@ class AssetTestJointProbabilityMatrixGPUThreads(unittest.TestCase):
         os.environ["ELEPHANT_USE_CUDA"] = "0"
         os.environ["ELEPHANT_USE_OPENCL"] = "1"
 
-        for cuda_threads in (64, (64, 512)):
+        for cuda_threads in (64, (64, 512), 1024, (1024, 1024)):
             jmat = self.asset_obj.joint_probability_matrix(
                 self.pmat,
                 filter_shape=self.filter_shape,
