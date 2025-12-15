@@ -2603,8 +2603,7 @@ class ASSET(object):
 
         # Get any override in the number of CUDA threads
         if isinstance(cuda_threads, tuple) and len(cuda_threads) == 2 \
-                and all(isinstance(n_thr, int) or n_thr is None
-                        for n_thr in cuda_threads):
+                and all(isinstance(n_thr, int) for n_thr in cuda_threads):
             jsf_threads, pmat_threads = cuda_threads
         elif isinstance(cuda_threads, int):
             jsf_threads = cuda_threads
