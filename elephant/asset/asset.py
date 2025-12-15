@@ -2611,9 +2611,10 @@ class ASSET(object):
         else:
             raise ValueError("'cuda_threads' must be int or a tuple of int.")
 
-        if jsf_threads < 1 or (pmat_threads is not None and pmat_threads < 1):
+        if (not (0 < jsf_threads <= 1024) or
+                (pmat_threads is not None and not (0 < pmat_threads <= 1024))):
             raise ValueError("The number of threads in 'cuda_threads' must be"
-                             "at least 1.")
+                             "a value > 0 and <= 1024.")
 
         # Find for each P_ij in the probability matrix its neighbors and
         # maximize them by the maximum value 1-p_value_min
