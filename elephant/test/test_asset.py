@@ -793,7 +793,10 @@ class AssetTestJointProbabilityMatrixGPUThreads(unittest.TestCase):
         cls.asset_obj = asset_obj
 
     def test_invalid_threads_parameter(self):
-        for cuda_threads in ("64", (64, 64, 64)):
+        for cuda_threads in ("64", (64, 64, 64),
+                             0, (0, 0), (0, 64), (64, 0),
+                             -1, (-1, -1), (-1, 64), (64, -1),
+                             (64, None)):
             with self.assertRaises(ValueError):
                 self.asset_obj.joint_probability_matrix(
                     self.pmat,
