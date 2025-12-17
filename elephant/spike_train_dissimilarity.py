@@ -372,7 +372,7 @@ def van_rossum_distance(spiketrains, time_constant=1.0 * pq.s, sort=True):
             "which can occur if spike times are represented as small floating "
             "point values (e.g., in seconds). A possible way to prevent this "
             "warning is to use a time unit with better numerical precision, "
-            "e.g. seconds to milliseconds.", RuntimeWarning)
+            "e.g., from  seconds to milliseconds.", RuntimeWarning)
         vr_dist = np.maximum(vr_dist, 0.0)
 
     return np.sqrt(vr_dist)
