@@ -320,6 +320,36 @@ class AssetTestCase(unittest.TestCase):
                     array_file=Path(tmpdir) / f"test_dist_{working_memory}")
                 assert_array_equal(cmat, cmat_true)
 
+    def test_pmat_neighbors_gpu_threads(self):
+        # The number of threads must not influence the result.
+        np.random.seed(12)
+        n_largest = 3
+        pmat1 = np.random.random_sample((40, 40)).astype(np.float32)
+        np.fill_diagonal(pmat1, 0.5)
+        pmat2 = np.random.random_sample((70, 23)).astype(np.float32)
+        pmat3 = np.random.random_sample((27, 93)).astype(np.float32)
+        for pmat in (pmat1, pmat2, pmat3):
+            for filter_size in (4, 11):
+                filter_shape = (filter_size, 3)
+                # Check numbers for automatic (None) to more than the maximum
+                # number of threads (2048), and one value that is not a factor
+                # of the warp size (500 % 32 != 0)
+                for n_threads in (None, 64, 128, 256, 500, 512, 1024, 2048):
+                    with warnings.catch_warnings():
+                        # ignore even filter sizes
+                        warnings.simplefilter('ignore', UserWarning)
+                        pmat_neigh = asset._PMatNeighbors(
+                            filter_shape=filter_shape, n_largest=n_largest,
+                            cuda_threads=n_threads
+                        )
+                    lmat_true = pmat_neigh.cpu(pmat)
+                    if HAVE_PYOPENCL:
+                        lmat_opencl = pmat_neigh.pyopencl(pmat)
+                        assert_array_almost_equal(lmat_opencl, lmat_true)
+                    if HAVE_CUDA:
+                        lmat_cuda = pmat_neigh.pycuda(pmat)
+                        assert_array_almost_equal(lmat_cuda, lmat_true)
+
     def test_pmat_neighbors_gpu(self):
         np.random.seed(12)
         n_largest = 3
@@ -698,6 +728,101 @@ class TestJSFUniformOrderStat3D(unittest.TestCase):
         # 'u' is invalid input, which must lead to watchdog barking
         jsf = asset._JSFUniformOrderStat3D(n=N, d=D)
         self.assertWarns(UserWarning, jsf.compute, u)
+
+
+@unittest.skipUnless(HAVE_SKLEARN and (HAVE_CUDA or HAVE_PYOPENCL),
+                     'requires sklearn and a GPU')
+class AssetTestJointProbabilityMatrixGPUThreads(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        # Save the state of the environment variables
+        cls.use_cuda = os.getenv("ELEPHANT_USE_CUDA", None)
+        cls.use_opencl = os.getenv("ELEPHANT_USE_OPENCL", None)
+
+        # Force using CPU to compute expected values
+        os.environ["ELEPHANT_USE_CUDA"] = "0"
+        os.environ["ELEPHANT_USE_OPENCL"] = "0"
+
+        # Generate spike train data
+        np.random.seed(1)
+        n_spiketrains = 50
+        rate = 50 * pq.Hz
+        spiketrains = [homogeneous_poisson_process(rate, t_stop=100 * pq.ms)
+                       for _ in range(n_spiketrains)]
+
+        # Initialize ASSET object and compute IMAT/PMAT
+        bin_size = 3 * pq.ms
+        kernel_width = 9 * pq.ms
+
+        asset_obj = asset.ASSET(spiketrains, bin_size=bin_size)
+        imat = asset_obj.intersection_matrix()
+        cls.pmat = asset_obj.probability_matrix_analytical(
+            kernel_width=kernel_width)
+
+        cls.filter_shape = (5, 1)
+        cls.n_largest = 3
+        cls.expected_jmat = asset_obj.joint_probability_matrix(
+            cls.pmat,
+            filter_shape=cls.filter_shape,
+            n_largest=cls.n_largest,
+        )
+        cls.asset_obj = asset_obj
+
+    def test_invalid_threads_parameter(self):
+        for cuda_threads in ("64", (64, 64, 64),
+                             0, (0, 0), (0, 64), (64, 0),
+                             -1, (-1, -1), (-1, 64), (64, -1),
+                             (64, None), 1025, (1025, 1024),
+                             (1024, 1025)):
+            with self.assertRaises(ValueError):
+                self.asset_obj.joint_probability_matrix(
+                    self.pmat,
+                    filter_shape=self.filter_shape,
+                    n_largest=self.n_largest,
+                    cuda_threads=cuda_threads,
+                )
+
+    @unittest.skipUnless(HAVE_CUDA, "CUDA not available")
+    def test_cuda_threads(self):
+        os.environ["ELEPHANT_USE_CUDA"] = "1"
+        os.environ["ELEPHANT_USE_OPENCL"] = "0"
+
+        for cuda_threads in (64, (64, 512), 1024, (1024, 1024)):
+            jmat = self.asset_obj.joint_probability_matrix(
+                self.pmat,
+                filter_shape=self.filter_shape,
+                n_largest=self.n_largest,
+                cuda_threads=cuda_threads,
+            )
+            assert_array_almost_equal(jmat, self.expected_jmat)
+
+    @unittest.skipUnless(HAVE_PYOPENCL, "PyOpenCL not available")
+    def test_pyopencl_threads(self):
+        os.environ["ELEPHANT_USE_CUDA"] = "0"
+        os.environ["ELEPHANT_USE_OPENCL"] = "1"
+
+        for cuda_threads in (64, (64, 512), 1024, (1024, 1024)):
+            jmat = self.asset_obj.joint_probability_matrix(
+                self.pmat,
+                filter_shape=self.filter_shape,
+                n_largest=self.n_largest,
+                cuda_threads=cuda_threads,
+            )
+            assert_array_almost_equal(jmat, self.expected_jmat)
+
+    @classmethod
+    def cleanUpClass(cls):
+        # Restore environment flags
+        if cls.use_cuda:
+            os.environ["ELEPHANT_USE_CUDA"] = cls.use_cuda
+        else:
+            os.environ.pop("ELEPHANT_USE_CUDA")
+
+        if cls.use_opencl:
+            os.environ["ELEPHANT_USE_OPENCL"] = cls.use_opencl
+        else:
+            os.environ.pop("ELEPHANT_USE_OPENCL")
 
 
 @unittest.skipUnless(HAVE_SKLEARN, 'requires sklearn')

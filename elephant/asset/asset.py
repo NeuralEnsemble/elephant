@@ -1113,10 +1113,12 @@ class _PMatNeighbors(_GPUBackend):
         The number of largest neighbors to collect for each entry in `mat`.
     """
 
-    def __init__(self, filter_shape, n_largest, max_chunk_size=None):
+    def __init__(self, filter_shape, n_largest, max_chunk_size=None,
+                 cuda_threads=None):
         super().__init__(max_chunk_size=max_chunk_size)
         self.n_largest = n_largest
         self.max_chunk_size = max_chunk_size
+        self.cuda_threads = cuda_threads
 
         filter_size, filter_width = filter_shape
         if filter_width >= filter_size:
@@ -1249,7 +1251,6 @@ class _PMatNeighbors(_GPUBackend):
         self._check_input(mat)
 
         device = pycuda.autoinit.device
-        n_threads = device.MAX_THREADS_PER_BLOCK
 
         filt_size = self.filter_kernel.shape[0]
         filt_rows, filt_cols = self.filter_kernel.nonzero()
@@ -1307,13 +1308,63 @@ class _PMatNeighbors(_GPUBackend):
 
             drv.Context.synchronize()
 
+            kernel = module.get_function("pmat_neighbors")
+
+            # Adjust number of threads depending on the number of registers
+            # needed for the kernel, to avoid exceeding the resources
+            if self.cuda_threads:
+                # Override with the number in the parameter `cuda_threads`
+                n_threads = min(self.cuda_threads,
+                                device.MAX_THREADS_PER_BLOCK)
+            else:
+                # Automatically determine the number of threads based on
+                # the register count.
+                regs_per_thread = kernel.NUM_REGS
+                max_regs_per_block = device.MAX_REGISTERS_PER_BLOCK
+                max_threads_by_regs = max_regs_per_block // regs_per_thread
+
+                # A safety margin of 10% with respect to the number of threads
+                # computed for the kernel is used in order to account for a
+                # fraction of registers that might be used by the GPU for
+                # control purposes.
+                max_threads_by_regs = int(max_threads_by_regs * 0.9)
+
+                n_threads = min(max_threads_by_regs,
+                                device.MAX_THREADS_PER_BLOCK)
+
+            if n_threads > device.WARP_SIZE:
+                # It's more efficient to make the number of threads
+                # a multiple of the warp size (32).
+                n_threads -= n_threads % device.WARP_SIZE
+
             grid_size = math.ceil(it_todo / n_threads)
+
+            if logger.level == logging.DEBUG:
+                logger.debug(f"Registers per thread: {kernel.NUM_REGS}")
+
+                shared_memory = kernel.SHARED_SIZE_BYTES
+                local_memory = kernel.LOCAL_SIZE_BYTES
+                const_memory = kernel.CONST_SIZE_BYTES
+                logger.debug(f"Memory: shared = {shared_memory}; "
+                             f"local = {local_memory}, const = {const_memory}")
+
+                logger.debug("Maximum per block: threads = "
+                             f"{device.MAX_THREADS_PER_BLOCK}; "
+                             "registers = "
+                             f"{device.MAX_REGISTERS_PER_BLOCK}; "
+                             "shared memory = "
+                             f"{device.MAX_SHARED_MEMORY_PER_BLOCK}")
+
+                logger.debug(f"It_todo: {it_todo}")
+                logger.debug(f"N threads: {n_threads}")
+                logger.debug(f"Max grid X: {device.MAX_GRID_DIM_X}")
+                logger.debug(f"Grid size: {grid_size}")
+
             if grid_size > device.MAX_GRID_DIM_X:
                 raise ValueError("Cannot launch a CUDA kernel with "
                                  f"{grid_size} num. of blocks. Adjust the "
                                  "'max_chunk_size' parameter.")
 
-            kernel = module.get_function("pmat_neighbors")
             kernel(lmat_gpu.gpudata, mat_gpu, grid=(grid_size, 1),
                    block=(n_threads, 1, 1))
 
@@ -2446,7 +2497,7 @@ class ASSET(object):
             Double floating-point precision is typically x4 times slower than
             the single floating-point equivalent.
             Default: 'float'
-        cuda_threads : int, optional
+        cuda_threads : int or tuple of int, optional
             [CUDA/OpenCL performance parameter that does not influence the
             result.]
             The number of CUDA/OpenCL threads per block (in X axis) between 1
@@ -2455,6 +2506,18 @@ class ASSET(object):
             Old GPUs (Tesla K80) perform faster with `cuda_threads` larger
             than 64 while new series (Tesla T4) with capabilities 6.x and more
             work best with 32 threads.
+            The computation of the joint probability matrix consists of two
+            GPU-accelerated steps. In the first step, the optimal number of
+            CUDA threads is determined automatically. The `cuda_threads`
+            parameter primarily controls the number of threads used in the
+            second (main) computation step. However, if the `n_largest`
+            parameter is set to a high value, the first step may fail with a
+            "too many resources" CUDA error due to excessive register usage.
+            To avoid this, you can explicitly specify the number of threads
+            for both steps using a tuple for `cuda_threads`. In this case, the
+            first element of the tuple sets the thread count for the main
+            computation, and the second element overrides the automatically
+            determined thread count for the first step.
             Default: 64
         cuda_cwr_loops : int, optional
             [CUDA/OpenCL performance parameter that does not influence the
@@ -2502,11 +2565,27 @@ class ASSET(object):
 
         logger.info("Finding neighbors in probability matrix...")
 
+        # Get any override in the number of CUDA threads
+        if isinstance(cuda_threads, tuple) and len(cuda_threads) == 2 \
+                and all(isinstance(n_thr, int) for n_thr in cuda_threads):
+            jsf_threads, pmat_threads = cuda_threads
+        elif isinstance(cuda_threads, int):
+            jsf_threads = cuda_threads
+            pmat_threads = None
+        else:
+            raise ValueError("'cuda_threads' must be int or a tuple of int.")
+
+        if (not (0 < jsf_threads <= 1024) or
+                (pmat_threads is not None and not (0 < pmat_threads <= 1024))):
+            raise ValueError("The number of threads in 'cuda_threads' must be"
+                             "a value > 0 and <= 1024.")
+
         # Find for each P_ij in the probability matrix its neighbors and
         # maximize them by the maximum value 1-p_value_min
         pmat = np.asarray(pmat, dtype=np.float32)
         pmat_neighb_obj = _PMatNeighbors(filter_shape=filter_shape,
-                                         n_largest=n_largest)
+                                         n_largest=n_largest,
+                                         cuda_threads=pmat_threads)
         pmat_neighb = pmat_neighb_obj.compute(pmat)
 
         logger.info("Finding unique set of values...")
@@ -2527,7 +2606,7 @@ class ASSET(object):
                 w + 1)  # number of entries covered by kernel
         jsf = _JSFUniformOrderStat3D(n=n, d=pmat_neighb.shape[1],
                                      precision=precision,
-                                     cuda_threads=cuda_threads,
+                                     cuda_threads=jsf_threads,
                                      cuda_cwr_loops=cuda_cwr_loops,
                                      tolerance=tolerance)
         jpvmat = jsf.compute(u=pmat_neighb)
