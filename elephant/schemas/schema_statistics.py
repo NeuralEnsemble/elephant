@@ -45,8 +45,8 @@ class PydanticMeanFiringRate(BaseModel):
     @model_validator(mode="after")
     def validate_model(self):             
         if isinstance(self.spiketrain, (neo.SpikeTrain, pq.Quantity)):            
-            if not ((self.t_start is None or isinstance(self.t_start, pq.Quantity)) and (self.t_stop is None or isinstance(self.t_stop, pq.Quantity))):
-                raise TypeError("spiketrain is a neo.SpikeTrain or pq.Quantity but t_start or t_stop is not pq.Quantity")
+            if not ((self.t_start is None or isinstance(self.t_start, (pq.Quantity, float))) and (self.t_stop is None or isinstance(self.t_stop, (pq.Quantity, float)))):
+                raise TypeError("spiketrain is a neo.SpikeTrain or pq.Quantity but t_start or t_stop is not pq.Quantity or float")
         elif isinstance(self.spiketrain, (np.ndarray, list)):
             if isinstance(self.t_start, pq.Quantity) or isinstance(self.t_stop, pq.Quantity):
                 raise TypeError("spiketrain is a np.ndarray or list but t_start or t_stop is pq.Quantity")
