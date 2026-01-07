@@ -29,6 +29,9 @@ import quantities as pq
 from elephant.statistics import Complexity
 from elephant.utils import is_time_quantity, check_same_units
 
+from elephant.schemas.function_validator import validate_with
+from elephant.schemas.schema_spike_train_synchrony import *
+
 SpikeContrastTrace = namedtuple("SpikeContrastTrace", (
     "contrast", "active_spiketrains", "synchrony", "bin_size"))
 
@@ -69,6 +72,7 @@ def _binning_half_overlap(spiketrain, edges):
     return histogram
 
 
+@validate_with(PydanticSpikeContrast)
 def spike_contrast(spiketrains, t_start=None, t_stop=None,
                    min_bin=10 * pq.ms, bin_shrink_factor=0.9,
                    return_trace=False):
@@ -261,6 +265,7 @@ class Synchrotool(Complexity):
 
     """
 
+    @validate_with(PydanticSynchrotoolInit)
     def __init__(self, spiketrains,
                  sampling_rate,
                  bin_size=None,
@@ -277,6 +282,7 @@ class Synchrotool(Complexity):
                                           spread=spread,
                                           tolerance=tolerance)
 
+    @validate_with(PydanticSynchrotoolDeleteSynchrofacts)
     def delete_synchrofacts(self, threshold, in_place=False, mode='delete'):
         """
         Delete or extract synchronous spiking events.
