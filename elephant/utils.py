@@ -7,6 +7,7 @@
     check_neo_consistency
     check_same_units
     round_binning_errors
+    is_list_spiketrains
 """
 
 from __future__ import division, print_function, unicode_literals
@@ -21,7 +22,8 @@ import numpy as np
 import quantities as pq
 
 from elephant.trials import Trials
-
+import collections.abc
+import neo
 
 __all__ = [
     "deprecated_alias",
@@ -31,6 +33,7 @@ __all__ = [
     "check_neo_consistency",
     "check_same_units",
     "round_binning_errors",
+    "is_list_spiketrains",
 ]
 
 
@@ -436,3 +439,31 @@ def trials_to_list_of_spiketrainlist(method):
         return method(*new_args, **new_kwargs)
 
     return wrapper
+
+
+def is_list_spiketrains(obj: object) -> bool:
+    """
+    Check if input is an iterable containing only neo.SpikeTrain objects.
+
+    Parameters
+    ----------
+    obj : object
+        The object to check.
+
+    Returns
+    -------
+    bool
+        True if obj is an iterable containing only neo.SpikeTrain objects. A single `neo.SpikeTrain` object (not inside
+        an iterable) will return `False`.
+
+    """
+
+    if not isinstance(obj, collections.abc.Iterable):
+        # Input must be an iterable (list, tuple, etc.)
+        return False
+
+    if not all(isinstance(st, neo.SpikeTrain) for st in obj):
+        # All elements must be neo.SpikeTrain objects
+        return False
+
+    return True
