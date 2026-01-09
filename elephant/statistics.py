@@ -1162,12 +1162,14 @@ def time_histogram(spiketrains, bin_size, t_start=None, t_stop=None,
     if binary:
         binned_spiketrain = BinnedSpikeTrain(spiketrains,
                                              t_start=t_start,
-                                             t_stop=t_stop, bin_size=bin_size
+                                             t_stop=t_stop, bin_size=bin_size,
+                                             ignore_shared_time=True
                                              ).binarize(copy=False)
     else:
         binned_spiketrain = BinnedSpikeTrain(spiketrains,
                                              t_start=t_start,
-                                             t_stop=t_stop, bin_size=bin_size
+                                             t_stop=t_stop, bin_size=bin_size,
+                                             ignore_shared_time=True
                                              )
 
     bin_hist: Union[int, ndarray] = binned_spiketrain.get_num_of_spikes(axis=0)
@@ -1423,7 +1425,10 @@ class Complexity(object):
                  bin_size=None,
                  binary=True,
                  spread=0,
-                 tolerance=1e-8):
+                 tolerance=1e-8,
+                 t_start=None,
+                 t_stop=None,
+                 ):
 
         check_neo_consistency(spiketrains, object_type=neo.SpikeTrain)
 
@@ -1434,8 +1439,8 @@ class Complexity(object):
             raise ValueError('Spread must be >=0')
 
         self.input_spiketrains = spiketrains
-        self.t_start = spiketrains[0].t_start
-        self.t_stop = spiketrains[0].t_stop
+        self.t_start = spiketrains[0].t_start if t_start is None else t_start
+        self.t_stop = spiketrains[0].t_stop if t_stop is None else t_stop
         self.sampling_rate = sampling_rate
         self.bin_size = bin_size
         self.binary = binary
@@ -1482,7 +1487,9 @@ class Complexity(object):
         # clip the spike trains before summing
         time_hist = time_histogram(self.input_spiketrains,
                                    self.bin_size,
-                                   binary=self.binary)
+                                   binary=self.binary,
+                                   t_start=self.t_start,
+                                   t_stop=self.t_stop)
 
         time_hist_magnitude = time_hist.magnitude.flatten()
 
