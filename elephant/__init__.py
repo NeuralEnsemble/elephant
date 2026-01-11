@@ -6,28 +6,30 @@ Elephant is a package for the analysis of neurophysiology data, based on Neo.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
-from . import (cell_assembly_detection,
-               change_point_detection,
-               conversion,
-               cubic,
-               current_source_density,
-               gpfa,
-               kernels,
-               neo_tools,
-               phase_analysis,
-               signal_processing,
-               spade,
-               spectral,
-               spike_train_correlation,
-               spike_train_dissimilarity,
-               spike_train_generation,
-               spike_train_surrogates,
-               spike_train_synchrony,
-               sta,
-               trials,
-               unitary_event_analysis,
-               waveform_features,
-               statistics)
+from . import (
+    cell_assembly_detection,
+    change_point_detection,
+    conversion,
+    cubic,
+    current_source_density,
+    gpfa,
+    kernels,
+    neo_tools,
+    phase_analysis,
+    signal_processing,
+    spade,
+    spectral,
+    spike_train_correlation,
+    spike_train_dissimilarity,
+    spike_train_generation,
+    spike_train_surrogates,
+    spike_train_synchrony,
+    sta,
+    trials,
+    unitary_event_analysis,
+    waveform_features,
+    statistics,
+)
 
 # not included modules on purpose:
 #   parallel: avoid warns when elephant is imported
@@ -43,8 +45,9 @@ except ImportError:
 
 def _get_version():
     import os
+
     elephant_dir = os.path.dirname(__file__)
-    with open(os.path.join(elephant_dir, 'VERSION')) as version_file:
+    with open(os.path.join(elephant_dir, "VERSION")) as version_file:
         version = version_file.read().strip()
     return version
 
