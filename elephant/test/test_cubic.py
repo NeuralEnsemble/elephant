@@ -32,17 +32,17 @@ class CubicTestCase(unittest.TestCase):
         n0 = 100000 - n2
         self.xi = 10
         self.data_signal = neo.AnalogSignal(
-            numpy.array([self.xi] * n2 + [0] * n0).reshape(n0 + n2, 1) *
-            pq.dimensionless, sampling_period=1 * pq.s)
+            numpy.array([self.xi] * n2 + [0] * n0).reshape(n0 + n2, 1)
+            * pq.dimensionless,
+            sampling_period=1 * pq.s,
+        )
         self.data_array = numpy.array([self.xi] * n2 + [0] * n0)
         self.alpha = 0.05
         self.max_iterations = 10
 
     def test_cubic(self):
-
         # Computing the output of CuBIC for the test data AnalogSignal
-        xi, p_vals, k, test_aborted = cubic.cubic(
-            self.data_signal, alpha=self.alpha)
+        xi, p_vals, k, test_aborted = cubic.cubic(self.data_signal, alpha=self.alpha)
 
         # Check the types of the outputs
         self.assertIsInstance(xi, int)
@@ -71,8 +71,7 @@ class CubicTestCase(unittest.TestCase):
         self.assertEqual(xi, self.xi)
 
         # Computing the output of CuBIC for the test data Array
-        xi, p_vals, k, test_aborted = cubic.cubic(
-            self.data_array, alpha=self.alpha)
+        xi, p_vals, k, test_aborted = cubic.cubic(self.data_array, alpha=self.alpha)
 
         # Check the types of the outputs
         self.assertIsInstance(xi, int)
@@ -106,41 +105,52 @@ class CubicTestCase(unittest.TestCase):
     def test_cubic_max_iterations(self):
         # Test exceeding max_iterations
         with self.assertWarns(UserWarning):
-            xi_max_iterations, p_vals_max_iterations, k_max_iterations, \
-                test_aborted = cubic.cubic(self.data_signal, alpha=1,
-                                           max_iterations=self.max_iterations)
+            xi_max_iterations, p_vals_max_iterations, k_max_iterations, test_aborted = (
+                cubic.cubic(
+                    self.data_signal, alpha=1, max_iterations=self.max_iterations
+                )
+            )
 
         self.assertEqual(test_aborted, True)
         self.assertEqual(xi_max_iterations - 1, self.max_iterations)
 
     def test_cubic_errors(self):
-
         # Check error ouputs for mis-settings of the parameters
 
         # Empty signal
         self.assertRaises(
-            ValueError, cubic.cubic, neo.AnalogSignal(
-                [] * pq.dimensionless, sampling_period=10 * pq.ms))
+            ValueError,
+            cubic.cubic,
+            neo.AnalogSignal([] * pq.dimensionless, sampling_period=10 * pq.ms),
+        )
 
         dummy_data = numpy.tile([1, 2, 3], reps=3)
         # Multidimensional array
-        self.assertRaises(ValueError, cubic.cubic, neo.AnalogSignal(
-            dummy_data * pq.dimensionless,
-            sampling_period=10 * pq.ms))
+        self.assertRaises(
+            ValueError,
+            cubic.cubic,
+            neo.AnalogSignal(dummy_data * pq.dimensionless, sampling_period=10 * pq.ms),
+        )
         self.assertRaises(ValueError, cubic.cubic, dummy_data.copy())
 
         # Negative alpha
         self.assertRaises(ValueError, cubic.cubic, self.data_array, alpha=-0.1)
 
         # Negative number of max_iterations
-        self.assertRaises(ValueError, cubic.cubic, self.data_array,
-                          max_iterations=-100)
+        self.assertRaises(ValueError, cubic.cubic, self.data_array, max_iterations=-100)
 
         # Checking case in which the second cumulant of the signal is smaller
         # than the first cumulant (analytical constrain of the method)
-        self.assertRaises(ValueError, cubic.cubic, neo.AnalogSignal(
-            numpy.array([1] * 1000).reshape(1000, 1), units=pq.dimensionless,
-            sampling_period=10 * pq.ms), alpha=self.alpha)
+        self.assertRaises(
+            ValueError,
+            cubic.cubic,
+            neo.AnalogSignal(
+                numpy.array([1] * 1000).reshape(1000, 1),
+                units=pq.dimensionless,
+                sampling_period=10 * pq.ms,
+            ),
+            alpha=self.alpha,
+        )
 
 
 if __name__ == "__main__":
