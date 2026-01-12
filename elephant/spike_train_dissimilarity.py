@@ -21,7 +21,7 @@ mathematical sense and time-scale dependent.
 """
 
 from __future__ import division, print_function, unicode_literals
-
+import warnings
 import numpy as np
 import quantities as pq
 from neo.core import SpikeTrain
@@ -363,6 +363,18 @@ def van_rossum_distance(spiketrains, time_constant=1.0 * pq.s, sort=True):
     for i, j in np.ndindex(k_dist.shape):
         vr_dist[i, j] = (
             k_dist[i, i] + k_dist[j, j] - k_dist[i, j] - k_dist[j, i])
+
+    # Clip small negative values
+    if np.any(vr_dist < 0):
+        warnings.warn(
+            "van_rossum_distance: very small negative values encountered; "
+            "setting them to zero. Potentially due to floating point error, "
+            "which can occur if spike times are represented as small floating "
+            "point values (e.g., in seconds). A possible way to prevent this "
+            "warning is to use a time unit with better numerical precision, "
+            "e.g., from seconds to milliseconds.", RuntimeWarning)
+        vr_dist = np.maximum(vr_dist, 0.0)
+
     return np.sqrt(vr_dist)
 
 

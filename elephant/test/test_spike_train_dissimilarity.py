@@ -14,7 +14,7 @@ from quantities import ms, s, Hz
 import elephant.kernels as kernels
 from elephant.spike_train_generation import StationaryPoissonProcess
 import elephant.spike_train_dissimilarity as stds
-
+import warnings
 from elephant.datasets import download_datasets
 
 
@@ -73,7 +73,6 @@ class TimeScaleDependSpikeTrainDissimMeasuresTestCase(unittest.TestCase):
         self.tau7 = 0.01 * s
         self.q7 = 1.0 / self.tau7
         self.t = np.linspace(0, 200, 20000001) * ms
-
     def test_wrong_input(self):
         self.assertRaises(TypeError, stds.victor_purpura_distance,
                           [self.array1, self.array2], self.q3)
@@ -599,6 +598,27 @@ class TimeScaleDependSpikeTrainDissimMeasuresTestCase(unittest.TestCase):
         self.assertEqual(stds.van_rossum_distance(
             [self.st21], self.tau3)[0, 0], 0)
         self.assertEqual(len(stds.van_rossum_distance([], self.tau3)), 0)
+
+    def test_van_rossum_distance_regression_small_negative_values(self):
+        """
+        Regression test for issue #679
+        Very small negative value in van_rossum_distance function.
+        Occurs due to floating point precision when
+        spike times are represented as small values
+        These values should be clipped to zero to avoid nans.
+        """
+
+        st24 = SpikeTrain([0.1782, 0.2286, 0.2804, 0.4972, 0.5504],
+                          units='s', t_stop=4.0)
+        tau8 = 0.1 * s
+        # Check small negative values edge case
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            result = stds.van_rossum_distance([st24, st24], tau8)
+            self.assertTrue(any("very small negative values encountered"
+                            in str(warn.message) for warn in w))
+        self.assertEqual(result[0, 1], 0.0)
+        self.assertFalse(np.any(np.isnan(result)))
 
 
 if __name__ == '__main__':
