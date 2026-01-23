@@ -1032,14 +1032,14 @@ def segmented_multitaper_cross_spectrum(signals, n_segments=1,
 def multitaper_coherence(signal_i, signal_j, n_segments=1, len_segment=None,
                          frequency_resolution=None, overlap=0.5, fs=1,
                          nw=4, num_tapers=None, peak_resolution=None):
-    """
+    r"""
     Estimates the magnitude-squared coherence and phase-lag of two given
     `neo.AnalogSignal` using the Multitaper method.
     The function calls `segmented_multitaper_cross_spectrum` internally and
     thus both functions share parts of the respective signatures.
 
     .. math::
-        C(\omega)=\\frac{|S_{xy}(\omega)|^2}{S_{xx}(\omega)S_{yy}(\omega)}
+        C(\omega)=\frac{|S_{xy}(\omega)|^2}{S_{xx}(\omega)S_{yy}(\omega)}
 
     Parameters
     ----------

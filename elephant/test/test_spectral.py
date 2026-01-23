@@ -97,9 +97,13 @@ class WelchPSDTestCase(unittest.TestCase):
         for key, val in params.items():
             freqs, psd = elephant.spectral.welch_psd(
                 data, len_segment=1000, overlap=0, **{key: val})
-            freqs_spsig, psd_spsig = spsig.welch(np.rollaxis(data, 0, len(
-                data.shape)), fs=1 / sampling_period, nperseg=1000,
-                                                 noverlap=0, **{key: val})
+            freqs_spsig, psd_spsig = spsig.welch(
+                np.rollaxis(data.magnitude, 0, len(data.shape)),
+                fs=1 / sampling_period,
+                nperseg=1000,
+                noverlap=0,
+                **{key: val}
+            )
             self.assertTrue(
                 (freqs == freqs_spsig).all() and (
                         psd == psd_spsig).all())

@@ -134,7 +134,7 @@ jobs:
       fail-fast: false
       matrix:
         # OS [ubuntu-latest, macos-latest, windows-latest]
-        os: [macos-13,macos-14]
+        os: [macos-14,macos-15]
         python-version: [3.12]
     steps:
       - name: Get current year-month
@@ -142,6 +142,17 @@ jobs:
         run: echo "date=$(date +'%Y-%m')" >> $GITHUB_OUTPUT
 
       - uses: actions/checkout@v4.1.6
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5.1.0
+        with:
+          python-version: ${{ matrix.python-version }}
+          check-latest: true
+          cache: 'pip'
+          cache-dependency-path: |
+            **/requirements.txt
+            **/requirements-extras.txt
+            **/requirements-tests.txt
 
       - name: Get current hash (SHA) of the elephant_data repo
         id: elephant-data
@@ -157,11 +168,11 @@ jobs:
           restore-keys: datasets-      
 
       - name: Install dependencies
-        shell: bash -l {0}
         run: |
           python --version
-          pip install -e .[extras,tests]
+          python -m pip install --upgrade pip
           pip install pytest-cov coveralls
+          pip install -e .[extras,tests]
 
       - name: List packages
         shell: bash -l {0}
@@ -366,29 +377,24 @@ jobs:
           restore-keys: datasets-
           enableCrossOsArchive: true 
 
-      - uses: conda-incubator/setup-miniconda@d2e6a045a86077fb6cad6f5adf368e9076ddaa8d # corresponds to v3.1.0
+      - uses: mamba-org/setup-micromamba@v2
         with:
-          auto-update-conda: true
-          python-version: ${{ matrix.python-version }}
-          mamba-version: "*"
-          channels: conda-forge
-          channel-priority: true
-          activate-environment: elephant
+          create-args: python=${{ matrix.python-version }}
           environment-file: requirements/environment-tests.yml
-          conda-remove-defaults: true
+          init-shell: bash
 
       - name: Install dependencies
         shell: bash -el {0}
         run: |
           python --version
-          mamba install -c conda-forge pytest pytest-cov coveralls mpi4py openmpi
+          micromamba install -y -c conda-forge pytest pytest-cov coveralls mpi4py openmpi
           pip install -e .
 
       - name: List packages
         shell: bash -el {0}
         run: |
           pip list
-          mamba list
+          micromamba list
           python --version
 
       - name: Test with pytest
@@ -438,23 +444,20 @@ jobs:
           key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements-docs.txt') }}-${{ hashFiles('**/requirements-tutorials.txt') }}-${{ hashFiles('**/environment-docs.yml') }}
            -${{ hashFiles('**/CI.yml') }}-${{ steps.date.outputs.date }}
 
-      - uses: conda-incubator/setup-miniconda@d2e6a045a86077fb6cad6f5adf368e9076ddaa8d # corresponds to v3.1.0
+      - uses: mamba-org/setup-micromamba@v2
         with:
-          auto-update-conda: true
-          python-version: ${{ matrix.python-version }}
-          mamba-version: "*"
-          activate-environment: elephant
+          create-args: python=${{ matrix.python-version }}
           environment-file: requirements/environment.yml
-          conda-remove-defaults: true
+          init-shell: bash
 
       - name: Install dependencies
-        shell: bash -el {0} # enables conda incubator to activate environment
+        shell: bash -el {0}
         run: |
           sudo apt-get update
           sudo apt install -y libopenmpi-dev openmpi-bin
-          
-          mamba install -c conda-forge openmpi pandoc libstdcxx-ng # fix libstdc++.so.6: version for new scipy versions > 1.9.1
-          mamba env update --file requirements/environment-docs.yml --name elephant
+          # Moved openmpi pandoc and libstdcxx-ng to environment-docs file        
+          # micromamba install -y -c conda-forge openmpi pandoc libstdcxx-ng # fix libstdc++.so.6: version for new scipy versions > 1.9.1
+          micromamba env update --file requirements/environment-docs.yml --name elephant
           python -m pip install --upgrade pip
           pip install -e .[extras,tutorials,docs]
           # run notebooks
@@ -464,7 +467,7 @@ jobs:
         shell: bash -el {0}
         run: |
           pip list
-          mamba list
+          micromamba list
           python --version
 
       - name: make html

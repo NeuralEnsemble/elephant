@@ -359,7 +359,7 @@ def _analog_signal_step_interp(signal, times):
 
 
 def _stretched_metric_2d(x, y, stretch, ref_angle, working_memory=None,
-                         mapped_array_file=None, verbose=None):
+                         mapped_array_file=None):
     r"""
     Given a list of points on the real plane, identified by their abscissa `x`
     and ordinate `y`, compute a stretched transformation of the Euclidean
@@ -409,15 +409,6 @@ def _stretched_metric_2d(x, y, stretch, ref_angle, working_memory=None,
         array). This option should be used when there is not enough memory to
         allocate the full stretched distance matrix needed before DBSCAN.
         Default: None
-    verbose : bool, optional, .. deprecated:: 0.14.0
-        This parameter is no longer functional. To control the verbosity
-        of log messages, please use the module's logger that is based on the
-        standard logging module.
-        Logging is turned on by default (to level INFO).
-        To restrict logging messages, use a higher logging level to WARNING or
-        ERROR, e.g., import logging from elephant.asset.asset import logger as
-        asset_logger asset_logger.set_level(logging.WARNING).
-        Default: None
 
     Returns
     -------
@@ -431,14 +422,6 @@ def _stretched_metric_2d(x, y, stretch, ref_angle, working_memory=None,
         pairwise distances when using chunked computations.
 
     """
-    if verbose is not None:
-        warnings.warn("The 'verbose' parameter is deprecated and will be "
-                      "removed in the future. Its functionality is still "
-                      "available by using the logging module from Python. "
-                      "We recommend transitioning to the logging module "
-                      "for improved control and flexibility in handling "
-                      "verbosity levels.", DeprecationWarning)
-
     alpha = np.deg2rad(ref_angle)  # reference angle in radians
 
     # Create the array of points (one per row) for which to compute the
@@ -574,17 +557,10 @@ def _stretched_metric_2d(x, y, stretch, ref_angle, working_memory=None,
     return stretch_mat
 
 
-def _interpolate_signals(signals, sampling_times, verbose=None):
+def _interpolate_signals(signals, sampling_times):
     """
     Interpolate signals at given sampling times.
     """
-    if verbose is not None:
-        warnings.warn("The 'verbose' parameter is deprecated and will be "
-                      "removed in the future. Its functionality is still "
-                      "available by using the logging module from Python. "
-                      "We recommend transitioning to the logging module "
-                      "for improved control and flexibility in handling "
-                      "verbosity levels.", DeprecationWarning)
     # Reshape all signals to one-dimensional array object (e.g. AnalogSignal)
     for i, signal in enumerate(signals):
         if signal.ndim == 2:
@@ -675,23 +651,15 @@ class _GPUBackend:
 
 
 class _JSFUniformOrderStat3D(_GPUBackend):
-    def __init__(self, n, d, precision='float', verbose=None,
-                 cuda_threads=64, cuda_cwr_loops=32, tolerance=1e-5,
-                 max_chunk_size=None):
+    def __init__(self, n, d, precision='float', cuda_threads=64,
+                 cuda_cwr_loops=32, tolerance=1e-5, max_chunk_size=None):
         super().__init__(max_chunk_size=max_chunk_size)
         if d > n:
             raise ValueError(f"d ({d}) must be less or equal n ({n})")
-        if verbose is not None:
-            warnings.warn("The 'verbose' parameter is deprecated and will be "
-                          "removed in the future. Its functionality is still "
-                          "available by using the logging module from Python. "
-                          "We recommend transitioning to the logging module "
-                          "for improved control and flexibility in handling "
-                          "verbosity levels.", DeprecationWarning)
+
         self.n = n
         self.d = d
         self.precision = precision
-        self.verbose = verbose and rank == 0
         self.cuda_threads = cuda_threads
         self.cuda_cwr_loops = cuda_cwr_loops
         self.map_iterations = self._create_iteration_table()
@@ -904,9 +872,9 @@ class _JSFUniformOrderStat3D(_GPUBackend):
                 # grid_size must be at least l_num_blocks
                 grid_size = l_num_blocks
 
-                logger.info(f"[Joint prob. matrix] it_todo={it_todo}, "
-                            f"grid_size={grid_size}, L_BLOCK={l_block}, "
-                            f"N_THREADS={n_threads}")
+            logger.info(f"[Joint prob. matrix] it_todo={it_todo}, "
+                        f"grid_size={grid_size}, L_BLOCK={l_block}, "
+                        f"N_THREADS={n_threads}")
 
             # OpenCL defines unsigned long as uint64, therefore we're adding
             # the LU suffix, not LLU, which would indicate unsupported uint128
@@ -994,9 +962,9 @@ class _JSFUniformOrderStat3D(_GPUBackend):
                 # grid_size must be at least l_num_blocks
                 grid_size = l_num_blocks
 
-                logger.info(f"[Joint prob. matrix] it_todo={it_todo}, "
-                            f"grid_size={grid_size}, L_BLOCK={l_block}, "
-                            f"N_THREADS={n_threads}")
+            logger.info(f"[Joint prob. matrix] it_todo={it_todo}, "
+                        f"grid_size={grid_size}, L_BLOCK={l_block}, "
+                        f"N_THREADS={n_threads}")
 
             asset_cu = self._compile_template(
                 template_name="joint_pmat.cu",
@@ -1146,18 +1114,11 @@ class _PMatNeighbors(_GPUBackend):
     """
 
     def __init__(self, filter_shape, n_largest, max_chunk_size=None,
-                 verbose=None):
+                 cuda_threads=None):
         super().__init__(max_chunk_size=max_chunk_size)
         self.n_largest = n_largest
         self.max_chunk_size = max_chunk_size
-        if verbose is not None:
-            warnings.warn("The 'verbose' parameter is deprecated and will be "
-                          "removed in the future. Its functionality is still "
-                          "available by using the logging module from Python. "
-                          "We recommend transitioning to the logging module "
-                          "for improved control and flexibility in handling "
-                          "verbosity levels.", DeprecationWarning)
-        self.verbose = verbose
+        self.cuda_threads = cuda_threads
 
         filter_size, filter_width = filter_shape
         if filter_width >= filter_size:
@@ -1290,7 +1251,6 @@ class _PMatNeighbors(_GPUBackend):
         self._check_input(mat)
 
         device = pycuda.autoinit.device
-        n_threads = device.MAX_THREADS_PER_BLOCK
 
         filt_size = self.filter_kernel.shape[0]
         filt_rows, filt_cols = self.filter_kernel.nonzero()
@@ -1348,13 +1308,63 @@ class _PMatNeighbors(_GPUBackend):
 
             drv.Context.synchronize()
 
+            kernel = module.get_function("pmat_neighbors")
+
+            # Adjust number of threads depending on the number of registers
+            # needed for the kernel, to avoid exceeding the resources
+            if self.cuda_threads:
+                # Override with the number in the parameter `cuda_threads`
+                n_threads = min(self.cuda_threads,
+                                device.MAX_THREADS_PER_BLOCK)
+            else:
+                # Automatically determine the number of threads based on
+                # the register count.
+                regs_per_thread = kernel.NUM_REGS
+                max_regs_per_block = device.MAX_REGISTERS_PER_BLOCK
+                max_threads_by_regs = max_regs_per_block // regs_per_thread
+
+                # A safety margin of 10% with respect to the number of threads
+                # computed for the kernel is used in order to account for a
+                # fraction of registers that might be used by the GPU for
+                # control purposes.
+                max_threads_by_regs = int(max_threads_by_regs * 0.9)
+
+                n_threads = min(max_threads_by_regs,
+                                device.MAX_THREADS_PER_BLOCK)
+
+            if n_threads > device.WARP_SIZE:
+                # It's more efficient to make the number of threads
+                # a multiple of the warp size (32).
+                n_threads -= n_threads % device.WARP_SIZE
+
             grid_size = math.ceil(it_todo / n_threads)
+
+            if logger.level == logging.DEBUG:
+                logger.debug(f"Registers per thread: {kernel.NUM_REGS}")
+
+                shared_memory = kernel.SHARED_SIZE_BYTES
+                local_memory = kernel.LOCAL_SIZE_BYTES
+                const_memory = kernel.CONST_SIZE_BYTES
+                logger.debug(f"Memory: shared = {shared_memory}; "
+                             f"local = {local_memory}, const = {const_memory}")
+
+                logger.debug("Maximum per block: threads = "
+                             f"{device.MAX_THREADS_PER_BLOCK}; "
+                             "registers = "
+                             f"{device.MAX_REGISTERS_PER_BLOCK}; "
+                             "shared memory = "
+                             f"{device.MAX_SHARED_MEMORY_PER_BLOCK}")
+
+                logger.debug(f"It_todo: {it_todo}")
+                logger.debug(f"N threads: {n_threads}")
+                logger.debug(f"Max grid X: {device.MAX_GRID_DIM_X}")
+                logger.debug(f"Grid size: {grid_size}")
+
             if grid_size > device.MAX_GRID_DIM_X:
                 raise ValueError("Cannot launch a CUDA kernel with "
                                  f"{grid_size} num. of blocks. Adjust the "
                                  "'max_chunk_size' parameter.")
 
-            kernel = module.get_function("pmat_neighbors")
             kernel(lmat_gpu.gpudata, mat_gpu, grid=(grid_size, 1),
                    block=(n_threads, 1, 1))
 
@@ -2023,6 +2033,19 @@ class ASSET(object):
 
           fully disjoint.
 
+    Notes
+    -----
+        To control the verbosity of log messages throughout the ASSET analysis,
+        please use the module's logger that is based on the standard `logging`
+        module. Logging is turned on by default with level INFO.
+        To restrict logging messages, use higher logging levels such as
+        WARNING or ERROR. To enable detailed debugging messages, use the lower
+        level DEBUG. The code below shows how to set the ASSET logger level:
+
+        >>> import logging
+        >>> from elephant.asset.asset import logger as asset_logger
+        >>> asset_logger.setLevel(logging.WARNING)
+
     See Also
     --------
     :class:`elephant.conversion.BinnedSpikeTrain`
@@ -2031,15 +2054,7 @@ class ASSET(object):
 
     def __init__(self, spiketrains_i, spiketrains_j=None, bin_size=3 * pq.ms,
                  t_start_i=None, t_start_j=None, t_stop_i=None, t_stop_j=None,
-                 bin_tolerance='default', verbose=None):
-
-        if verbose is not None:
-            warnings.warn("The 'verbose' parameter is deprecated and will be "
-                          "removed in the future. Its functionality is still "
-                          "available by using the logging module from Python. "
-                          "We recommend transitioning to the logging module "
-                          "for improved control and flexibility in handling "
-                          "verbosity levels.", DeprecationWarning)
+                 bin_tolerance='default'):
 
         self.spiketrains_i = spiketrains_i
         if spiketrains_j is None:
@@ -2054,7 +2069,6 @@ class ASSET(object):
             spiketrains_j,
             t_start=t_start_j,
             t_stop=t_stop_j)
-        self.verbose = verbose and rank == 0
 
         msg = 'The time intervals for x and y need to be either identical ' \
               'or fully disjoint, but they are:\n' \
@@ -2483,7 +2497,7 @@ class ASSET(object):
             Double floating-point precision is typically x4 times slower than
             the single floating-point equivalent.
             Default: 'float'
-        cuda_threads : int, optional
+        cuda_threads : int or tuple of int, optional
             [CUDA/OpenCL performance parameter that does not influence the
             result.]
             The number of CUDA/OpenCL threads per block (in X axis) between 1
@@ -2492,6 +2506,18 @@ class ASSET(object):
             Old GPUs (Tesla K80) perform faster with `cuda_threads` larger
             than 64 while new series (Tesla T4) with capabilities 6.x and more
             work best with 32 threads.
+            The computation of the joint probability matrix consists of two
+            GPU-accelerated steps. In the first step, the optimal number of
+            CUDA threads is determined automatically. The `cuda_threads`
+            parameter primarily controls the number of threads used in the
+            second (main) computation step. However, if the `n_largest`
+            parameter is set to a high value, the first step may fail with a
+            "too many resources" CUDA error due to excessive register usage.
+            To avoid this, you can explicitly specify the number of threads
+            for both steps using a tuple for `cuda_threads`. In this case, the
+            first element of the tuple sets the thread count for the main
+            computation, and the second element overrides the automatically
+            determined thread count for the first step.
             Default: 64
         cuda_cwr_loops : int, optional
             [CUDA/OpenCL performance parameter that does not influence the
@@ -2539,11 +2565,27 @@ class ASSET(object):
 
         logger.info("Finding neighbors in probability matrix...")
 
+        # Get any override in the number of CUDA threads
+        if isinstance(cuda_threads, tuple) and len(cuda_threads) == 2 \
+                and all(isinstance(n_thr, int) for n_thr in cuda_threads):
+            jsf_threads, pmat_threads = cuda_threads
+        elif isinstance(cuda_threads, int):
+            jsf_threads = cuda_threads
+            pmat_threads = None
+        else:
+            raise ValueError("'cuda_threads' must be int or a tuple of int.")
+
+        if (not (0 < jsf_threads <= 1024) or
+                (pmat_threads is not None and not (0 < pmat_threads <= 1024))):
+            raise ValueError("The number of threads in 'cuda_threads' must be"
+                             "a value > 0 and <= 1024.")
+
         # Find for each P_ij in the probability matrix its neighbors and
         # maximize them by the maximum value 1-p_value_min
         pmat = np.asarray(pmat, dtype=np.float32)
         pmat_neighb_obj = _PMatNeighbors(filter_shape=filter_shape,
-                                         n_largest=n_largest)
+                                         n_largest=n_largest,
+                                         cuda_threads=pmat_threads)
         pmat_neighb = pmat_neighb_obj.compute(pmat)
 
         logger.info("Finding unique set of values...")
@@ -2564,7 +2606,7 @@ class ASSET(object):
                 w + 1)  # number of entries covered by kernel
         jsf = _JSFUniformOrderStat3D(n=n, d=pmat_neighb.shape[1],
                                      precision=precision,
-                                     cuda_threads=cuda_threads,
+                                     cuda_threads=jsf_threads,
                                      cuda_cwr_loops=cuda_cwr_loops,
                                      tolerance=tolerance)
         jpvmat = jsf.compute(u=pmat_neighb)
@@ -2632,7 +2674,7 @@ class ASSET(object):
     @staticmethod
     def cluster_matrix_entries(mask_matrix, max_distance, min_neighbors,
                                stretch, working_memory=None, array_file=None,
-                               keep_file=False, verbose=None):
+                               keep_file=False):
         r"""
         Given a matrix `mask_matrix`, replaces its positive elements with
         integers representing different cluster IDs. Each cluster comprises
@@ -2727,13 +2769,6 @@ class ASSET(object):
 
         """
 
-        if verbose is not None:
-            warnings.warn("The 'verbose' parameter is deprecated and will be "
-                          "removed in the future. Its functionality is still "
-                          "available by using the logging module from Python. "
-                          "We recommend transitioning to the logging module "
-                          "for improved control and flexibility in handling "
-                          "verbosity levels.", DeprecationWarning)
         # Don't do anything if mat is identically zero
         if np.all(mask_matrix == 0):
             return mask_matrix
