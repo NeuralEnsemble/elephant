@@ -723,6 +723,26 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
         assert_array_equal(bst.to_array().nonzero()[1],
                            np.arange(120000))
 
+    # Regression test for _validate_indices change in scipy>=1.17
+    def test_binnedspiketrain_getitem_caching(self):
+
+        spiketrains = [self.spiketrain_a, self.spiketrain_b,
+                       self.spiketrain_a, self.spiketrain_b]
+        for sparse_format in ("csr", "csc"):
+            bst = cv.BinnedSpikeTrain(spiketrains=spiketrains,
+                                      bin_size=self.bin_size,
+                                      sparse_format=sparse_format)
+
+            # Invoke __getitem
+            _ = bst[0]
+            assert hasattr(bst, "_validate_indices_cached"),(
+                    "Wrapper should be cached")
+            assert callable(bst._validate_indices_cached),(
+                    "Cached object should be callable")
+            cached = bst._validate_indices_cached
+
+            _ = bst[0]
+            assert bst._validate_indices_cached is cached
 
 class DiscretiseSpiketrainsTestCase(unittest.TestCase):
     def setUp(self):

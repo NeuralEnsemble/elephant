@@ -691,21 +691,22 @@ class BinnedSpikeTrain(object):
             A slice of itself that carry the original data. Any changes to
             the returned binned sparse matrix will affect the original data.
         """
-        # Fallback logic added to get and cache _validate_indices method
-        # which has been changed to a non-member method in SciPy 1.17 (#)
+        # --- Cached fallback for `_validate_indices` ---
+        # SciPy>=1.17 moved `_validate_indices` from csr_matrix to module fn
+        # To maintain compatibility, as a hotfix, first member method tried
+        # If it doesn't exist (newer SciPy), import module level function
         if not hasattr(self, "_validate_indices_cached"):
             try:
-                self._validate_indices_cached = \
-                self.sparse_matrix._validate_indices
+                member_validate = self.sparse_matrix._validate_indices
+                def wrapper(item):
+                    return member_validate(item)
             except AttributeError:
                 from scipy.sparse._index import _validate_indices
-
-                # wrapper to match old api
                 def wrapper(item):
                     return _validate_indices(item,
                                              self.sparse_matrix.shape,
                                              self.sparse_matrix.format)
-                self._validate_indices_cached = wrapper
+            self._validate_indices_cached = wrapper
                 
         # taken from csr_matrix.__getitem__
         valid_indices = self._validate_indices_cached(item)
