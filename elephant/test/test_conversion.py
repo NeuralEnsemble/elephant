@@ -723,7 +723,7 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
         assert_array_equal(bst.to_array().nonzero()[1],
                            np.arange(120000))
 
-    # Regression test for _validate_indices change in scipy>=1.17
+    # Regression test PR #685:  _validate_indices changed to non-member function in scipy>=1.17
     def test_binnedspiketrain_getitem_caching(self):
 
         spiketrains = [self.spiketrain_a, self.spiketrain_b,

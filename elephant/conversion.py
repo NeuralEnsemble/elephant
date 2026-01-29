@@ -695,6 +695,7 @@ class BinnedSpikeTrain(object):
         # SciPy>=1.17 moved `_validate_indices` from csr_matrix to module fn
         # To maintain compatibility, as a hotfix, first member method tried
         # If it doesn't exist (newer SciPy), import module level function
+        # TODO: Remove the hotfix in a future version of Elephant that no longer suppoert SciPy<1.17.
         if not hasattr(self, "_validate_indices_cached"):
             try:
                 member_validate = self.sparse_matrix._validate_indices
