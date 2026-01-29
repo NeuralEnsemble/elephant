@@ -733,7 +733,7 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
                                       bin_size=self.bin_size,
                                       sparse_format=sparse_format)
 
-            # Invoke __getitem
+            # First __getitem__ access triggers _validate_indices and caches the wrapper
             _ = bst[0]
             assert hasattr(bst, "_validate_indices_cached"),(
                     "Wrapper should be cached")
@@ -741,6 +741,7 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
                     "Cached object should be callable")
             cached = bst._validate_indices_cached
 
+            # Second __getitem__ access should reuse the cached wrapper
             _ = bst[0]
             assert bst._validate_indices_cached is cached
 
