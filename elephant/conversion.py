@@ -691,8 +691,26 @@ class BinnedSpikeTrain(object):
             A slice of itself that carry the original data. Any changes to
             the returned binned sparse matrix will affect the original data.
         """
+        # --- Cached fallback for `_validate_indices` ---
+        # SciPy>=1.17 moved `_validate_indices` from csr_matrix to module fn
+        # To maintain compatibility, as a hotfix, first member method tried
+        # If it doesn't exist (newer SciPy), import module level function
+        # TODO: Remove the hotfix in a future version of Elephant that no longer suppoert SciPy<1.17.
+        if not hasattr(self, "_validate_indices_cached"):
+            try:
+                member_validate = self.sparse_matrix._validate_indices
+                def wrapper(item):
+                    return member_validate(item)
+            except AttributeError:
+                from scipy.sparse._index import _validate_indices
+                def wrapper(item):
+                    return _validate_indices(item,
+                                             self.sparse_matrix.shape,
+                                             self.sparse_matrix.format)
+            self._validate_indices_cached = wrapper
+                
         # taken from csr_matrix.__getitem__
-        valid_indices = self.sparse_matrix._validate_indices(item)
+        valid_indices = self._validate_indices_cached(item)
         # TODO: The following is a hot fix to compensate an API change in SciPy 1.15 (#653)
         # Currently, we cannot set scipy>=1.15 since this would not allow for Python 3.9.
         # Once we phase out support for Python 3.9, remove the if statement and the else 
