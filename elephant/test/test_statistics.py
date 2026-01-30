@@ -383,7 +383,7 @@ class LVTestCase(unittest.TestCase):
     def test_lv_raise_error(self):
         seq = self.test_seq
         self.assertRaises(ValueError, statistics.lv, [])
-        self.assertRaises(ValueError, statistics.lv, 1)
+        self.assertRaises((ValueError, TypeError), statistics.lv, 1)
         self.assertRaises(ValueError, statistics.lv, np.array([seq, seq]))
 
     def test_2short_spike_train(self):
@@ -430,7 +430,7 @@ class LVRTestCase(unittest.TestCase):
     def test_lvr_raise_error(self):
         seq = self.test_seq
         self.assertRaises(ValueError, statistics.lvr, [])
-        self.assertRaises(ValueError, statistics.lvr, 1)
+        self.assertRaises((ValueError, TypeError), statistics.lvr, 1)
         self.assertRaises(ValueError, statistics.lvr, np.array([seq, seq]))
         self.assertRaises(ValueError, statistics.lvr, seq, -1 * pq.ms)
 
@@ -478,7 +478,7 @@ class CV2TestCase(unittest.TestCase):
     def test_cv2_raise_error(self):
         seq = self.test_seq
         self.assertRaises(ValueError, statistics.cv2, [])
-        self.assertRaises(ValueError, statistics.cv2, 1)
+        self.assertRaises((ValueError, TypeError), statistics.cv2, 1)
         self.assertRaises(ValueError, statistics.cv2, np.array([seq, seq]))
 
 

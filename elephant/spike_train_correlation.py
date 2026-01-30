@@ -25,6 +25,9 @@ import scipy.signal
 from scipy import integrate
 from elephant.utils import check_neo_consistency
 
+from elephant.schemas.function_validator import validate_with
+from elephant.schemas.schema_spike_train_correlation import *
+
 
 __all__ = [
     "covariance",
@@ -276,6 +279,7 @@ class _CrossCorrHist(object):
         return np.convolve(cross_corr_array, kernel, mode='same')
 
 
+@validate_with(PydanticCovariance)
 def covariance(binned_spiketrain, binary=False, fast=True):
     r"""
     Calculate the NxN matrix of pairwise covariances between all combinations
@@ -376,6 +380,7 @@ def covariance(binned_spiketrain, binary=False, fast=True):
         binned_spiketrain, corrcoef_norm=False)
 
 
+@validate_with(PydanticCorrelationCoefficient)
 def correlation_coefficient(binned_spiketrain, binary=False, fast=True):
     r"""
     Calculate the NxN matrix of pairwise Pearson's correlation coefficients
@@ -549,6 +554,7 @@ def _covariance_sparse(binned_spiketrain, corrcoef_norm):
     return res
 
 
+@validate_with(PydanticCrossCorrelationHistogram)
 def cross_correlation_histogram(
         binned_spiketrain_i, binned_spiketrain_j, window='full',
         border_correction=False, binary=False, kernel=None, method='speed',
@@ -818,6 +824,7 @@ def cross_correlation_histogram(
 cch = cross_correlation_histogram
 
 
+@validate_with(PydanticSpikeTimeTilingCoefficient)
 def spike_time_tiling_coefficient(spiketrain_i: neo.core.SpikeTrain,
                                   spiketrain_j: neo.core.SpikeTrain,
                                   dt: pq.Quantity = 0.005 * pq.s) -> float:
@@ -992,6 +999,7 @@ def spike_time_tiling_coefficient(spiketrain_i: neo.core.SpikeTrain,
 sttc = spike_time_tiling_coefficient
 
 
+@validate_with(PydanticSpikeTrainTimescale)
 def spike_train_timescale(binned_spiketrain, max_tau):
     r"""
     Calculates the auto-correlation time of a binned spike train; uses the

@@ -89,3 +89,5 @@ ignored/
 
 # neo logs
 **/logs
+
+pytest.ini
