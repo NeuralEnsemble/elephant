@@ -65,7 +65,7 @@ The code was ported from the MATLAB code based on Byron Yu's implementation.
 The original MATLAB code is available at Byron Yu's website:
 https://users.ece.cmu.edu/~byronyu/software.shtml
 
-:copyright: Copyright 2014-2024 by the Elephant team, see AUTHORS.txt.
+:copyright: Copyright 2014-2025 by the Elephant team, see AUTHORS.txt.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 

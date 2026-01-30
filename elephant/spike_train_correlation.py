@@ -11,7 +11,7 @@ This modules provides functions to calculate correlations between spike trains.
     spike_time_tiling_coefficient
     spike_train_timescale
 
-:copyright: Copyright 2014-2024 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2025 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 from __future__ import division, print_function, unicode_literals
