@@ -74,7 +74,7 @@ import scipy.stats
 import scipy.signal
 from numpy import ndarray
 from scipy.special import erf
-from typing import Union
+from typing import List, Union
 
 import elephant.conversion as conv
 import elephant.kernels as kernels
@@ -270,10 +270,11 @@ def mean_firing_rate(spiketrain, t_start=None, t_stop=None, axis=None):
     return rates
 
 
-def fanofactor(spiketrains, warn_tolerance=0.1 * pq.ms):
+def fanofactor(spiketrains: Union[List[neo.SpikeTrain], List[pq.Quantity], List[np.ndarray], elephant.trials.Trials],
+               warn_tolerance: pq.Quantity = 0.1 * pq.ms) -> Union[float, List[float], List[List[float]]]:
     r"""
     Evaluates the empirical Fano factor F of the spike counts of
-    a list of `neo.SpikeTrain` objects.
+    a list of `neo.SpikeTrain` objects or `elephant.trials.Trial` object.
 
     Given the vector v containing the observed spike counts (one per
     spike train) in the time window [t0, t1], F is defined as:
@@ -288,18 +289,20 @@ def fanofactor(spiketrains, warn_tolerance=0.1 * pq.ms):
 
     Parameters
     ----------
-    spiketrains : list
+    spiketrains : list or elephant.trials.Trial
         List of `neo.SpikeTrain` or `pq.Quantity` or `np.ndarray` or list of
-        spike times for which to compute the Fano factor of spike counts.
+        spike times for which to compute the Fano factor of spike counts, or
+        an `elephant.trials.Trial` object. If a Trial object is used, spike trains are
+        pooled across trials before computing the Fano factor.
     warn_tolerance : pq.Quantity
         In case of a list of input neo.SpikeTrains, if their durations vary by
-        more than `warn_tolerence` in their absolute values, throw a warning
+        more than `warn_tolerance` in their absolute values, throw a warning
         (see Notes).
         Default: 0.1 ms
 
     Returns
     -------
-    fano : float
+    fano : float, list of floats
         The Fano factor of the spike counts of the input spike trains.
         Returns np.NaN if an empty list is specified, or if all spike trains
         are empty.
@@ -313,7 +316,7 @@ def fanofactor(spiketrains, warn_tolerance=0.1 * pq.ms):
     Notes
     -----
     The check for the equal duration of the input spike trains is performed
-    only if the input is of type`neo.SpikeTrain`: if you pass a numpy array,
+    only if the input is of type`neo.SpikeTrain`: if you pass e.g. a numpy array,
     please make sure that they all have the same duration manually.
 
     Examples
@@ -328,29 +331,40 @@ def fanofactor(spiketrains, warn_tolerance=0.1 * pq.ms):
     0.07142857142857142
 
     """
-    # Build array of spike counts (one per spike train)
-    spike_counts = np.array([len(st) for st in spiketrains])
+    # Check if parameters are of the correct type
+    if not is_time_quantity(warn_tolerance):
+        raise TypeError(f"'warn_tolerance' must be a time quantity, but got {type(warn_tolerance)}")
 
-    # Compute FF
-    if all(count == 0 for count in spike_counts):
-        # empty list of spiketrains reaches this branch, and NaN is returned
-        return np.nan
+    def _check_input_spiketrains_durations(spiketrains: Union[List[neo.SpikeTrain], List[pq.Quantity],
+                                                              List[np.ndarray]]) -> None:
+        if spiketrains and all(isinstance(st, neo.SpikeTrain) for st in spiketrains):
+            durations = np.array(tuple(st.duration for st in spiketrains))
+            if np.max(durations) - np.min(durations) > warn_tolerance:
+                warnings.warn(f"Fano factor calculated for spike trains of "
+                              f"different duration (minimum: {np.min(durations)}s, maximum "
+                              f"{np.max(durations)}s).")
 
-    if all(isinstance(st, neo.SpikeTrain) for st in spiketrains):
-        if not is_time_quantity(warn_tolerance):
-            raise TypeError("'warn_tolerance' must be a time quantity.")
-        durations = [(st.t_stop - st.t_start).simplified.item()
-                     for st in spiketrains]
-        durations_min = min(durations)
-        durations_max = max(durations)
-        if durations_max - durations_min > warn_tolerance.simplified.item():
-            warnings.warn("Fano factor calculated for spike trains of "
-                          "different duration (minimum: {_min}s, maximum "
-                          "{_max}s).".format(_min=durations_min,
-                                             _max=durations_max))
+    def _compute_fano(spiketrains: Union[List[neo.SpikeTrain], List[pq.Quantity], List[np.ndarray]]) -> float:
+        # Check spike train durations
+        _check_input_spiketrains_durations(spiketrains)
+        # Build array of spike counts (one per spike train)
+        spike_counts = np.array(tuple(len(st) for st in spiketrains))
+        # Compute FF
+        if np.all(np.array(spike_counts) == 0):
+            # empty list of spiketrains reaches this branch, and NaN is returned
+            return np.nan
+        else:
+            return spike_counts.var()/spike_counts.mean()
 
-    fano = spike_counts.var() / spike_counts.mean()
-    return fano
+    if isinstance(spiketrains, elephant.trials.Trials):
+        list_of_lists_of_spiketrains = [
+            spiketrains.get_spiketrains_from_trial_as_list(trial_id=trial_no)
+            for trial_no in range(spiketrains.n_trials)]
+        return [_compute_fano([list_of_lists_of_spiketrains[trial_no][st_no]
+                               for trial_no in range(len(list_of_lists_of_spiketrains))])
+                for st_no in range(len(list_of_lists_of_spiketrains[0]))]
+    else:  # Legacy behavior
+        return _compute_fano(spiketrains)
 
 
 def __variation_check(v, with_nan):

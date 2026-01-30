@@ -21,7 +21,7 @@ import elephant.kernels as kernels
 from elephant import statistics
 from elephant.spike_train_generation import StationaryPoissonProcess
 from elephant.test.test_trials import _create_trials_block
-from elephant.trials import TrialsFromBlock
+from elephant.trials import TrialsFromBlock, TrialsFromLists
 
 
 class IsiTestCase(unittest.TestCase):
@@ -269,32 +269,34 @@ class MeanFiringRateTestCase(unittest.TestCase):
 
 
 class FanoFactorTestCase(unittest.TestCase):
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
         np.random.seed(100)
         num_st = 300
-        self.test_spiketrains = []
-        self.test_array = []
-        self.test_quantity = []
-        self.test_list = []
-        self.sp_counts = np.zeros(num_st)
+        cls.test_spiketrains = []
+        cls.test_array = []
+        cls.test_quantity = []
+        cls.test_list = []
+        cls.sp_counts = np.zeros(num_st)
         for i in range(num_st):
             r = np.random.rand(np.random.randint(20) + 1)
             st = neo.core.SpikeTrain(r * pq.ms,
                                      t_start=0.0 * pq.ms,
                                      t_stop=20.0 * pq.ms)
-            self.test_spiketrains.append(st)
-            self.test_array.append(r)
-            self.test_quantity.append(r * pq.ms)
-            self.test_list.append(list(r))
+            cls.test_spiketrains.append(st)
+            cls.test_array.append(r)
+            cls.test_quantity.append(r * pq.ms)
+            cls.test_list.append(list(r))
             # for cross-validation
-            self.sp_counts[i] = len(st)
+            cls.sp_counts[i] = len(st)
+
+        cls.test_trials = TrialsFromLists([cls.test_spiketrains, cls.test_spiketrains])
 
     def test_fanofactor_spiketrains(self):
         # Test with list of spiketrains
         self.assertEqual(
             np.var(self.sp_counts) / np.mean(self.sp_counts),
             statistics.fanofactor(self.test_spiketrains))
-
         # One spiketrain in list
         st = self.test_spiketrains[0]
         self.assertEqual(statistics.fanofactor([st]), 0.0)
@@ -351,6 +353,18 @@ class FanoFactorTestCase(unittest.TestCase):
         st1 = neo.SpikeTrain([1, 2, 3] * pq.s, t_stop=4 * pq.s)
         self.assertRaises(TypeError, statistics.fanofactor, [st1],
                           warn_tolerance=1e-4)
+
+    def test_fanofactor_trials(self):
+        results = statistics.fanofactor(self.test_trials)
+        self.assertEqual(len(results), self.test_trials.n_spiketrains_trial_by_trial[0])
+
+    def test_fanofactor_trials_result(self):
+        results = statistics.fanofactor(self.test_trials)
+        for st_idx, result in enumerate(results):
+            spiketrains = [trial.spiketrains[st_idx] for trial in self.test_trials.get_trials_as_list()]
+            sp_count = sum([len(spiketrain) for spiketrain in spiketrains])
+            self.assertEqual(np.var(sp_count) / np.mean(sp_count),
+                             result)
 
 
 class LVTestCase(unittest.TestCase):
