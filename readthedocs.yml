@@ -3,6 +3,9 @@ version: 2
 
 build:
     os: ubuntu-22.04
+    apt_packages:
+      - libopenmpi-dev
+      - openmpi-bin
     tools:
       python: "mambaforge-22.9"
 
