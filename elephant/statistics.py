@@ -365,7 +365,7 @@ def __variation_check(v, with_nan):
             warnings.warn("The input size is too small. Please provide"
                           "an input with more than 1 entry. Returning `NaN`"
                           "since the argument `with_nan` is `True`")
-            return np.NaN
+            return np.nan
         raise ValueError("Input size is too small. Please provide "
                          "an input with more than 1 entry. Set 'with_nan' "
                          "to True to replace the error by a warning.")

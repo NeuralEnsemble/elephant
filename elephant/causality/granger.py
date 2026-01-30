@@ -357,7 +357,7 @@ def _optimal_vector_arm(signals, dimension, max_order,
 
     length = np.size(signals[0])
 
-    optimal_ic = np.infty
+    optimal_ic = np.inf
     optimal_order = 1
     optimal_coeffs = np.zeros((dimension, dimension, optimal_order))
     optimal_cov_matrix = np.zeros((dimension, dimension))

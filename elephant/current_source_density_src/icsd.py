@@ -344,7 +344,7 @@ class DeltaiCSD(CSD):
                               self.coord_electrode[i])**2 + (self.diam[j] / 2)**2)-
                     abs(self.coord_electrode[j] + self.coord_electrode[i])))
 
-        f_matrix /= (2 * self.sigma)
+        f_matrix = f_matrix / (2 * self.sigma)
         return f_matrix
 
 
