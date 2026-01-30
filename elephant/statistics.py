@@ -81,7 +81,7 @@ import elephant.kernels as kernels
 import elephant.trials
 from elephant.conversion import BinnedSpikeTrain
 from elephant.utils import deprecated_alias, check_neo_consistency, \
-    is_time_quantity, round_binning_errors
+    is_time_quantity, round_binning_errors, is_list_spiketrains
 
 # do not import unicode_literals
 # (quantities rescale does not work with unicodes)
@@ -613,7 +613,7 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
 
     Parameters
     ----------
-    spiketrains : neo.SpikeTrain, list of neo.SpikeTrain or elephant.trials.Trials  # noqa
+    spiketrains : neo.SpikeTrain, list of neo.SpikeTrain or elephant.trials.Trials
         Input spike train(s) for which the instantaneous firing rate is
         calculated. If a list of spike trains is supplied, the parameter
         pool_spike_trains determines the behavior of the function. If a Trials
@@ -1031,8 +1031,7 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
                              sigma=str(kernel.sigma),
                              invert=kernel.invert)
 
-    if isinstance(spiketrains, neo.core.spiketrainlist.SpikeTrainList) and (
-                  pool_spike_trains):
+    if is_list_spiketrains(spiketrains) and (pool_spike_trains):
         rate = np.mean(rate, axis=1)
 
     rate = neo.AnalogSignal(signal=rate,

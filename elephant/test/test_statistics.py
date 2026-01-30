@@ -482,7 +482,7 @@ class CV2TestCase(unittest.TestCase):
         self.assertRaises(ValueError, statistics.cv2, np.array([seq, seq]))
 
 
-class InstantaneousRateTest(unittest.TestCase):
+class InstantaneousRateTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -490,7 +490,7 @@ class InstantaneousRateTest(unittest.TestCase):
         Run once before tests:
         """
 
-        block = _create_trials_block(n_trials=36)
+        block = _create_trials_block(n_trials=36, n_spiketrains=5)
         cls.block = block
         cls.trial_object = TrialsFromBlock(block,
                                            description='trials are segments')
@@ -988,8 +988,44 @@ class InstantaneousRateTest(unittest.TestCase):
                                              pool_spike_trains=False,
                                              pool_trials=True)
         self.assertIsInstance(rate, neo.core.AnalogSignal)
+        self.assertEqual(rate.shape[1], self.trial_object.n_spiketrains_trial_by_trial[0])
 
-    def test_instantaneous_rate_list_pool_spike_trains(self):
+    def test_instantaneous_rate_trials_pool_spiketrains(self):
+        kernel = kernels.GaussianKernel(sigma=500 * pq.ms)
+
+        rate = statistics.instantaneous_rate(self.trial_object,
+                                             sampling_period=0.1 * pq.ms,
+                                             kernel=kernel,
+                                             pool_spike_trains=True,
+                                             pool_trials=False)
+        self.assertIsInstance(rate, list)
+        self.assertEqual(len(rate), self.trial_object.n_trials)
+        self.assertEqual(rate[0].shape[1], 1)
+
+    def test_instantaneous_rate_trials_pool_spiketrains_pool_trials(self):
+        kernel = kernels.GaussianKernel(sigma=500 * pq.ms)
+
+        rate = statistics.instantaneous_rate(self.trial_object,
+                                             sampling_period=0.1 * pq.ms,
+                                             kernel=kernel,
+                                             pool_spike_trains=True,
+                                             pool_trials=True)
+        self.assertIsInstance(rate, neo.AnalogSignal)
+        self.assertEqual(rate.shape[1], 1)
+
+    def test_instantaneous_rate_trials_pool_spiketrains_false_pool_trials_false(self):
+        kernel = kernels.GaussianKernel(sigma=500 * pq.ms)
+
+        rate = statistics.instantaneous_rate(self.trial_object,
+                                             sampling_period=0.1 * pq.ms,
+                                             kernel=kernel,
+                                             pool_spike_trains=False,
+                                             pool_trials=False)
+        self.assertIsInstance(rate, list)
+        self.assertEqual(len(rate), self.trial_object.n_trials)
+        self.assertEqual(rate[0].shape[1], self.trial_object.n_spiketrains_trial_by_trial[0])
+
+    def test_instantaneous_rate_spiketrainlist_pool_spike_trains(self):
         kernel = kernels.GaussianKernel(sigma=500 * pq.ms)
 
         rate = statistics.instantaneous_rate(
@@ -999,7 +1035,19 @@ class InstantaneousRateTest(unittest.TestCase):
             pool_spike_trains=True,
             pool_trials=False)
         self.assertIsInstance(rate, neo.core.AnalogSignal)
-        self.assertEqual(rate.magnitude.shape[1], 1)
+        self.assertEqual(rate.shape[1], 1)
+
+    def test_instantaneous_rate_list_pool_spike_trains(self):
+        kernel = kernels.GaussianKernel(sigma=500 * pq.ms)
+
+        rate = statistics.instantaneous_rate(
+            list(self.trial_object.get_spiketrains_from_trial_as_list(0)),
+            sampling_period=0.1 * pq.ms,
+            kernel=kernel,
+            pool_spike_trains=True,
+            pool_trials=False)
+        self.assertIsInstance(rate, neo.core.AnalogSignal)
+        self.assertEqual(rate.shape[1], 1)
 
     def test_instantaneous_rate_list_of_spike_trains(self):
         kernel = kernels.GaussianKernel(sigma=500 * pq.ms)
@@ -1010,7 +1058,7 @@ class InstantaneousRateTest(unittest.TestCase):
             pool_spike_trains=False,
             pool_trials=False)
         self.assertIsInstance(rate, neo.core.AnalogSignal)
-        self.assertEqual(rate.magnitude.shape[1], 2)
+        self.assertEqual(rate.magnitude.shape[1], self.trial_object.n_spiketrains_trial_by_trial[0])
 
 
 class TimeHistogramTestCase(unittest.TestCase):

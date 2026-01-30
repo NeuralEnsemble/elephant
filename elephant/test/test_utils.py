@@ -136,5 +136,42 @@ class TestTrialsToListOfSpiketrainlist(unittest.TestCase):
                 self.assertIsInstance(spiketrain, SpikeTrain)
 
 
+class TestIsListNeoSpiketrains(unittest.TestCase):
+    def setUp(self):
+        # Set up common test spiketrains.
+        self.spiketrain1 = neo.SpikeTrain([1, 2, 3] * pq.s, t_stop=4 * pq.s)
+        self.spiketrain2 = neo.SpikeTrain([2, 3, 4] * pq.s, t_stop=5 * pq.s)
+
+    def test_valid_list_input(self):
+        valid_list = [self.spiketrain1, self.spiketrain2]
+        self.assertTrue(utils.is_list_spiketrains(valid_list))
+
+    def test_valid_tuple_input(self):
+        valid_tuple = (self.spiketrain1, self.spiketrain2)
+        self.assertTrue(utils.is_list_spiketrains(valid_tuple))
+
+    def test_valid_spiketrainlist_input(self):
+        valid_spiketrainlist = neo.core.spiketrainlist.SpikeTrainList(items=(self.spiketrain1, self.spiketrain2))
+        self.assertTrue(utils.is_list_spiketrains(valid_spiketrainlist))
+
+    def test_non_iterable_input(self):
+        self.assertFalse(utils.is_list_spiketrains(42))
+
+    def test_non_spiketrain_objects(self):
+        invalid_list = [self.spiketrain1, "not a spiketrain"]
+        self.assertFalse(utils.is_list_spiketrains(invalid_list))
+
+    def test_mixed_types_input(self):
+        invalid_mixed = [self.spiketrain1, 42, self.spiketrain2]
+        self.assertFalse(utils.is_list_spiketrains(invalid_mixed))
+
+    def test_none_input(self):
+        self.assertFalse(utils.is_list_spiketrains(None))
+
+    def test_single_spiketrain_input(self):
+        single_spiketrain = neo.SpikeTrain([1, 2, 3] * pq.s, t_stop=4 * pq.s)
+        self.assertFalse(utils.is_list_spiketrains(single_spiketrain))
+
+
 if __name__ == '__main__':
     unittest.main()
