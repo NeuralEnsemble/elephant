@@ -53,12 +53,21 @@ def check_integrity(filepath, md5):
 
 
 def download(url, filepath=None, checksum=None, verbose=True):
+    # If not explicitly given, store the file in the system's temporary
+    # directory with the same name as in the URL.
     if filepath is None:
         filename = url.split('/')[-1]
         filepath = ELEPHANT_TMP_DIR / filename
     filepath = Path(filepath)
+
+    # Check if a file with the provided checksum already exists. If that is
+    # the case, skip download and directly return the path to the file.
+    # If file does not exist or checksum does not match/is not given, the
+    # requested file will be downloaded.
     if check_integrity(filepath, md5=checksum):
         return filepath
+
+    # Download the file (create parent folder if it does not exist).
     folder = filepath.absolute().parent
     folder.mkdir(exist_ok=True)
     desc = f"Downloading {url} to '{filepath}'"
@@ -70,67 +79,95 @@ def download(url, filepath=None, checksum=None, verbose=True):
             # do not authenticate SSL certificate
             ssl._create_default_https_context = ssl._create_unverified_context
             urlretrieve(url, filename=filepath, reporthook=t.update_to)
+
+    # Check integrity of the downloaded file if checksum is given
+    if checksum and not check_integrity(filepath, checksum):
+        raise ValueError(f"Data at {url} does not agree with MD5 hash "
+                         f"{checksum}.")
     return filepath
 
 
 def download_datasets(repo_path, filepath=None, checksum=None,
                       verbose=True):
     r"""
-    This function can be used to download files from elephant-data using
-    only the path relative to the root of the elephant-data repository.
-    The default URL used, points to elephants corresponding release of
-    elephant-data.
-    Different versions of the elephant package may require different
-    versions of elephant-data.
-    e.g. the following URLs:
-    -  https://web.gin.g-node.org/NeuralEnsemble/elephant-data/raw/0.0.1
-       points to release v0.0.1.
+    This function can be used to download files from the `elephant-data`
+    repository using only the path relative to the repository root.
+
+    The default repository URL points to Elephant's corresponding release of
+    `elephant-data` at
+    `https://datasets.python-elephant.org/raw/v{version}`, where `{version}`
+    is the current version of Elephant.
+
+    Different versions of the Elephant package may require different versions
+    of `elephant-data`, which can be defined using different repository URLs.
+    For example:
+    -  https://web.gin.g-node.org/NeuralEnsemble/elephant-data/raw/v1.0.0
+       points to release v1.0.0.
     -  https://web.gin.g-node.org/NeuralEnsemble/elephant-data/raw/master
-       always points to the latest state of elephant-data.
-    -  https://datasets.python-elephant.org/
-       points to the root of elephant data
+       always points to the latest state of `elephant-data`.
 
     To change this URL, use the environment variable `ELEPHANT_DATA_LOCATION`.
-    When using data, which is not yet contained in the master branch or a
-    release of elephant data, e.g. during development, this variable can
-    be used to change the default URL.
-    For example to use data on branch `multitaper`, change the
+    This variable should be used to change the default URL when using data
+    that is still not stored in the `master` branch or from a development
+    branch of `elephant-data`.
+
+    For example, to use data on branch `multitaper`, change
     `ELEPHANT_DATA_LOCATION` to
     https://web.gin.g-node.org/NeuralEnsemble/elephant-data/raw/multitaper.
+
+    To use a local copy of `elephant-data`, change `ELEPHANT_DATA_LOCATION`
+    to define a local path in the system (e.g., `/home/user/elephant-data`).
+
     For a complete example, see Examples section.
-        
-    To use a local copy of elephant-data, use the environment variable
-    `ELEPHANT_DATA_LOCATION`, e.g. set to /home/user/elephant-data.
-        
+
     Parameters
     ----------
     repo_path : str
-        String denoting the path relative to elephant-data repository root
+        Path to the dataset, relative to the `elephant-data` repository root
+        (either the default URL pointing to the latest version or the one
+        defined by the `ELEPHANT_DATA_LOCATION` environment variable).
     filepath : str, optional
-        Path to temporary folder where the downloaded files will be stored
+        Path in the local system where the downloaded file will be stored.
+        If None, the file will be stored within the system's current
+        temporary directory with the same name as in `elephant-data`.
+        Default: None
     checksum : str, optional
-        Checksum to verify data integrity after download
+        MD5 hash of the file to use as checksum to verify data integrity after
+        download. If None, no integrity check is performed. If defined and the
+        check fails, an exception is raised.
+        Default: None
     verbose : bool, optional
-        Whether to disable the entire progressbar wrapper [].
-        If set to None, disable on non-TTY.
+        If set to False, disable the progress bar.
         Default: True
 
     Returns
     -------
     filepath : pathlib.Path
-        Path to downloaded files.
+        Path to access the dataset file.
 
+    Raises
+    ------
+    ValueError
+        If `checksum` is given and the MD5 hash of the downloaded file is
+        different.
+
+        If the environment variable `ELEPHANT_DATA_LOCATION` is set but does
+        not point to a valid URL or an existing file system path.
+
+        If the environment variable `ELEPHANT_DATA_LOCATION` points to a local
+        path in the system but the requested file does not exist in that path.
 
     Notes
     -----
-    The default URL always points to elephant-data. Please
-    do not change its value. For development purposes use the environment
-    variable 'ELEPHANT_DATA_LOCATION'.
+    The default root repository URL always points to the latest version of
+    `elephant-data`. Any changes needed for development purposes should use
+    the environment variable 'ELEPHANT_DATA_LOCATION' to define the new root.
 
     Examples
     --------
-    The following example downloads a file from elephant-data branch
-    'multitaper', by setting the environment variable to the branch URL:
+    The following example downloads a file from branch `multitaper` in the
+    `elephant-data` repository by setting the environment variable to the
+    correct branch URL:
 
     >>> import os
     >>> from elephant.datasets import download_datasets
@@ -139,51 +176,84 @@ def download_datasets(repo_path, filepath=None, checksum=None,
     PosixPath('/tmp/elephant/time_series.npy')
     """
 
+    # Try to get any user-defined data location from the environment variable.
     env_var = 'ELEPHANT_DATA_LOCATION'
-    if env_var in os.environ:  # user did set path or URL
-        if os.path.exists(getenv(env_var)):
-            return Path(f"{getenv(env_var)}/{repo_path}")
-        elif urlparse(getenv(env_var)).scheme not in ('http', 'https'):
-            raise ValueError(f"The environment variable {env_var} must be set to either an existing file system path "
-                             f"or a valid URL. Given value: '{getenv(env_var)}' is neither.")
+    data_location = getenv(env_var)
 
-    # this url redirects to the current location of elephant-data
-    url_to_root = "https://datasets.python-elephant.org/"
+    if data_location:
+        # The user did set either a local path or URL to the root of
+        # `elephant-data`
+        if os.path.exists(data_location):
+            # If `data_location` is a local path that exists, check if the
+            # `repo_path` is an existing file relative to `data_location`. If
+            # it exists, return it. Otherwise, raise an error.
+            local_file = Path(data_location) / repo_path
+            if local_file.is_file():
+                return local_file
 
-    # get URL to corresponding version of elephant data
-    # (version elephant is equal to version elephant-data)
-    default_url = url_to_root + f"raw/v{_get_version()}"
+            raise ValueError(f"The environment variable {env_var} is set to "
+                             f"the local path '{data_location}', but the file "
+                             f"'{repo_path}' does not exist in that path.")
 
-    if env_var not in environ:  # user did not set URL
-        # is 'version-URL' available? (not for elephant development version)
+        if urlparse(data_location).scheme not in ('http', 'https'):
+            # Check if the provided value is a valid URL. If not, raise an
+            # error.
+            raise ValueError(f"The environment variable {env_var} must be set "
+                             "to either an existing file system path or a "
+                             f"valid URL. The given value '{data_location}' "
+                             "is neither.")
+
+    else:
+        # The user did not set a URL or path in `ELEPHANT_DATA_LOCATION`.
+        # Use the default root URL, which redirects to the current location of
+        # `elephant-data`.
+        url_to_root = "https://datasets.python-elephant.org/"
+
+        # Get the final URL to the current version of `elephant data`
+        # (version of Elephant is equal to version of `elephant-data`).
+        elephant_version = _get_version()
+        data_location = url_to_root + f"raw/v{elephant_version}"
+
         try:
-            urlopen(default_url+'/README.md')
+            # Check if that specific version URL is available by trying to
+            # access a known file (README.md) in the repository.
+            urlopen(data_location + '/README.md')
 
         except HTTPError as error:
-            # if corresponding elephant-data version is not found,
-            # use latest commit of elephant-data
-            default_url = url_to_root + "raw/master"
+            # If the corresponding `elephant-data` version is not found,
+            # use the latest commit of `elephant-data` (`master` branch).
+            # This is expected for development versions of Elephant, which may
+            # not have a corresponding version of `elephant-data` yet.
+            data_location = url_to_root + "raw/master"
 
             warnings.warn(f"No corresponding version of elephant-data found.\n"
-                          f"Elephant version: {_get_version()}. "
+                          f"Elephant version: {elephant_version}. "
                           f"Data URL:{error.url}, error: {error}.\n"
                           f"Using elephant-data latest instead (This is "
-                          f"expected for elephant development versions).")
+                          f"expected for Elephant development versions).")
 
         except URLError as error:
-            # if verification of SSL certificate fails, do not verify cert
-            try:  # try again without certificate verification
+            # If verification of SSL certificate fails, do not verify cert
+            try:
+                # Try again without certificate verification
                 ctx = ssl._create_unverified_context()
                 ctx.check_hostname = True
-                urlopen(default_url + '/README.md')
-            except HTTPError:  # e.g. 404
-                default_url = url_to_root + "raw/master"
+                urlopen(data_location + '/README.md', context=ctx)
+            except HTTPError as unverified_ctx_error:  # e.g. 404
+                # If it still fails, use latest commit of `elephant-data` in
+                # the `master` branch.
+                data_location = url_to_root + "raw/master"
 
-            warnings.warn(f"Data URL:{default_url}, error: {error}."
-                          f"{error.reason}")
+                warnings.warn(f"Data URL: {unverified_ctx_error.url}, "
+                              f"error: {unverified_ctx_error}. "
+                              f"{unverified_ctx_error.reason}")
 
-    url = f"{getenv(env_var, default_url)}/{repo_path}"
-
+    # Get the final URL to the dataset file and download it.
+    # If a checksum is given, the integrity of the downloaded file will be
+    # verified after download. If the file already exists and the checksum
+    # matches, the download will be skipped and the path to the existing file
+    # will be returned.
+    url = f"{data_location}/{repo_path}"
     return download(url, filepath, checksum, verbose)
 
 
