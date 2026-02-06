@@ -13,8 +13,31 @@ from zipfile import ZipFile
 from tqdm import tqdm
 
 from elephant import _get_version
+import numpy as np
+import neo
 
 ELEPHANT_TMP_DIR = Path(tempfile.gettempdir()) / "elephant"
+
+
+# Mapping of names to datasets in the "elephant-data" repository or data
+# generation functions defined in this modules
+ELEPHANT_DATA = {
+    "asset": {
+        "repo_path": "tutorials/tutorial_asset/data/asset_showcase_500.nix",
+        "checksum": "d42201b83a14d85988b1a53c654472c8",
+        "loader": lambda block: block.segments[0]
+    },
+    "unitary_events": {
+        "repo_path": "tutorials/tutorial_unitary_event_analysis/data/dataset-1.nix",
+        "checksum": "6449d2f4b8ae5beb1439d2b5dd03b078",
+        "loader": lambda block: [st for segment in block.segments
+                                 for st in segment.spiketrains]
+    },
+    "trial_data_block": {
+        "repo_path": "tutorials/tutorial_unitary_event_analysis/data/dataset-1.nix",
+        "checksum": "6449d2f4b8ae5beb1439d2b5dd03b078"
+    },
+}
 
 
 class TqdmUpTo(tqdm):
@@ -262,3 +285,55 @@ def unzip(filepath, outdir=ELEPHANT_TMP_DIR, verbose=True):
         zfile.extractall(path=outdir)
     if verbose:
         print(f"Extracted {filepath} to {outdir}")
+
+
+def load_data(name):
+    """
+    This function loads example data used in Elephant tutorials and examples.
+
+    If the data is contained in a dataset file stored in the "elephant-data"
+    repository (accessible at https://datasets.python-elephant.org), the
+    correct file is automatically downloaded and loaded.
+
+    Data that is not stored in datasets are generated.
+
+    Parameters
+    ----------
+    name: str
+        The name of the data to load.
+
+    Returns
+    -------
+        The loaded data return type will vary according to the format and
+        contents of the data. For example, `asset` returns a `neo.Segment`
+        object while `unitary_events` returns a list of lists with
+        `neo.SpikeTrain` objects. The format is adjusted according to the
+        example/tutorial requirements.
+    """
+    elephant_data = ELEPHANT_DATA.get(name)
+    if not elephant_data:
+        raise ValueError(f"Data '{name}' not available as downloadable "
+                         f"datasets or generated data.")
+
+    # If data generation function, run and return
+    if callable(elephant_data):
+        return elephant_data()
+
+    # Extract data loading function, if defined in the dataset dictionary
+    loader = elephant_data.pop("loader", None)
+
+    # Download the dataset, ignoring version warnings
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", category=UserWarning)
+        dataset_path = download_datasets(**elephant_data)
+
+    # Process each file format
+    dataset_format = dataset_path.suffix
+    if dataset_format == ".nix":
+        with neo.NixIO(str(dataset_path), 'ro') as f:
+            block = f.read_block()
+        if loader:
+            return loader(block)
+        return block
+
+    return np.load(dataset_path)
