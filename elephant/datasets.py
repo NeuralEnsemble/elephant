@@ -319,7 +319,9 @@ def load_data(name):
     if callable(elephant_data):
         return elephant_data()
 
-    # Extract data loading function, if defined in the dataset dictionary
+    # Extract data loading function, if defined in the dataset dictionary.
+    # Make a copy to avoid changing the default dictionary in `ELEPHANT_DATA`.
+    elephant_data = elephant_data.copy()
     loader = elephant_data.pop("loader", None)
 
     # Download the dataset, ignoring version warnings
