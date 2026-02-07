@@ -2,33 +2,120 @@ import unittest
 import os
 from unittest.mock import patch
 from pathlib import Path
+from tempfile import TemporaryDirectory, gettempdir
+import hashlib
 import urllib
 
 from elephant.datasets import download_datasets
 
 
 class TestDownloadDatasets(unittest.TestCase):
-    @patch.dict(os.environ, {'ELEPHANT_DATA_LOCATION': '/valid/path'}, clear=True)
-    @patch('os.path.exists', return_value=True)
-    def test_valid_path(self, mock_exists):
+
+    @patch.dict(os.environ, {'ELEPHANT_DATA_LOCATION': '/invalid/path'}, clear=True)
+    def test_invalid_path(self):
         repo_path = 'some/repo/path'
-        expected = Path('/valid/path/some/repo/path')
-        result = download_datasets(repo_path)
-        self.assertEqual(result, expected)
+        with self.assertRaises(ValueError) as error:
+            download_datasets(repo_path)
+        exception_msg = str(error.exception)
+        self.assertIn("ELEPHANT_DATA_LOCATION must be set to either",
+                      exception_msg)
+        self.assertIn("/invalid/path", exception_msg)
+
+    @patch.dict(os.environ, {'ELEPHANT_DATA_LOCATION': 'ftp://invalid.url'},
+                clear=True)
+    def test_invalid_url(self):
+        repo_path = 'some/repo/path'
+        with self.assertRaises(ValueError) as error:
+            download_datasets(repo_path)
+        exception_msg = str(error.exception)
+        self.assertIn("ELEPHANT_DATA_LOCATION must be set to either",
+                      exception_msg)
+        self.assertIn("ftp://invalid.url", exception_msg)
 
     @patch.dict(os.environ, {'ELEPHANT_DATA_LOCATION': 'http://valid.url'}, clear=True)
-    @patch('os.path.exists', return_value=False)
-    def test_valid_url(self, mock_exists):
+    def test_valid_url(self):
+        repo_path = 'some/repo/path'
+        self.assertRaises(urllib.error.URLError, download_datasets, repo_path)
+
+    def test_invalid_data(self):
         repo_path = 'some/repo/path'
         self.assertRaises(urllib.error.URLError, download_datasets, repo_path)
 
     @patch.dict(os.environ, {'ELEPHANT_DATA_LOCATION': 'invalid_path_or_url'}, clear=True)
-    @patch('os.path.exists', return_value=False)
-    def test_invalid_value(self, mock_exists):
+    def test_invalid_value(self):
         repo_path = 'some/repo/path'
-        with self.assertRaises(ValueError) as cm:
+        with self.assertRaises(ValueError) as error:
             download_datasets(repo_path)
         self.assertIn("invalid_path_or_url", str(cm.exception))
+        exception_msg = str(error.exception)
+        self.assertIn("ELEPHANT_DATA_LOCATION must be set to either",
+                      exception_msg)
+        self.assertIn("invalid_path_or_url", exception_msg)
+
+    def test_valid_data(self):
+        # This is expected to download a file with the same name in GIN to a
+        # folder 'elephant' within the current system temporary folder
+        repo_path = 'dataset-1/dataset-1.h5'
+
+        # Create a dummy file path to simulate the downloaded dataset
+        dummy_file_path = Path(gettempdir()) / 'elephant' / 'dataset-1.h5'
+
+        downloaded_file = download_datasets(repo_path,
+                                            filepath=None,
+                                            checksum=None)
+        self.assertTrue(Path(downloaded_file).is_file())
+        self.assertEqual(dummy_file_path, downloaded_file)
+
+    def test_valid_data_with_path(self):
+        # This is expected to download a file to the provided path
+        # (using a temporary directory specific to the test)
+        repo_path = 'dataset-1/dataset-1.h5'
+        with TemporaryDirectory() as temp_dir:
+            # Create a dummy file to store the downloaded dataset
+            dummy_file_path = Path(temp_dir) / 'dummy'
+            downloaded_file = download_datasets(repo_path,
+                                                filepath=dummy_file_path,
+                                                checksum=None)
+            self.assertTrue(Path(downloaded_file).is_file())
+            self.assertEqual(dummy_file_path, downloaded_file)
+
+    def test_valid_data_with_integrity_check(self):
+        # This is expected to check the integrity of the downloaded file by
+        # comparing the MD5 hash. We manually download the file to the current
+        # system temporary folder to compute the expected checksum, and then
+        # we download to a different file in a temporary folder to test the
+        # function.
+        repo_path = 'dataset-1/dataset-1.h5'
+
+        # Download a copy to compute the checksum
+        expected_dataset = download_datasets(repo_path)
+        expected_checksum = hashlib.md5(
+            open(expected_dataset, 'rb').read()
+        ).hexdigest()
+
+        with TemporaryDirectory() as temp_dir:
+            # Create a dummy file to simulate the downloaded dataset
+            dummy_file_path = Path(temp_dir) / 'dummy_checksum'
+            downloaded_file = download_datasets(repo_path,
+                                                filepath=dummy_file_path,
+                                                checksum=expected_checksum)
+            self.assertTrue(Path(downloaded_file).is_file())
+            self.assertEqual(dummy_file_path, downloaded_file)
+
+    def test_valid_data_with_failed_integrity_check(self):
+        # This forces a failure by setting an invalid checksum for a dataset
+        # in GIN.
+        repo_path = 'dataset-1/dataset-1.h5'
+        with TemporaryDirectory() as temp_dir:
+            # Create a dummy file to store the downloaded dataset
+            dummy_file_path = Path(temp_dir) / 'dummy_checksum_fail'
+            with self.assertRaises(ValueError) as error:
+                download_datasets(repo_path,
+                                  filepath=dummy_file_path,
+                                  checksum="aaaaaa")
+            exception_msg = str(error.exception)
+            self.assertIn(repo_path, exception_msg)
+            self.assertIn("does not agree with MD5 hash aaaaaa", exception_msg)
 
 
 if __name__ == '__main__':
