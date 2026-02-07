@@ -46,7 +46,6 @@ class TestDownloadDatasets(unittest.TestCase):
         repo_path = 'some/repo/path'
         with self.assertRaises(ValueError) as error:
             download_datasets(repo_path)
-        self.assertIn("invalid_path_or_url", str(cm.exception))
         exception_msg = str(error.exception)
         self.assertIn("ELEPHANT_DATA_LOCATION must be set to either",
                       exception_msg)
@@ -116,6 +115,17 @@ class TestDownloadDatasets(unittest.TestCase):
             exception_msg = str(error.exception)
             self.assertIn(repo_path, exception_msg)
             self.assertIn("does not agree with MD5 hash aaaaaa", exception_msg)
+
+
+class TestLoadData(unittest.TestCase):
+
+    def test_load_data_invalid(self):
+        with self.assertRaises(ValueError) as error:
+            load_data('invalid_dataset')
+        exception_msg = str(error.exception)
+        self.assertIn("not available as downloadable datasets or "
+                      "generated data", exception_msg)
+        self.assertIn("invalid_dataset", exception_msg)
 
 
 if __name__ == '__main__':
