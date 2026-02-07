@@ -295,7 +295,7 @@ def load_data(name):
     repository (accessible at https://datasets.python-elephant.org), the
     correct file is automatically downloaded and loaded.
 
-    Data that is not stored in datasets are generated.
+    Data that is not stored in datasets is generated.
 
     Parameters
     ----------
