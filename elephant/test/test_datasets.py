@@ -6,7 +6,9 @@ from tempfile import TemporaryDirectory, gettempdir
 import hashlib
 import urllib
 
-from elephant.datasets import download_datasets
+from numpy.testing import assert_allclose
+from neo import NixIO
+from elephant.datasets import download_datasets, load_data, ELEPHANT_DATA
 
 
 class TestDownloadDatasets(unittest.TestCase):
@@ -126,6 +128,30 @@ class TestLoadData(unittest.TestCase):
         self.assertIn("not available as downloadable datasets or "
                       "generated data", exception_msg)
         self.assertIn("invalid_dataset", exception_msg)
+
+    def test_asset(self):
+        # Load the Segment with ASSET data using the interface function
+        asset_data = load_data('asset')
+
+        # Manually download and load the Segment with data
+        # Do not use checksums to detect changes in the files
+        asset_repo_path = ELEPHANT_DATA['asset']['repo_path']
+        download_file = download_datasets(asset_repo_path)
+        downloaded_asset_block = NixIO(str(download_file)).read_block()
+        downloaded_asset_data = downloaded_asset_block.segments[0]
+
+        # 500 spike trains are expected
+        self.assertEqual(len(asset_data.spiketrains), 500)
+
+        # Compare spike times
+        for st1, st2 in zip(asset_data.spiketrains,
+                            downloaded_asset_data.spiketrains):
+            assert_allclose(st1.magnitude, st2.magnitude, atol=1e-8)
+
+        # Compare annotations
+        for annotation in ('nix_name', 'spiketrain_ordering'):
+            self.assertEqual(downloaded_asset_data.annotations[annotation],
+                             asset_data.annotations[annotation])
 
 
 if __name__ == '__main__':
