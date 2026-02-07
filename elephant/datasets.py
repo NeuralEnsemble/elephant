@@ -30,8 +30,8 @@ ELEPHANT_DATA = {
     "unitary_events": {
         "repo_path": "tutorials/tutorial_unitary_event_analysis/data/dataset-1.nix",
         "checksum": "6449d2f4b8ae5beb1439d2b5dd03b078",
-        "loader": lambda block: [st for segment in block.segments
-                                 for st in segment.spiketrains]
+        "loader": lambda block: [[st for st in segment.spiketrains]
+                                  for segment in block.segments]
     },
     "trial_data_block": {
         "repo_path": "tutorials/tutorial_unitary_event_analysis/data/dataset-1.nix",
