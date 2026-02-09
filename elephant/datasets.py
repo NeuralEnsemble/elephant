@@ -9,6 +9,7 @@ from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.request import urlopen, urlretrieve
 from zipfile import ZipFile
+from functools import partial
 
 from tqdm import tqdm
 
@@ -105,6 +106,14 @@ ELEPHANT_DATA = {
         "checksum": "d42201b83a14d85988b1a53c654472c8",
         "loader": lambda block: block.segments[0]
     },
+    "granger_causality_indirect": partial(
+        generate_conditional_granger_ground_truth,
+        length_2d=10000,
+        causality_type='indirect'),
+    "granger_causality_both": partial(
+        generate_conditional_granger_ground_truth,
+        length_2d=10000,
+        causality_type='both'),
     "unitary_events": {
         "repo_path": "tutorials/tutorial_unitary_event_analysis/data/dataset-1.nix",
         "checksum": "6449d2f4b8ae5beb1439d2b5dd03b078",
