@@ -123,6 +123,9 @@ ELEPHANT_DATA = {
 }
 
 
+# Helper functions for downloading datasets from the "elephant-data" GIN
+# repository, which is accessible at https://datasets.python-elephant.org.
+
 class TqdmUpTo(tqdm):
     """
     Provides `update_to(n)` which uses `tqdm.update(delta_n)`.
@@ -369,6 +372,12 @@ def unzip(filepath, outdir=ELEPHANT_TMP_DIR, verbose=True):
     if verbose:
         print(f"Extracted {filepath} to {outdir}")
 
+
+# Main function to load data for tutorials and examples.
+# It checks if the requested data is defined in the `ELEPHANT_DATA`
+# dictionary. If it is, it either generates the data (if the value is a
+# callable function) or downloads and loads the data from the `elephant-data`
+# repository.
 
 def load_data(name):
     """
