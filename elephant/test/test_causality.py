@@ -16,7 +16,8 @@ from numpy.testing import assert_array_almost_equal
 
 from elephant.spectral import multitaper_cross_spectrum, multitaper_coherence
 import elephant.causality.granger
-from elephant.datasets import download_datasets
+from elephant.datasets import (generate_pairwise_granger_ground_truth,
+                               generate_conditional_granger_ground_truth)
 
 
 class PairwiseGrangerTestCase(unittest.TestCase):
@@ -24,39 +25,14 @@ class PairwiseGrangerTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         np.random.seed(1)
-        cls.ground_truth = cls._generate_ground_truth()
-
-    @staticmethod
-    def _generate_ground_truth(length_2d=30000):
-        order = 2
-        signal = np.zeros((2, length_2d + order))
-
-        weights_1 = np.array([[0.9, 0], [0.9, -0.8]])
-        weights_2 = np.array([[-0.5, 0], [-0.2, -0.5]])
-
-        weights = np.stack((weights_1, weights_2))
-
-        noise_covariance = np.array([[1., 0.0], [0.0, 1.]])
-
-        for i in range(length_2d):
-            for lag in range(order):
-                signal[:, i + order] += np.dot(weights[lag],
-                                               signal[:, i + 1 - lag])
-            rnd_var = np.random.multivariate_normal([0, 0],
-                                                    noise_covariance)
-            signal[:, i+order] += rnd_var
-
-        signal = signal[:, 2:]
-
-        # Return signals as Nx2
-        return signal.T
+        cls.ground_truth = generate_pairwise_granger_ground_truth()
 
     def setUp(self):
         # Generate a smaller random dataset for tests other than ground truth,
         # using a different seed than in the ground truth - the convergence
         # should not depend on the seed.
         np.random.seed(10)
-        self.signal = self._generate_ground_truth(length_2d=1000)
+        self.signal = generate_pairwise_granger_ground_truth(length_2d=1000)
 
         # Estimate Granger causality
         self.causality = elephant.causality.granger.pairwise_granger(
@@ -214,68 +190,18 @@ class ConditionalGrangerTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         np.random.seed(1)
-        cls.ground_truth = cls._generate_ground_truth()
-
-    @staticmethod
-    def _generate_ground_truth(length_2d=30000, causality_type="indirect"):
-        """
-        Recreated from Example 2 section 5.2 of :cite:'granger-Ding06-0608035'.
-        The following should generate three signals in one of the two ways:
-         1. "indirect" would generate data which contains no direct
-        causal influence from Y to X, but mediated through Z
-        (i.e. Y -> Z -> X).
-        2. "both" would generate data which contains both direct and indirect
-        causal influences from Y to X.
-
-        """
-        if causality_type == "indirect":
-            y_t_lag_2 = 0
-        elif causality_type == "both":
-            y_t_lag_2 = 0.2
-        else:
-            raise ValueError("causality_type should be either 'indirect' or "
-                             "'both'")
-
-        order = 2
-        signal = np.zeros((3, length_2d + order))
-
-        weights_1 = np.array([[0.8, 0, 0.4],
-                              [0, 0.9, 0],
-                              [0., 0.5, 0.5]])
-
-        weights_2 = np.array([[-0.5, y_t_lag_2, 0.],
-                              [0., -0.8, 0],
-                              [0, 0, -0.2]])
-
-        weights = np.stack((weights_1, weights_2))
-
-        noise_covariance = np.array([[0.3, 0.0, 0.0],
-                                     [0.0, 1., 0.0],
-                                     [0.0, 0.0, 0.2]])
-
-        for i in range(length_2d):
-            for lag in range(order):
-                signal[:, i + order] += np.dot(weights[lag],
-                                               signal[:, i + 1 - lag])
-            rnd_var = np.random.multivariate_normal([0, 0, 0],
-                                                    noise_covariance)
-            signal[:, i + order] += rnd_var
-
-        signal = signal[:, 2:]
-
-        # Return signals as Nx3
-        return signal.T
+        cls.ground_truth = generate_conditional_granger_ground_truth()
 
     def setUp(self):
         # Generate a smaller random dataset for tests other than ground truth,
         # using a different seed than in the ground truth - the convergence
         # should not depend on the seed.
         np.random.seed(10)
-        self.signal = self._generate_ground_truth(length_2d=1000)
+        self.signal = generate_conditional_granger_ground_truth(length_2d=1000)
 
         # Generate a small dataset for containing both direct and indirect
         # causality.
-        self.non_zero_signal = self._generate_ground_truth(
+        self.non_zero_signal = generate_conditional_granger_ground_truth(
             length_2d=1000, causality_type="both")
         # Estimate Granger causality
         self.conditional_causality = elephant.causality.granger.\
@@ -443,6 +369,7 @@ class PairwiseSpectralGrangerTestCase(unittest.TestCase):
         https://gin.g-node.org/NeuralEnsemble/elephant-data/src/master/unittest/causality/granger/pairwise_spectral_granger  # noqa
 
         """
+        from elephant.datasets import download_datasets
 
         repo_path = \
             r"unittest/causality/granger/pairwise_spectral_granger/data"
@@ -527,6 +454,7 @@ class PairwiseSpectralGrangerTestCase(unittest.TestCase):
         https://gin.g-node.org/NeuralEnsemble/elephant-data/src/master/unittest/causality/granger/pairwise_spectral_granger  # noqa
 
         """
+        from elephant.datasets import download_datasets
 
         repo_path = \
             r"unittest/causality/granger/pairwise_spectral_granger/data"
