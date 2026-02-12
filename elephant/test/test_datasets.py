@@ -155,11 +155,11 @@ class TestDownloadDatasets(unittest.TestCase):
         # in GIN.
         repo_path = 'dataset-1/dataset-1.h5'
         with TemporaryDirectory() as temp_dir:
-            # Create a dummy file to store the downloaded dataset
-            dummy_file_path = Path(temp_dir) / 'dummy_checksum_fail'
+            # Download dataset to a temporary directory
+            target_file_path = Path(temp_dir) / 'target_checksum_fail'
             with self.assertRaises(ValueError) as error:
                 download_datasets(repo_path,
-                                  filepath=dummy_file_path,
+                                  filepath=target_file_path,
                                   checksum="aaaaaa")
             exception_msg = str(error.exception)
             self.assertIn(repo_path, exception_msg)
