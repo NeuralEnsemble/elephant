@@ -20,6 +20,9 @@ import numpy as np
 import neo
 
 
+__all__= ["load_data"]
+
+
 ELEPHANT_TMP_DIR = Path(tempfile.gettempdir()) / "elephant"
 
 
