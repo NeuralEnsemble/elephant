@@ -75,14 +75,14 @@ class TestDownloadDatasets(unittest.TestCase):
         # folder 'elephant' within the current system temporary folder
         repo_path = 'dataset-1/dataset-1.h5'
 
-        # Create a dummy file path to simulate the downloaded dataset
-        dummy_file_path = Path(gettempdir()) / 'elephant' / 'dataset-1.h5'
+        # Expected path of the downloaded dataset
+        expected_file_path = Path(gettempdir()) / 'elephant' / 'dataset-1.h5'
 
         downloaded_file = download_datasets(repo_path,
                                             filepath=None,
                                             checksum=None)
         self.assertTrue(Path(downloaded_file).is_file())
-        self.assertEqual(dummy_file_path, downloaded_file)
+        self.assertEqual(expected_file_path, downloaded_file)
 
     @patch.dict(os.environ, {'ELEPHANT_DATA_LOCATION': ''},
                 clear=True)
@@ -91,13 +91,12 @@ class TestDownloadDatasets(unittest.TestCase):
         # (using a temporary directory specific to the test)
         repo_path = 'dataset-1/dataset-1.h5'
         with TemporaryDirectory() as temp_dir:
-            # Create a dummy file to store the downloaded dataset
-            dummy_file_path = Path(temp_dir) / 'dummy'
+            target_file_path = Path(temp_dir) / 'target'
             downloaded_file = download_datasets(repo_path,
-                                                filepath=dummy_file_path,
+                                                filepath=target_file_path,
                                                 checksum=None)
             self.assertTrue(Path(downloaded_file).is_file())
-            self.assertEqual(dummy_file_path, downloaded_file)
+            self.assertEqual(target_file_path, downloaded_file)
 
     @patch.dict(os.environ, {'ELEPHANT_DATA_LOCATION': ''},
                 clear=True)
@@ -116,13 +115,16 @@ class TestDownloadDatasets(unittest.TestCase):
         ).hexdigest()
 
         with TemporaryDirectory() as temp_dir:
-            # Create a dummy file to simulate the downloaded dataset
-            dummy_file_path = Path(temp_dir) / 'dummy_checksum'
+            # Download the dataset to a different file in the system
+            # (into temporary directory specific to the test)
+            target_file_path = Path(temp_dir) / 'target_checksum'
             downloaded_file = download_datasets(repo_path,
-                                                filepath=dummy_file_path,
+                                                filepath=target_file_path,
                                                 checksum=expected_checksum)
             self.assertTrue(Path(downloaded_file).is_file())
             self.assertEqual(dummy_file_path, downloaded_file)
+            self.assertEqual(target_file_path, downloaded_file)
+
 
     def test_valid_data_with_failed_integrity_check(self):
         # This forces a failure by setting an invalid checksum for a dataset
@@ -204,23 +206,26 @@ class TestLoadData(unittest.TestCase):
         self.assertIn("invalid_dataset", exception_msg)
 
     def test_asset(self):
+        # Test to validate the ASSET dataset loading and integrity.
+
         # Load the Segment with ASSET data using the interface function
         asset_data = load_data('asset')
-
-        # Manually download and load the Segment with data
-        # Do not use checksums to detect changes in the files
-        asset_repo_path = ELEPHANT_DATA['asset']['repo_path']
-        download_file = download_datasets(asset_repo_path)
-        downloaded_asset_block = NixIO(str(download_file)).read_block()
-        downloaded_asset_data = downloaded_asset_block.segments[0]
+        self.assertIsInstance(asset_data, neo.Segment)
 
         # 500 spike trains are expected
         self.assertEqual(len(asset_data.spiketrains), 500)
 
+        # Manually download and load the Segment with data
+        asset_repo_path = ELEPHANT_DATA['asset']['repo_path']
+        download_file = download_datasets(asset_repo_path)
+        downloaded_asset_block = neo.NixIO(str(download_file)).read_block()
+        downloaded_asset_data = downloaded_asset_block.segments[0]
+
         # Compare spike times
-        for st1, st2 in zip(asset_data.spiketrains,
-                            downloaded_asset_data.spiketrains):
-            assert_allclose(st1.magnitude, st2.magnitude, atol=1e-8)
+        for load_st, expected_st in zip(asset_data.spiketrains,
+                                        downloaded_asset_data.spiketrains):
+            assert_allclose(load_st.magnitude, expected_st.magnitude,
+                            atol=1e-8)
 
         # Compare annotations
         for annotation in ('nix_name', 'spiketrain_ordering'):
