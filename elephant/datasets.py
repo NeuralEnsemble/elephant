@@ -125,7 +125,7 @@ ELEPHANT_DATA = {
 }
 
 
-# Helper functions for downloading datasets from the "elephant-data" GIN
+# Helper functions for downloading datasets from the `elephant-data` GIN
 # repository, which is accessible at https://datasets.python-elephant.org.
 
 class TqdmUpTo(tqdm):
@@ -342,10 +342,10 @@ def download_datasets(repo_path, filepath=None, checksum=None,
             # not have a corresponding version of `elephant-data` yet.
             data_location = url_to_root + "raw/master"
 
-            warnings.warn(f"No corresponding version of elephant-data found.\n"
-                          f"Elephant version: {elephant_version}. "
+            warnings.warn(f"No corresponding version of 'elephant-data' "
+                          f"found.\nElephant version: {elephant_version}. "
                           f"Data URL:{error.url}, error: {error}.\n"
-                          f"Using elephant-data latest instead (This is "
+                          f"Using 'elephant-data' latest instead (This is "
                           f"expected for Elephant development versions).")
 
         except URLError as error:
@@ -390,7 +390,7 @@ def load_data(name):
     """
     This function loads example data used in Elephant tutorials and examples.
 
-    If the data is contained in a dataset file stored in the "elephant-data"
+    If the data is contained in a dataset file stored in the `elephant-data`
     repository (accessible at https://datasets.python-elephant.org), the
     correct file is automatically downloaded and loaded.
 
@@ -399,15 +399,19 @@ def load_data(name):
     Parameters
     ----------
     name: str
-        The name of the data to load.
+        The name of the data to load. The available data names and their
+        content are defined in the main
+        :doc:`datasets documentation </reference/datasets>` page.
 
     Returns
     -------
-        The loaded data return type will vary according to the format and
-        contents of the data. For example, `asset` returns a `neo.Segment`
-        object while `unitary_events` returns a list of lists with
-        `neo.SpikeTrain` objects. The format is adjusted according to the
-        example/tutorial requirements.
+        object
+            The return type will vary according to the format and contents of
+            the requested data. For example, `asset` returns a
+            :class:`neo.Segment` object while `unitary_events` returns a list
+            of lists with :class:`neo.SpikeTrain` objects. The detailed
+            description is available in the main
+            :doc:`datasets documentation </reference/datasets>` page.
     """
     elephant_data = ELEPHANT_DATA.get(name)
     if not elephant_data:
