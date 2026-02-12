@@ -348,7 +348,7 @@ def download_datasets(repo_path, filepath=None, checksum=None,
                           f"Using 'elephant-data' latest instead (This is "
                           f"expected for Elephant development versions).")
 
-        except URLError as error:
+        except URLError:
             # If verification of SSL certificate fails, do not verify cert
             try:
                 # Try again without certificate verification
