@@ -6,8 +6,9 @@ from tempfile import TemporaryDirectory, gettempdir
 import hashlib
 import urllib
 
+import numpy as np
 from numpy.testing import assert_allclose
-from neo import NixIO
+import neo
 from elephant.datasets import download_datasets, load_data, ELEPHANT_DATA
 
 
@@ -225,6 +226,53 @@ class TestLoadData(unittest.TestCase):
         for annotation in ('nix_name', 'spiketrain_ordering'):
             self.assertEqual(downloaded_asset_data.annotations[annotation],
                              asset_data.annotations[annotation])
+
+    def test_unitary_events(self):
+        # Test to validate the Unitary Events dataset loading and integrity.
+
+        # Load the spike trains for the Unitary Events tutorial using the
+        # interface function
+        ue_data = load_data('unitary_events')
+
+        # 36 trials with 2 spike trains are expected
+        self.assertIsInstance(ue_data, list)
+        self.assertEqual(len(ue_data), 36)
+        self.assertTrue(all(len(sts) == 2 for sts in ue_data))
+        self.assertTrue(all(all(isinstance(st, neo.SpikeTrain) for st in sts)
+                            for sts in ue_data))
+
+        # Manually download and load the spike trains
+        ue_repo_path = ELEPHANT_DATA['unitary_events']['repo_path']
+        download_file = download_datasets(ue_repo_path)
+        downloaded_ue_block = neo.NixIO(str(download_file)).read_block()
+        downloaded_ue_data = [[st for st in segment.spiketrains]
+                               for segment in downloaded_ue_block.segments]
+
+        # Compare spike times and annotations
+        for load_trial, expected_trial in zip(ue_data, downloaded_ue_data):
+            for load_st, download_st in zip(load_trial, expected_trial):
+                assert_allclose(load_st.magnitude, load_st.magnitude,
+                                atol=1e-8)
+                self.assertDictEqual(load_st.annotations,
+                                     download_st.annotations)
+
+    def test_granger_causality_indirect(self):
+        # Test to validate the generation of the Granger Causality tutorial
+        # data with only indirect causality.
+        granger_indirect = load_data('granger_causality_indirect')
+
+        # Validate type and shape of the data (10000 samples, 3 time series)
+        self.assertEqual(granger_indirect.shape, (10000, 3))
+        self.assertIsInstance(granger_indirect, np.ndarray)
+
+    def test_granger_causality_both(self):
+        # Test to validate the generation of the Granger Causality tutorial
+        # data with both direct and indirect causality.
+        granger_both = load_data('granger_causality_both')
+
+        # Validate type and shape of the data (10000 samples, 3 time series)
+        self.assertEqual(granger_both.shape, (10000, 3))
+        self.assertIsInstance(granger_both, np.ndarray)
 
 
 if __name__ == '__main__':
