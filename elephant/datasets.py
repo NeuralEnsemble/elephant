@@ -1,10 +1,12 @@
 import hashlib
 import os
+import shutil
 import ssl
 import tempfile
 from urllib.parse import urlparse
 import warnings
-from os import environ, getenv
+from os import getenv
+
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.request import urlopen, urlretrieve
@@ -298,6 +300,11 @@ def download_datasets(repo_path, filepath=None, checksum=None,
             # it exists, return it. Otherwise, raise an error.
             local_file = Path(data_location) / repo_path
             if local_file.is_file():
+                if filepath is not None:
+                    # If specific path requested, copy the file
+                    filepath = Path(filepath)
+                    shutil.copy2(local_file, filepath)
+                    return filepath
                 return local_file
 
             raise ValueError(f"The environment variable {env_var} is set to "
