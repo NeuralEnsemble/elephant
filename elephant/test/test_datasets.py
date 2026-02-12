@@ -122,10 +122,34 @@ class TestDownloadDatasets(unittest.TestCase):
                                                 filepath=target_file_path,
                                                 checksum=expected_checksum)
             self.assertTrue(Path(downloaded_file).is_file())
-            self.assertEqual(dummy_file_path, downloaded_file)
             self.assertEqual(target_file_path, downloaded_file)
 
+    @patch.dict(os.environ, {'ELEPHANT_DATA_LOCATION': ''},
+                clear=True)
+    def test_valid_data_existing(self):
+        # This is expected to avoid downloading the file two times, since
+        # the file has been previously downloaded and a checksum is provided.
+        repo_path = 'dataset-1/dataset-1.h5'
 
+        with TemporaryDirectory() as temp_dir:
+            # Download the dataset to a file in the system
+            # (into temporary directory specific to the test)
+            target_file_path = Path(temp_dir) / 'target_existing'
+            downloaded_file = download_datasets(repo_path,
+                                                filepath=target_file_path,
+                                                checksum=None)
+            expected_checksum = hashlib.md5(
+                open(downloaded_file, 'rb').read()).hexdigest()
+
+            existing_file = download_datasets(repo_path,
+                                              filepath=target_file_path,
+                                              checksum=expected_checksum)
+            self.assertTrue(Path(existing_file).is_file())
+            self.assertEqual(target_file_path, existing_file)
+            self.assertEqual(downloaded_file, existing_file)
+
+    @patch.dict(os.environ, {'ELEPHANT_DATA_LOCATION': ''},
+                clear=True)
     def test_valid_data_with_failed_integrity_check(self):
         # This forces a failure by setting an invalid checksum for a dataset
         # in GIN.
