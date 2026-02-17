@@ -727,6 +727,7 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
         *  If `sampling_period` is smaller than zero.
         *  If `kernel` is 'auto' and the function was unable to calculate
            optimal kernel width for instantaneous rate from input data.
+        *  If `kernel` length is larger than binned spiketrain length
 
     Warns
     -----
@@ -1010,7 +1011,21 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
 
     # Define mode for scipy.signal.fftconvolve
     if trim:
+        # PR ### Adding assertion on length of kernel
+        # A 'valid' convolution is only performed when:
+        # len(kernel) <= len(binned_spiketrain)
+        #
+        # This prevents ambiguous output lengths
+        # that occur when the kernel exceeds the binned spike train length.
+        if t_arr_kernel_length > n_bins:
+            raise ValueError(
+            f"Kernel length ({t_arr_kernel_length}) is longer than binned spiketrain "
+            f"length ({n_bins}) for 'valid' convolution. Try adjusting the "
+            "kernel width, sampling_period, or using 'trim=False' "
+            "('same' convolution) instead."
+            )
         fft_mode = 'valid'
+
     else:
         fft_mode = 'same'
 
