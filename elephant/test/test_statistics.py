@@ -697,34 +697,107 @@ class InstantaneousRateTest(unittest.TestCase):
                     kernel=kernel, center_kernel=True)
                 self.assertGreater(rate.mean(), rate_expected)
 
-    def test_instantaneous_rate_spikes_on_edges(self):
-        # this test demonstrates that the trimming (convolve valid mode)
-        # removes the edges of the rate estimate, underestimating the true
-        # firing rate and thus is not able to reconstruct the number of spikes
-        # in a spiketrain (see test_rate_estimation_consistency)
+    # PR 688: Test replaced
+    # The existing test checked that the instantaneous rate was zero
+    # for a spike train with spikes at the start and end. This assumption only
+    # holds for kernels with finite support. So kernels like Exponential, Alpha etc..
+    # even in valid convolution produce produce non-zero values
+    # when the kernel length is smaller than the binned spike train
+    #
+    # The test was replaced with :
+    #   1. test_instantaneous_rate_trim_output_length
+    #   2. test_instantaneous_rate_trim_rate_estimation
+    # def test_instantaneous_rate_spikes_on_edges(self):
+        # # this test demonstrates that the trimming (convolve valid mode)
+        # # removes the edges of the rate estimate, underestimating the true
+        # # firing rate and thus is not able to reconstruct the number of spikes
+        # # in a spiketrain (see test_rate_estimation_consistency)
+        # cutoff = 5
+        # sampling_period = 0.01 * pq.s
+        # # with t_spikes = [-5, 5]s the isi is 10s, so 1/isi 0.1 Hz
+        # t_spikes = np.array([-cutoff, cutoff]) * pq.s
+        # spiketrain = neo.SpikeTrain(t_spikes, t_start=t_spikes[0],
+                                    # t_stop=t_spikes[-1])
+        # kernel_types = tuple(
+            # kern_cls for kern_cls in kernels.__dict__.values()
+            # if isinstance(kern_cls, type) and
+            # issubclass(kern_cls, kernels.Kernel) and
+            # kern_cls is not kernels.Kernel and
+            # kern_cls is not kernels.SymmetricKernel)
+        # kernels_available = [kern_cls(sigma=1 * pq.s, invert=False)
+                             # for kern_cls in kernel_types]
+        # for kernel in kernels_available:
+            # for center_kernel in (False, True):
+                # rate = statistics.instantaneous_rate(
+                    # spiketrain,
+                    # sampling_period=sampling_period,
+                    # kernel=kernel,
+                    # cutoff=cutoff, trim=True,
+                    # center_kernel=center_kernel)
+                # assert_array_almost_equal(rate.magnitude, 0, decimal=2)
+
+    def test_instantaneous_rate_trim_output_length(self):
+        # This test checks the output shape of rate with trim=True
+        # Based on known convolution result
+        # output shape = N - K + 1 (for valid conv)
+        # N is signal shape, and K is kernel shape
         cutoff = 5
-        sampling_period = 0.01 * pq.s
-        # with t_spikes = [-5, 5]s the isi is 10s, so 1/isi 0.1 Hz
-        t_spikes = np.array([-cutoff, cutoff]) * pq.s
-        spiketrain = neo.SpikeTrain(t_spikes, t_start=t_spikes[0],
-                                    t_stop=t_spikes[-1])
+        kernel = kernels.RectangularKernel(sigma=0.5 * pq.s)
+        assert cutoff > kernel.min_cutoff, "Choose larger cutoff"
+        kernel_types = tuple(
+            kern_cls for kern_cls in kernels.__dict__.values()
+            if isinstance(kern_cls, type) and
+            issubclass(kern_cls, kernels.SymmetricKernel) and
+            kern_cls is not kernels.SymmetricKernel)
+        kernels_collected = [kern_cls(sigma=0.5 * pq.s, invert=False)
+                             for kern_cls in kernel_types]
+        for kernel in kernels_collected:
+            signal_N = int(((self.spike_train.t_stop - self.spike_train.t_start)/
+                               self.sampling_period).simplified)
+            half_kernel_K = int(cutoff * (kernel.sigma / self.sampling_period).simplified)
+            kernel_K  = 2 * half_kernel_K + 1
+            for center_kernel in (False, True):
+                rate_ = statistics.instantaneous_rate(
+                        self.spike_train, sampling_period=self.sampling_period,
+                        kernel=kernel, cutoff=cutoff, trim=True,
+                        center_kernel=center_kernel)
+                self.assertEqual(rate_.shape[0], signal_N - kernel_K + 1)
+
+    def test_instantaneous_rate_trim_rate_estimation(self):
+        # Test that trimming removes edge contributions from the rate estimate
+        # so that area under the curve with trim=True (valid) is less than or
+        # equal to trim=False (same)
         kernel_types = tuple(
             kern_cls for kern_cls in kernels.__dict__.values()
             if isinstance(kern_cls, type) and
             issubclass(kern_cls, kernels.Kernel) and
             kern_cls is not kernels.Kernel and
             kern_cls is not kernels.SymmetricKernel)
-        kernels_available = [kern_cls(sigma=1 * pq.s, invert=False)
+        # set sigma
+        kernels_available = [kern_cls(sigma=0.5 * pq.s, invert=False)
                              for kern_cls in kernel_types]
+        kernels_available.append('auto')
+        kernel_resolution = 0.01 * pq.s
         for kernel in kernels_available:
             for center_kernel in (False, True):
-                rate = statistics.instantaneous_rate(
-                    spiketrain,
-                    sampling_period=sampling_period,
-                    kernel=kernel,
-                    cutoff=cutoff, trim=True,
-                    center_kernel=center_kernel)
-                assert_array_almost_equal(rate.magnitude, 0, decimal=2)
+                areas = []
+                for trim in (False, True):
+                    rate_estimate = statistics.instantaneous_rate(
+                        self.spike_train,
+                        sampling_period=kernel_resolution,
+                        kernel=kernel,
+                        t_start=self.st_tr[0] * pq.s,
+                        t_stop=self.st_tr[1] * pq.s,
+                        trim=trim,
+                        center_kernel=center_kernel,
+                    )
+                    area_under_curve = spint.cumulative_trapezoid(
+                        y=rate_estimate.magnitude[:, 0],
+                        x=rate_estimate.times.rescale('s').magnitude)[-1]
+                    areas.append(area_under_curve)
+
+                self.assertTrue( areas[1] <= areas[0] or
+                            np.isclose(areas[1], areas[0], atol=1e-10))
 
     def test_instantaneous_rate_center_kernel(self):
         # this test is obsolete since trimming is now always done by
