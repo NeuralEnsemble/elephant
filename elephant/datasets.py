@@ -304,7 +304,7 @@ def download_datasets(repo_path, filepath=None, checksum=None,
         Path to the dataset, relative to the `elephant-data` repository root
         (either the default URL pointing to the latest version or the one
         defined by the `ELEPHANT_DATA_LOCATION` environment variable).
-    filepath : str, optional
+    filepath : str or pathlib.Path, optional
         Path in the local system where the downloaded file will be stored.
         If None, the file will be stored within the system's current
         temporary directory with the same name as in `elephant-data`.
