@@ -1089,6 +1089,25 @@ class TimeHistogramTestCase(unittest.TestCase):
             self.assertIn('normalization', histogram.annotations)
             self.assertEqual(histogram.annotations['normalization'], output)
 
+    def test_time_histogram_regression_648_single_spiketrain(self):
+        # Create a single spike train and target results
+        spiketrain = neo.SpikeTrain([0.1, 0.5, 1.0, 1.5, 2.0] * pq.s, t_stop=3.0 * pq.s)
+        targets = {'rate': [2., 2., 2., 2., 2., 0.]*pq.Hz,
+                   'counts': [1, 1, 1, 1, 1, 0]*pq.dimensionless,
+                   'mean': [1, 1, 1, 1, 1, 0]*pq.dimensionless }
+
+        for out_type, res in targets.items():
+
+            # Run time_histogram with spiketrain directly and wrapped as list
+            histogram_direct = statistics.time_histogram(spiketrain, output=out_type, bin_size=0.5 * pq.s)
+            histogram_wrapped = statistics.time_histogram([spiketrain], output=out_type, bin_size=0.5 * pq.s)
+
+            # Assert direct and wrapped produce same result
+            np.testing.assert_array_equal(histogram_direct.magnitude, histogram_wrapped.magnitude)
+
+            # Assert direct computation produces correct result a single spiketrain
+            np.testing.assert_array_equal(histogram_direct.magnitude.flatten(), res)
+
 
 class ComplexityTestCase(unittest.TestCase):
     def test_complexity_pdf_deprecated(self):
