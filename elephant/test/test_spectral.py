@@ -16,7 +16,7 @@ import scipy
 import scipy.fft
 import scipy.signal as spsig
 from neo import AnalogSignal
-from numpy.testing import assert_array_equal
+from numpy.testing import assert_array_equal, assert_array_almost_equal
 from packaging import version
 
 import elephant.spectral
@@ -97,9 +97,13 @@ class WelchPSDTestCase(unittest.TestCase):
         for key, val in params.items():
             freqs, psd = elephant.spectral.welch_psd(
                 data, len_segment=1000, overlap=0, **{key: val})
-            freqs_spsig, psd_spsig = spsig.welch(np.rollaxis(data, 0, len(
-                data.shape)), fs=1 / sampling_period, nperseg=1000,
-                                                 noverlap=0, **{key: val})
+            freqs_spsig, psd_spsig = spsig.welch(
+                np.rollaxis(data.magnitude, 0, len(data.shape)),
+                fs=1 / sampling_period,
+                nperseg=1000,
+                noverlap=0,
+                **{key: val}
+            )
             self.assertTrue(
                 (freqs == freqs_spsig).all() and (
                         psd == psd_spsig).all())
@@ -569,8 +573,8 @@ class MultitaperCrossSpectrumTestCase(unittest.TestCase):
             elephant.spectral.multitaper_cross_spectrum(
                     data.magnitude.T, fs=1 / sampling_period,
                     peak_resolution=peak_res)
-        self.assertTrue((freqs == freqs_np).all()
-                        and (cross_spec == cross_spec_np).all())
+        assert_array_equal(freqs.magnitude, freqs_np)
+        assert_array_almost_equal(cross_spec.magnitude, cross_spec_np)
 
         # one-sided vs two-sided spectrum
         freqs_os, cross_spec_os = \
@@ -929,8 +933,8 @@ class MultitaperCoherenceTestCase(unittest.TestCase):
                                                    anasig_signal_j)
 
         np.testing.assert_array_equal(arr_f, anasig_f)
-        np.testing.assert_allclose(arr_coh, anasig_coh, atol=1e-6)
-        np.testing.assert_array_equal(arr_phi, anasig_phi)
+        np.testing.assert_allclose(arr_coh, anasig_coh.magnitude, atol=1e-6)
+        np.testing.assert_array_almost_equal(arr_phi, anasig_phi.magnitude)
 
     def test_multitaper_cohere_peak(self):
         # Generate dummy data

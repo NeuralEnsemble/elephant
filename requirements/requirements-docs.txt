@@ -6,4 +6,5 @@ nbsphinx>=0.8.0
 sphinxcontrib-bibtex>1.0.0
 sphinx-tabs>=1.3.0
 matplotlib>=3.3.2, <3.9.0
+docutils<0.22
 # conda install -c conda-forge pandoc

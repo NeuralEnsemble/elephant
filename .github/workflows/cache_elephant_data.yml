@@ -23,7 +23,7 @@ jobs:
         run: |
             echo "dataset_hash=$(git ls-remote https://gin.g-node.org/NeuralEnsemble/elephant-data.git HEAD | cut -f1)" >> $GITHUB_OUTPUT
 
-      - uses: actions/cache@v4.0.2
+      - uses: actions/cache@v4.2.2
         # Loading cache of elephant-data
         id: cache-datasets
         with:
