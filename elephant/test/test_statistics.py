@@ -737,14 +737,14 @@ class InstantaneousRateTest(unittest.TestCase):
         t_spikes = np.linspace(-cutoff, cutoff, num=(2 * cutoff + 1)) * pq.s
         spiketrain = neo.SpikeTrain(t_spikes, t_start=t_spikes[0],
                                     t_stop=t_spikes[-1])
-        kernel = kernels.RectangularKernel(sigma=1 * pq.s)
+        kernel = kernels.RectangularKernel(sigma=0.5 * pq.s)
         assert cutoff > kernel.min_cutoff, "Choose larger cutoff"
         kernel_types = tuple(
             kern_cls for kern_cls in kernels.__dict__.values()
             if isinstance(kern_cls, type) and
             issubclass(kern_cls, kernels.SymmetricKernel) and
             kern_cls is not kernels.SymmetricKernel)
-        kernels_symmetric = [kern_cls(sigma=1 * pq.s, invert=False)
+        kernels_symmetric = [kern_cls(sigma=0.5 * pq.s, invert=False)
                              for kern_cls in kernel_types]
         for kernel in kernels_symmetric:
             for trim in (False, True):
