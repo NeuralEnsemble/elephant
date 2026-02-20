@@ -4,7 +4,7 @@ from unittest.mock import patch
 from pathlib import Path
 from tempfile import TemporaryDirectory, gettempdir
 import hashlib
-import urllib
+from urllib.error import URLError
 
 import numpy as np
 from numpy.testing import assert_allclose
@@ -50,12 +50,12 @@ class TestDownloadDatasets(unittest.TestCase):
                 clear=True)
     def test_valid_url(self):
         repo_path = 'some/repo/path'
-        self.assertRaises(urllib.error.URLError, download_datasets, repo_path)
+        self.assertRaises(URLError, download_datasets, repo_path)
 
     @patch.dict(os.environ, {'ELEPHANT_DATA_LOCATION': ''}, clear=True)
     def test_invalid_data(self):
         repo_path = 'some/repo/path'
-        self.assertRaises(urllib.error.URLError, download_datasets, repo_path)
+        self.assertRaises(URLError, download_datasets, repo_path)
 
     @patch.dict(os.environ, {'ELEPHANT_DATA_LOCATION': 'invalid_path_or_url'},
                 clear=True)
