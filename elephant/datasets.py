@@ -310,9 +310,10 @@ def download_datasets(repo_path, filepath=None, checksum=None,
         temporary directory with the same name as in `elephant-data`.
         Default: None
     checksum : str, optional
-        MD5 hash of the file to use as checksum to verify data integrity after
-        download. If None, no integrity check is performed. If defined and the
-        check fails, an exception is raised.
+        MD5 hash of the file to use as checksum to verify data integrity of a
+        file in a local folder or after its download. If None, no integrity
+        check is performed. If defined and the check fails, an exception is
+        raised.
         Default: None
     verbose : bool, optional
         If set to False, disable the progress bar.
@@ -326,8 +327,8 @@ def download_datasets(repo_path, filepath=None, checksum=None,
     Raises
     ------
     ValueError
-        If `checksum` is given and the MD5 hash of the downloaded file is
-        different.
+        If `checksum` is given and the MD5 hash of the downloaded file or
+        the local copy available in a local folder is different.
 
         If the environment variable `ELEPHANT_DATA_LOCATION` is set but does
         not point to a valid URL or an existing file system path.
@@ -367,6 +368,12 @@ def download_datasets(repo_path, filepath=None, checksum=None,
             # it exists, return it. Otherwise, raise an error.
             local_file = Path(data_location) / repo_path
             if local_file.is_file():
+                # If a checksum is given, check integrity of the local file
+                if checksum and not check_integrity(local_file, checksum):
+                    raise ValueError(f"Local file at {local_file} does "
+                                     "not agree with MD5 hash "
+                                     f"{checksum}.")
+
                 if filepath is not None:
                     # If specific path requested, copy the file
                     filepath = Path(filepath)

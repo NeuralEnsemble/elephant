@@ -163,6 +163,7 @@ class TestDownloadDatasets(unittest.TestCase):
                                   checksum="aaaaaa")
             exception_msg = str(error.exception)
             self.assertIn(repo_path, exception_msg)
+            self.assertIn("Data at", exception_msg)
             self.assertIn("does not agree with MD5 hash aaaaaa", exception_msg)
 
     @unittest.skipIf(not HAS_CACHE_DIR,
@@ -189,6 +190,51 @@ class TestDownloadDatasets(unittest.TestCase):
     @unittest.skipIf(not HAS_CACHE_DIR,
                      "Not testing since ELEPHANT_DATA_LOCATION is not set to "
                      "a folder")
+    def test_download_with_cache_dir_with_integrity_check(self):
+        # This test is expected in the GitHub Actions environment where the
+        # variable is set to a local cache path. This tests that the function
+        # correctly uses the cache directory and returns the expected file
+        # path without re-downloading while performing the integrity check.
+        repo_path = 'dataset-1/dataset-1.h5'
+
+        # Expected path of the downloaded dataset
+        expected_file_path = (
+                Path(os.environ['ELEPHANT_DATA_LOCATION']) /
+                "dataset-1" / "dataset-1.h5")
+
+        expected_checksum = hashlib.md5(
+            open(expected_file_path, 'rb').read()).hexdigest()
+
+        downloaded_file = download_datasets(repo_path,
+                                            filepath=None,
+                                            checksum=expected_checksum)
+        self.assertTrue(Path(downloaded_file).is_file())
+        self.assertEqual(expected_file_path, downloaded_file)
+
+
+    @unittest.skipIf(not HAS_CACHE_DIR,
+                     "Not testing since ELEPHANT_DATA_LOCATION is not set to "
+                     "a folder")
+    def test_download_with_cache_dir_with_failed_integrity_check(self):
+        # This test is expected in the GitHub Actions environment where the
+        # variable is set to a local cache path. This forces a failure by
+        # setting an invalid checksum for a dataset in a local cache folder.
+        repo_path = 'dataset-1/dataset-1.h5'
+        with TemporaryDirectory() as temp_dir:
+            # Download dataset to a temporary directory
+            target_file_path = Path(temp_dir) / 'target_checksum_fail'
+            with self.assertRaises(ValueError) as error:
+                download_datasets(repo_path,
+                                  filepath=target_file_path,
+                                  checksum="aaaaaa")
+            exception_msg = str(error.exception)
+            self.assertIn(repo_path, exception_msg)
+            self.assertIn("Local file at", exception_msg)
+            self.assertIn("does not agree with MD5 hash aaaaaa", exception_msg)
+
+    @unittest.skipIf(not HAS_CACHE_DIR,
+                     "Not testing since ELEPHANT_DATA_LOCATION is not set to "
+                     "a folder")
     def test_download_with_cache_dir_target_path(self):
         # This test is expected in the GitHub Actions environment where the
         # variable is set to a local cache path. This tests if the function
@@ -206,10 +252,35 @@ class TestDownloadDatasets(unittest.TestCase):
     @unittest.skipIf(not HAS_CACHE_DIR,
                      "Not testing since ELEPHANT_DATA_LOCATION is not set to "
                      "a folder")
+    def test_download_with_cache_dir_target_path_with_integrity_check(self):
+        # This test is expected in the GitHub Actions environment where the
+        # variable is set to a local cache path. This tests if the function
+        # uses the cache directory and correctly copies the file to the
+        # provided target path, while checking the file integrity.
+        repo_path = 'dataset-1/dataset-1.h5'
+
+        # Expected checksum of the dataset
+        expected_file_path = (
+                Path(os.environ['ELEPHANT_DATA_LOCATION']) /
+                "dataset-1" / "dataset-1.h5")
+        expected_checksum = hashlib.md5(
+            open(expected_file_path, 'rb').read()).hexdigest()
+
+        with TemporaryDirectory() as temp_dir:
+            target_file_path = Path(temp_dir) / 'target_cache'
+            downloaded_file = download_datasets(repo_path,
+                                                filepath=target_file_path,
+                                                checksum=expected_checksum)
+            self.assertTrue(Path(downloaded_file).is_file())
+            self.assertEqual(target_file_path, downloaded_file)
+
+    @unittest.skipIf(not HAS_CACHE_DIR,
+                     "Not testing since ELEPHANT_DATA_LOCATION is not set to "
+                     "a folder")
     def test_download_with_cache_dir_invalid_file(self):
         # This test is expected in the GitHub Actions environment where the
         # variable is set to a local cache path. This test the behavior when
-        # usinga cache dir and requesting a file that does not exist.
+        # using a cache dir and requesting a file that does not exist.
         repo_path = 'dataset-1/not-existent'
         with self.assertRaises(ValueError) as error:
             download_datasets(repo_path)
