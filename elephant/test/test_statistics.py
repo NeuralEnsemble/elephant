@@ -309,10 +309,18 @@ class FanoFactorTestCase(unittest.TestCase):
         # Test with empty quantity
         self.assertTrue(np.isnan(statistics.fanofactor([] * pq.ms)))
 
-        # Empty spiketrain
+        # Empty spiketrain should yield NaN
         st = neo.core.SpikeTrain([] * pq.ms, t_start=0 * pq.ms,
                                  t_stop=1.5 * pq.ms)
         self.assertTrue(np.isnan(statistics.fanofactor(st)))
+
+        # Trials object with an empty spike train should yield NaN
+        st = neo.core.SpikeTrain([] * pq.ms, t_start=0 * pq.ms,
+                                 t_stop=1.5 * pq.ms)
+        self.assertTrue(np.isnan(statistics.fanofactor(TrialsFromLists([[st],[st]]))))
+
+        # Trials object with no spike trains should yield an empty list
+        self.assertEqual(statistics.fanofactor(TrialsFromLists([[],[]])),[])
 
     def test_fanofactor_spiketrains_same(self):
         # Test with same spiketrains in list
