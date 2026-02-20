@@ -15,11 +15,11 @@ Currently, the following data are available for loading:
     - `asset`: a dataset containing the activity of 500 parallel spike trains
       from a simulation of synfire chains that are activated repeatedly
       :cite:`Schrader08_2165`. The data is loaded as a single
-      :class:`neo.Segment` object, containing the 500 :class:`neo.SpikeTrain`
-      objects with the spiking activity of each neuron (accessible by the
-      `.spiketrains` attribute). This dataset is used in the
-      :doc:`tutorial </tutorials/asset>` for the Analysis of Sequences of
-      Synchronous EvenTs (ASSET) method :cite:`Torre16_e1004939`.
+      :class:`neo.core.Segment` object, containing the 500
+      :class:`neo.core.SpikeTrain` objects with the spiking activity of each
+      neuron (accessible by the `.spiketrains` attribute). This dataset is
+      used in the :doc:`tutorial </tutorials/asset>` for the Analysis of
+      Sequences of Synchronous EvenTs (ASSET) method :cite:`Torre16_e1004939`.
 
     - `granger_causality_indirect`: a dataset of three simulated time series
       X, Y, and Z, with indirect causal influence from Y to X through Z
@@ -46,8 +46,8 @@ Currently, the following data are available for loading:
       performing a delayed-pointing task :cite:`Riehle97_1950`. The neuronal
       activity is recorded across 36 trials. The dataset consists of a list
       with 36 inner lists (one per trial). Each trial list contains two
-      :class:`neo.SpikeTrain` objects storing the spike times of each neuron.
-      This dataset is used in the
+      :class:`neo.core.SpikeTrain` objects storing the spike times of each
+      neuron. This dataset is used in the
       :doc:`tutorial </tutorials/unitary_event_analysis>` for the Unitary
       Event Analysis method :cite:`Gruen99_67`, which detects the coordinated
       spiking activity that occurs significantly more often than predicted by
@@ -475,9 +475,9 @@ def load_data(name):
         object
             The return type will vary according to the format and contents of
             the requested data. For example, `asset` returns a
-            :class:`neo.Segment` object while `unitary_events` returns a list
-            of lists with :class:`neo.SpikeTrain` objects. The detailed
-            description is available in the main
+            :class:`neo.core.Segment` object while `unitary_events` returns a
+            list of lists with :class:`neo.core.SpikeTrain` objects. The
+            detailed description is available in the main
             :doc:`datasets documentation </reference/datasets>` page.
     """
     elephant_data = ELEPHANT_DATA.get(name)
