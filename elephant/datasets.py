@@ -12,7 +12,7 @@ generated data, the required parameterization is already defined.
 
 Currently, the following data are available for loading:
 
-    - `asset`: a dataset containing the activity of 500 parallel spiketrains
+    - `asset`: a dataset containing the activity of 500 parallel spike trains
       from a simulation of synfire chains that are activated repeatedly
       :cite:`Schrader08_2165`. The data is loaded as a single
       :class:`neo.Segment` object, containing the 500 :class:`neo.SpikeTrain`
@@ -34,7 +34,7 @@ Currently, the following data are available for loading:
     - `granger_causality_both`: a dataset of three simulated time series X, Y,
       and Z, with both direct and indirect causal influences from Y to X
       (Y -> X and Y -> Z -> X). Each time series has 10000 sample points. The
-      data is loaded as a `(10000, 3)` :class:`numpy.nadarray` object. The
+      data is loaded as a `(10000, 3)` :class:`numpy.ndarray` object. The
       second dimension is the time series dimension, where each column
       corresponds to one of the three time series, ordered as X, Y, Z. This
       data is used in the :doc:`tutorial </tutorials/granger_causality>` for
