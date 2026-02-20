@@ -1011,7 +1011,7 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
 
     # Define mode for scipy.signal.fftconvolve
     if trim:
-        # PR ### Adding assertion on length of kernel
+        # PR 688 Adding assertion on length of kernel
         # A 'valid' convolution is only performed when:
         # len(kernel) <= len(binned_spiketrain)
         #

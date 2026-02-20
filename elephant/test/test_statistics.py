@@ -568,6 +568,13 @@ class InstantaneousRateTest(unittest.TestCase):
             ValueError, statistics.instantaneous_rate,
             spiketrains=[self.spike_train, self.spike_train],
             sampling_period=10 * pq.ms, kernel='auto')
+        # Kernel length > binned spiketrain length, PR #688
+        self.assertRaisesRegex(
+            ValueError, r"Kernel length .* is longer than binned spiketrain",
+            statistics.instantaneous_rate,
+            spiketrains= neo.SpikeTrain(pq.Quantity([-5.0, 5.0],'s'), t_start=-5, t_stop=5),
+            sampling_period=0.01*pq.s, cutoff=5.0, trim=True,
+            kernel=kernels.GaussianKernel(sigma=1*pq.s, invert=False))
 
     def test_instantaneous_rate_output(self):
         # return type correct
