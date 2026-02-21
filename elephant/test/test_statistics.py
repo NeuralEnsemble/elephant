@@ -697,44 +697,37 @@ class InstantaneousRateTest(unittest.TestCase):
                     kernel=kernel, center_kernel=True)
                 self.assertGreater(rate.mean(), rate_expected)
 
-    # PR 688: Test replaced
-    # The existing test checked that the instantaneous rate was zero
-    # for a spike train with spikes at the start and end. This assumption only
-    # holds for kernels with finite support. So kernels like Exponential, Alpha etc..
-    # even in valid convolution produce produce non-zero values
-    # when the kernel length is smaller than the binned spike train
-    #
-    # The test was replaced with :
-    #   1. test_instantaneous_rate_trim_output_length
-    #   2. test_instantaneous_rate_trim_rate_estimation
-    # def test_instantaneous_rate_spikes_on_edges(self):
-        # # this test demonstrates that the trimming (convolve valid mode)
-        # # removes the edges of the rate estimate, underestimating the true
-        # # firing rate and thus is not able to reconstruct the number of spikes
-        # # in a spiketrain (see test_rate_estimation_consistency)
-        # cutoff = 5
-        # sampling_period = 0.01 * pq.s
-        # # with t_spikes = [-5, 5]s the isi is 10s, so 1/isi 0.1 Hz
-        # t_spikes = np.array([-cutoff, cutoff]) * pq.s
-        # spiketrain = neo.SpikeTrain(t_spikes, t_start=t_spikes[0],
-                                    # t_stop=t_spikes[-1])
-        # kernel_types = tuple(
-            # kern_cls for kern_cls in kernels.__dict__.values()
-            # if isinstance(kern_cls, type) and
-            # issubclass(kern_cls, kernels.Kernel) and
-            # kern_cls is not kernels.Kernel and
-            # kern_cls is not kernels.SymmetricKernel)
-        # kernels_available = [kern_cls(sigma=1 * pq.s, invert=False)
-                             # for kern_cls in kernel_types]
-        # for kernel in kernels_available:
-            # for center_kernel in (False, True):
-                # rate = statistics.instantaneous_rate(
-                    # spiketrain,
-                    # sampling_period=sampling_period,
-                    # kernel=kernel,
-                    # cutoff=cutoff, trim=True,
-                    # center_kernel=center_kernel)
-                # assert_array_almost_equal(rate.magnitude, 0, decimal=2)
+    @unittest.skip("PR 688: Test replaced since zero instantaneous rate "
+                   "assumption only holds only for finite-support kernels. "
+                   "Replaced by trim_output_length/trim_rate_estimation tests")
+    def test_instantaneous_rate_spikes_on_edges(self):
+        # this test demonstrates that the trimming (convolve valid mode)
+        # removes the edges of the rate estimate, underestimating the true
+        # firing rate and thus is not able to reconstruct the number of spikes
+        # in a spiketrain (see test_rate_estimation_consistency)
+        cutoff = 5
+        sampling_period = 0.01 * pq.s
+        # with t_spikes = [-5, 5]s the isi is 10s, so 1/isi 0.1 Hz
+        t_spikes = np.array([-cutoff, cutoff]) * pq.s
+        spiketrain = neo.SpikeTrain(t_spikes, t_start=t_spikes[0],
+                                    t_stop=t_spikes[-1])
+        kernel_types = tuple(
+            kern_cls for kern_cls in kernels.__dict__.values()
+            if isinstance(kern_cls, type) and
+            issubclass(kern_cls, kernels.Kernel) and
+            kern_cls is not kernels.Kernel and
+            kern_cls is not kernels.SymmetricKernel)
+        kernels_available = [kern_cls(sigma=1 * pq.s, invert=False)
+                             for kern_cls in kernel_types]
+        for kernel in kernels_available:
+            for center_kernel in (False, True):
+                rate = statistics.instantaneous_rate(
+                    spiketrain,
+                    sampling_period=sampling_period,
+                    kernel=kernel,
+                    cutoff=cutoff, trim=True,
+                    center_kernel=center_kernel)
+                assert_array_almost_equal(rate.magnitude, 0, decimal=2)
 
     def test_instantaneous_rate_trim_output_length(self):
         # This test checks the output shape of rate with trim=True
@@ -810,6 +803,7 @@ class InstantaneousRateTest(unittest.TestCase):
         t_spikes = np.linspace(-cutoff, cutoff, num=(2 * cutoff + 1)) * pq.s
         spiketrain = neo.SpikeTrain(t_spikes, t_start=t_spikes[0],
                                     t_stop=t_spikes[-1])
+        # PR 688: Reduced sigma for smaller kernel length relative to spike train
         kernel = kernels.RectangularKernel(sigma=0.5 * pq.s)
         assert cutoff > kernel.min_cutoff, "Choose larger cutoff"
         kernel_types = tuple(
