@@ -570,7 +570,7 @@ class InstantaneousRateTest(unittest.TestCase):
             sampling_period=10 * pq.ms, kernel='auto')
         # Kernel length > binned spiketrain length, PR #688
         self.assertRaisesRegex(
-            ValueError, r"Kernel length .* is longer than binned spiketrain",
+            ValueError, r"Kernel length .* is longer than binned spike train",
             statistics.instantaneous_rate,
             spiketrains= neo.SpikeTrain(pq.Quantity([-5.0, 5.0],'s'), t_start=-5, t_stop=5),
             sampling_period=0.01*pq.s, cutoff=5.0, trim=True,

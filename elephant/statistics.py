@@ -1019,10 +1019,9 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
         # that occur when the kernel exceeds the binned spike train length.
         if t_arr_kernel_length > n_bins:
             raise ValueError(
-            f"Kernel length ({t_arr_kernel_length}) is longer than binned spiketrain "
+            f"Kernel length ({t_arr_kernel_length}) is longer than binned spike train "
             f"length ({n_bins}) for 'valid' convolution. Try adjusting the "
-            "kernel width, sampling_period, or using 'trim=False' "
-            "('same' convolution) instead."
+            "kernel width, 'sampling_period', or using 'trim=False' "
             )
         fft_mode = 'valid'
 
