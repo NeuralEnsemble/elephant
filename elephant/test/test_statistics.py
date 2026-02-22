@@ -792,6 +792,31 @@ class InstantaneousRateTest(unittest.TestCase):
                 self.assertTrue( areas[1] <= areas[0] or
                             np.isclose(areas[1], areas[0], atol=1e-10))
 
+    def test_instantaneous_rate_trim_edges(self):
+        # PR 688: Test checks if t_start and t_stop values correct with
+        # trim=True to ensure no incorrect offset in rate values
+        spikes = np.array([0.100, 0.113, 0.228, 3.901, 8.137,
+                             9.007, 9.837, 9.999])
+        spiketrain = neo.SpikeTrain(spikes*pq.s, t_start=0.*pq.s, t_stop=10.*pq.s)
+        cutoff = 5
+        sampling_period = 0.01 * pq.s
+        kernel = kernels.RectangularKernel(sigma=0.5 * pq.s)
+        assert cutoff > kernel.min_cutoff, "Choose larger cutoff"
+        kernel_types = tuple(
+            kern_cls for kern_cls in kernels.__dict__.values()
+            if isinstance(kern_cls, type) and
+            issubclass(kern_cls, kernels.SymmetricKernel) and
+            kern_cls is not kernels.SymmetricKernel)
+        kernels_list = [kern_cls(sigma=0.5 * pq.s, invert=False)
+                             for kern_cls in kernel_types]
+        for kernel in kernels_list:
+            rate = statistics.instantaneous_rate(
+                spiketrain, sampling_period=sampling_period,
+                kernel=kernel, cutoff=cutoff, trim=True,
+                center_kernel=True)
+            self.assertLess(rate.t_stop, spiketrain.t_stop)
+            self.assertGreater(rate.t_start, spiketrain.t_start)
+
     def test_instantaneous_rate_center_kernel(self):
         # this test is obsolete since trimming is now always done by
         # np.fftconvolve, in earlier version trimming was implemented for

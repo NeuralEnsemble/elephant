@@ -851,7 +851,6 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
                                 sampling_period=analog_signal.sampling_period,
                                 units=analog_signal.units,
                                 t_start=analog_signal.t_start,
-                                t_stop=analog_signal.t_stop,
                                 kernel=analog_signal.annotations)
                         )
 
@@ -860,7 +859,6 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
                 sampling_period=rates_cross_trials[0].sampling_period,
                 units=rates_cross_trials[0].units,
                 t_start=rates_cross_trials[0].t_start,
-                t_stop=rates_cross_trials[0].t_stop,
                 kernel=rates_cross_trials[0].annotations)
 
             return list_of_average_rates_cross_trial
@@ -884,7 +882,6 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
                                  sampling_period=analog_signal.sampling_period,
                                  units=analog_signal.units,
                                  t_start=analog_signal.t_start,
-                                 t_stop=analog_signal.t_stop,
                                  kernel=analog_signal.annotations)
                 for average_rate, analog_signal in zip(average_rates, rates)]
 
@@ -1051,7 +1048,7 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
 
     rate = neo.AnalogSignal(signal=rate,
                             sampling_period=sampling_period,
-                            units=pq.Hz, t_start=t_start, t_stop=t_stop,
+                            units=pq.Hz, t_start=t_start,
                             kernel=kernel_annotation)
 
     if border_correction:
