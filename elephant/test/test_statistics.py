@@ -732,8 +732,8 @@ class InstantaneousRateTest(unittest.TestCase):
     def test_instantaneous_rate_trim_output_length(self):
         # This test checks the output shape of rate with trim=True
         # Based on known convolution result
-        # output shape = N - K + 1 (for valid conv)
-        # N is signal shape, and K is kernel shape
+        # output length = N - K + 1 (for valid conv)
+        # N is signal length, and K is kernel length
         cutoff = 5
         kernel = kernels.RectangularKernel(sigma=0.5 * pq.s)
         assert cutoff > kernel.min_cutoff, "Choose larger cutoff"
@@ -771,16 +771,20 @@ class InstantaneousRateTest(unittest.TestCase):
                              for kern_cls in kernel_types]
         kernels_available.append('auto')
         kernel_resolution = 0.01 * pq.s
+        # Make a edge-biased spiketrain
+        spikes = np.array([0.100, 0.113, 0.228, 3.901, 8.137,
+                             9.007, 9.837, 9.999])
+        spiketrain = neo.SpikeTrain(spikes*pq.s, t_start=0.*pq.s, t_stop=10.*pq.s)
         for kernel in kernels_available:
             for center_kernel in (False, True):
                 areas = []
                 for trim in (False, True):
                     rate_estimate = statistics.instantaneous_rate(
-                        self.spike_train,
+                        spiketrain,
                         sampling_period=kernel_resolution,
                         kernel=kernel,
-                        t_start=self.st_tr[0] * pq.s,
-                        t_stop=self.st_tr[1] * pq.s,
+                        t_start=spiketrain.t_start,
+                        t_stop=spiketrain.t_stop,
                         trim=trim,
                         center_kernel=center_kernel,
                     )
@@ -789,8 +793,7 @@ class InstantaneousRateTest(unittest.TestCase):
                         x=rate_estimate.times.rescale('s').magnitude)[-1]
                     areas.append(area_under_curve)
 
-                self.assertTrue( areas[1] <= areas[0] or
-                            np.isclose(areas[1], areas[0], atol=1e-10))
+                self.assertTrue(areas[1] < areas[0])
 
     def test_instantaneous_rate_trim_edges(self):
         # PR 688: Test checks if t_start and t_stop values correct with
