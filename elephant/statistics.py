@@ -364,8 +364,7 @@ def fanofactor(spiketrains: Union[List[neo.SpikeTrain], List[pq.Quantity], List[
         return [_compute_fano([list_of_lists_of_spiketrains[trial_no][st_no]
                                for trial_no in range(len(list_of_lists_of_spiketrains))])
                 for st_no in range(len(list_of_lists_of_spiketrains[0]))]
-    else:  # Legacy behavior
-        return _compute_fano(spiketrains)
+    return _compute_fano(spiketrains)
 
 
 def __variation_check(v, with_nan):
