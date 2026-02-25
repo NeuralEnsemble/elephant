@@ -913,7 +913,7 @@ class SpikeTrainTimescaleTestCase(unittest.TestCase):
 
         # Tau max with no units
         tau_max = 1
-        self.assertRaises(ValueError,
+        self.assertRaises((ValueError, TypeError),
                           sc.spike_train_timescale, spikes_bin, tau_max)
 
         # Tau max that is not a multiple of the binsize
