@@ -30,6 +30,17 @@ Introductory
   .. image:: https://img.shields.io/badge/launch-ebrains-brightgreen
      :target: https://lab.ch.ebrains.eu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FNeuralEnsemble%2Felephant&urlpath=lab%2Ftree%2Felephant%2Fdoc%2Ftutorials%2Fstatistics.ipynb&branch=master
 
+* Signal processing.
+
+  Learn how to filter and smooth your data using ``signal_processing`` module.
+
+  :doc:`View the notebook <../tutorials/signal_processing>` or run interactively:
+
+  .. image:: https://mybinder.org/badge.svg
+     :target: https://mybinder.org/v2/gh/NeuralEnsemble/elephant/master?filepath=doc/tutorials/signal_processing.ipynb
+  .. image:: https://img.shields.io/badge/launch-ebrains-brightgreen
+     :target: https://lab.ch.ebrains.eu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FNeuralEnsemble%2Felephant&urlpath=lab%2Ftree%2Felephant%2Fdoc%2Ftutorials%2Fsignal_processing.ipynb&branch=master
+
 Advanced
 --------
 
