@@ -274,7 +274,7 @@ def fanofactor(spiketrains: Union[List[neo.SpikeTrain], List[pq.Quantity], List[
                warn_tolerance: pq.Quantity = 0.1 * pq.ms) -> Union[float, List[float], List[List[float]]]:
     r"""
     Evaluates the empirical Fano factor F of the spike counts of
-    a list of `neo.SpikeTrain` objects or `elephant.trials.Trials` object.
+    a list of :class:`neo.core.SpikeTrain` objects or :mod:`elephant.trials` object.
 
     Given the vector v containing the observed spike counts (one per
     spike train) in the time window [t0, t1], F is defined as:
@@ -302,12 +302,12 @@ def fanofactor(spiketrains: Union[List[neo.SpikeTrain], List[pq.Quantity], List[
 
     Returns
     -------
-    output : float or list of floats
+    output : float or list of float
         The Fano factor of the spike counts of the input spike trains. If a list
-        was provided as input, the result is a single number. In case an
-        :mod:`elephant.trials` object was provided as input, the result is a
+        was provided as input, `output` is a single number. In case an
+        :mod:`elephant.trials` object was provided as input, `output` is a
         list of Fano factors, one for each spike train across the trials.
-        Returns np.NaN if an empty list is specified, or if all spike trains are
+        `output` is `np.nan` if an empty list is specified, or if all spike trains are
         empty. An :mod:`elephant.trials` object without spike trains will return
         an empty list.
 
