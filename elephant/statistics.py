@@ -289,38 +289,38 @@ def fanofactor(spiketrains: Union[List[neo.SpikeTrain], List[pq.Quantity], List[
 
     Parameters
     ----------
-    spiketrains : list or elephant.trials.Trials
-        List of `neo.SpikeTrain` or `pq.Quantity` or `np.ndarray` or list of
+    spiketrains : list or :mod:`elephant.trials`
+        List of :class:`neo.core.SpikeTrain` or `pq.Quantity` or `np.ndarray` or list of
         spike times for which to compute the Fano factor of spike counts, or
-        an `elephant.trials.Trials` object. If a Trial object is used, spike trains are
-        pooled across trials before computing the Fano factor.
-    warn_tolerance : pq.Quantity
-        In case of a list of input neo.SpikeTrains, if their durations vary by
-        more than `warn_tolerance` in their absolute values, throw a warning
+        an :mod:`elephant.trials` object. If a :mod:`elephant.trials` object is
+        used, spike trains are pooled across trials before computing the Fano factor.
+    warn_tolerance : pq.Quantity, optional
+        In case of a list of input :class:`neo.core.SpikeTrain`, if their durations
+        vary by more than `warn_tolerance` in their absolute values, throw a warning
         (see Notes).
         Default: 0.1 ms
 
     Returns
     -------
-    fano : float, list of floats
+    output : float or list of floats
         The Fano factor of the spike counts of the input spike trains. If a list
         was provided as input, the result is a single number. In case an
-        `elephant.trials.Trials` object was provided as input, the result is a
-        list of fano factors, one for each spike train in the trial.
+        :mod:`elephant.trials` object was provided as input, the result is a
+        list of Fano factors, one for each spike train across the trials.
         Returns np.NaN if an empty list is specified, or if all spike trains are
-        empty. An `elephant.trials.Trials` without spike trains will return an
-        empty list.
+        empty. An :mod:`elephant.trials` object without spike trains will return
+        an empty list.
 
     Raises
     ------
     TypeError
-        If the input spiketrains are neo.SpikeTrain objects, but
+        If the input spiketrains are :class:`neo.core.SpikeTrain` objects, but
         `warn_tolerance` is not a quantity.
 
     Notes
     -----
     The check for the equal duration of the input spike trains is performed
-    only if the input is of type`neo.SpikeTrain`: if you pass e.g. a numpy array,
+    only if the input is of type :class:`neo.core.SpikeTrain`: if you pass e.g. a numpy array,
     please make sure that they all have the same duration manually.
 
     Examples
