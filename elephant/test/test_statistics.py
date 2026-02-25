@@ -777,7 +777,7 @@ class InstantaneousRateTest(unittest.TestCase):
         spiketrain = neo.SpikeTrain(spikes*pq.s, t_start=0.*pq.s, t_stop=10.*pq.s)
         for kernel in kernels_available:
             for center_kernel in (False, True):
-                areas = []
+                areas = {}
                 for trim in (False, True):
                     rate_estimate = statistics.instantaneous_rate(
                         spiketrain,
@@ -791,9 +791,10 @@ class InstantaneousRateTest(unittest.TestCase):
                     area_under_curve = spint.cumulative_trapezoid(
                         y=rate_estimate.magnitude[:, 0],
                         x=rate_estimate.times.rescale('s').magnitude)[-1]
-                    areas.append(area_under_curve)
+                    areas[trim] = area_under_curve
 
-                self.assertTrue(areas[1] < areas[0])
+                # area with trim=True < area with trim=False
+                self.assertTrue(areas[True] < areas[False])
 
     def test_instantaneous_rate_trim_edges(self):
         # PR 688: Test checks if t_start and t_stop values correct with
