@@ -351,7 +351,7 @@ def fanofactor(spiketrains: Union[List[neo.SpikeTrain], List[pq.Quantity], List[
         # Build array of spike counts (one per spike train)
         spike_counts = np.array(tuple(len(st) for st in spiketrains))
         # Compute FF
-        if np.all(np.array(spike_counts) == 0):
+        if np.all(spike_counts == 0):
             # empty list of spiketrains reaches this branch, and NaN is returned
             return np.nan
         _check_input_spiketrains_durations(spiketrains)
