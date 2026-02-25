@@ -627,17 +627,18 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
 
     Parameters
     ----------
-    spiketrains : neo.SpikeTrain, list of neo.SpikeTrain or elephant.trials.Trials  # noqa
+    spiketrains : :class:`neo.core.SpikeTrain`, list of :class:`neo.core.SpikeTrain` or :mod:`elephant.trials`
         Input spike train(s) for which the instantaneous firing rate is
         calculated. If a list of spike trains is supplied, the parameter
         pool_spike_trains determines the behavior of the function. If a Trials
         object is supplied, the behavior is determined by the parameters
         pool_spike_trains (within a trial) and pool_trials (across trials).
     sampling_period : pq.Quantity
-        Time stamp resolution of the spike times. The same resolution will
-        be assumed for the kernel.
+        Time resolution of the resulting rate estimate. The same resolution
+        will be used for the kernel. To avoid effects of binning, set this
+        value to the time stamp resolution of the spike train.
     kernel : 'auto' or Kernel, optional
-        The string 'auto' or callable object of class `kernels.Kernel`.
+        The string 'auto' or callable object of class :mod:`elephant.kernels`.
         The kernel is used for convolution with the spike train and its
         standard deviation determines the time resolution of the instantaneous
         rate estimation. Currently, implemented kernel forms are rectangular,
@@ -698,41 +699,69 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
         at the borders of the spike trains, i.e., close to t_start and t_stop.
         The correction is done by estimating the mass of the kernel outside
         these spike train borders under the assumption that the rate does not
-        change strongly.
-        Only possible in the case of a Gaussian kernel.
+        change strongly. Only possible in the case of a Gaussian kernel.
 
         Default: False
     pool_trials: bool, optional
-        If true, calculate firing rates averaged over trials if spiketrains is
-        of type elephant.trials.Trials
-        Has no effect for single spike train or lists of spike trains.
+        If True, calculate firing rates averaged over trials if `spiketrains` is
+        of type :mod:`elephant.trials`. Has no effect for single spike train
+        or lists of spike trains.
 
         Default: False
     pool_spike_trains: bool, optional
-        If true, calculate firing rates averaged over spike trains. If the
-        input is a Trials object, spike trains are pooled across spike trains
-        within each trial, and pool_trials determines whether spike trains are
-        additionally pooled across trials.
+        If True, calculate firing rates averaged over spike trains. If the
+        input is a :mod:`elephant.trials` object, spike trains are pooled
+        across spike trains within each trial, and pool_trials determines
+        whether spike trains are additionally pooled across trials.
         Has no effect for a single spike train.
 
         Default: False
 
     Returns
     -------
-    rate : neo.AnalogSignal
-        2D matrix that contains the rate estimation in unit hertz (Hz) of shape
-        ``(time, len(spiketrains))`` or ``(time, 1)`` in case of a single
-        input spiketrain. `rate.times` contains the time axis of the rate
-        estimate: the unit of this property is the same as the resolution that
-        is given via the argument `sampling_period` to the function.
+    output : :class:`neo.core.AnalogSignal` or list of :class:`neo.core.AnalogSignal`
+        In general, the returned rate estimates are provided as
+        :class:`neo.core.AnalogSignal` objects with units of Hertz (Hz). Its
+        shape is `(n_bins, n_estimates)` where
+        `n_bins = (t_stop - t_start) / sampling_period` and `n_estimates`
+        depends on pooling options as detailed below. The time axis is available
+        as ``output.times`` and has the same  units/resolution as specified by
+        `sampling_period`.
+
+        If `spiketrains` is :class:`neo.core.SpikeTrain` then output is a
+        single :class:`neo.core.AnalogSignal` with `n_estimates = 1`.
+
+        If `spiketrains` is a list of :class:`neo.core.SpikeTrain` then output
+        is a single :class:`neo.core.AnalogSignal`. `n_estimates` depends on the
+        pooling options:
+           -  `pool_spike_trains=True` results in `n_estimates = 1`.
+           -  `pool_spike_trains=False` results in `n_estimates = len(spiketrains)`
+
+        If `spiketrains` is a :mod:`elephant.trials` object then output is a
+        :class:`neo.core.AnalogSignal` or list of :class:`neo.core.AnalogSignal`.
+        The output type depends on `pool_trials`.
+           -  If `pool_trials=False` then output is a list of :class:`neo.core.AnalogSignal`
+             with length equal to number of trials. For each element, representing
+             the rate estimates of a given trial, `n_estimates` depends on the
+             pooling of spike trains within each trial:
+               -  `pool_spike_trains=True` results in `n_estimates = 1`
+               -  `pool_spike_trains=False` results in `n_estimates = len(spiketrains)`
+           -  If `pool_trials=True` then output is a single :class:`neo.core.AnalogSignal`
+             with rates pooled across trials. `n_estimates` depends on the pooling
+             of spike trains within each trial:
+               -  `pool_spike_trains=True` results in `n_estimates = 1`
+               -  `pool_spike_trains=False` results in `n_estimates = len(spiketrains)`
+
+        A table summarizing the return types and array shapes is given in the
+        :ref:`notes below <summary-of-outputs>`.
 
     Raises
     ------
     TypeError
-        *  If `spiketrain` is not an instance of `neo.SpikeTrain`.
+        *  If `spiketrain` is not an instance of :class:`neo.core.SpikeTrain`.
         *  If `sampling_period` is not a `pq.Quantity`.
         *  If `sampling_period` is not larger than zero.
-        *  If `kernel` is neither instance of `kernels.Kernel` nor string
+        *  If `kernel` is neither instance of :mod:`elephant.kernels` nor string
            'auto'.
         *  If `cutoff` is neither `float` nor `int`.
         *  If `t_start` and `t_stop` are neither None nor a `pq.Quantity`.
@@ -774,6 +803,36 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
        the last interval ``[4, 4.5]`` is excluded from all calculations.
 
 
+    .. _summary-of-outputs:
+
+    * Summary of the output type:
+
+            +------------------------------+-----------------+-----------------------+--------------------------------+------------------------------------+
+            | ``spiketrains`` type         | ``pool_trials`` | ``pool_spike_trains`` | Return type                    | Output shape (per AnalogSignal)    |
+            +==============================+=================+=======================+================================+====================================+
+            | :class:`neo.core.SpikeTrain` | —               | —                     | :class:`neo.core.AnalogSignal` | ``(n_bins, 1)``                    |
+            +------------------------------+-----------------+-----------------------+--------------------------------+------------------------------------+
+            | list of                      | —               | ``False``             | :class:`neo.core.AnalogSignal` | ``(n_bins, len(spiketrains))``     |
+            | :class:`neo.core.SpikeTrain` |                 |                       |                                |                                    |
+            +------------------------------+-----------------+-----------------------+--------------------------------+------------------------------------+
+            | list of                      | —               | ``True``              | :class:`neo.core.AnalogSignal` | ``(n_bins, 1)``                    |
+            | :class:`neo.core.SpikeTrain` |                 |                       |                                |                                    |
+            +------------------------------+-----------------+-----------------------+--------------------------------+------------------------------------+
+            | :mod:`elephant.trials`       | ``True``        | ``False``             | :class:`neo.core.AnalogSignal` | ``(n_bins, n_spiketrains)``        |
+            |                              |                 |                       |                                | (columns: estimate per spike train |
+            |                              |                 |                       |                                | pooled across trials)              |
+            +------------------------------+-----------------+-----------------------+--------------------------------+------------------------------------+
+            | :mod:`elephant.trials`       | ``True``        | ``True``              | :class:`neo.core.AnalogSignal` | ``(n_bins, 1)``                    |
+            |                              |                 |                       |                                | (pooled across trials              |
+            |                              |                 |                       |                                | and spike trains)                  |
+            +------------------------------+-----------------+-----------------------+--------------------------------+------------------------------------+
+            | :mod:`elephant.trials`       | ``False``       | ``False``             | list of                        | each element (i.e., trial):        |
+            |                              |                 |                       | :class:`neo.core.AnalogSignal` | ``(n_bins, n_spiketrains)``        |
+            +------------------------------+-----------------+-----------------------+--------------------------------+------------------------------------+
+            | :mod:`elephant.trials`       | ``False``       | ``True``              | list of                        | each element (i.e., trial):        |
+            |                              |                 |                       | :class:`neo.core.AnalogSignal` | ``(n_bins, 1)`` (spike trains      |
+            |                              |                 |                       |                                | pooled within-trial)               |
+            +------------------------------+-----------------+-----------------------+--------------------------------+------------------------------------+
 
     Examples
     --------
@@ -1045,8 +1104,7 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
                              sigma=str(kernel.sigma),
                              invert=kernel.invert)
 
-    if isinstance(spiketrains, neo.core.spiketrainlist.SpikeTrainList) and (
-                  pool_spike_trains):
+    if pool_spike_trains:
         rate = np.mean(rate, axis=1)
 
     rate = neo.AnalogSignal(signal=rate,
