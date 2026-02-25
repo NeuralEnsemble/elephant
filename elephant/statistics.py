@@ -335,13 +335,12 @@ def fanofactor(spiketrains: Union[List[neo.SpikeTrain], List[pq.Quantity], List[
     0.07142857142857142
 
     """
-    # Check if parameters are of the correct type
-    if not is_time_quantity(warn_tolerance):
-        raise TypeError(f"'warn_tolerance' must be a time quantity, but got {type(warn_tolerance)}")
-
     def _check_input_spiketrains_durations(spiketrains: Union[List[neo.SpikeTrain], List[pq.Quantity],
                                                               List[np.ndarray]]) -> None:
-        if spiketrains and all(isinstance(st, neo.SpikeTrain) for st in spiketrains):
+        if all(isinstance(st, neo.SpikeTrain) for st in spiketrains):
+            # Check if warn tolerance parameters is of the correct type
+            if not is_time_quantity(warn_tolerance):
+                raise TypeError(f"'warn_tolerance' must be a time quantity, but got {type(warn_tolerance)}")
             durations = np.array(tuple(st.duration for st in spiketrains))
             if np.max(durations) - np.min(durations) > warn_tolerance:
                 warnings.warn(f"Fano factor calculated for spike trains of "
@@ -349,16 +348,14 @@ def fanofactor(spiketrains: Union[List[neo.SpikeTrain], List[pq.Quantity], List[
                               f"{np.max(durations)}s).")
 
     def _compute_fano(spiketrains: Union[List[neo.SpikeTrain], List[pq.Quantity], List[np.ndarray]]) -> float:
-        # Check spike train durations
-        _check_input_spiketrains_durations(spiketrains)
         # Build array of spike counts (one per spike train)
         spike_counts = np.array(tuple(len(st) for st in spiketrains))
         # Compute FF
         if np.all(np.array(spike_counts) == 0):
             # empty list of spiketrains reaches this branch, and NaN is returned
             return np.nan
-        else:
-            return spike_counts.var()/spike_counts.mean()
+        _check_input_spiketrains_durations(spiketrains)
+        return spike_counts.var()/spike_counts.mean()
 
     if isinstance(spiketrains, elephant.trials.Trials):
         list_of_lists_of_spiketrains = [
