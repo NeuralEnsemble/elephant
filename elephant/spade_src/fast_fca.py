@@ -43,9 +43,8 @@ class FormalConcept(object):
     and lectically ordered lists of upper and lower neighbours.
     """
 
-    def __init__(self, extent=frozenset(), intent=frozenset(),
-                 intentIndexes=[]):
-        """ intent/extent are a frozensets because they need to be hashable."""
+    def __init__(self, extent=frozenset(), intent=frozenset(), intentIndexes=[]):
+        """intent/extent are a frozensets because they need to be hashable."""
         self.cnum = 0
         self.extent = extent
         self.intent = intent
@@ -86,16 +85,14 @@ class FormalConcept(object):
         return 1
 
     def __repr__(self):
-        """ print the concept."""
+        """print the concept."""
         strrep = "concept no:" + str(self.cnum) + "\n"
         strrep += "extent:" + repr(self.extent) + "\n"
         strrep += "intent:" + repr(self.intent) + "\n"
         strrep += "introduced objects:" + repr(self.introducedObjects) + "\n"
-        strrep += "introduced attributes:" + repr(
-            self.introducedAttributes) + "\n"
+        strrep += "introduced attributes:" + repr(self.introducedAttributes) + "\n"
         if hasattr(self, "stability"):
-            strrep += "stability: {0:1.4f}".format(
-                self.stability) + "\n"
+            strrep += "stability: {0:1.4f}".format(self.stability) + "\n"
         strrep += "upper neighbours: "
         for un in self.upperNeighbours:
             strrep += str(un.cnum) + ", "
@@ -144,7 +141,7 @@ class FormalContext(object):
 
     def objectsPrime(self, objectSet):
         """return a frozenset of all attributes which are shared by members
-        of objectSet. """
+        of objectSet."""
         if len(objectSet) == 0:
             return frozenset(self.attributes)
         oiter = iter(objectSet)
@@ -155,7 +152,7 @@ class FormalContext(object):
 
     def attributesPrime(self, attributeSet):
         """return a set of all objects which have all attributes in
-        attribute set. """
+        attribute set."""
         if len(attributeSet) == 0:
             return frozenset(self.objects)
         aiter = iter(attributeSet)
@@ -170,19 +167,19 @@ class FormalContext(object):
 
     def indexList(self, attributeSet):
         """return ordered list of attribute indexes. For lectic ordering of
-        concepts. """
+        concepts."""
         ilist = sorted(map(self.attributes.index, attributeSet))
         return ilist
 
 
 class FormalConcepts(object):
-    """ Computes set of concepts from a binary relation by an algorithm
+    """Computes set of concepts from a binary relation by an algorithm
     similar to C. Lindig's Fast Concept Analysis (2002).
     """
 
     def __init__(self, relation, objects=None, attributes=None, verbose=False):
-        """ 'relation' has to be an iterable container of tuples. If objects
-        or attributes are not supplied, determine from relation. """
+        """'relation' has to be an iterable container of tuples. If objects
+        or attributes are not supplied, determine from relation."""
         self.context = FormalContext(relation, objects, attributes)
         self.concepts = []  # a lectically ordered list of concepts"
         self.intentToConceptDict = dict()
@@ -198,7 +195,8 @@ class FormalConcepts(object):
         # might therefore be used to create upper neighbours via ((G u g)'',(G
         # u g)')
         upperNeighbourGeneratingObjects = self.context.objects.difference(
-            concept.extent)
+            concept.extent
+        )
         # dictionary of intent => set of generating objects
         upperNeighbourCandidates = defaultdict(set)
         for g in upperNeighbourGeneratingObjects:
@@ -212,8 +210,9 @@ class FormalConcepts(object):
                 # Store every concept in self.conceptDict, because it will
                 # eventually be used and the closure is expensive to compute
                 extent = self.context.attributesPrime(intent)
-                curConcept = FormalConcept(extent, intent,
-                                           self.context.indexList(intent))
+                curConcept = FormalConcept(
+                    extent, intent, self.context.indexList(intent)
+                )
                 self.intentToConceptDict[intent] = curConcept
 
             # remember which g generated what concept
@@ -225,13 +224,14 @@ class FormalConcepts(object):
         # and only if (G u g)'' \ G = set of all g which generated C.
         for intent, generatingObjects in upperNeighbourCandidates.items():
             extraObjects = self.intentToConceptDict[intent].extent.difference(
-                concept.extent)
+                concept.extent
+            )
             if extraObjects == generatingObjects:
                 neighbours.append(self.intentToConceptDict[intent])
         return neighbours
 
     def numberConceptsAndComputeIntroduced(self):
-        """ Numbers concepts and computes introduced objects and attributes"""
+        """Numbers concepts and computes introduced objects and attributes"""
         for curConNum, curConcept in enumerate(self.concepts):
             curConcept.cnum = curConNum
             curConcept.introducedObjects = set(curConcept.extent)
@@ -242,25 +242,24 @@ class FormalConcepts(object):
                 curConcept.introducedAttributes.difference_update(un.intent)
 
     def computeLattice(self):
-        """ Computes concepts and lattice.
+        """Computes concepts and lattice.
         self.concepts contains lectically ordered list of concepts after
         completion."""
         intent = self.context.objectsPrime(set())
         extent = self.context.attributesPrime(intent)
-        curConcept = FormalConcept(extent, intent,
-                                   self.context.indexList(intent))
+        curConcept = FormalConcept(extent, intent, self.context.indexList(intent))
         self.concepts = [curConcept]
         self.intentToConceptDict[curConcept.intent] = curConcept
         curConceptIndex = 0
-        progress_bar = tqdm.tqdm(disable=not self.verbose,
-                                 desc="computeLattice")
+        progress_bar = tqdm.tqdm(disable=not self.verbose, desc="computeLattice")
         while curConceptIndex >= 0:
             upperNeighbours = self.computeUpperNeighbours(curConcept)
             for upperNeighbour in upperNeighbours:
-                upperNeighbourIndex = bisect.bisect(self.concepts,
-                                                    upperNeighbour)
-                if upperNeighbourIndex == 0 or self.concepts[
-                        upperNeighbourIndex - 1] != upperNeighbour:
+                upperNeighbourIndex = bisect.bisect(self.concepts, upperNeighbour)
+                if (
+                    upperNeighbourIndex == 0
+                    or self.concepts[upperNeighbourIndex - 1] != upperNeighbour
+                ):
                     self.concepts.insert(upperNeighbourIndex, upperNeighbour)
                     curConceptIndex += 1
 
