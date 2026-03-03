@@ -63,7 +63,7 @@ elif platform.system() == "Linux":
     )
 
 setup_kwargs = {
-    "name": "elephant",
+    "name": "test-elephant",
     "version": version,
     "packages": ['elephant', 'elephant.test'],
     "include_package_data": True,
