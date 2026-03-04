@@ -38,6 +38,7 @@ HAVE_PYOPENCL = get_opencl_capability()
 HAVE_CUDA = get_cuda_capability_major() != 0
 
 
+@unittest.skipUnless(HAVE_SKLEARN, 'requires sklearn')
 class AssetBinningTestCase(unittest.TestCase):
 
     def setUp(self):
