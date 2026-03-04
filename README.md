@@ -41,7 +41,7 @@ Modified BSD License, see [LICENSE.txt](LICENSE.txt) for details.
 
 #### Copyright
 
-:copyright: 2014-2024 by the [Elephant team](doc/authors.rst).
+:copyright: 2014-2026 by the [Elephant team](doc/authors.rst).
 
 
 #### Acknowledgments

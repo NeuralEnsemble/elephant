@@ -2,6 +2,49 @@
 Release Notes
 =============
 
+Release 1.2.0
+=============
+This release of Elephant marks the change to Numpy 2.x, while Numpy 1.x is no longer supported. Along with this change, a number of new features and improvements for existing functionality were added, in part related to the new concept for managing experimental trials using `elephant.trials` objects.
+
+New Features
+------------
+- For the spike times extraction methods in the `spike_train_generation` module, added multichannel support for `neo.AnalogSignal` and introduced the `always_as_list` parameter  to ensure spike trains are returned as a list.  (#614)
+- Extended `statistics.time_histogram` to accept both a single spike train and lists of spike trains. (#650)
+- Extended `statistics.fano_factor` to accept `elephant.trials` objects. (#645)
+- Added a `datasets.load_data` function to simplify tutorial and analysis code by allowing dataset retrieval and generation. (#687)
+
+Bug Fixes
+---------
+- Fixed numerical stability issues in `van_rossum_distance` by preventing small negative floating-point before square root evaluation. (#680)
+- Fixed issue in `statistics.instantaneous_rate` function related to unexpected pooling behavior and kernels that exceed the signal length. (#649, #688)
+- Fixed `BinnedSpikeTrain` slicing issues caused by changes in SciPy (>=1.15.0) sparse matrix index validation. (#653, #685)
+- Resolved GPU backend detection inconsistencies when CUDA libraries are present but PyCUDA is unavailable. (#666)
+- Fixed GPU kernel launch resource errors in CUDA-accelerated ASSET computations by adapting thread selection dynamically. (#667)
+
+Documentation
+-------------
+- Improved general documentation quality, including parameter descriptions and tutorial clarity. (#641)
+- Fixed documentation build failures by aligning python version(=3.12) for docs test and ReadTheDocs build CI jobs. (#677)
+- Replaced hidden notebook plotting cells with equivalent Viziphant functions. (#677)
+- Added a new documentation section for example datasets. (#687)
+- Fixed documentation build issues related to `sphinx-tabs` compatibility. (#681)
+- Fixed ReadTheDocs MPI-related build failures. (#682)
+
+Breaking changes
+----------------
+- Removed deprecated `verbose` parameter in the ASSET module in favor of using Python `logging` module. (#669)
+
+Other changes
+-------------
+- Added Python 3.13 CI runner to ensure compatibility with the latest Python language features (#654)
+- Updated README with maintainer contact information. (#683)
+
+Selected dependency changes
+---------------------------
+- Support for Python 3.13 (#654)
+- NumPy ≥ 2.0 (#656)
+- Support for SciPy 1.17 (#685)
+
 
 Release 1.1.1
 =============
