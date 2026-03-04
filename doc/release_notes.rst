@@ -38,6 +38,7 @@ Other changes
 -------------
 - Added Python 3.13 CI runner to ensure compatibility with the latest Python language features (#654)
 - Updated README with maintainer contact information. (#683)
+- Note: macOS wheels for Elephant are currently distributed as pure Python wheels. The C++ accelerated spade module falls back to a Python implementation on macOS, which may result in reduced performance compared to builds using the C++ backend. Full macOS compiled-acceleration support will be restored in a future patch release.
 
 Selected dependency changes
 ---------------------------
