@@ -356,9 +356,7 @@ class GPFA(sklearn.base.BaseEstimator):
                 print("Number of training trials: {}".format(len(seqs_train)))
                 print("Latent space dimensionality: {}".format(self.x_dim))
                 print(
-                    "Observation dimensionality: {}".format(
-                        self.has_spikes_bool.sum()
-                    )
+                    "Observation dimensionality: {}".format(self.has_spikes_bool.sum())
                 )
 
             # The following does the heavy lifting.
