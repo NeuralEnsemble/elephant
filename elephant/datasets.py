@@ -84,7 +84,7 @@ import numpy as np
 import neo
 
 
-__all__= ["load_data"]
+__all__ = ["load_data"]
 
 
 ELEPHANT_TMP_DIR = Path(tempfile.gettempdir()) / "elephant"
@@ -92,8 +92,10 @@ ELEPHANT_TMP_DIR = Path(tempfile.gettempdir()) / "elephant"
 
 # Data generation functions
 
-def generate_conditional_granger_ground_truth(length_2d=30000,
-                                              causality_type="indirect"):
+
+def generate_conditional_granger_ground_truth(
+    length_2d=30000, causality_type="indirect"
+):
     """
     Recreated from Example 2 section 5.2 of :cite:'granger-Ding06-0608035'.
     The following should generate three signals in one of the two ways:
@@ -108,38 +110,30 @@ def generate_conditional_granger_ground_truth(length_2d=30000,
     elif causality_type == "both":
         y_t_lag_2 = 0.2
     else:
-        raise ValueError("causality_type should be either 'indirect' or "
-                         "'both'")
+        raise ValueError("causality_type should be either 'indirect' or 'both'")
 
     order = 2
     signal = np.zeros((3, length_2d + order))
 
-    weights_1 = np.array([[0.8, 0, 0.4],
-                          [0, 0.9, 0],
-                          [0., 0.5, 0.5]])
+    weights_1 = np.array([[0.8, 0, 0.4], [0, 0.9, 0], [0.0, 0.5, 0.5]])
 
-    weights_2 = np.array([[-0.5, y_t_lag_2, 0.],
-                          [0., -0.8, 0],
-                          [0, 0, -0.2]])
+    weights_2 = np.array([[-0.5, y_t_lag_2, 0.0], [0.0, -0.8, 0], [0, 0, -0.2]])
 
     weights = np.stack((weights_1, weights_2))
 
-    noise_covariance = np.array([[0.3, 0.0, 0.0],
-                                 [0.0, 1., 0.0],
-                                 [0.0, 0.0, 0.2]])
+    noise_covariance = np.array([[0.3, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 0.2]])
 
     for i in range(length_2d):
         for lag in range(order):
-            signal[:, i + order] += np.dot(weights[lag],
-                                           signal[:, i + 1 - lag])
-        rnd_var = np.random.multivariate_normal([0, 0, 0],
-                                                noise_covariance)
+            signal[:, i + order] += np.dot(weights[lag], signal[:, i + 1 - lag])
+        rnd_var = np.random.multivariate_normal([0, 0, 0], noise_covariance)
         signal[:, i + order] += rnd_var
 
     signal = signal[:, 2:]
 
     # Return signals as Nx3
     return signal.T
+
 
 def generate_pairwise_granger_ground_truth(length_2d=30000):
     order = 2
@@ -150,15 +144,13 @@ def generate_pairwise_granger_ground_truth(length_2d=30000):
 
     weights = np.stack((weights_1, weights_2))
 
-    noise_covariance = np.array([[1., 0.0], [0.0, 1.]])
+    noise_covariance = np.array([[1.0, 0.0], [0.0, 1.0]])
 
     for i in range(length_2d):
         for lag in range(order):
-            signal[:, i + order] += np.dot(weights[lag],
-                                           signal[:, i + 1 - lag])
-        rnd_var = np.random.multivariate_normal([0, 0],
-                                                noise_covariance)
-        signal[:, i+order] += rnd_var
+            signal[:, i + order] += np.dot(weights[lag], signal[:, i + 1 - lag])
+        rnd_var = np.random.multivariate_normal([0, 0], noise_covariance)
+        signal[:, i + order] += rnd_var
 
     signal = signal[:, 2:]
 
@@ -173,27 +165,31 @@ ELEPHANT_DATA = {
     "asset": {
         "repo_path": "tutorials/tutorial_asset/data/asset_showcase_500.nix",
         "checksum": "d42201b83a14d85988b1a53c654472c8",
-        "loader": lambda block: block.segments[0]
+        "loader": lambda block: block.segments[0],
     },
     "granger_causality_indirect": partial(
         generate_conditional_granger_ground_truth,
         length_2d=10000,
-        causality_type='indirect'),
+        causality_type="indirect",
+    ),
     "granger_causality_both": partial(
         generate_conditional_granger_ground_truth,
         length_2d=10000,
-        causality_type='both'),
+        causality_type="both",
+    ),
     "unitary_events": {
         "repo_path": "tutorials/tutorial_unitary_event_analysis/data/dataset-1.nix",
         "checksum": "6449d2f4b8ae5beb1439d2b5dd03b078",
-        "loader": lambda block: [[st for st in segment.spiketrains]
-                                  for segment in block.segments]
+        "loader": lambda block: [
+            [st for st in segment.spiketrains] for segment in block.segments
+        ],
     },
 }
 
 
 # Helper functions for downloading datasets from the `elephant-data` GIN
 # repository, which is accessible at https://datasets.python-elephant.org.
+
 
 class TqdmUpTo(tqdm):
     """
@@ -218,8 +214,8 @@ class TqdmUpTo(tqdm):
 
 def calculate_md5(filepath, chunk_size=1024 * 1024):
     md5 = hashlib.md5()
-    with open(filepath, 'rb') as f:
-        for chunk in iter(lambda: f.read(chunk_size), b''):
+    with open(filepath, "rb") as f:
+        for chunk in iter(lambda: f.read(chunk_size), b""):
             md5.update(chunk)
     return md5.hexdigest()
 
@@ -234,7 +230,7 @@ def download(url, filepath=None, checksum=None, verbose=True):
     # If not explicitly given, store the file in the system's temporary
     # directory with the same name as in the URL.
     if filepath is None:
-        filename = url.split('/')[-1]
+        filename = url.split("/")[-1]
         filepath = ELEPHANT_TMP_DIR / filename
     filepath = Path(filepath)
 
@@ -249,8 +245,14 @@ def download(url, filepath=None, checksum=None, verbose=True):
     folder = filepath.absolute().parent
     folder.mkdir(exist_ok=True)
     desc = f"Downloading {url} to '{filepath}'"
-    with TqdmUpTo(unit='B', unit_scale=True, unit_divisor=1024, miniters=1,
-                  desc=desc, disable=not verbose) as t:
+    with TqdmUpTo(
+        unit="B",
+        unit_scale=True,
+        unit_divisor=1024,
+        miniters=1,
+        desc=desc,
+        disable=not verbose,
+    ) as t:
         try:
             urlretrieve(url, filename=filepath, reporthook=t.update_to)
         except URLError:
@@ -260,13 +262,11 @@ def download(url, filepath=None, checksum=None, verbose=True):
 
     # Check integrity of the downloaded file if checksum is given
     if checksum and not check_integrity(filepath, checksum):
-        raise ValueError(f"Data at {url} does not agree with MD5 hash "
-                         f"{checksum}.")
+        raise ValueError(f"Data at {url} does not agree with MD5 hash {checksum}.")
     return filepath
 
 
-def download_datasets(repo_path, filepath=None, checksum=None,
-                      verbose=True):
+def download_datasets(repo_path, filepath=None, checksum=None, verbose=True):
     r"""
     This function can be used to download files from the `elephant-data`
     repository using only the path relative to the repository root.
@@ -356,7 +356,7 @@ def download_datasets(repo_path, filepath=None, checksum=None,
     """
 
     # Try to get any user-defined data location from the environment variable.
-    env_var = 'ELEPHANT_DATA_LOCATION'
+    env_var = "ELEPHANT_DATA_LOCATION"
     data_location = getenv(env_var)
 
     if data_location:
@@ -370,9 +370,11 @@ def download_datasets(repo_path, filepath=None, checksum=None,
             if local_file.is_file():
                 # If a checksum is given, check integrity of the local file
                 if checksum and not check_integrity(local_file, checksum):
-                    raise ValueError(f"Local file at {local_file} does "
-                                     "not agree with MD5 hash "
-                                     f"{checksum}.")
+                    raise ValueError(
+                        f"Local file at {local_file} does "
+                        "not agree with MD5 hash "
+                        f"{checksum}."
+                    )
 
                 if filepath is not None:
                     # If specific path requested, copy the file
@@ -381,17 +383,21 @@ def download_datasets(repo_path, filepath=None, checksum=None,
                     return filepath
                 return local_file
 
-            raise ValueError(f"The environment variable {env_var} is set to "
-                             f"the local path '{data_location}', but the file "
-                             f"'{repo_path}' does not exist in that path.")
+            raise ValueError(
+                f"The environment variable {env_var} is set to "
+                f"the local path '{data_location}', but the file "
+                f"'{repo_path}' does not exist in that path."
+            )
 
-        if urlparse(data_location).scheme not in ('http', 'https'):
+        if urlparse(data_location).scheme not in ("http", "https"):
             # Check if the provided value is a valid URL. If not, raise an
             # error.
-            raise ValueError(f"The environment variable {env_var} must be set "
-                             "to either an existing file system path or a "
-                             f"valid URL. The given value '{data_location}' "
-                             "is neither.")
+            raise ValueError(
+                f"The environment variable {env_var} must be set "
+                "to either an existing file system path or a "
+                f"valid URL. The given value '{data_location}' "
+                "is neither."
+            )
 
     else:
         # The user did not set a URL or path in `ELEPHANT_DATA_LOCATION`.
@@ -407,7 +413,7 @@ def download_datasets(repo_path, filepath=None, checksum=None,
         try:
             # Check if that specific version URL is available by trying to
             # access a known file (README.md) in the repository.
-            urlopen(data_location + '/README.md')
+            urlopen(data_location + "/README.md")
 
         except HTTPError as error:
             # If the corresponding `elephant-data` version is not found,
@@ -416,11 +422,13 @@ def download_datasets(repo_path, filepath=None, checksum=None,
             # not have a corresponding version of `elephant-data` yet.
             data_location = url_to_root + "raw/master"
 
-            warnings.warn(f"No corresponding version of 'elephant-data' "
-                          f"found.\nElephant version: {elephant_version}. "
-                          f"Data URL:{error.url}, error: {error}.\n"
-                          f"Using 'elephant-data' latest instead (This is "
-                          f"expected for Elephant development versions).")
+            warnings.warn(
+                f"No corresponding version of 'elephant-data' "
+                f"found.\nElephant version: {elephant_version}. "
+                f"Data URL:{error.url}, error: {error}.\n"
+                f"Using 'elephant-data' latest instead (This is "
+                f"expected for Elephant development versions)."
+            )
 
         except URLError:
             # If verification of SSL certificate fails, do not verify cert
@@ -428,15 +436,17 @@ def download_datasets(repo_path, filepath=None, checksum=None,
                 # Try again without certificate verification
                 ctx = ssl._create_unverified_context()
                 ctx.check_hostname = True
-                urlopen(data_location + '/README.md', context=ctx)
+                urlopen(data_location + "/README.md", context=ctx)
             except HTTPError as unverified_ctx_error:  # e.g. 404
                 # If it still fails, use latest commit of `elephant-data` in
                 # the `master` branch.
                 data_location = url_to_root + "raw/master"
 
-                warnings.warn(f"Data URL: {unverified_ctx_error.url}, "
-                              f"error: {unverified_ctx_error}. "
-                              f"{unverified_ctx_error.reason}")
+                warnings.warn(
+                    f"Data URL: {unverified_ctx_error.url}, "
+                    f"error: {unverified_ctx_error}. "
+                    f"{unverified_ctx_error.reason}"
+                )
 
     # Get the final URL to the dataset file and download it.
     # If a checksum is given, the integrity of the downloaded file will be
@@ -459,6 +469,7 @@ def unzip(filepath, outdir=ELEPHANT_TMP_DIR, verbose=True):
 # dictionary. If it is, it either generates the data (if the value is a
 # callable function) or downloads and loads the data from the `elephant-data`
 # repository.
+
 
 def load_data(name):
     """
@@ -489,8 +500,9 @@ def load_data(name):
     """
     elephant_data = ELEPHANT_DATA.get(name)
     if not elephant_data:
-        raise ValueError(f"Data '{name}' not available as downloadable "
-                         f"datasets or generated data.")
+        raise ValueError(
+            f"Data '{name}' not available as downloadable datasets or generated data."
+        )
 
     # If data generation function, run and return
     if callable(elephant_data):
@@ -509,7 +521,7 @@ def load_data(name):
     # Process each file format
     dataset_format = dataset_path.suffix
     if dataset_format == ".nix":
-        with neo.NixIO(str(dataset_path), 'ro') as f:
+        with neo.NixIO(str(dataset_path), "ro") as f:
             block = f.read_block()
         if loader:
             return loader(block)

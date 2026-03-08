@@ -82,8 +82,13 @@ import scipy.special
 import scipy.stats
 
 __all__ = [
-    'RectangularKernel', 'TriangularKernel', 'EpanechnikovLikeKernel',
-    'GaussianKernel', 'LaplacianKernel', 'ExponentialKernel', 'AlphaKernel'
+    "RectangularKernel",
+    "TriangularKernel",
+    "EpanechnikovLikeKernel",
+    "GaussianKernel",
+    "LaplacianKernel",
+    "ExponentialKernel",
+    "AlphaKernel",
 ]
 
 
@@ -162,7 +167,8 @@ class Kernel(object):
 
     def __repr__(self):
         return "{cls}(sigma={sigma}, invert={invert})".format(
-            cls=self.__class__.__name__, sigma=self.sigma, invert=self.invert)
+            cls=self.__class__.__name__, sigma=self.sigma, invert=self.invert
+        )
 
     def __call__(self, times):
         """
@@ -207,7 +213,8 @@ class Kernel(object):
         """
         raise NotImplementedError(
             "The Kernel class should not be used directly, "
-            "instead the subclasses for the single kernels.")
+            "instead the subclasses for the single kernels."
+        )
 
     def boundary_enclosing_area_fraction(self, fraction):
         """
@@ -240,7 +247,8 @@ class Kernel(object):
         """
         raise NotImplementedError(
             "The Kernel class should not be used directly, "
-            "instead the subclasses for the single kernels.")
+            "instead the subclasses for the single kernels."
+        )
 
     def _check_fraction(self, fraction):
         """
@@ -265,24 +273,28 @@ class Kernel(object):
             raise TypeError("`fraction` must be float or integer")
         if isinstance(self, (TriangularKernel, RectangularKernel)):
             valid = 0 <= fraction <= 1
-            bracket = ']'
+            bracket = "]"
         else:
             valid = 0 <= fraction < 1
-            bracket = ')'
+            bracket = ")"
         if not valid:
-            raise ValueError("`fraction` must be in the interval "
-                             "[0, 1{}".format(bracket))
+            raise ValueError(
+                "`fraction` must be in the interval [0, 1{}".format(bracket)
+            )
 
     def _check_time_input(self, t):
         if not isinstance(t, pq.Quantity):
-            raise TypeError("The argument 't' of the kernel callable must be "
-                            "of type Quantity")
+            raise TypeError(
+                "The argument 't' of the kernel callable must be of type Quantity"
+            )
 
         if t.dimensionality.simplified != self.sigma.dimensionality.simplified:
-            raise TypeError("The dimensionality of sigma and the input array "
-                            "to the callable kernel object must be the same. "
-                            "Otherwise a normalization to 1 of the kernel "
-                            "cannot be performed.")
+            raise TypeError(
+                "The dimensionality of sigma and the input array "
+                "to the callable kernel object must be the same. "
+                "Otherwise a normalization to 1 of the kernel "
+                "cannot be performed."
+            )
 
     def cdf(self, time):
         r"""
@@ -369,10 +381,11 @@ class Kernel(object):
             return 0
         is_sorted = (np.diff(times.magnitude) >= 0).all()
         if not is_sorted:
-            raise ValueError("The input time array must be sorted (in "
-                             "ascending order).")
+            raise ValueError(
+                "The input time array must be sorted (in ascending order)."
+            )
         cdf_mean = 0.5 * (self.cdf(times[0]) + self.cdf(times[-1]))
-        if cdf_mean == 0.:
+        if cdf_mean == 0.0:
             # any index of the kernel non-support is valid; choose median
             return len(times) // 2
         icdf = self.icdf(fraction=cdf_mean)
@@ -525,16 +538,14 @@ class TriangularKernel(SymmetricKernel):
 
     def _evaluate(self, times):
         tau = math.sqrt(6) * self.sigma.rescale(times.units).magnitude
-        kernel = scipy.stats.triang.pdf(times.magnitude, c=0.5, loc=-tau,
-                                        scale=2 * tau)
+        kernel = scipy.stats.triang.pdf(times.magnitude, c=0.5, loc=-tau, scale=2 * tau)
         kernel = pq.Quantity(kernel, units=1 / times.units)
         return kernel
 
     def cdf(self, time):
         self._check_time_input(time)
         tau = math.sqrt(6) * self.sigma.rescale(time.units).magnitude
-        cdf = scipy.stats.triang.cdf(time.magnitude, c=0.5, loc=-tau,
-                                     scale=2 * tau)
+        cdf = scipy.stats.triang.cdf(time.magnitude, c=0.5, loc=-tau, scale=2 * tau)
         return cdf
 
     def icdf(self, fraction):
@@ -598,7 +609,7 @@ class EpanechnikovLikeKernel(SymmetricKernel):
     def _evaluate(self, times):
         tau = math.sqrt(5) * self.sigma.rescale(times.units).magnitude
         t_div_tau = np.clip(times.magnitude / tau, a_min=-1, a_max=1)
-        kernel = 3. / (4. * tau) * np.maximum(0., 1 - t_div_tau ** 2)
+        kernel = 3.0 / (4.0 * tau) * np.maximum(0.0, 1 - t_div_tau**2)
         kernel = pq.Quantity(kernel, units=1 / times.units)
         return kernel
 
@@ -606,13 +617,13 @@ class EpanechnikovLikeKernel(SymmetricKernel):
         self._check_time_input(time)
         tau = math.sqrt(5) * self.sigma.rescale(time.units).magnitude
         t_div_tau = np.clip(time.magnitude / tau, a_min=-1, a_max=1)
-        cdf = 3. / 4 * (t_div_tau - t_div_tau ** 3 / 3.) + 0.5
+        cdf = 3.0 / 4 * (t_div_tau - t_div_tau**3 / 3.0) + 0.5
         return cdf
 
     def icdf(self, fraction):
         self._check_fraction(fraction)
         # CDF(t) = -1/4 t^3 + 3/4 t + 1/2
-        coefs = [-1. / 4, 0, 3. / 4, 0.5 - fraction]
+        coefs = [-1.0 / 4, 0, 3.0 / 4, 0.5 - fraction]
         roots = np.roots(coefs)
         icdf = next(root for root in roots if -1 <= root <= 1)
         tau = math.sqrt(5) * self.sigma
@@ -667,16 +678,18 @@ class EpanechnikovLikeKernel(SymmetricKernel):
         self._check_fraction(fraction)
         # Python's complex-operator cannot handle quantities, hence the
         # following construction on quantities is necessary:
-        Delta_0 = complex(1.0 / (5.0 * self.sigma.magnitude ** 2), 0) / \
-            self.sigma.units ** 2
-        Delta_1 = complex(2.0 * np.sqrt(5.0) * fraction /
-                          (25.0 * self.sigma.magnitude ** 3), 0) / \
-            self.sigma.units ** 3
-        C = ((Delta_1 + (Delta_1 ** 2.0 - 4.0 * Delta_0 ** 3.0) ** (
-            1.0 / 2.0)) /
-            2.0) ** (1.0 / 3.0)
+        Delta_0 = (
+            complex(1.0 / (5.0 * self.sigma.magnitude**2), 0) / self.sigma.units**2
+        )
+        Delta_1 = (
+            complex(2.0 * np.sqrt(5.0) * fraction / (25.0 * self.sigma.magnitude**3), 0)
+            / self.sigma.units**3
+        )
+        C = ((Delta_1 + (Delta_1**2.0 - 4.0 * Delta_0**3.0) ** (1.0 / 2.0)) / 2.0) ** (
+            1.0 / 3.0
+        )
         u_3 = complex(-1.0 / 2.0, -np.sqrt(3.0) / 2.0)
-        b = -5.0 * self.sigma ** 2 * (u_3 * C + Delta_0 / (u_3 * C))
+        b = -5.0 * self.sigma**2 * (u_3 * C + Delta_0 / (u_3 * C))
         return b.real
 
 
@@ -732,8 +745,7 @@ class GaussianKernel(SymmetricKernel):
 
     def icdf(self, fraction):
         self._check_fraction(fraction)
-        icdf = scipy.stats.norm.ppf(fraction, loc=0,
-                                    scale=self.sigma.magnitude)
+        icdf = scipy.stats.norm.ppf(fraction, loc=0, scale=self.sigma.magnitude)
         return icdf * self.sigma.units
 
     def boundary_enclosing_area_fraction(self, fraction):
@@ -861,7 +873,7 @@ class ExponentialKernel(Kernel):
             time = np.minimum(time, 0)
             return np.exp(time / tau)
         time = np.maximum(time, 0)
-        return 1. - np.exp(-time / tau)
+        return 1.0 - np.exp(-time / tau)
 
     def icdf(self, fraction):
         self._check_fraction(fraction)
@@ -921,7 +933,7 @@ class AlphaKernel(Kernel):
         times = times.magnitude
         if self.invert:
             times = -times
-        kernel = (times >= 0) * 1 / tau ** 2 * times * np.exp(-times / tau)
+        kernel = (times >= 0) * 1 / tau**2 * times * np.exp(-times / tau)
         kernel = pq.Quantity(kernel, units=1 / t_units)
         return kernel
 
