@@ -1004,6 +1004,11 @@ class BinnedSpikeTrain(object):
             Matrix with spike counts. Columns represent the index positions of
             the binned spikes and rows represent the spike trains.
 
+        See Also
+        --------
+        scipy.sparse.csr_matrix
+        scipy.sparse.csr_matrix.toarray
+
         Examples
         --------
         >>> import elephant.conversion as conv
@@ -1015,11 +1020,6 @@ class BinnedSpikeTrain(object):
         ...                           t_start=0 * pq.s)
         >>> print(x.to_array())
         [[2 1 0 1 1 1 1 0 0 0]]
-
-        See Also
-        --------
-        scipy.sparse.csr_matrix
-        scipy.sparse.csr_matrix.toarray
         """
         array = self.sparse_matrix.toarray()
         if dtype is not None:

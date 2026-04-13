@@ -306,13 +306,6 @@ class Synchrotool(Complexity):
 
             Default: 'delete'
 
-        Raises
-        ------
-        ValueError
-            If `mode` is not one in {'delete', 'extract'}.
-
-            If `threshold <= 1`.
-
         Returns
         -------
         list of neo.SpikeTrain
@@ -323,6 +316,13 @@ class Synchrotool(Complexity):
                 ``self.input_spiketrains``.
               * If ``in_place`` is False, the returned list is a deepcopy of
                 ``self.input_spiketrains``.
+
+        Raises
+        ------
+        ValueError
+            If `mode` is not one in {'delete', 'extract'}.
+
+            If `threshold <= 1`.
         """
 
         if not self.annotated:

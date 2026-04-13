@@ -1429,6 +1429,11 @@ class Complexity(object):
         If no sampling rate is supplied which may lead to rounding errors
         when using the epoch to slice spike trains.
 
+    See Also
+    --------
+    elephant.conversion.BinnedSpikeTrain
+    elephant.spike_train_synchrony.Synchrotool
+
     Notes
     -----
     Note that with most common parameter combinations spike times can end up
@@ -1436,11 +1441,6 @@ class Complexity(object):
     is accounted for by moving spikes which are within tolerance of the next
     bin edge into the following bin. This can be adjusted using the tolerance
     parameter and turned off by setting `tolerance=None`.
-
-    See Also
-    --------
-    elephant.conversion.BinnedSpikeTrain
-    elephant.spike_train_synchrony.Synchrotool
 
     Examples
     --------

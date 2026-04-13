@@ -1767,14 +1767,14 @@ def synchronous_events_contains_all(sse1, sse2):
     bool
         True if `sse1` strictly contains `sse2`.
 
+    See Also
+    --------
+    ASSET.extract_synchronous_events : extract SSEs from given spike trains
+
     Notes
     -----
     `synchronous_events_contains_all(sse1, sse2)` is identical to
     `synchronous_events_is_subsequence(sse2, sse1)`.
-
-    See Also
-    --------
-    ASSET.extract_synchronous_events : extract SSEs from given spike trains
     """
     return synchronous_events_contained_in(sse2, sse1)
 
@@ -1835,6 +1835,10 @@ def get_neurons_in_sse(sse):
     list
         All neuron IDs present in the SSE, sorted in ascending order.
 
+    See Also
+    --------
+    ASSET.extract_synchronous_events
+
     Examples
     --------
     >>> sse = {(268, 51): {22, 27},
@@ -1848,10 +1852,6 @@ def get_neurons_in_sse(sse):
     >>> neurons = get_neurons_in_sse(sse)
     >>> print(neurons)
     [9, 22, 26, 27, 77, 92]
-
-    See Also
-    --------
-    ASSET.extract_synchronous_events
     """
     all_neurons = []
     for neurons in sse.values():
@@ -1888,6 +1888,10 @@ def get_sse_start_and_end_time_bins(sse):
         the second element corresponds to the second sequence (elements `j`
         in the SSE pixel).
 
+    See Also
+    --------
+    ASSET.extract_synchronous_events
+
     Examples
     --------
     >>> sse = {(268, 51): {22, 27},
@@ -1903,10 +1907,6 @@ def get_sse_start_and_end_time_bins(sse):
     [268, 51]
     >>> print(end)
     [277, 61]
-
-    See Also
-    --------
-    ASSET.extract_synchronous_events
     """
     pixels = list(sse.keys())
     start = list(pixels[0])
@@ -2023,6 +2023,10 @@ class ASSET(object):
 
           fully disjoint.
 
+    See Also
+    --------
+    :class:`elephant.conversion.BinnedSpikeTrain`
+
     Notes
     -----
         To control the verbosity of log messages throughout the ASSET analysis,
@@ -2035,10 +2039,6 @@ class ASSET(object):
         >>> import logging
         >>> from elephant.asset.asset import logger as asset_logger
         >>> asset_logger.setLevel(logging.WARNING)
-
-    See Also
-    --------
-    :class:`elephant.conversion.BinnedSpikeTrain`
     """
 
     def __init__(self, spiketrains_i, spiketrains_j=None, bin_size=3 * pq.ms,
@@ -2231,15 +2231,15 @@ class ASSET(object):
             STRICTLY LOWER than the observed overlap, under the null hypothesis
             of independence of the input spike trains.
 
-        Notes
-        -----
-        We recommend playing with `surrogate_dt` parameter to see how it
-        influences the result matrix. For this, refer to the ASSET tutorial.
-
         See Also
         --------
         ASSET.probability_matrix_analytical : analytical derivation of the
                                               matrix
+
+        Notes
+        -----
+        We recommend playing with `surrogate_dt` parameter to see how it
+        influences the result matrix. For this, refer to the ASSET tutorial.
         """
         if imat is None:
             # Compute the intersection matrix of the original data

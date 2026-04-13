@@ -156,6 +156,11 @@ def welch_psd(signal, n_segments=8, len_segment=None,
         If both `frequency_resolution` and `len_segment` are None and
         `n_segments` is greater than the length of data at `axis`.
 
+    See Also
+    --------
+    scipy.signal.welch
+    welch_cohere
+
     Notes
     -----
     1. The computation steps used in this function are implemented in
@@ -171,11 +176,6 @@ def welch_psd(signal, n_segments=8, len_segment=None,
        `signal.shape[axis] / (n_segments - overlap * (n_segments - 1))`
 
        converted to integer.
-
-    See Also
-    --------
-    scipy.signal.welch
-    welch_cohere
 
     Examples
     --------
@@ -322,13 +322,6 @@ def multitaper_psd(signal, fs=1, nw=4, num_tapers=None, peak_resolution=None,
         to the estimated cross spectrum.
         Default: True
 
-    Notes
-    -----
-    1. There is a parameter hierarchy regarding nw, num_tapers and
-       peak_resolution. If peak_resolution is provided, it determines both nw
-       and the num_tapers. Specifying num_tapers has an effect only if
-       peak_resolution is not provided.
-
     Returns
     -------
     freqs : np.ndarray
@@ -345,6 +338,13 @@ def multitaper_psd(signal, fs=1, nw=4, num_tapers=None, peak_resolution=None,
 
     TypeError
         If `peak_resolution` is None and `num_tapers` is not an int.
+
+    Notes
+    -----
+    1. There is a parameter hierarchy regarding nw, num_tapers and
+       peak_resolution. If peak_resolution is provided, it determines both nw
+       and the num_tapers. Specifying num_tapers has an effect only if
+       peak_resolution is not provided.
     """
 
     # When the input is AnalogSignal, the data is added after rolling the axis
@@ -614,13 +614,6 @@ def multitaper_cross_spectrum(signals, fs=1.0, nw=4.0, num_tapers=None,
         the estimated cross spectrum.
         Default: True
 
-    Notes
-    -----
-    1. There is a parameter hierarchy regarding `nw`, `num_tapers` and
-       `peak_resolution`. If peak_resolution is provided, it determines both
-       `nw` and the `num_tapers`. Specifying `num_tapers` has an effect only if
-       `peak_resolution` is not provided.
-
     Returns
     -------
     freqs : np.ndarray
@@ -641,6 +634,13 @@ def multitaper_cross_spectrum(signals, fs=1.0, nw=4.0, num_tapers=None,
 
     TypeError
         If `peak_resolution` is None and `num_tapers` is not an int.
+
+    Notes
+    -----
+    1. There is a parameter hierarchy regarding `nw`, `num_tapers` and
+       `peak_resolution`. If peak_resolution is provided, it determines both
+       `nw` and the `num_tapers`. Specifying `num_tapers` has an effect only if
+       `peak_resolution` is not provided.
     """
     # When the input is AnalogSignal, fetch the underlying numpy array and swap
     # axes from (n_samples, n_channels) to (n_channels, n_samples)
@@ -1224,6 +1224,10 @@ def welch_coherence(signal_i, signal_j, n_segments=8, len_segment=None,
     ValueError
         Same as in :func:`welch_psd`.
 
+    See Also
+    --------
+    welch_psd
+
     Notes
     -----
     1. The computation steps used in this function are implemented in
@@ -1239,10 +1243,6 @@ def welch_coherence(signal_i, signal_j, n_segments=8, len_segment=None,
        `signal.shape[axis] / (n_segments - overlap * (n_segments - 1))`
 
        converted to integer.
-
-    See Also
-    --------
-    welch_psd
 
     Examples
     --------

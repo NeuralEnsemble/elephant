@@ -930,11 +930,6 @@ class StationaryInverseGaussianProcess(RenewalProcess):
     Generates spike trains whose spikes are realizations of a stationary Gamma process with the given rate and `cv`
     starting at time `t_start` and stopping at time `t_stop`.
 
-    Raises
-    ------
-    ValueError
-        If one of `rate`, `t_start` and `t_stop` is not of type `pq.Quantity`.
-
     Parameters
     ----------
     rate : pq.Quantity
@@ -950,6 +945,11 @@ class StationaryInverseGaussianProcess(RenewalProcess):
     equilibrium : bool, optional
         Generate an equilibrium or an ordinary renewal process.
         Default: True
+
+    Raises
+    ------
+    ValueError
+        If one of `rate`, `t_start` and `t_stop` is not of type `pq.Quantity`.
 
     Examples
     --------
