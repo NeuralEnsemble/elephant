@@ -21,6 +21,26 @@ from datetime import date
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 sys.path.insert(0, '..')
 
+# -- numpydoc validation compatibility patch -----------------------------
+# Property descriptors do not always expose __module__.  numpydoc's
+# `mangle_docstrings` function that is run during the builtin validation
+# accesses `obj.__module__` unconditionally, which raises AttributeError for
+# such objects. This patch must be applied here (before Sphinx loads the
+# extensions) so that when numpydoc.setup() registers its handler, the patched
+# version is used.
+import numpydoc.numpydoc as _numpydoc_mod
+
+_orig_mangle_docstrings = _numpydoc_mod.mangle_docstrings
+
+
+def _safe_mangle_docstrings(app, what, name, obj, options, lines):
+    if not hasattr(obj, '__module__'):
+        return
+    return _orig_mangle_docstrings(app, what, name, obj, options, lines)
+
+
+_numpydoc_mod.mangle_docstrings = _safe_mangle_docstrings
+
 # -- General configuration -----------------------------------------------
 # If your documentation needs a minimal Sphinx version, state it here.
 # needs_sphinx = '1.0'
