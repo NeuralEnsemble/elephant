@@ -234,6 +234,7 @@ htmlhelp_basename = 'elephantdoc'
 
 numpydoc_validation_checks = {
     "GL02", "GL03", "GL06", "GL07",
+    "SS03",
 }
 
 # Suppresses  wrong numpy doc warnings

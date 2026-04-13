@@ -85,7 +85,7 @@ __all__ = ["GPFA"]
 
 class GPFA(sklearn.base.BaseEstimator):
     r"""
-    Apply Gaussian process factor analysis (GPFA) to spike train data
+    Apply Gaussian process factor analysis (GPFA) to spike train data.
 
     There are two principle scenarios of using the GPFA analysis, both of which
     can be performed in an instance of the GPFA() class.
@@ -543,7 +543,7 @@ class GPFA(sklearn.base.BaseEstimator):
         ],
     ) -> "GPFA":
         """
-        Returns the log-likelihood of the given data under the fitted model
+        Returns the log-likelihood of the given data under the fitted model.
 
         Parameters
         ---------- # noqa

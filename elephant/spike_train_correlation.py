@@ -551,8 +551,8 @@ def cross_correlation_histogram(
         cross_correlation_coefficient=False):
     """
     Computes the cross-correlation histogram (CCH) between two binned spike
-    trains `binned_spiketrain_i` and `binned_spiketrain_j`.
-    :cite:`correlation-Eggermont2010_77`
+    trains `binned_spiketrain_i` and `binned_spiketrain_j`
+    :cite:`correlation-Eggermont2010_77`.
 
     Visualization of this function is covered in Viziphant:
     :func:`viziphant.spike_train_correlation.plot_cross_correlation_histogram`.
@@ -987,8 +987,9 @@ sttc = spike_time_tiling_coefficient
 
 def spike_train_timescale(binned_spiketrain, max_tau):
     r"""
-    Calculates the auto-correlation time of a binned spike train; uses the
-    definition of the auto-correlation time proposed in
+    Calculates the auto-correlation time of a binned spike train.
+
+    It uses the definition of the auto-correlation time proposed in
     :cite:`correlation-Wieland2015_040901` (Eq. 6):
 
     .. math::

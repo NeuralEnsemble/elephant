@@ -809,8 +809,9 @@ class BinnedSpikeTrain(object):
     def to_spike_trains(self, spikes="random", as_array=False,
                         annotate_bins=False):
         """
-        Generate spike trains from the binned spike train object. This function
-        is inverse to binning such that
+        Generate spike trains from the binned spike train object.
+
+        This function is inverse to binning such that
 
         .. code-block:: python
 

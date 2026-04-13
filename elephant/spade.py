@@ -1737,7 +1737,7 @@ def approximate_stability(concepts, rel_matrix, n_subsets=0,
                           delta=0., epsilon=0.):
     r"""
     Approximate the stability of concepts. Uses the algorithm described
-    in Babin, Kuznetsov (2012): Approximating Concept Stability
+    in Babin, Kuznetsov (2012): Approximating Concept Stability.
 
     Parameters
     ----------

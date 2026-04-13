@@ -541,7 +541,7 @@ def _spectral_factorization(cross_spectrum, num_iterations, term_crit=1e-12):
 
 def pairwise_granger(signals, max_order, information_criterion='aic'):
     r"""
-    Determine Granger Causality of two time series
+    Determine Granger Causality of two time series.
 
     Parameters
     ----------
