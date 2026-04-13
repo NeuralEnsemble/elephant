@@ -169,7 +169,6 @@ def binarize(spiketrain, sampling_rate=None, t_start=None, t_stop=None,
     If `spiketrain` is a `pq.Quantity` or `neo.SpikeTrain` and `t_start`,
     `t_stop` or `sampling_rate` is not, then the arguments that are not
     `pq.Quantity` will be assumed to have the same units as `spiketrain`.
-
     """
     # get the values from spiketrain if they are not specified.
     if sampling_rate is None:
@@ -331,7 +330,6 @@ class BinnedSpikeTrain(object):
     All parameters will be checked for consistency. A corresponding error will
     be raised, if one of the four parameters does not match the consistency
     requirements.
-
     """
 
     def __init__(self, spiketrains, bin_size=None, n_bins=None, t_start=None,
@@ -405,7 +403,6 @@ class BinnedSpikeTrain(object):
         ------
         TypeError
             If the input units are not quantities.
-
         """
         if isinstance(units, str):
             units = pq.Quantity(1, units=units)
@@ -456,7 +453,6 @@ class BinnedSpikeTrain(object):
         Parameters
         ----------
         spiketrains : neo.SpikeTrain or list or np.ndarray of neo.SpikeTrain
-
         """
         def get_n_bins():
             n_bins = (self._t_stop - self._t_start) / self._bin_size
@@ -590,7 +586,6 @@ class BinnedSpikeTrain(object):
         -------
         bin_edges : pq.Quantity
             All center edges in interval (:attr:`start`, :attr:`stop`).
-
         """
         start = self._t_start + self._bin_size / 2
         stop = start + (self.n_bins - 1) * self._bin_size
@@ -614,7 +609,6 @@ class BinnedSpikeTrain(object):
         --------
         scipy.sparse.csr_matrix
         to_bool_array
-
         """
         # Return sparse Matrix as a copy
         spmat_copy = self.sparse_matrix.copy()
@@ -905,7 +899,6 @@ class BinnedSpikeTrain(object):
         -------
         n_spikes_per_row : int or np.ndarray
             The number of binned spikes.
-
         """
         if axis is None:
             return self.sparse_matrix.sum(axis=axis)
@@ -938,7 +931,6 @@ class BinnedSpikeTrain(object):
         [0 1 3 4 5 6]
         >>> print(x.to_array())
         [[2 1 0 1 1 1 1 0 0 0]]
-
         """
         spike_idx = []
         for indices, spike_count in self.__iter_sparse_matrix():
@@ -995,7 +987,6 @@ class BinnedSpikeTrain(object):
         ...                           t_start=0 * pq.s)
         >>> print(x.to_bool_array())
         [[ True  True False  True  True  True  True False False False]]
-
         """
         return self.to_array(dtype=bool)
 
@@ -1029,7 +1020,6 @@ class BinnedSpikeTrain(object):
         --------
         scipy.sparse.csr_matrix
         scipy.sparse.csr_matrix.toarray
-
         """
         array = self.sparse_matrix.toarray()
         if dtype is not None:
@@ -1058,7 +1048,6 @@ class BinnedSpikeTrain(object):
         bst : BinnedSpikeTrain or BinnedSpikeTrainView
             A (view of) `BinnedSpikeTrain` with the sparse matrix data clipped
             to zeros and ones.
-
         """
         spmat = self.sparse_matrix
         if copy:
@@ -1103,7 +1092,6 @@ class BinnedSpikeTrain(object):
         ----------
         spiketrains : neo.SpikeTrain or list of neo.SpikeTrain
             Spike trains to bin.
-
         """
 
         # The data type for numeric values
@@ -1225,7 +1213,6 @@ def _check_neo_spiketrain(query):
     bool
         True if `matrix` is a neo.SpikeTrain or a list or tuple thereof,
         otherwise False.
-
     """
     # Check for single spike train
     if isinstance(query, neo.SpikeTrain):
@@ -1275,7 +1262,6 @@ def discretise_spiketimes(spiketrains, sampling_rate):
     ...                                                           1 / pq.ms)
     >>> discretised_spiketrain.times
     array([0., 1., 2., 3., 4., 5., 6., 7., 8., 9.]) * ms
-
     """
     # spiketrains type check
     was_single_spiketrain = False

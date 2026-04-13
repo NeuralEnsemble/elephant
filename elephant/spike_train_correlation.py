@@ -362,8 +362,6 @@ def covariance(binned_spiketrain, binary=False, fast=True):
     >>> cov_matrix # doctest: +SKIP
     array([[ 0.05432316, -0.00152276],
        [-0.00152276,  0.04917234]])
-
-
     """
     if binary:
         binned_spiketrain = binned_spiketrain.binarize()
@@ -404,7 +402,6 @@ def correlation_coefficient(binned_spiketrain, binary=False, fast=True):
 
     Visualization of this function is covered in Viziphant:
     :func:`viziphant.spike_train_correlation.plot_corrcoef`.
-
 
     Parameters
     ----------
@@ -471,7 +468,6 @@ def correlation_coefficient(binned_spiketrain, binary=False, fast=True):
     >>> corrcoef # doctest: +SKIP
     array([[ 1.        , -0.02946313],
            [-0.02946313,  1.        ]])
-
     """
     if binary:
         binned_spiketrain = binned_spiketrain.binarize()
@@ -694,8 +690,6 @@ def cross_correlation_histogram(
     array([-10,  -9,  -8,  -7,  -6,  -5,  -4,  -3,  -2,  -1,
          0,   1,   2,   3,   4,   5,   6,   7,   8,   9,
         10], dtype=int32)
-
-
     """
 
     # Check that the spike trains are binned with the same temporal
@@ -885,7 +879,6 @@ def spike_time_tiling_coefficient(spiketrain_i: neo.core.SpikeTrain,
     ...     units='ms', t_stop=50)
     >>> spike_time_tiling_coefficient(spiketrain1, spiketrain2)
     0.4958601655933762
-
     """
     # input checks
     if dt <= 0 * pq.s:
@@ -1044,7 +1037,6 @@ def spike_train_timescale(binned_spiketrain, max_tau):
     >>> bst = BinnedSpikeTrain(spiketrain, bin_size=1 * pq.ms)
     >>> spike_train_timescale(bst, max_tau=5 * pq.ms)
     array(14.11111111) * ms
-
     """
     if binned_spiketrain.get_num_of_spikes() < 2:
         warnings.warn("Spike train contains less than 2 spikes! "

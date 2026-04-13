@@ -332,8 +332,6 @@ def spade(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
     >>> result_spade = spade(
     ...                     spiketrains, bin_size, winlen) # doctest: +ELLIPSIS
     Time for data mining: ...
-
-
     """
     if HAVE_MPI:  # pragma: no cover
         comm = MPI.COMM_WORLD  # create MPI communicator
@@ -878,7 +876,6 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
          each formed by:
             (pattern size, number of occurrences, difference between last
             and first spike of the pattern, number of patterns)
-
     """
     if min_neu < 1:
         raise ValueError('min_neu must be an integer >=1')
@@ -1283,7 +1280,6 @@ def pvalue_spectrum(
             containing signatures (z*,c*,l*)>=(z,c,l)).
 
         Signatures whose empirical p-value is 0 are not listed.
-
     """
     # Initializing variables for parallel computing
     if HAVE_MPI:  # pragma: no cover
@@ -1799,7 +1795,6 @@ def approximate_stability(concepts, rel_matrix, n_subsets=0,
     since the random generation will always contain the same
     numbers and the algorithm will be stuck searching for
     other (random) numbers.
-
     """
     if HAVE_MPI:  # pragma: no cover
         comm = MPI.COMM_WORLD  # create MPI communicator
@@ -2321,7 +2316,6 @@ def concept_output_to_patterns(concepts, winlen, bin_size, pv_spec=None,
         'pvalue':
             The p-value corresponding to the pattern. If `n_surr==0`,
             all p-values are set to -1.
-
     """
     if pv_spec is not None:
         pvalue_dict = defaultdict(float)

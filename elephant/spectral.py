@@ -198,8 +198,6 @@ def welch_psd(signal, n_segments=8, len_segment=None,
     array([[1.09566410e-03, 2.33607943e-02, 1.35436832e-03, 6.74408723e-05,
             1.00810196e-05, 2.40079315e-06, 7.35821437e-07, 2.58361700e-07,
             9.44183422e-08, 3.14573483e-08, 6.82050475e-09, 1.18183354e-10]]) * mV**2/Hz
-
-
     """
     # 'hanning' window was removed with release of scipy 1.9.0, it was
     # deprecated since 1.1.0.
@@ -995,8 +993,6 @@ def segmented_multitaper_cross_spectrum(signals, n_segments=1,
     See Also
     --------
     :func:`multitaper_cross_spectrum`
-
-
     """
     # When the input is AnalogSignal, fetch the underlying numpy array and swap
     # axes from (n_samples, n_channels) to (n_channels, n_samples)
@@ -1099,7 +1095,6 @@ def multitaper_coherence(signal_i, signal_j, n_segments=1, len_segment=None,
         Magnitude-squared coherence estimate
     phase_lag : np.ndarray
         Phase lags associated with the magnitude-square coherence estimate
-
     """
     if isinstance(signal_i, neo.core.AnalogSignal) and \
             isinstance(signal_j, neo.core.AnalogSignal):
@@ -1266,12 +1261,10 @@ def welch_coherence(signal_i, signal_j, n_segments=8, len_segment=None,
             4.54545455,  5.45454545,  6.36363636,  7.27272727,  8.18181818,
             9.09090909, 10.        ]) * Hz
 
-
     >>> coherency.flatten()
     array([1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1.])
     >>> phase_lag.flatten() # doctest: +SKIP
     array([0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.]) * rad
-
     """
 
     # TODO: code duplication with welch_psd()

@@ -81,7 +81,6 @@ def hash_from_pattern(m, base=2):
     (provide each pattern as a column) composed of N neurons a
     unique number.
 
-
     Parameters
     ----------
     m: np.ndarray or list
@@ -119,7 +118,6 @@ def hash_from_pattern(m, base=2):
 
     >>> hash_from_pattern(m)
     array([0, 4, 2, 1, 6, 5, 3, 7])
-
     """
     m = np.asarray(m)
     n_neurons = m.shape[0]
@@ -174,8 +172,6 @@ def inverse_hash_from_pattern(h, N, base=2):
      [0 1]
      [1 1]
      [1 1]]
-
-
     """
     h = np.asarray(h)  # this will cast to object type if h > int64
     if not all(isinstance(v, int) for v in h.tolist()):
@@ -237,7 +233,6 @@ def n_emp_mat(mat, pattern_hash, base=2):
     [0. 2.]
     >>> print(n_emp_indices)
     [array([], dtype=int64), array([0, 3])]
-
     """
     # check if the mat is zero-one matrix
     if not is_binary(mat):
@@ -302,7 +297,6 @@ def n_emp_mat_sum_trial(mat, pattern_hash):
     [1. 3.]
     >>> n_emp_sum_trial_idx
     [[array([0]), array([3])], [array([], dtype=int64), array([2, 4])]]
-
     """
     num_patt = len(pattern_hash)
     N_emp = np.zeros(num_patt)
@@ -417,7 +411,6 @@ def n_exp_mat(mat, pattern_hash, method='analytic', n_surrogates=1):
      [ 2.  0.]
      [ 2.  0.]
      [ 1.  1.]]
-
     """
     # check if the mat is in the range [0, 1]
     if not np.all((mat >= 0) & (mat <= 1)):
@@ -570,7 +563,6 @@ def gen_pval_anal(mat, pattern_hash, method='analytic_TrialByTrial',
     >>> pval_anal, n_exp = gen_pval_anal(mat, pattern_hash)
     >>> print(n_exp)
     [1.56 2.56]
-
     """
     if method == 'analytic_TrialByTrial' or method == 'analytic_TrialAverage':
         n_exp = n_exp_mat_sum_trial(mat, pattern_hash, method=method)
@@ -619,7 +611,6 @@ def jointJ(p_val):
     >>> p_val = np.array([0.31271072,  0.01175031])
     >>> print(jointJ(p_val))
     [0.3419968  1.92481736]
-
     """
     p_arr = np.asarray(p_val)
     with np.errstate(divide='ignore'):
@@ -780,7 +771,6 @@ def jointJ_window_analysis(spiketrains, bin_size=5 * pq.ms,
     UserWarning
         The ratio between `winsize` or `winstep` and `bin_size` is not an
         integer.
-
     """
     if not isinstance(spiketrains[0][0], neo.SpikeTrain):
         raise ValueError(

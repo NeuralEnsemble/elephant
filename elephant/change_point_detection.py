@@ -103,7 +103,6 @@ def multiple_filter_test(window_sizes, spiketrain, t_final, alpha,
         the corresponding `filter_process`. N.B.: only cps whose h-neighborhood
         does not include previously detected cps (with smaller window h) are
         added to the list.
-
     """
 
     if test_quantile is None and test_param is None:
@@ -173,6 +172,7 @@ def _brownian_motion(t_in, t_fin, x_in, time_step):
         initial point of the process: _brownian_motio(0) = x_in
     time_step : quantities,
       resolution, time step at which brownian increments are summed
+
     Returns
     -------
     Brownian motion on [t_in, t_fin], with resolution time_step and initial

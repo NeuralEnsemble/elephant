@@ -529,7 +529,6 @@ class GPFA(sklearn.base.BaseEstimator):
         --------
         GPFA.fit : fit the model with `spiketrains`
         GPFA.transform : transform `spiketrains` into trajectories
-
         """
         self.fit(spiketrains)
         return self.transform(spiketrains, returned_data=returned_data)

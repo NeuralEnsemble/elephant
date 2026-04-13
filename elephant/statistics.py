@@ -141,7 +141,6 @@ def isi(spiketrain, axis=-1):
     >>> from elephant import statistics
     >>> statistics.isi([0.3, 4.5, 6.7, 9.3])
     array([4.2, 2.2, 2.6])
-
     """
     if isinstance(spiketrain, neo.SpikeTrain):
         intervals = np.diff(spiketrain.magnitude, axis=axis)
@@ -215,7 +214,6 @@ def mean_firing_rate(spiketrain, t_start=None, t_stop=None, axis=None):
     >>> from elephant import statistics
     >>> statistics.mean_firing_rate([0.3, 4.5, 6.7, 9.3])
     0.4301075268817204
-
     """
     if isinstance(spiketrain, neo.SpikeTrain) and t_start is None \
             and t_stop is None and axis is None:
@@ -333,7 +331,6 @@ def fanofactor(spiketrains: Union[List[neo.SpikeTrain], List[pq.Quantity], List[
     ... ]
     >>> statistics.fanofactor(spiketrains)
     0.07142857142857142
-
     """
     def _check_input_spiketrains_durations(spiketrains: Union[List[neo.SpikeTrain], List[pq.Quantity],
                                                               List[np.ndarray]]) -> None:
@@ -442,7 +439,6 @@ def cv2(time_intervals, with_nan=False):
     >>> from elephant import statistics
     >>> statistics.cv2([0.3, 4.5, 6.7, 9.3])
     0.8226190476190478
-
     """
     # convert to array, cast to float
     time_intervals = np.asarray(time_intervals)
@@ -510,7 +506,6 @@ def lv(time_intervals, with_nan=False):
     >>> from elephant import statistics
     >>> statistics.lv([0.3, 4.5, 6.7, 9.3])
     0.8306154336734695
-
     """
     # convert to array, cast to float
     time_intervals = np.asarray(time_intervals)
@@ -803,7 +798,6 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
 
        the last interval ``[4, 4.5]`` is excluded from all calculations.
 
-
     .. _summary-of-outputs:
 
     * Summary of the output type:
@@ -881,7 +875,6 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
            [0.60883028],
            [0.22928759],
            [0.05842767]])
-
     """
     if isinstance(spiketrains, elephant.trials.Trials):
         kwargs = {
@@ -1244,7 +1237,6 @@ def time_histogram(spiketrains: Union[List[neo.SpikeTrain], neo.SpikeTrain],
 
     >>> hist.magnitude.flatten()
     array([2, 0, 0, 0, 2, 0, 1, 0, 1, 1])
-
     """
     # Bin the spike trains and sum across columns
     if binary:
@@ -1503,7 +1495,6 @@ class Complexity(object):
     array([[0.5],
            [0.4],
            [0.1]])
-
     """
 
     def __init__(self, spiketrains,
@@ -1757,7 +1748,6 @@ def fftkernel(x, w):
        RIKEN Brain Science Insitute
        http://2000.jukuin.keio.ac.jp/shimazaki
     2. Ported to Python: Subhasis Ray, NCBS. Tue Jun 10 10:42:38 IST 2014
-
     """
     L = len(x)
     Lmax = L + 3 * w
@@ -1792,7 +1782,6 @@ def cost_function(x, N, w, dt):
     Computes the cost function for `sskernel`.
 
     Cn(w) = sum_{i,j} int k(x - x_i) k(x - x_j) dx - 2 sum_{i~=j} k(x_i - x_j)
-
     """
     yh = np.abs(fftkernel(x, w / dt))  # density
     # formula for density
@@ -1856,7 +1845,6 @@ def optimal_kernel_bandwidth(spiketimes, times=None, bandwidth=None,
 
         If no optimal kernel could be found, all entries of the dictionary are
         set to None.
-
     """
 
     if times is None:

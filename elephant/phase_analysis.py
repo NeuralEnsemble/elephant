@@ -113,7 +113,6 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
     >>> times # doctest: +SKIP
     [array([6.41327152e+00, 2.02715221e+01, 1.05827312e+02, ...,
         9.99692942e+04, 9.99808429e+04, 9.99870120e+04]) * ms]
-
     """
 
     # Convert inputs to lists
@@ -254,7 +253,6 @@ def phase_locking_value(phases_i, phases_j):
 
     where :math:`\theta(t, n) = \phi_x(t, n) - \phi_y(t, n)`
     is the phase difference at time `t` for trial `n`.
-
     """
     if np.shape(phases_i) != np.shape(phases_j):
         raise ValueError("trial number and trial length of signal x and y "
@@ -387,7 +385,6 @@ def weighted_phase_lag_index(signal_i, signal_j, sampling_frequency=None,
     * :math:`X = Z_i Z_{j}^{*}` : cross-spectrum, averaged across trials
     * :math:`Z_i, Z_j`: complex-valued matrix, representing the Fourier
       spectra of a particular frequency of the signals i and j.
-
     """
     if isinstance(signal_i, neo.AnalogSignal) and \
             isinstance(signal_j, neo.AnalogSignal):  # neo.AnalogSignal input

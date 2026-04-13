@@ -111,7 +111,6 @@ def zscore(signal, inplace=True):
            [ 0.87831007],
            [ 1.46385011]]) * dimensionless
 
-
     Z-transform a single `neo.AnalogSignal` containing multiple signals.
 
     >>> b = neo.AnalogSignal(
@@ -125,7 +124,6 @@ def zscore(signal, inplace=True):
            [ 0.29277002,  0.29277002],
            [ 0.87831007,  0.87831007],
            [ 1.46385011,  1.46385011]]) * dimensionless
-
 
     Z-transform a list of `neo.AnalogSignal`, each one containing more than
     one signal:
@@ -319,7 +317,6 @@ def cross_correlation_function(signal, channel_pairs, hilbert_envelope=False,
        plt.plot(rho.times, rho)
        plt.plot(env.times, env) # should be equal to one
        plt.show()
-
     """
 
     # Make channel_pairs a 2D array
@@ -476,7 +473,6 @@ def butter(signal, highpass_frequency=None, lowpass_frequency=None, order=4,
            [ 1.12088277e-01],
            [-3.11053132e-01],
            [ 2.63563988e-03]]) * mV, [0.0 s, 5.0 s], sampling rate: 1000.0 Hz)>
-
 
     Let's check that the normal noise power spectrum at zero frequency is close
     to zero.
@@ -653,7 +649,6 @@ def wavelet_transform(signal, frequency, n_cycles=6.0, sampling_frequency=1.0,
        [ 0.94387304-2.98159518j],
        [ 1.41476471+2.77389985j],
        [-2.95996766-0.9872236j ]])
-
     """
     def _morlet_wavelet_ft(freq, n_cycles, fs, n):
         # Generate the Fourier transform of Morlet wavelet as defined
@@ -797,7 +792,6 @@ def hilbert(signal, padding='nextpow'):
         angles = np.angle(analytic_signal)
         amplitudes = np.abs(analytic_signal)
         plt.plot(t, angles)
-
     """
     # Length of input signals
     n_org = signal.shape[0]
@@ -914,7 +908,6 @@ def rauc(signal, baseline=None, bin_duration=None, t_start=None, t_stop=None):
     ...     units='mV')
     >>> rauc(signal)
     array(2.025) * mV/Hz
-
     """
 
     if not isinstance(signal, neo.AnalogSignal):

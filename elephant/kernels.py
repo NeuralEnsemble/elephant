@@ -184,7 +184,6 @@ class Kernel(object):
             If `times` is not `pq.Quantity`.
 
             If the dimensionality of `times` and :attr:`sigma` are different.
-
         """
         self._check_time_input(times)
         return self._evaluate(times)
@@ -203,7 +202,6 @@ class Kernel(object):
         -------
         pq.Quantity
             Vector with the result of the kernel evaluation.
-
         """
         raise NotImplementedError(
             "The Kernel class should not be used directly, "
@@ -236,7 +234,6 @@ class Kernel(object):
             If `fraction` was chosen too close to one, such that in
             combination with integral approximation errors the calculation of
             a boundary was not possible.
-
         """
         raise NotImplementedError(
             "The Kernel class should not be used directly, "
@@ -259,7 +256,6 @@ class Kernel(object):
             If `fraction` is neither a float nor an int.
 
             If `fraction` is not in the interval [0, 1).
-
         """
         if not isinstance(fraction, (float, int)):
             raise TypeError("`fraction` must be float or integer")
@@ -297,7 +293,6 @@ class Kernel(object):
         -------
         float
             CDF at `time`.
-
         """
         raise NotImplementedError
 
@@ -315,7 +310,6 @@ class Kernel(object):
         -------
         pq.Quantity
             The time scalar `times` such that `CDF(t) = fraction`.
-
         """
         raise NotImplementedError
 
@@ -359,7 +353,6 @@ class Kernel(object):
         --------
         Kernel.cdf : cumulative distribution function
         Kernel.icdf : inverse cumulative distribution function
-
         """
         self._check_time_input(times)
         if len(times) == 0:
@@ -448,7 +441,6 @@ class RectangularKernel(SymmetricKernel):
        plt.xlabel("time, s")
        plt.ylabel("kernel, 1/s")
        plt.show()
-
     """
 
     @property
@@ -515,7 +507,6 @@ class TriangularKernel(SymmetricKernel):
        plt.xlabel("time, s")
        plt.ylabel("kernel, 1/s")
        plt.show()
-
     """
 
     @property
@@ -587,7 +578,6 @@ class EpanechnikovLikeKernel(SymmetricKernel):
        plt.xlabel("time, s")
        plt.ylabel("kernel, 1/s")
        plt.show()
-
     """
 
     @property
@@ -710,7 +700,6 @@ class GaussianKernel(SymmetricKernel):
        plt.xlabel("time, s")
        plt.ylabel("kernel, 1/s")
        plt.show()
-
     """
 
     @property
@@ -771,7 +760,6 @@ class LaplacianKernel(SymmetricKernel):
        plt.xlabel("time, s")
        plt.ylabel("kernel, 1/s")
        plt.show()
-
     """
 
     @property
@@ -836,8 +824,6 @@ class ExponentialKernel(Kernel):
        plt.xlabel("time, s")
        plt.ylabel("kernel, 1/s")
        plt.show()
-
-
     """
 
     @property
@@ -907,7 +893,6 @@ class AlphaKernel(Kernel):
        plt.xlabel("time, s")
        plt.ylabel("kernel, 1/s")
        plt.show()
-
     """
 
     @property

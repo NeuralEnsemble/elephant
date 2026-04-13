@@ -216,7 +216,6 @@ def dither_spikes(spiketrain: neo.SpikeTrain,
     ...                        decimals=0))  # doctest: +SKIP
     [<SpikeTrain(array([  81.,  242.,  595.,  799.]) * ms,
         [0.0 ms, 1000.0 ms])>]
-
     """
     # The trivial case
     if len(spiketrain) == 0:
@@ -301,7 +300,6 @@ def randomise_spikes(spiketrain, n_surrogates=1, decimals=None):
     >>> print(randomise_spikes(st, decimals=0))  # doctest: +SKIP
         [<SpikeTrain(array([  29.,  667.,  720.,  774.]) * ms,
               [0.0 ms, 1000.0 ms])>]
-
     """
     # Create surrogate spike trains as rows of a Quantity array
     sts = ((spiketrain.t_stop - spiketrain.t_start) *
@@ -363,7 +361,6 @@ def shuffle_isis(spiketrain, n_surrogates=1, decimals=None):
               [0.0 ms, 1000.0 ms])>,
          <SpikeTrain(array([ 200.,  350.,  700.,  800.]) * ms,
               [0.0 ms, 1000.0 ms])>]
-
     """
     if len(spiketrain) == 0:
         return [neo.SpikeTrain([] * spiketrain.units,
@@ -454,7 +451,6 @@ def dither_spike_train(spiketrain, shift, n_surrogates=1, decimals=None,
     ...                          decimals=0))  # doctest: +SKIP
     [<SpikeTrain(array([  82.,  232.,  582.,  782.]) * ms,
         [0.0 ms, 1000.0 ms])>]
-
     """
     # Transform spiketrain into a Quantity object (needed for matrix algebra)
     data = spiketrain.view(pq.Quantity)
@@ -539,7 +535,6 @@ def jitter_spikes(spiketrain, bin_size, n_surrogates=1):
     >>> print(jitter_spikes(st, bin_size=100 * pq.ms))  # doctest: +SKIP
     [<SpikeTrain(array([  4.55064897e-01,   1.31927046e+02,   3.57846265e+02,
          4.69370604e+02]) * ms, [0.0 ms, 1000.0 ms])>]
-
     """
     # Define standard time unit; all time Quantities are converted to
     # scalars after being rescaled to this unit, to use the power of numpy
@@ -1352,7 +1347,6 @@ def surrogates(spiketrain, n_surrogates=1, method='dither_spike_train',
 
     The surrogates retain the `spiketrain.t_start` and `spiketrain.t_stop` of
     the original `spiketrain`.
-
 
     Parameters
     ----------

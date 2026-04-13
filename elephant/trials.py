@@ -59,7 +59,6 @@ class Trials:
         A textual description of the set of trials. Can be accessed via the
         class attribute `description`.
         Default: None.
-
     """
 
     __metaclass__ = ABCMeta

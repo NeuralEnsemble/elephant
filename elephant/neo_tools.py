@@ -61,7 +61,6 @@ def extract_neo_attributes(neo_object, parents=True, child_first=True,
     dict
         A dictionary where the keys are annotations or attribute names and
         the values are the corresponding annotation or attribute value.
-
     """
     attrs = neo_object.annotations.copy()
     if not skip_array and hasattr(neo_object, "array_annotations"):
@@ -139,7 +138,6 @@ def _get_all_objs(container, class_name):
     ------
     ValueError
         If can not handle containers of the type passed in `container`.
-
     """
     if container.__class__.__name__ == class_name:
         return [container]
@@ -181,7 +179,6 @@ def get_all_spiketrains(container):
     list
         A `neo.SpikeTrainList` object of the unique `neo.SpikeTrain` objects
         in `container`.
-
     """
     return SpikeTrainList(_get_all_objs(container, 'SpikeTrain'))
 
@@ -206,7 +203,6 @@ def get_all_events(container):
     -------
     list
         A list of the unique `neo.Event` objects in `container`.
-
     """
     return _get_all_objs(container, 'Event')
 
@@ -231,6 +227,5 @@ def get_all_epochs(container):
     -------
     list
         A list of the unique `neo.Epoch` objects in `container`.
-
     """
     return _get_all_objs(container, 'Epoch')

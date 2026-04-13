@@ -72,7 +72,6 @@ def spike_triggered_average(signal, spiketrains, window):
     ...                                sampling_rate=10/ms) # doctest: +SKIP
     >>> stavg = spike_triggered_average(signal, [spiketrain1, spiketrain2],
     ...                                 (-5 * ms, 10 * ms)) # doctest: +SKIP
-
     """
 
     # checking compatibility of data and data types
@@ -237,7 +236,6 @@ def spike_field_coherence(signal, spiketrain, **kwargs):
     Plot the SFC between a regular spike train at 20 Hz, and two sinusoidal
     time series at 20 Hz and 23 Hz, respectively.
 
-
     .. plot::
         :include-source:
 
@@ -265,7 +263,6 @@ def spike_field_coherence(signal, spiketrain, **kwargs):
         plt.ylabel('SFC')
         plt.xlim((0, 60))
         plt.show()
-
     """
 
     if not hasattr(scipy.signal, 'coherence'):

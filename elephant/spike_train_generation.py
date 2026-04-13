@@ -1206,7 +1206,6 @@ def homogeneous_poisson_process(rate, t_start=0.0 * pq.ms,
     >>> spikes = StationaryPoissonProcess(50*pq.Hz, t_start=0*pq.ms,
     ...     t_stop=1000*pq.ms,
     ...     refractory_period = 3*pq.ms).generate_spiketrain()
-
     """
     warnings.warn(
         "'homogeneous_poisson_process' is deprecated;"
@@ -1251,7 +1250,6 @@ def inhomogeneous_poisson_process(rate, as_array=False,
 
         If `refractory_period` is not None and the period between two successive spikes (`1 / rate`) is smaller than the
         `refractory_period`.
-
     """
     warnings.warn(
         "'inhomogeneous_poisson_process' is deprecated;"
@@ -1305,7 +1303,6 @@ def homogeneous_gamma_process(a, b, t_start=0.0 * pq.ms, t_stop=1000.0 * pq.ms,
     ...                                   ).generate_spiketrain()
     >>> spikes = StationaryPoissonProcess(20*pq.Hz, 5000*pq.ms,
     ... 10000*pq.ms).generate_spiketrain(as_array=True)
-
     """
     warnings.warn(
         "'homogeneous_gamma_process' is deprecated;"
@@ -1344,7 +1341,6 @@ def inhomogeneous_gamma_process(rate, shape_factor, as_array=False):
     ValueError
         If `rate` is not a neo AnalogSignal
         If `rate` contains a negative value.
-
     """
     warnings.warn(
         "'inhomogeneous_gamma_process' is deprecated;"
@@ -1377,7 +1373,6 @@ def _n_poisson(rate, t_stop, t_start=0.0 * pq.ms, n_spiketrains=1):
         If rate is a single pq.Quantity value, n specifies the number of SpikeTrains to be generated. If rate is an
         array, n is ignored and the number of SpikeTrains is equal to len(rate).
         Default: 1
-
 
     Returns
     -------
@@ -1627,7 +1622,6 @@ def _sample_int_from_pdf(probability_density, n_samples):
     Draw n independent samples from the set {0,1,...,L}, where L=len(a)-1, according to the probability distribution a.
     a[j] is the probability to sample j, for each j from 0 to L.
 
-
     Parameters
     ----------
     probability_density : np.ndarray
@@ -1654,7 +1648,6 @@ def _mother_proc_cpp_stat(
         amplitude_distribution, t_stop, rate, t_start=0 * pq.ms):
     """
     Generate the hidden ("mother") Poisson process for a Compound Poisson Process (CPP).
-
 
     Parameters
     ----------

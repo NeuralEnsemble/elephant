@@ -420,7 +420,6 @@ def _stretched_metric_2d(x, y, stretch, ref_angle, working_memory=None,
     MemoryError
         If there is not enough memory to allocate the matrix to store the
         pairwise distances when using chunked computations.
-
     """
     alpha = np.deg2rad(ref_angle)  # reference angle in radians
 
@@ -1483,7 +1482,6 @@ def synchronous_events_intersection(sse1, sse2, intersection='linkwise'):
     See Also
     --------
     ASSET.extract_synchronous_events : extract SSEs from given spike trains
-
     """
     sse_new = sse1.copy()
     for pixel1 in sse1.keys():
@@ -1551,7 +1549,6 @@ def synchronous_events_difference(sse1, sse2, difference='linkwise'):
     See Also
     --------
     ASSET.extract_synchronous_events : extract SSEs from given spike trains
-
     """
     sse_new = sse1.copy()
     for pixel1 in sse1.keys():
@@ -1592,7 +1589,6 @@ def _remove_empty_events(sse):
     -------
     sse_new : dict
         A copy of `sse` where all empty events have been removed.
-
     """
     sse_new = sse.copy()
     for pixel, link in sse.items():
@@ -1634,7 +1630,6 @@ def synchronous_events_identical(sse1, sse2):
     See Also
     --------
     ASSET.extract_synchronous_events : extract SSEs from given spike trains
-
     """
     # Remove empty links from sse11 and sse22, if any
     sse11 = _remove_empty_events(sse1)
@@ -1673,7 +1668,6 @@ def synchronous_events_no_overlap(sse1, sse2):
     See Also
     --------
     ASSET.extract_synchronous_events : extract SSEs from given spike trains
-
     """
     # Remove empty links from sse11 and sse22, if any
     sse11 = _remove_empty_events(sse1)
@@ -1723,7 +1717,6 @@ def synchronous_events_contained_in(sse1, sse2):
     See Also
     --------
     ASSET.extract_synchronous_events : extract SSEs from given spike trains
-
     """
     # Remove empty links from sse11 and sse22, if any
     sse11 = _remove_empty_events(sse1)
@@ -1782,7 +1775,6 @@ def synchronous_events_contains_all(sse1, sse2):
     See Also
     --------
     ASSET.extract_synchronous_events : extract SSEs from given spike trains
-
     """
     return synchronous_events_contained_in(sse2, sse1)
 
@@ -1816,7 +1808,6 @@ def synchronous_events_overlap(sse1, sse2):
     See Also
     --------
     ASSET.extract_synchronous_events : extract SSEs from given spike trains
-
     """
     contained_in = synchronous_events_contained_in(sse1, sse2)
     contains_all = synchronous_events_contains_all(sse1, sse2)
@@ -2024,7 +2015,6 @@ class ASSET(object):
         this value.
         Default: 'default'
 
-
     Raises
     ------
     ValueError
@@ -2049,7 +2039,6 @@ class ASSET(object):
     See Also
     --------
     :class:`elephant.conversion.BinnedSpikeTrain`
-
     """
 
     def __init__(self, spiketrains_i, spiketrains_j=None, bin_size=3 * pq.ms,
@@ -2132,7 +2121,6 @@ class ASSET(object):
         See Also
         --------
         ASSET.intersection_matrix
-
         """
         return _quantities_almost_equal(self.x_edges[0], self.y_edges[0])
 
@@ -2173,7 +2161,6 @@ class ASSET(object):
             The floating point intersection matrix of a list of spike trains.
             It has the shape `(n, n)`, where `n` is the number of bins that
             time was discretized in.
-
         """
         imat = _intersection_matrix(self.spiketrains_i, self.spiketrains_j,
                                     self.bin_size,
@@ -2253,7 +2240,6 @@ class ASSET(object):
         --------
         ASSET.probability_matrix_analytical : analytical derivation of the
                                               matrix
-
         """
         if imat is None:
             # Compute the intersection matrix of the original data
@@ -2559,7 +2545,6 @@ class ASSET(object):
            caution -using your built-in Intel graphics card to perform
            computations may make the system unresponsive until the compute
            program terminates.
-
         """
         l, w = filter_shape
 
@@ -2652,7 +2637,6 @@ class ASSET(object):
         ASSET.probability_matrix_montecarlo : for `pmat` generation
         ASSET.probability_matrix_analytical : for `pmat` generation
         ASSET.joint_probability_matrix : for `jmat` generation
-
         """
         if len(matrices) == 0:
             raise ValueError("Empty list of matrices")
@@ -2766,7 +2750,6 @@ class ASSET(object):
         See Also
         --------
         sklearn.cluster.DBSCAN
-
         """
 
         # Don't do anything if mat is identically zero
