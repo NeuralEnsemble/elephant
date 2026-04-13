@@ -230,9 +230,17 @@ html_show_copyright = True
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'elephantdoc'
 
+# --- Options for numpydoc ---------------------------------------------
+
+numpydoc_validation_checks = {
+    "GL02", "GL03"
+}
+
 # Suppresses  wrong numpy doc warnings
 # see here https://github.com/phn/pytpm/issues/3#issuecomment-12133978
 numpydoc_show_class_members = False
+
+# --- Options for bibtex -----------------------------------------------
 
 # path to bibtex-bibfiles.
 bibtex_bibfiles = ['bib/elephant.bib']
