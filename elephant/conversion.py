@@ -605,7 +605,7 @@ class BinnedSpikeTrain(object):
         scipy.sparse.csr_matrix or scipy.sparse.csc_matrix
             Sparse matrix, binary, boolean version.
 
-        See also
+        See Also
         --------
         scipy.sparse.csr_matrix
         to_bool_array
@@ -971,7 +971,7 @@ class BinnedSpikeTrain(object):
             The columns represent the index position of the bins and rows
             represent the number of spike trains.
 
-        See also
+        See Also
         --------
         scipy.sparse.csr_matrix
         scipy.sparse.csr_matrix.toarray
@@ -1016,7 +1016,7 @@ class BinnedSpikeTrain(object):
         >>> print(x.to_array())
         [[2 1 0 1 1 1 1 0 0 0]]
 
-        See also
+        See Also
         --------
         scipy.sparse.csr_matrix
         scipy.sparse.csr_matrix.toarray

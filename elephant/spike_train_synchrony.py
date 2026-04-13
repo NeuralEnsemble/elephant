@@ -254,7 +254,7 @@ class Synchrotool(Complexity):
     This class inherits from :class:`elephant.statistics.Complexity`, see its
     documentation for more details and input parameters description.
 
-    See also
+    See Also
     --------
     elephant.statistics.Complexity
     """

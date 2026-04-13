@@ -1208,7 +1208,7 @@ def time_histogram(spiketrains: Union[List[neo.SpikeTrain], neo.SpikeTrain],
         If `t_stop` is None and the objects in `spiketrains` have different
         `t_stop` values.
 
-    See also
+    See Also
     --------
     :func:`elephant.conversion.BinnedSpikeTrain`
 
@@ -1313,7 +1313,7 @@ def complexity_pdf(spiketrains, bin_size):
         `neo.AnalogSignal[j]` is the histogram computed between
         `t_start + j * bin_size` and `t_start + (j + 1) * bin_size`.
 
-    See also
+    See Also
     --------
     elephant.conversion.BinnedSpikeTrain
     """
@@ -1437,7 +1437,7 @@ class Complexity(object):
     bin edge into the following bin. This can be adjusted using the tolerance
     parameter and turned off by setting `tolerance=None`.
 
-    See also
+    See Also
     --------
     elephant.conversion.BinnedSpikeTrain
     elephant.spike_train_synchrony.Synchrotool
