@@ -1416,8 +1416,6 @@ def single_interaction_process(
 
     Parameters
     ----------
-    t_stop : pq.Quantity
-        Total time of the simulated processes. The events are drawn between 0 and `t_stop`.
     rate : pq.Quantity
         Overall mean rate of the time series to be generated (coincidence rate `coincidence_rate` is subtracted to
         determine the background rate). Can be:
@@ -1429,6 +1427,8 @@ def single_interaction_process(
     coincidence_rate : pq.Quantity
         Coincidence rate (rate of coincidences for the n-dimensional SIP). The SIP spike trains will have coincident
         events with rate `coincidence_rate` plus independent 'background' events with rate `rate-rate_coincidence`.
+    t_stop : pq.Quantity
+        Total time of the simulated processes. The events are drawn between 0 and `t_stop`.
     n_spiketrains : int, optional
         If `rate` is a single pq.Quantity value, `n_spiketrains` specifies the number of SpikeTrains to be generated. If
         rate is an array, `n_spiketrains` is ignored and the number of SpikeTrains is equal to `len(rate)`.

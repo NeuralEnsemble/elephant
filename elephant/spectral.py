@@ -1050,22 +1050,6 @@ def multitaper_coherence(signal_i, signal_j, n_segments=1, len_segment=None,
         `neo.AnalogSignal`, sampling frequency should be specified through the
         keyword argument `fs`. Otherwise, the default value is used
         (`fs` = 1.0).
-    fs : float, optional
-        Specifies the sampling frequency of the input time series
-        Default: 1.0
-    nw : float, optional
-        Time bandwidth product
-        Default: 4.0
-    num_tapers : int, optional
-        Number of tapers used in 1. to obtain estimate of PSD. By default,
-        [2*nw] - 1 is chosen.
-        Default: None
-    peak_resolution : pq.Quantity float, optional
-        Quantity in Hz determining the number of tapers used for analysis.
-        Fine peak resolution --> low numerical value --> low number of tapers
-        High peak resolution --> high numerical value --> high number of tapers
-        When given as a `float`, it is taken as frequency in Hz.
-        Default: None.
     n_segments : int, optional
         Number of segments. The length of segments is adjusted so that
         overlapping segments cover the entire stretch of the given data. This
@@ -1086,6 +1070,22 @@ def multitaper_coherence(signal_i, signal_j, n_segments=1, len_segment=None,
         Overlap between segments represented as a float number between 0 (no
         overlap) and 1 (complete overlap).
         Default: 0.5 (half-overlapped)
+    fs : float, optional
+        Specifies the sampling frequency of the input time series
+        Default: 1.0
+    nw : float, optional
+        Time bandwidth product
+        Default: 4.0
+    num_tapers : int, optional
+        Number of tapers used in 1. to obtain estimate of PSD. By default,
+        [2*nw] - 1 is chosen.
+        Default: None
+    peak_resolution : pq.Quantity float, optional
+        Quantity in Hz determining the number of tapers used for analysis.
+        Fine peak resolution --> low numerical value --> low number of tapers
+        High peak resolution --> high numerical value --> high number of tapers
+        When given as a `float`, it is taken as frequency in Hz.
+        Default: None.
 
     Returns
     -------

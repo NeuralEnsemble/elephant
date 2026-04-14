@@ -111,30 +111,30 @@ class GPFA(sklearn.base.BaseEstimator):
 
     Parameters
     ----------
-    x_dim : int, optional
-        state dimensionality
-        Default: 3
     bin_size : float, optional
         spike bin width in msec
         Default: 20.0
+    x_dim : int, optional
+        state dimensionality
+        Default: 3
     min_var_frac : float, optional
         fraction of overall data variance for each observed dimension to set as
         the private variance floor.  This is used to combat Heywood cases,
         where ML parameter learning returns one or more zero private variances.
         Default: 0.01
         (See Martin & McDonald, Psychometrika, Dec 1975.)
-    em_tol : float, optional
-        stopping criterion for EM
-        Default: 1e-8
-    em_max_iters : int, optional
-        number of EM iterations to run
-        Default: 500
     tau_init : float, optional
         GP timescale initialization in msec
         Default: 100
     eps_init : float, optional
         GP noise variance initialization
         Default: 1e-3
+    em_tol : float, optional
+        stopping criterion for EM
+        Default: 1e-8
+    em_max_iters : int, optional
+        number of EM iterations to run
+        Default: 500
     freq_ll : int, optional
         data likelihood is computed at every freq_ll EM iterations. freq_ll = 1
         means that data likelihood is computed at every iteration.
