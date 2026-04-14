@@ -351,8 +351,8 @@ class Kernel(object):
 
         See Also
         --------
-        Kernel.cdf : cumulative distribution function
-        Kernel.icdf : inverse cumulative distribution function
+        Kernel.cdf : cumulative distribution function.
+        Kernel.icdf : inverse cumulative distribution function.
         """
         self._check_time_input(times)
         if len(times) == 0:

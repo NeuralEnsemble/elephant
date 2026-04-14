@@ -333,7 +333,7 @@ def covariance(binned_spiketrain, binary=False, fast=True):
 
     See Also
     --------
-    correlation_coefficient : Pearson correlation coefficient
+    correlation_coefficient : Pearson correlation coefficient.
 
     Notes
     -----
