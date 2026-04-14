@@ -236,7 +236,7 @@ htmlhelp_basename = 'elephantdoc'
 # - GL01: warnings due to non-conforming docstrings in sklearn and SciPy
 
 numpydoc_validation_checks = {
-    "GL02", "GL03", "GL06", "GL07",
+    "GL02", "GL03", "GL05", "GL06", "GL07",
     "SS03",
     "SA02",
     "PR02", "PR05", "PR06",
