@@ -1769,10 +1769,10 @@ def approximate_stability(concepts, rel_matrix, n_subsets=0,
 
         Default: 0
     delta : float, optional
-        delta: probability with at least :math:`1-\delta`
+        Probability with at least :math:`1-\delta`
         Default: 0.0
     epsilon : float, optional
-        epsilon: absolute error
+        Absolute error
         Default: 0.0
 
     Returns
@@ -2285,7 +2285,7 @@ def concept_output_to_patterns(concepts, winlen, bin_size, pv_spec=None,
 
         Default: '#'
     t_start : pq.Quantity
-        t_start of the analyzed spike trains
+        Start time of the analyzed spike trains
 
     Returns
     -------

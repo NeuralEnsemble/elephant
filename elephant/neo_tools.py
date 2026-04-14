@@ -170,8 +170,7 @@ def get_all_spiketrains(container):
 
     Parameters
     ----------
-    container : list, tuple, iterable, dict, neo.Block, neo.Segment, neo.Unit,
-        neo.ChannelIndex
+    container : list, tuple, iterable, dict, neo.Block, neo.Segment, neo.Unit, neo.ChannelIndex
         The container for the spiketrains.
 
     Returns

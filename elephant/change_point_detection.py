@@ -65,7 +65,7 @@ def multiple_filter_test(window_sizes, spiketrain, t_final, alpha,
     Parameters
     ----------
     window_sizes : list of pq.Quantity
-                list that contains windows sizes
+        List that contains windows sizes
     spiketrain : neo.SpikeTrain or pq.Quantity
         A spiketrain object to analyze.
     t_final : pq.Quantity
@@ -84,7 +84,7 @@ def multiple_filter_test(window_sizes, spiketrain, t_final, alpha,
         If None, will be set according to the :func:`empirical_parameters`.
         Default: None
     test_param : (3, num. of windows) np.ndarray or None, optional
-        first row: list of `h`, second and third rows: empirical means and
+        First row: list of `h`, second and third rows: empirical means and
         variances of the limit process corresponding to `h`. This will be
         used to normalize the *filter processes* in order to give to the
         every maximum the same impact on the global statistic.
@@ -269,7 +269,7 @@ def empirical_parameters(window_sizes, t_final, alpha, n_surrogates=1000,
     Parameters
     ----------
     window_sizes : list of pq.Quantity
-                list that contains windows sizes
+        List that contains windows sizes
     t_final : pq.Quantity
         The final time of the spike train which is to be analysed
     alpha : float

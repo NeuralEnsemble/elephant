@@ -578,7 +578,7 @@ def cross_correlation_histogram(
               cross-correlation is computed.
         Default: 'full'
     border_correction : bool, optional
-        whether to correct for the border effect. If True, the value of the
+        Whether to correct for the border effect. If True, the value of the
         CCH at bin :math:`b` (for :math:`b=-H,-H+1, ...,H`, where :math:`H` is
         the CCH half-length) is multiplied by the correction factor:
 

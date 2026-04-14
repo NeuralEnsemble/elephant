@@ -239,7 +239,7 @@ numpydoc_validation_checks = {
     "GL02", "GL03", "GL05", "GL06", "GL07",
     "SS02", "SS03", "SS04",
     "SA02",
-    "PR02", "PR03", "PR05", "PR06",
+    "PR02", "PR03", "PR05", "PR06", "PR08",
 }
 
 # Suppresses  wrong numpy doc warnings
