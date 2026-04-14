@@ -42,9 +42,9 @@ def spike_triggered_average(signal, spiketrains, window):
     ----------
     signal : neo AnalogSignal object
         'signal' contains n analog signals.
-    spiketrains : one SpikeTrain or one numpy ndarray or a list of n of either of these.
+    spiketrains : one SpikeTrain or one numpy ndarray or a list of n of either of these
         'spiketrains' contains the times of the spikes in the spiketrains.
-    window : tuple of 2 Quantity objects with dimensions of time.
+    window : tuple of 2 Quantity objects with dimensions of time
         'window' is the start time and the stop time, relative to a spike, of
         the time interval for signal averaging.
         If the window size is not a multiple of the sampling interval of the

@@ -850,7 +850,7 @@ def spike_time_tiling_coefficient(spiketrain_i: neo.core.SpikeTrain,
     spiketrain_i, spiketrain_j : :class:`neo.core.SpikeTrain`
         Spike trains to cross-correlate. They must have the same `t_start` and
         `t_stop`.
-    dt : pq.Quantity.
+    dt : pq.Quantity
         The synchronicity window is used for both: the quantification of the
         proportion of total recording time that lies `[-dt, +dt]` of each spike
         in each train and the proportion of spikes in `spiketrain_i` that lies
