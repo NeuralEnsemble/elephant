@@ -100,9 +100,8 @@ def estimate_csd(lfp, coordinates='coordinates', method=None,
 
     Returns
     -------
-    Estimated CSD
-       neo.AnalogSignal object
-       annotated with the spatial coordinates
+    neo.AnalogSignal
+        Estimated CSD annotated with the spatial coordinates.
 
     Raises
     ------

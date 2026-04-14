@@ -291,7 +291,7 @@ def empirical_parameters(window_sizes, t_final, alpha, n_surrogates=1000,
         presence of a change point (cp) at the time corresponding to that
         maximum.
     test_param : (3, num. of windows) np.ndarray
-        first row: list of `h`, second and third rows: empirical means and
+        First row: list of `h`, second and third rows: empirical means and
         variances of the limit process corresponding to `h`. This will be
         used to normalize the *filter processes* in order to give to the
         every maximum the same impact on the global statistic.

@@ -223,11 +223,11 @@ def spike_field_coherence(signal, spiketrain, **kwargs):
     Returns
     -------
     coherence : complex Quantity array
-        contains the coherence values calculated for each analog signal trace
+        Contains the coherence values calculated for each analog signal trace
         in combination with the spike train. The first dimension corresponds to
         the frequency, the second to the number of the signal trace.
     frequencies : Quantity array
-        contains the frequency values corresponding to the first dimension of
+        Contains the frequency values corresponding to the first dimension of
         the 'coherence' array
 
     Examples

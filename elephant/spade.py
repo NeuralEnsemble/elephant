@@ -1270,11 +1270,11 @@ def pvalue_spectrum(
     -------
     pv_spec : list
 
-        if spectrum == '#':
+        If spectrum == '#':
             A list of triplets (z,c,p), where (z,c) is a pattern signature
             and p is the corresponding p-value (fraction of surrogates
             containing signatures (z*,c*)>=(z,c)).
-        if spectrum == '3d#':
+        If spectrum == '3d#':
             A list of triplets (z,c,l,p), where (z,c,l) is a pattern signature
             and p is the corresponding p-value (fraction of surrogates
             containing signatures (z*,c*,l*)>=(z,c,l)).
