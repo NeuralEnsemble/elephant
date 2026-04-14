@@ -784,7 +784,8 @@ def pairwise_spectral_granger(signal_i, signal_j, fs=1, nw=4, num_tapers=None,
                               len_segment=None, frequency_resolution=None,
                               overlap=0.5, num_iterations=300,
                               term_crit=1e-12):
-    r"""Determine spectral Granger Causality of two signals.
+    r"""
+    Determine spectral Granger Causality of two signals.
 
     The spectral Granger Causality is obtained through the following steps:
 

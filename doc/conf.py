@@ -232,6 +232,9 @@ htmlhelp_basename = 'elephantdoc'
 
 # --- Options for numpydoc ---------------------------------------------
 
+# Validation checks not included:
+# - GL01: warnings due to non-conforming docstrings in sklearn and SciPy
+
 numpydoc_validation_checks = {
     "GL02", "GL03", "GL06", "GL07",
     "SS03",
