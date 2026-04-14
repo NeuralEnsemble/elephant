@@ -233,7 +233,10 @@ htmlhelp_basename = 'elephantdoc'
 # --- Options for numpydoc ---------------------------------------------
 
 # Validation checks not included:
-# - GL01: warnings due to non-conforming docstrings in sklearn and SciPy
+# - GL01: warnings due to non-conforming docstrings in sklearn and SciPy.
+# - PR09: warnings triggered by the use of "Default: x" in the last line of
+#   parameter descriptions, which is a common and recommended way to specify
+#   the default and is more readable without a trailing period.
 
 numpydoc_validation_checks = {
     "GL02", "GL03", "GL05", "GL06", "GL07",
