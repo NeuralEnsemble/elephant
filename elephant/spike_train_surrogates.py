@@ -1384,7 +1384,7 @@ def surrogates(spiketrain, n_surrogates=1, method='dither_spike_train',
         within a certain window (`jitter_spikes`), dt represents the size of
         that shift / window. For other methods, dt is ignored.
         Default: None
-    kwargs
+    **kwargs
         Keyword arguments passed to the chosen surrogate method.
 
     Returns

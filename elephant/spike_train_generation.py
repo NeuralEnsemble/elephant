@@ -187,7 +187,7 @@ def spike_extraction(
         interval will modify the waveforms stored in the neo :class:`neo.core.SpikeTrain`, but it will not affect the
         spike times.
         Default: (-2 * pq.ms, 4 * pq.ms)
-    always_as_list: bool, optional
+    always_as_list : bool, optional
         If True, :class:`neo.core.spiketrainslist.SpikeTrainList` is returned.
         Default: False
 
@@ -293,7 +293,7 @@ def threshold_detection(
     sign : {'above', 'below'}, optional
         Determines whether to count threshold crossings that cross above or below the threshold.
         Default: 'above'
-    always_as_list: bool, optional
+    always_as_list : bool, optional
         If True, a :class:`neo.core.spiketrainslist.SpikeTrainList`.
         Default: False
 
@@ -414,7 +414,7 @@ def peak_detection(signal: neo.core.AnalogSignal,
     as_array : bool, optional
         If True, a NumPy array of the resulting peak times is returned instead of a (default) `neo.SpikeTrain` object.
         Default: False
-    always_as_list: bool, optional
+    always_as_list : bool, optional
         If True, a :class:`neo.core.spiketrainslist.SpikeTrainList` is returned.
         Default: False
 

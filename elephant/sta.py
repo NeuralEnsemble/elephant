@@ -217,7 +217,7 @@ def spike_field_coherence(signal, spiketrain, **kwargs):
     spiketrain : SpikeTrain or BinnedSpikeTrain
         Single spike train to perform the analysis on. The bin_size of the
         binned spike train must match the sampling_rate of signal.
-    **kwargs:
+    **kwargs
         All kwargs are passed to `scipy.signal.coherence()`.
 
     Returns

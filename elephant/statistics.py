@@ -697,13 +697,13 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
         change strongly. Only possible in the case of a Gaussian kernel.
 
         Default: False
-    pool_trials: bool, optional
+    pool_trials : bool, optional
         If True, calculate firing rates averaged over trials if `spiketrains` is
         of type :mod:`elephant.trials`. Has no effect for single spike train
         or lists of spike trains.
 
         Default: False
-    pool_spike_trains: bool, optional
+    pool_spike_trains : bool, optional
         If True, calculate firing rates averaged over spike trains. If the
         input is a :mod:`elephant.trials` object, spike trains are pooled
         across spike trains within each trial, and pool_trials determines

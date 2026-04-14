@@ -576,7 +576,7 @@ def cross_correlation_histogram(
               The entries of window are two integers representing the left and
               right extremes (expressed as number of bins) where the
               cross-correlation is computed.
-    Default: 'full'
+        Default: 'full'
     border_correction : bool, optional
         whether to correct for the border effect. If True, the value of the
         CCH at bin :math:`b` (for :math:`b=-H,-H+1, ...,H`, where :math:`H` is

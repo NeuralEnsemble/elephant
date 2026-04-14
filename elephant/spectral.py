@@ -317,7 +317,7 @@ def multitaper_psd(signal, fs=1, nw=4, num_tapers=None, peak_resolution=None,
         High peak resolution --> high numerical value --> high number of tapers
         When given as a `float`, it is taken as frequency in Hz.
         Default: None.
-    attach_units: bool, optional
+    attach_units : bool, optional
         If True and signals is an instance of pq.Quantity, units are attached
         to the estimated cross spectrum.
         Default: True

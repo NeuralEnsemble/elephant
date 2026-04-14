@@ -273,7 +273,7 @@ def spade(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
     output_format : {'concepts', 'patterns'}
         Distinguish the format of the output (see Returns).
         Default: 'patterns'
-    surr_kwargs
+    **surr_kwargs
         Keyword arguments that are passed to the surrogate methods.
 
     Returns
@@ -1263,7 +1263,7 @@ def pvalue_spectrum(
         method defined in
         :func:`elephant.spike_train_surrogates.dither_spikes`.
         Default: 'dither_spikes'
-    surr_kwargs
+    **surr_kwargs
         Keyword arguments that are passed to the surrogate methods.
 
     Returns
