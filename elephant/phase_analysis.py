@@ -345,16 +345,19 @@ def weighted_phase_lag_index(signal_i, signal_j, sampling_frequency=None,
     signal_i, signal_j : np.array, pq.quantity.Quantity, neo.AnalogSignal
         Time-series of the first and second signals,
         with `t` time points and `n` trials.
-    sampling_frequency : pq.quantity.Quantity (default: None)
+    sampling_frequency : pq.quantity.Quantity
         Sampling frequency of the signals in Hz. Not needed if signal i and j
         are neo.AnalogSignals.
-    absolute_value : boolean (default: True)
+        Default: None
+    absolute_value : bool
         Takes the absolute value of the numerator in the WPLI-formula.
         When set to `False`, the WPLI contains additional directionality
         information about which signal leads/lags the other signal:
 
         * wpli > 0 : first signal i leads second signal j
         * wpli < 0 : first signal i lags second signal j
+
+        Default: True
 
     Returns
     -------

@@ -55,7 +55,7 @@ class Trials:
 
     Parameters
     ----------
-    description : string, optional
+    description : str, optional
         A textual description of the set of trials. Can be accessed via the
         class attribute `description`.
         Default: None.
@@ -243,7 +243,7 @@ class TrialsFromBlock(Trials):
         The structure is assumed to follow the neo representation:
         A block contains multiple segments which are considered to contain the
         single trials.
-    description : string, optional
+    description : str, optional
         A textual description of the set of trials. Can be accessed via the
         class attribute `description`.
         Default: None.
@@ -333,7 +333,7 @@ class TrialsFromLists(Trials):
     list_of_trials : list of lists
         A list of lists. Each list entry contains a list of neo.SpikeTrains
         and/or neo.AnalogSignals.
-    description : string, optional
+    description : str, optional
         A textual description of the set of trials. Can be accessed via the
         class attribute `description`.
         Default: None.

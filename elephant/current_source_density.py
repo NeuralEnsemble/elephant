@@ -71,7 +71,7 @@ def estimate_csd(lfp, coordinates='coordinates', method=None,
     ----------
     lfp : :class:`neo.core.AnalogSignal`
         Positions of electrodes can be added as an array annotation
-    coordinates : array-like Quantity or string
+    coordinates : array-like Quantity or str
         Specifies the corresponding spatial coordinates of the electrodes.
         Coordinates can be directly supplied by a NxM array-like Quantity
         with dimension of space, where M is the number of signals in 'lfp',
@@ -80,7 +80,7 @@ def estimate_csd(lfp, coordinates='coordinates', method=None,
         coordinates, supplied in the same format, as annotation of 'lfp' by
         that name.
         Default: 'coordinates'
-    method : string
+    method : str
         Pick a method corresponding to the setup, in this implementation
         For Laminar probe style (1D), use 'KCSD1D' or 'StandardCSD',
         or 'DeltaiCSD' or 'StepiCSD' or 'SplineiCSD'
