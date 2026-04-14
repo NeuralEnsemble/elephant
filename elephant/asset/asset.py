@@ -1481,7 +1481,7 @@ def synchronous_events_intersection(sse1, sse2, intersection='linkwise'):
 
     See Also
     --------
-    ASSET.extract_synchronous_events : extract SSEs from given spike trains.
+    ASSET.extract_synchronous_events : Extract SSEs from given spike trains.
     """
     sse_new = sse1.copy()
     for pixel1 in sse1.keys():
@@ -1548,7 +1548,7 @@ def synchronous_events_difference(sse1, sse2, difference='linkwise'):
 
     See Also
     --------
-    ASSET.extract_synchronous_events : extract SSEs from given spike trains.
+    ASSET.extract_synchronous_events : Extract SSEs from given spike trains.
     """
     sse_new = sse1.copy()
     for pixel1 in sse1.keys():
@@ -1629,7 +1629,7 @@ def synchronous_events_identical(sse1, sse2):
 
     See Also
     --------
-    ASSET.extract_synchronous_events : extract SSEs from given spike trains.
+    ASSET.extract_synchronous_events : Extract SSEs from given spike trains.
     """
     # Remove empty links from sse11 and sse22, if any
     sse11 = _remove_empty_events(sse1)
@@ -1667,7 +1667,7 @@ def synchronous_events_no_overlap(sse1, sse2):
 
     See Also
     --------
-    ASSET.extract_synchronous_events : extract SSEs from given spike trains.
+    ASSET.extract_synchronous_events : Extract SSEs from given spike trains.
     """
     # Remove empty links from sse11 and sse22, if any
     sse11 = _remove_empty_events(sse1)
@@ -1716,7 +1716,7 @@ def synchronous_events_contained_in(sse1, sse2):
 
     See Also
     --------
-    ASSET.extract_synchronous_events : extract SSEs from given spike trains.
+    ASSET.extract_synchronous_events : Extract SSEs from given spike trains.
     """
     # Remove empty links from sse11 and sse22, if any
     sse11 = _remove_empty_events(sse1)
@@ -1769,7 +1769,7 @@ def synchronous_events_contains_all(sse1, sse2):
 
     See Also
     --------
-    ASSET.extract_synchronous_events : extract SSEs from given spike trains.
+    ASSET.extract_synchronous_events : Extract SSEs from given spike trains.
 
     Notes
     -----
@@ -1807,7 +1807,7 @@ def synchronous_events_overlap(sse1, sse2):
 
     See Also
     --------
-    ASSET.extract_synchronous_events : extract SSEs from given spike trains.
+    ASSET.extract_synchronous_events : Extract SSEs from given spike trains.
     """
     contained_in = synchronous_events_contained_in(sse1, sse2)
     contains_all = synchronous_events_contains_all(sse1, sse2)
@@ -1837,7 +1837,7 @@ def get_neurons_in_sse(sse):
 
     See Also
     --------
-    ASSET.extract_synchronous_events
+    ASSET.extract_synchronous_events : Extract SSEs from given spike trains.
 
     Examples
     --------
@@ -1890,7 +1890,7 @@ def get_sse_start_and_end_time_bins(sse):
 
     See Also
     --------
-    ASSET.extract_synchronous_events
+    ASSET.extract_synchronous_events : Extract SSEs from given spike trains.
 
     Examples
     --------
@@ -2120,7 +2120,8 @@ class ASSET(object):
 
         See Also
         --------
-        ASSET.intersection_matrix
+        ASSET.intersection_matrix : Generates the intersection matrix from a
+                                    list of spike trains.
         """
         return _quantities_almost_equal(self.x_edges[0], self.y_edges[0])
 
@@ -2233,7 +2234,7 @@ class ASSET(object):
 
         See Also
         --------
-        ASSET.probability_matrix_analytical : analytical derivation of the
+        ASSET.probability_matrix_analytical : Analytical derivation of the
                                               matrix.
 
         Notes
@@ -2634,9 +2635,12 @@ class ASSET(object):
 
         See Also
         --------
-        ASSET.probability_matrix_montecarlo : for `pmat` generation.
-        ASSET.probability_matrix_analytical : for `pmat` generation.
-        ASSET.joint_probability_matrix : for `jmat` generation.
+        ASSET.probability_matrix_montecarlo : For `pmat` generation using a
+                                              Monte Carlo approach using
+                                              surrogate data.
+        ASSET.probability_matrix_analytical : For `pmat` generation using the
+                                              analytical derivation.
+        ASSET.joint_probability_matrix : For `jmat` generation.
         """
         if len(matrices) == 0:
             raise ValueError("Empty list of matrices")

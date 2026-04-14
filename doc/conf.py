@@ -241,7 +241,7 @@ htmlhelp_basename = 'elephantdoc'
 numpydoc_validation_checks = {
     "GL02", "GL03", "GL05", "GL06", "GL07",
     "SS02", "SS03", "SS04",
-    "SA02",
+    "SA02", "SA03",
     "PR02", "PR03", "PR05", "PR06", "PR08", "PR10",
 }
 

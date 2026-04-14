@@ -896,7 +896,7 @@ def rauc(signal, baseline=None, bin_duration=None, t_start=None, t_stop=None):
 
     See Also
     --------
-    neo.AnalogSignal.time_slice : how `t_start` and `t_stop` are used.
+    neo.AnalogSignal.time_slice : How `t_start` and `t_stop` are used.
 
     Examples
     --------
