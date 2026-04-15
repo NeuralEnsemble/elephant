@@ -407,21 +407,27 @@ sphinxcontrib.bibtex.plugin.register_plugin(
     'sphinxcontrib.bibtex.style.referencing',
     'author_year_round', RoundBracketReferenceStyle)
 
-# Custom style for bibliography labels
+
+# -- Custom style for bibliography labels --------------------------------
 
 from pybtex.style.formatting.unsrt import Style as UnsrtStyle
-from pybtex.style.labels import BaseLabelStyle
+from pybtex.style.labels.alpha import LabelStyle as AlphaLabelStyle
 from pybtex.plugin import register_plugin
 
 
-# a simple label style which uses the bibtex keys for labels
-class AuthorYearStyle(BaseLabelStyle):
+# A simple label style which uses the bibtex keys for labels.
+# The labels are formatted as "Author, Year" (e.g. "Smith, 2020").
+# In case of duplicates, letters are appended (e.g. "Smith, 2020a",
+# "Smith, 2020b"). The `AlphaLabelStyle` is used as a base to leverage its
+# duplicate detection. This also ensures that LaTeX special characters in the
+# labels are properly escaped.
+class AuthorYearStyle(AlphaLabelStyle):
 
-    def format_labels(self, sorted_entries):
-        for entry in sorted_entries:
-            # create string for label
-            yield entry.persons["author"][0].last_names[0] + ", " +\
-                entry.fields["year"][-4:]
+    def format_label(self, entry):
+        last_name = (entry.persons["author"][0].rich_last_names[0]
+            .render_as('text'))
+        year = entry.fields["year"][-4:]
+        return f"{last_name}, {year}"
 
 
 class AuthorYear(UnsrtStyle):
