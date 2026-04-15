@@ -325,9 +325,9 @@ def multitaper_psd(signal, fs=1, nw=4, num_tapers=None, peak_resolution=None,
     Returns
     -------
     freqs : np.ndarray
-        Frequencies associated with power estimate in `psd`
+        Frequencies associated with power estimate in `psd`.
     psd : np.ndarray
-        PSD estimate of the time series in `signal`
+        PSD estimate of the time series in `signal`.
 
     Raises
     ------
@@ -1090,11 +1090,11 @@ def multitaper_coherence(signal_i, signal_j, n_segments=1, len_segment=None,
     Returns
     -------
     freqs : np.ndarray
-        Frequencies associated with the magnitude-squared coherence estimate
+        Frequencies associated with the magnitude-squared coherence estimate.
     coherence : np.ndarray
-        Magnitude-squared coherence estimate
+        Magnitude-squared coherence estimate.
     phase_lag : np.ndarray
-        Phase lags associated with the magnitude-square coherence estimate
+        Phase lags associated with the magnitude-square coherence estimate.
     """
     if isinstance(signal_i, neo.core.AnalogSignal) and \
             isinstance(signal_j, neo.core.AnalogSignal):

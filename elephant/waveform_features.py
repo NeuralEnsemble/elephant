@@ -44,7 +44,7 @@ def waveform_width(waveform, cutoff=0.75):
     Returns
     -------
     width : int
-        Width of a waveform expressed as a number of data points
+        Width of a waveform expressed as a number of data points.
 
     Raises
     ------

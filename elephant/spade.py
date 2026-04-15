@@ -1642,7 +1642,7 @@ def test_signature_significance(pv_spec, concepts, alpha, winlen,
     -------
     sig_spectrum : list
         Significant signatures of pvalue_spectrum, in the format specified
-        by `report`
+        by `report`.
     """
     # If alpha == 1 all signatures are significant
     if alpha == 1:

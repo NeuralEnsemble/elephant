@@ -237,6 +237,8 @@ htmlhelp_basename = 'elephantdoc'
 # - PR09: warnings triggered by the use of "Default: x" in the last line of
 #   parameter descriptions, which is a common and recommended way to specify
 #   the default and is more readable without a trailing period.
+# - RT05: warnings triggered for some functions where a trailing period is not
+#   used in the last line (e.g., "Range: x" in `phase_analysis`).
 
 numpydoc_validation_checks = {
     "GL02", "GL03", "GL05", "GL06", "GL07",

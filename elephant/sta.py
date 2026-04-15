@@ -228,7 +228,7 @@ def spike_field_coherence(signal, spiketrain, **kwargs):
         the frequency, the second to the number of the signal trace.
     frequencies : Quantity array
         Contains the frequency values corresponding to the first dimension of
-        the 'coherence' array
+        the 'coherence' array.
 
     Examples
     --------
