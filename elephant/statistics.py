@@ -729,23 +729,28 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
         If `spiketrains` is a list of :class:`neo.core.SpikeTrain` then output
         is a single :class:`neo.core.AnalogSignal`. `n_estimates` depends on the
         pooling options:
-           -  `pool_spike_trains=True` results in `n_estimates = 1`.
-           -  `pool_spike_trains=False` results in `n_estimates = len(spiketrains)`
+
+          - `pool_spike_trains=True` results in `n_estimates = 1`.
+          - `pool_spike_trains=False` results in `n_estimates = len(spiketrains)`
 
         If `spiketrains` is a :mod:`elephant.trials` object then output is a
         :class:`neo.core.AnalogSignal` or list of :class:`neo.core.AnalogSignal`.
-        The output type depends on `pool_trials`.
-           -  If `pool_trials=False` then output is a list of :class:`neo.core.AnalogSignal`
-             with length equal to number of trials. For each element, representing
-             the rate estimates of a given trial, `n_estimates` depends on the
-             pooling of spike trains within each trial:
-               -  `pool_spike_trains=True` results in `n_estimates = 1`
-               -  `pool_spike_trains=False` results in `n_estimates = len(spiketrains)`
-           -  If `pool_trials=True` then output is a single :class:`neo.core.AnalogSignal`
-             with rates pooled across trials. `n_estimates` depends on the pooling
-             of spike trains within each trial:
-               -  `pool_spike_trains=True` results in `n_estimates = 1`
-               -  `pool_spike_trains=False` results in `n_estimates = len(spiketrains)`
+        The output type depends on `pool_trials`:
+
+          - If `pool_trials=False` then output is a list of :class:`neo.core.AnalogSignal`
+            with length equal to number of trials. For each element, representing
+            the rate estimates of a given trial, `n_estimates` depends on the
+            pooling of spike trains within each trial:
+
+              - `pool_spike_trains=True` results in `n_estimates = 1`
+              - `pool_spike_trains=False` results in `n_estimates = len(spiketrains)`
+
+          - If `pool_trials=True` then output is a single :class:`neo.core.AnalogSignal`
+            with rates pooled across trials. `n_estimates` depends on the pooling
+            of spike trains within each trial:
+
+              - `pool_spike_trains=True` results in `n_estimates = 1`
+              - `pool_spike_trains=False` results in `n_estimates = len(spiketrains)`
 
         A table summarizing the return types and array shapes is given in the
         :ref:`notes below <summary-of-outputs>`.
