@@ -564,18 +564,21 @@ def cross_correlation_histogram(
         of :class:`elephant.conversion.BinnedSpikeTrain`. The input
         spike trains can have any `t_start` and `t_stop`.
     window : {'valid', 'full'} or list of int, optional
-        ‘full’: This returns the cross-correlation at each point of overlap,
-              with an output shape of (N+M-1,). At the end-points of the
-              cross-correlogram, the signals do not overlap completely, and
-              boundary effects may be seen.
-        ‘valid’: Mode valid returns output of length max(M, N) - min(M, N) + 1.
-              The cross-correlation product is only given for points where
-              the signals overlap completely.
-              Values outside the signal boundary have no effect.
-        List of integers (min_lag, max_lag):
-              The entries of window are two integers representing the left and
-              right extremes (expressed as number of bins) where the
-              cross-correlation is computed.
+        Specifies the mode or lag range used to compute the cross-correlation.
+        The options are:
+
+          - ‘full’: This returns the cross-correlation at each point of
+            overlap, with an output shape of (N+M-1,). At the end-points of
+            the cross-correlogram, the signals do not overlap completely, and
+            boundary effects may be seen.
+          - ‘valid’: Mode valid returns output of length
+            max(M, N) - min(M, N) + 1. The cross-correlation product is only
+            given for points where the signals overlap completely. Values
+            outside the signal boundary have no effect.
+          - List of integers (min_lag, max_lag): The entries of window are
+            two integers representing the left and right extremes (expressed
+            as number of bins) where the cross-correlation is computed.
+
         Default: 'full'
     border_correction : bool, optional
         Whether to correct for the border effect. If True, the value of the
