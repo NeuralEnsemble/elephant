@@ -1,7 +1,7 @@
 """
 Unit tests for the spade module.
 
-:copyright: Copyright 2014-2024 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2026 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 import unittest
@@ -404,7 +404,7 @@ class SpadeTestCase(unittest.TestCase):
         assert_equal(lags_msip, self.lags_msip)
 
     # test under different configuration of parameters than the default one
-    def test_parameters_3d(self):
+    def test_parameters_3d_min_spikes(self):
         # test min_spikes parameter
         output_msip_min_spikes = spade.spade(
             self.msip,
@@ -438,6 +438,7 @@ class SpadeTestCase(unittest.TestCase):
             el for el in self.elements_msip if len(el) >= self.min_neu and len(
                 el) >= self.min_spikes])
 
+    def test_parameters_3d_min_occ(self):
         # test min_occ parameter
         output_msip_min_occ = spade.spade(
             self.msip,

@@ -2,7 +2,7 @@
 """
 Unit tests for the GPFA analysis.
 
-:copyright: Copyright 2014-2024 by the Elephant team, see AUTHORS.txt.
+:copyright: Copyright 2014-2026 by the Elephant team, see AUTHORS.txt.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -188,7 +188,7 @@ class GPFATestCase(unittest.TestCase):
         self.assertEqual(seqs['y'].shape, seqs_not_sqrt['y'].shape)
 
     def test_cut_trials_inf(self):
-        same_data = gpfa_util.cut_trials(self.data2, seg_length=np.Inf)
+        same_data = gpfa_util.cut_trials(self.data2, seg_length=np.inf)
         assert same_data is self.data2
 
     def test_cut_trials_zero_length(self):

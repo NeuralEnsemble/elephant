@@ -14,7 +14,7 @@ signal, or filtering a signal).
     rauc
     derivative
 
-:copyright: Copyright 2014-2024 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2026 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -964,7 +964,7 @@ def rauc(signal, baseline=None, bin_duration=None, t_start=None, t_stop=None):
     sig_binned = sig_binned.reshape(n_bins, samples_per_bin, n_channels)
 
     # rectify and integrate over each bin
-    rauc = np.trapz(np.abs(sig_binned), dx=signal.sampling_period, axis=1)
+    rauc = np.trapezoid(np.abs(sig_binned), dx=signal.sampling_period, axis=1)
 
     if n_bins == 1:
         # return a single value for each channel

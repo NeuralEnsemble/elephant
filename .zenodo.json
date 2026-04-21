@@ -11,13 +11,18 @@
             "name": "Kern, Moritz"
         },
         {
-            "orcid": "0009-0003-9352-9826",
-            "affiliation": "BioMEMS Lab, University of Applied Sciences Aschaffenburg, Germany",
-            "name": "Richter, Felician"
+            "orcid": "0000-0003-0503-5264",
+            "affiliation": "Institute for Advanced Simulation (IAS-6), Jülich Research Centre, Jülich, Germany",
+            "name": "Köhler, Cristiano"
+        },
+        {
+            "orcid": "0009-0000-2540-435X",
+            "affiliation": "Institute for Advanced Simulation (IAS-6), Jülich Research Centre, Jülich, Germany",
+            "name": "Jos, Harris Antony"
         }
     ],
 
-    "title": "Elephant 1.1.0",
+    "title": "Elephant 1.2.0",
 
     "keywords": [
     "neuroscience",
@@ -32,6 +37,20 @@
     },
 
     "related_identifiers": [
+        {
+            "scheme": "doi",
+            "identifier": "10.5281/zenodo.1186602",
+            "relation": "isVersionOf",
+            "resource_type": "software"
+        },
+
+        {
+            "scheme": "doi",
+            "identifier": "10.5281/zenodo.13133971",
+            "relation": "isNewVersionOf",
+            "resource_type": "software"
+        },
+
         {
             "scheme": "doi",
             "identifier": "10.12751/incf.ni2018.0019",

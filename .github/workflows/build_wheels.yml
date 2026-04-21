@@ -8,14 +8,14 @@ on:
   pull_request_review:
     types: [ submitted ]
 
-# Building wheels on Ubuntu and Windows systems
+# Building wheels on Ubuntu, Windows and MacOS systems
 jobs:
   build_wheels:
     name: Build wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-22.04, windows-2019]
+        os: [ubuntu-latest, windows-latest, macos-latest]
 
     steps:
       - uses: actions/checkout@v4
@@ -23,23 +23,30 @@ jobs:
       # Used to host cibuildwheel
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.10' 
+          python-version: '3.13'
 
       - name: Install cibuildwheel
         run: |
           python -m pip install --upgrade pip
-          python -m pip install cibuildwheel==2.21.0
+          python -m pip install cibuildwheel==3.3.1
 
       - name: Install libomp
         if: runner.os == 'macOS'
         run: brew install libomp
 
-      - name: Build wheels
+      - name: Build wheels (Linux / Windows)
+        if: runner.os != 'macOS'
         run: python -m cibuildwheel --output-dir wheelhouse
         env:
-          CIBW_SKIP: cp36-* cp37-* pp*"
-          CIBW_PROJECT_REQUIRES_PYTHON: ">=3.8"
+          CIBW_SKIP: "cp38-*"
+          CIBW_PROJECT_REQUIRES_PYTHON: ">=3.9"
           CIBW_ARCHS: "auto64"
+
+      - name: Build wheels (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          python -m pip install --upgrade pip setuptools wheel build
+          python -m build --wheel --outdir wheelhouse
 
       - uses: actions/upload-artifact@v4
         with:
