@@ -14,9 +14,8 @@ Methods for performing phase analysis.
 References
 ----------
 
-.. bibliography:: ../bib/elephant.bib
+.. bibliography::
    :keyprefix: phase-
-   :style: unsrt
 
 :copyright: Copyright 2014-2026 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
