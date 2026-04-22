@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "elephant"
 dynamic = ["version"]
-description = "Elephant (Electrophysiology Analysis Toolkit) is an open-source, community centered library for the analysis of electrophysiological data in the Python programming language. The focus of Elephant is on generic analysis functions for spike train data and time series recordings from electrodes, such as the local field potentials (LFP) or intracellular voltages.In addition to providing a common platform for analysis code from different laboratories, the Elephant project aims to provide a consistent and homogeneous analysis framework that is built on a modular foundation. \nElephant is the direct successor to Neurotools and maintains ties to complementary projects such as OpenElectrophy and spykeviewer."
+description = "Elephant (Electrophysiology Analysis Toolkit) is an open-source, community centered library for the analysis of electrophysiological data in the Python programming language. The focus of Elephant is on generic analysis functions for spike train data and time series recordings from electrodes, such as the local field potentials (LFP) or intracellular voltages.In addition to providing a common platform for analysis code from different laboratories, the Elephant project aims to provide a consistent and homogeneous analysis framework that is built on a modular foundation. Elephant is the direct successor to Neurotools and maintains ties to complementary projects such as OpenElectrophy and spykeviewer."
 license = "BSD-3-Clause"
 license-files = [ "LICENSE.txt"]
 classifiers = [
