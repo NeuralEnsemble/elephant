@@ -4,14 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "elephant"
-dynamic = [
-        "version",
-        "dependencies",
-        "optional-dependencies"]
+dynamic = ["version"]
 description = "Elephant (Electrophysiology Analysis Toolkit) is an open-source, community centered library for the analysis of electrophysiological data in the Python programming language. The focus of Elephant is on generic analysis functions for spike train data and time series recordings from electrodes, such as the local field potentials (LFP) or intracellular voltages.In addition to providing a common platform for analysis code from different laboratories, the Elephant project aims to provide a consistent and homogeneous analysis framework that is built on a modular foundation. \nElephant is the direct successor to Neurotools and maintains ties to complementary projects such as OpenElectrophy and spykeviewer."
 license = {file = "LICENSE.txt"}
 classifiers = [
-        "Development Status :: 5 - Production/Stable", 
+        "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Science/Research",
         "License :: OSI Approved :: BSD License",
         "Natural Language :: English", "Operating System :: OS Independent",
@@ -24,7 +21,59 @@ classifiers = [
         "Topic :: Scientific/Engineering"]
 keywords = ["neuroscience", "neurophysiology", "electrophysiology", "statistics", "data-analysis"]
 readme = {file = "README.md", content-type = "text/markdown"}
-requires-python = ">= 3.8"
+requires-python = ">=3.8"
+
+dependencies = [
+    "neo>=0.10.0",
+    "numpy>=2.0.0",
+    "quantities>=0.14.1",
+    "scipy>=1.10.0",
+    "six>=1.10.0",
+    "tqdm",
+]
+
+[project.optional-dependencies]
+cuda = [
+    "pycuda>=2020.1", # used in ASSET
+]
+
+docs = [
+    "numpydoc>=1.1.0",
+    "jupyter>=1.0.0",
+    "sphinx>=3.3.0",
+    "nbsphinx>=0.8.0",
+    "sphinxcontrib-bibtex>1.0.0",
+    "sphinx-tabs>=1.3.0",
+    "matplotlib>=3.3.2,<3.9.0",
+    "docutils<0.22",
+]
+
+extras = [
+    "scikit-learn>=0.23.2",
+    "statsmodels>=0.12.1",
+    "jinja2>=2.11.2",
+]
+
+opencl = [
+    "pyopencl>=2020.2.2",
+]
+
+tests = [
+    "pytest",
+    "nixio>=1.5.0",
+]
+
+tutorials = [
+    "matplotlib>=3.3.2,<3.9.0",
+    "h5py>=3.1.0",
+    "nixio>=1.5.0",
+]
+
+[tool.setuptools.dynamic]
+version = {file = "elephant/VERSION"}
+
+[tool.setuptools]
+packages = ["elephant", "elephant.test"]
 
 [project.urls]
 Homepage = "http://python-elephant.org"
@@ -32,21 +81,6 @@ Documentation = "https://elephant.readthedocs.io/en/latest/"
 Repository = "https://github.com/NeuralEnsemble/elephant"
 Issues = "https://github.com/NeuralEnsemble/elephant/issues"
 Changelog = "https://github.com/NeuralEnsemble/elephant/releases"
-
-[tool.setuptools.dynamic.optional-dependencies]
-docs = {file = ["requirements/requirements-docs.txt"]}
-extras = {file = ["requirements/requirements-extras.txt"]}
-opencl = {file = ["requirements/requirements-opencl.txt"]}
-cuda = {file = ["requirements/requirements-cuda.txt"]}
-tests = {file = ["requirements/requirements-tests.txt"]}
-tutorials = {file = ["requirements/requirements-tutorials.txt"]}
-
-[tool.setuptools.dynamic]
-version = {file = "elephant/VERSION"}
-dependencies = {file = ["requirements/requirements.txt"]}
-
-[tool.setuptools]
-packages = ["elephant", "elephant.test"]
 
 # This file was created following this guide:
 # https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#writing-pyproject-toml
