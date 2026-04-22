@@ -72,8 +72,10 @@ tutorials = [
 [tool.setuptools.dynamic]
 version = {file = "elephant/VERSION"}
 
-[tool.setuptools]
-packages = ["elephant", "elephant.test"]
+# Include source files; uses a flat layout
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["elephant*"]
 
 [project.urls]
 Homepage = "http://python-elephant.org"
