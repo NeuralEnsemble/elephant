@@ -378,20 +378,95 @@ def setup(app):
     app.connect('autodoc-process-docstring',
                 process_docstring_remove_copyright)
 
-# replace square brackets in citation with round brackets
+
+# -- Custom style for citations ------------------------------------------
+
+import re
 from dataclasses import dataclass, field
 import sphinxcontrib.bibtex.plugin
 
+from pybtex.style.template import node, first_of, optional, field as bib_field
+from pybtex.richtext import Text
 from sphinxcontrib.bibtex.style.referencing import BracketStyle
 from sphinxcontrib.bibtex.style.referencing.author_year \
     import AuthorYearReferenceStyle
+from sphinxcontrib.bibtex.style.referencing.basic_author_year import (
+    BasicAuthorYearParentheticalReferenceStyle,
+    BasicAuthorYearTextualReferenceStyle,
+)
+from sphinxcontrib.bibtex.style.template import (
+    join, join2, pre_text, post_text, reference,
+)
 
+
+# Replace square brackets in citation with round brackets.
+# Also use disambiguated "Author, Year" labels in citations.
 
 def bracket_style() -> BracketStyle:
     return BracketStyle(
         left='(',
         right=')',
     )
+
+
+@node
+def year_with_suffix(children, data):
+    """
+    Year with disambiguation suffix extracted from the formatted entry label.
+
+    When two bibliographic entries share the same author/year label,
+    disambiguation letters 'a', 'b', ... are appended to the bibliography label
+    (e.g. 'Grün, 2002a'). This node propagates that suffix to in-text
+    citations so they read '2002a' rather than a bare '2002'.
+    """
+    assert not children
+    year_text = first_of[optional[bib_field("year")], "n.d."].format_data(data)
+    label = data["formatted_entry"].label
+    match = re.search(r'(\d{4})([a-z])$', label)
+    if match:
+        return Text(str(year_text) + match.group(2))
+    return year_text
+
+
+@dataclass
+class DisambiguatedParentheticalStyle(
+        BasicAuthorYearParentheticalReferenceStyle):
+    """
+    Parenthetical citation style using `year_with_suffix`.
+    """
+
+    def inner(self, role_name):
+        return join2(sep1=self.pre_text_sep, sep2=self.post_text_sep)[
+            pre_text,
+            reference[
+                join(sep=self.author_year_sep)[
+                    self.person.author_or_editor_or_title(
+                        full="s" in role_name),
+                    year_with_suffix,
+                ]
+            ],
+            post_text,
+        ]
+
+@dataclass
+class DisambiguatedTextualStyle(BasicAuthorYearTextualReferenceStyle):
+    """
+    Textual citation style using `year_with_suffix`.
+    """
+
+    def inner(self, role_name):
+        return join(sep=self.text_reference_sep)[
+            self.person.author_or_editor_or_title(full="s" in role_name),
+            join[
+                self.bracket.left,
+                join2(sep1=self.pre_text_sep, sep2=self.post_text_sep)[
+                    pre_text,
+                    reference[year_with_suffix],
+                    post_text,
+                ],
+                self.bracket.right,
+            ],
+        ]
 
 
 @dataclass
@@ -402,26 +477,54 @@ class RoundBracketReferenceStyle(AuthorYearReferenceStyle):
     bracket_label: BracketStyle = field(default_factory=bracket_style)
     bracket_year: BracketStyle = field(default_factory=bracket_style)
 
+    def __post_init__(self):
+        self.styles.extend([
+            DisambiguatedParentheticalStyle(
+                bracket=self.bracket_parenthetical,
+                person=self.person,
+                author_year_sep=self.author_year_sep,
+                pre_text_sep=self.pre_text_sep,
+                post_text_sep=self.post_text_sep,
+            ),
+            DisambiguatedTextualStyle(
+                bracket=self.bracket_textual,
+                person=self.person,
+                text_reference_sep=self.text_reference_sep,
+                pre_text_sep=self.pre_text_sep,
+                post_text_sep=self.post_text_sep,
+            ),
+        ])
+        # Call GroupReferenceStyle.__post_init__ directly to avoid
+        # AuthorYearReferenceStyle.__post_init__ adding a second set of styles.
+        from sphinxcontrib.bibtex.style.referencing import GroupReferenceStyle
+        GroupReferenceStyle.__post_init__(self)
+
 
 sphinxcontrib.bibtex.plugin.register_plugin(
     'sphinxcontrib.bibtex.style.referencing',
     'author_year_round', RoundBracketReferenceStyle)
 
-# Custom style for bibliography labels
+
+# -- Custom style for bibliography labels --------------------------------
 
 from pybtex.style.formatting.unsrt import Style as UnsrtStyle
-from pybtex.style.labels import BaseLabelStyle
+from pybtex.style.labels.alpha import LabelStyle as AlphaLabelStyle
 from pybtex.plugin import register_plugin
 
 
-# a simple label style which uses the bibtex keys for labels
-class AuthorYearStyle(BaseLabelStyle):
+# A simple label style which uses the bibtex keys for labels.
+# The labels are formatted as "Author, Year" (e.g. "Smith, 2020").
+# In case of duplicates, letters are appended (e.g. "Smith, 2020a",
+# "Smith, 2020b"). The `AlphaLabelStyle` is used as a base to leverage its
+# duplicate detection. This also ensures that LaTeX special characters in the
+# labels are properly escaped.
+class AuthorYearStyle(AlphaLabelStyle):
 
-    def format_labels(self, sorted_entries):
-        for entry in sorted_entries:
-            # create string for label
-            yield entry.persons["author"][0].last_names[0] + ", " +\
-                entry.fields["year"][-4:]
+    def format_label(self, entry):
+        last_name = (entry.persons["author"][0].rich_last_names[0]
+            .render_as('text'))
+        year = entry.fields["year"][-4:]
+        return f"{last_name}, {year}"
 
 
 class AuthorYear(UnsrtStyle):

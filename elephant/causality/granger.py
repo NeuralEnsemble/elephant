@@ -19,7 +19,7 @@ the influnece signals have onto each other in a frequency resolved manner. It
 relies on estimating the cross-spectrum of time series and decomposing them
 into a transfer function and a noise covariance matrix. The method to estimate
 the spectral Granger causality is non-parametric in the sense that it does not
-require to fit an autoregressive model (see :cite:`granger-Dhamala08_354`).
+require to fit an autoregressive model (see :cite:t:`granger-Dhamala08_354`).
 
 Limitations
 -----------
@@ -34,10 +34,10 @@ sampling frequency, DPSS, time-half bandwidth product).
 Implementation
 --------------
 The mathematical implementation of Granger causality methods in this module
-closely follows :cite:`granger-Ding06_0608035`.
+closely follows :cite:t:`granger-Ding06_0608035`.
 The implementation of spectral Granger causality follows
-:cite:`granger-Dhamala08_354`, :cite:`granger-Wen13_20110610` and
-:cite:`granger-Wilson72_420` for the spectral matrix factorization.
+:cite:t:`granger-Dhamala08_354`, :cite:t:`granger-Wen13_20110610` and
+:cite:t:`granger-Wilson72_420` for the spectral matrix factorization.
 
 
 Overview of Functions
@@ -612,7 +612,7 @@ def pairwise_granger(signals, max_order, information_criterion='aic'):
     Notes
     -----
     The formulas used in this implementation follows
-    :cite:`granger-Ding06_0608035`. The only difference being that we change
+    :cite:t:`granger-Ding06_0608035`. The only difference being that we change
     the equation 47 in the following way:
     -R(k) - A(1)R(k - 1) - ... - A(m)R(k - m) = 0.
     This forumlation allows for the usage of R values without transposition
@@ -746,7 +746,7 @@ def conditional_granger(signals, max_order, information_criterion='aic'):
     Notes
     -----
     The formulas used in this implementation follows
-    :cite:`granger-Ding06_0608035`. Specifically, the Eq 35.
+    :cite:t:`granger-Ding06_0608035`. Specifically, the Eq 35.
     """
     if isinstance(signals, AnalogSignal):
         signals = signals.magnitude
@@ -803,7 +803,7 @@ def pairwise_spectral_granger(signal_i, signal_j, fs=1, nw=4, num_tapers=None,
 
     3. Calculate the directional and instantaneous spectral Granger Causality
        from the power spectra, the transfer function and the covariance matrix
-       (see e.g. Wen et al., 2013, Phil Trans R Soc, eq. 2.10 ff).
+       (see, e.g., :cite:t:`granger-Wen13_20110610`, eq. 2.10 ff).
 
     Parameters
     ----------
