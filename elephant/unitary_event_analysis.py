@@ -4,7 +4,7 @@ Unitary Event (UE) analysis is a statistical method to analyze in a time
 resolved manner excess spike correlation between simultaneously recorded
 neurons by comparing the empirical spike coincidences (precision of a few ms)
 to the expected number based on the firing rates of the neurons
-(see :cite:`unitary_event_analysis-Gruen99_67`).
+(see :cite:t:`unitary_event_analysis-Gruen99_67`).
 
 Background
 ----------
@@ -20,9 +20,9 @@ hypothesis and the derivation of the corresponding count distribution of
 synchronous spike events used in the significance test. The analysis is
 performed in a sliding window manner and yields a time-resolved measure of
 significant spike synchrony. For further reading, see
-:cite:`unitary_event_analysis-Riehle97_1950,unitary_event_analysis-Gruen02_43,\
+:cite:t:`unitary_event_analysis-Riehle97_1950,unitary_event_analysis-Gruen02_43,\
 unitary_event_analysis-Gruen02_81,unitary_event_analysis-Gruen03,\
-unitary_event_analysis-Gruen09_1126,unitary_event_analysis-Gruen99_67`.
+unitary_event_analysis-Gruen09_1126` and :cite:t:`unitary_event_analysis-Gruen99_67`.
 
 
 Tutorial
@@ -455,7 +455,7 @@ def n_exp_mat_sum_trial(mat, pattern_hash, method='analytic_TrialByTrial',
          (analytically) on each trial, then sum over all trials.
          'analytic_TrialAverage' -- > calculate the expectency
          by averaging over trials.
-         (cf. Gruen et al. 2003)
+         (cf. :cite:t:`unitary_event_analysis-Gruen03`)
          'surrogate_TrialByTrial' -- > calculate the distribution
          of expected coincidences by spike time randomzation in
          each trial and sum over trials.
@@ -540,7 +540,7 @@ def gen_pval_anal(mat, pattern_hash, method='analytic_TrialByTrial',
          ''analytic_TrialAverage' -- > calculate the expectency
          by averaging over trials.
          Default: 'analytic_trialByTrial'
-         (cf. Gruen et al. 2003)
+         (cf. :cite:t:`unitary_event_analysis-Gruen03`)
     n_surrogates: integer, optional
          number of surrogate to be used
          Default: 1
@@ -697,7 +697,7 @@ def jointJ_window_analysis(spiketrains, bin_size=5 * pq.ms,
     """
     Calculates the joint surprise in a sliding window fashion.
 
-    Implementation is based on :cite:`unitary_event_analysis-Gruen99_67`.
+    Implementation is based on :cite:t:`unitary_event_analysis-Gruen99_67`.
 
     Parameters
     ----------
@@ -728,7 +728,7 @@ def jointJ_window_analysis(spiketrains, bin_size=5 * pq.ms,
           * 'analytic_TrialByTrial': calculate the analytical expectancy
             on each trial, then sum over all trials;
           * 'analytic_TrialAverage': calculate the expectancy by averaging over
-            trials (cf. Gruen et al. 2003);
+            trials (cf. :cite:t:`unitary_event_analysis-Gruen03`);
           * 'surrogate_TrialByTrial': calculate the distribution of expected
             coincidences by spike time randomization in each trial and sum over
             trials.

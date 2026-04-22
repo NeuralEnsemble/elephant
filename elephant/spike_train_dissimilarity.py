@@ -314,7 +314,7 @@ def van_rossum_distance(spiketrains, time_constant=1.0 * pq.s, sort=True):
     time_constant : Quantity scalar
         Decay rate of the exponential function as time scalar. Controls for
         which time scale the metric will be sensitive. Denoted as :math:`t_c`
-        in :cite:`dissimilarity-Rossum2001_751`. This parameter will be
+        in :cite:t:`dissimilarity-Rossum2001_751`. This parameter will be
         ignored if `kernel` is not `None`. May also be :const:`scipy.inf`
         which will lead to only measuring differences in spike count.
         Default: 1.0 * pq.s

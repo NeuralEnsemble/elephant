@@ -219,7 +219,8 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
 
 def phase_locking_value(phases_i, phases_j):
     r"""
-    Calculates the phase locking value (PLV) :cite:`phase-Lachaux99_194`.
+    Calculates the phase locking value (PLV), as described in
+    :cite:t:`phase-Lachaux99_194`.
 
     This function expects the phases of two signals (each containing multiple
     trials). For each trial pair, it calculates the phase difference at each
@@ -246,7 +247,8 @@ def phase_locking_value(phases_i, phases_j):
 
     Notes
     -----
-    This implementation is based on the formula taken from [1] (pp. 195):
+    This implementation is based on the formula in
+    :cite:t:`phase-Lachaux99_194`, p. 195:
 
     .. math::
         PLV_t = \frac{1}{N} \left |
@@ -336,7 +338,8 @@ def phase_difference(alpha, beta):
 def weighted_phase_lag_index(signal_i, signal_j, sampling_frequency=None,
                              absolute_value=True):
     r"""
-    Calculates the Weigthed Phase-Lag Index (WPLI) :cite:`phase-Vinck11_1548`.
+    Calculates the Weighted Phase-Lag Index (WPLI) as described in
+    :cite:t:`phase-Vinck11_1548`.
 
     This function estimates the WPLI, which is a measure of phase-synchrony. It
     describes for two given signals i and j, which is leading/lagging the other
@@ -375,7 +378,7 @@ def weighted_phase_lag_index(signal_i, signal_j, sampling_frequency=None,
     Notes
     -----
     This implementation is based on the formula taken from
-    :cite:`phase-Vinck11_1548` (pp.1550, equation (8)) :
+    :cite:t:`phase-Vinck11_1548`, equation (8) on p. 1550:
 
     .. math::
         WPLI = \frac{| E( |Im(X)| * sgn(Im(X)) ) |}{E( |Im(X)| )}

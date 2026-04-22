@@ -158,10 +158,10 @@ def spade(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
           alpha=None, stat_corr='fdr_bh', surr_method='dither_spikes',
           psr_param=None, output_format='patterns', **surr_kwargs):
     r"""
-    Perform the SPADE :cite:`spade-Torre2013_132`,
-    :cite:`spade-Quaglio2017_41`, :cite:`spade-Stella2019_104022` analysis for
-    the parallel input `spiketrains`. They are discretized with a temporal
-    resolution equal to `bin_size` in a sliding window of `winlen*bin_size`.
+    Perform the SPADE :cite:`spade-Torre2013_132,spade-Quaglio2017_41,\
+    spade-Stella2019_104022` analysis for the parallel input `spiketrains`.
+    They are discretized with a temporal resolution equal to `bin_size` in a
+    sliding window of `winlen*bin_size`.
 
     First, spike patterns are mined from the `spiketrains` using a technique
     called frequent itemset mining (FIM) or formal concept analysis (FCA). In

@@ -74,7 +74,7 @@ def spike_contrast(spiketrains, t_start=None, t_stop=None,
                    return_trace=False):
     """
     Calculates the synchrony of spike trains, according to
-    :cite:`synchrony-Ciba18_136`. The spike trains can have different lengths.
+    :cite:t:`synchrony-Ciba18_136`. The spike trains can have different lengths.
 
     Original implementation by: Philipp Steigerwald [s160857@th-ab.de]
 
