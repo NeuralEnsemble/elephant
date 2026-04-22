@@ -77,6 +77,10 @@ version = {file = "elephant/VERSION"}
 where = ["."]
 include = ["elephant*"]
 
+# Include package data as per MANIFEST.in
+[tool.setuptools]
+include-package-data = true
+
 [project.urls]
 Homepage = "http://python-elephant.org"
 Documentation = "https://elephant.readthedocs.io/en/latest/"
