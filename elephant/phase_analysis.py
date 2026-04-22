@@ -15,7 +15,6 @@ References
 ----------
 
 .. bibliography:: ../bib/elephant.bib
-   :labelprefix: ph
    :keyprefix: phase-
    :style: unsrt
 
