@@ -85,7 +85,7 @@ __all__ = ["GPFA"]
 
 class GPFA(sklearn.base.BaseEstimator):
     r"""
-    Apply Gaussian process factor analysis (GPFA) to spike train data
+    Apply Gaussian process factor analysis (GPFA) to spike train data.
 
     There are two principle scenarios of using the GPFA analysis, both of which
     can be performed in an instance of the GPFA() class.
@@ -111,36 +111,36 @@ class GPFA(sklearn.base.BaseEstimator):
 
     Parameters
     ----------
-    x_dim : int, optional
-        state dimensionality
-        Default: 3
     bin_size : float, optional
-        spike bin width in msec
+        Spike bin width in msec
         Default: 20.0
+    x_dim : int, optional
+        State dimensionality
+        Default: 3
     min_var_frac : float, optional
-        fraction of overall data variance for each observed dimension to set as
+        Fraction of overall data variance for each observed dimension to set as
         the private variance floor.  This is used to combat Heywood cases,
         where ML parameter learning returns one or more zero private variances.
         Default: 0.01
         (See Martin & McDonald, Psychometrika, Dec 1975.)
-    em_tol : float, optional
-        stopping criterion for EM
-        Default: 1e-8
-    em_max_iters : int, optional
-        number of EM iterations to run
-        Default: 500
     tau_init : float, optional
         GP timescale initialization in msec
         Default: 100
     eps_init : float, optional
         GP noise variance initialization
         Default: 1e-3
+    em_tol : float, optional
+        Stopping criterion for EM
+        Default: 1e-8
+    em_max_iters : int, optional
+        Number of EM iterations to run
+        Default: 500
     freq_ll : int, optional
-        data likelihood is computed at every freq_ll EM iterations. freq_ll = 1
+        Data likelihood is computed at every freq_ll EM iterations. freq_ll = 1
         means that data likelihood is computed at every iteration.
         Default: 5
     verbose : bool, optional
-        specifies whether to display status messages
+        Specifies whether to display status messages
         Default: False
 
     Attributes
@@ -155,38 +155,38 @@ class GPFA(sklearn.base.BaseEstimator):
         Estimated model parameters. Updated at each run of the fit() method.
 
         covType : str
-            type of GP covariance, either 'rbf', 'tri', or 'logexp'.
+            Type of GP covariance, either 'rbf', 'tri', or 'logexp'.
             Currently, only 'rbf' is supported.
         gamma : (1, #latent_vars) np.ndarray
-            related to GP timescales of latent variables before
+            Related to GP timescales of latent variables before
             orthonormalization by :math:`\frac{bin\_size}{\sqrt{gamma}}`
         eps : (1, #latent_vars) np.ndarray
             GP noise variances
         d : (#units, 1) np.ndarray
-            observation mean
+            Observation mean
         C : (#units, #latent_vars) np.ndarray
-            loading matrix, representing the mapping between the neuronal data
+            Loading matrix, representing the mapping between the neuronal data
             space and the latent variable space
         R : (#units, #latent_vars) np.ndarray
-            observation noise covariance
+            Observation noise covariance
     fit_info : dict
         Information of the fitting process. Updated at each run of the fit()
         method.
 
         iteration_time : list
-            containing the runtime for each iteration step in the EM algorithm.
+            Containing the runtime for each iteration step in the EM algorithm.
         log_likelihoods : list
-            log likelihoods after each EM iteration.
+            Log likelihoods after each EM iteration.
     transform_info : dict
         Information of the transforming process. Updated at each run of the
         transform() method.
 
         log_likelihood : float
-            maximized likelihood of the transformed data
+            Maximized likelihood of the transformed data
         num_bins : nd.array
-            number of bins in each trial
+            Number of bins in each trial
         Corth : (#units, #latent_vars) np.ndarray
-            mapping between the neuronal data space and the orthonormal
+            Mapping between the neuronal data space and the orthonormal
             latent variable space
 
     Raises
@@ -527,9 +527,8 @@ class GPFA(sklearn.base.BaseEstimator):
 
         See Also
         --------
-        GPFA.fit : fit the model with `spiketrains`
-        GPFA.transform : transform `spiketrains` into trajectories
-
+        GPFA.fit : Fit the model with `spiketrains`.
+        GPFA.transform : Transform `spiketrains` into trajectories.
         """
         self.fit(spiketrains)
         return self.transform(spiketrains, returned_data=returned_data)
@@ -544,7 +543,7 @@ class GPFA(sklearn.base.BaseEstimator):
         ],
     ) -> "GPFA":
         """
-        Returns the log-likelihood of the given data under the fitted model
+        Returns the log-likelihood of the given data under the fitted model.
 
         Parameters
         ---------- # noqa

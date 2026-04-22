@@ -351,7 +351,6 @@ class DeltaiCSD(CSD):
 class StepiCSD(CSD):
     """step-iCSD method"""
     def __init__(self, lfp, coord_electrode, **kwargs):
-
         """
         Initializing step-iCSD method class object
 
@@ -487,7 +486,6 @@ class StepiCSD(CSD):
 class SplineiCSD(CSD):
     """spline iCSD method"""
     def __init__(self, lfp, coord_electrode, **kwargs):
-
         """
         Initializing spline-iCSD method class object
 
@@ -649,8 +647,6 @@ class SplineiCSD(CSD):
         -------
         csd : np.ndarray * quantity.Quantity
             Array with csd estimate
-
-
         """
         e_mat = self._calc_e_matrices()
 

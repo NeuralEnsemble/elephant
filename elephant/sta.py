@@ -42,9 +42,9 @@ def spike_triggered_average(signal, spiketrains, window):
     ----------
     signal : neo AnalogSignal object
         'signal' contains n analog signals.
-    spiketrains : one SpikeTrain or one numpy ndarray or a list of n of either of these.
+    spiketrains : one SpikeTrain or one numpy ndarray or a list of n of either of these
         'spiketrains' contains the times of the spikes in the spiketrains.
-    window : tuple of 2 Quantity objects with dimensions of time.
+    window : tuple of 2 Quantity objects with dimensions of time
         'window' is the start time and the stop time, relative to a spike, of
         the time interval for signal averaging.
         If the window size is not a multiple of the sampling interval of the
@@ -72,7 +72,6 @@ def spike_triggered_average(signal, spiketrains, window):
     ...                                sampling_rate=10/ms) # doctest: +SKIP
     >>> stavg = spike_triggered_average(signal, [spiketrain1, spiketrain2],
     ...                                 (-5 * ms, 10 * ms)) # doctest: +SKIP
-
     """
 
     # checking compatibility of data and data types
@@ -218,25 +217,24 @@ def spike_field_coherence(signal, spiketrain, **kwargs):
     spiketrain : SpikeTrain or BinnedSpikeTrain
         Single spike train to perform the analysis on. The bin_size of the
         binned spike train must match the sampling_rate of signal.
-    **kwargs:
+    **kwargs
         All kwargs are passed to `scipy.signal.coherence()`.
 
     Returns
     -------
     coherence : complex Quantity array
-        contains the coherence values calculated for each analog signal trace
+        Contains the coherence values calculated for each analog signal trace
         in combination with the spike train. The first dimension corresponds to
         the frequency, the second to the number of the signal trace.
     frequencies : Quantity array
-        contains the frequency values corresponding to the first dimension of
-        the 'coherence' array
+        Contains the frequency values corresponding to the first dimension of
+        the 'coherence' array.
 
     Examples
     --------
 
     Plot the SFC between a regular spike train at 20 Hz, and two sinusoidal
     time series at 20 Hz and 23 Hz, respectively.
-
 
     .. plot::
         :include-source:
@@ -265,7 +263,6 @@ def spike_field_coherence(signal, spiketrain, **kwargs):
         plt.ylabel('SFC')
         plt.xlim((0, 60))
         plt.show()
-
     """
 
     if not hasattr(scipy.signal, 'coherence'):

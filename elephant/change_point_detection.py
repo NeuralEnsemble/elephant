@@ -65,7 +65,7 @@ def multiple_filter_test(window_sizes, spiketrain, t_final, alpha,
     Parameters
     ----------
     window_sizes : list of pq.Quantity
-                list that contains windows sizes
+        List that contains windows sizes
     spiketrain : neo.SpikeTrain or pq.Quantity
         A spiketrain object to analyze.
     t_final : pq.Quantity
@@ -84,7 +84,7 @@ def multiple_filter_test(window_sizes, spiketrain, t_final, alpha,
         If None, will be set according to the :func:`empirical_parameters`.
         Default: None
     test_param : (3, num. of windows) np.ndarray or None, optional
-        first row: list of `h`, second and third rows: empirical means and
+        First row: list of `h`, second and third rows: empirical means and
         variances of the limit process corresponding to `h`. This will be
         used to normalize the *filter processes* in order to give to the
         every maximum the same impact on the global statistic.
@@ -103,7 +103,6 @@ def multiple_filter_test(window_sizes, spiketrain, t_final, alpha,
         the corresponding `filter_process`. N.B.: only cps whose h-neighborhood
         does not include previously detected cps (with smaller window h) are
         added to the list.
-
     """
 
     if test_quantile is None and test_param is None:
@@ -173,6 +172,7 @@ def _brownian_motion(t_in, t_fin, x_in, time_step):
         initial point of the process: _brownian_motio(0) = x_in
     time_step : quantities,
       resolution, time step at which brownian increments are summed
+
     Returns
     -------
     Brownian motion on [t_in, t_fin], with resolution time_step and initial
@@ -269,7 +269,7 @@ def empirical_parameters(window_sizes, t_final, alpha, n_surrogates=1000,
     Parameters
     ----------
     window_sizes : list of pq.Quantity
-                list that contains windows sizes
+        List that contains windows sizes
     t_final : pq.Quantity
         The final time of the spike train which is to be analysed
     alpha : float
@@ -291,7 +291,7 @@ def empirical_parameters(window_sizes, t_final, alpha, n_surrogates=1000,
         presence of a change point (cp) at the time corresponding to that
         maximum.
     test_param : (3, num. of windows) np.ndarray
-        first row: list of `h`, second and third rows: empirical means and
+        First row: list of `h`, second and third rows: empirical means and
         variances of the limit process corresponding to `h`. This will be
         used to normalize the *filter processes* in order to give to the
         every maximum the same impact on the global statistic.

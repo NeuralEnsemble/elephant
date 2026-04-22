@@ -420,7 +420,6 @@ def _stretched_metric_2d(x, y, stretch, ref_angle, working_memory=None,
     MemoryError
         If there is not enough memory to allocate the matrix to store the
         pairwise distances when using chunked computations.
-
     """
     alpha = np.deg2rad(ref_angle)  # reference angle in radians
 
@@ -1482,8 +1481,7 @@ def synchronous_events_intersection(sse1, sse2, intersection='linkwise'):
 
     See Also
     --------
-    ASSET.extract_synchronous_events : extract SSEs from given spike trains
-
+    ASSET.extract_synchronous_events : Extract SSEs from given spike trains.
     """
     sse_new = sse1.copy()
     for pixel1 in sse1.keys():
@@ -1550,8 +1548,7 @@ def synchronous_events_difference(sse1, sse2, difference='linkwise'):
 
     See Also
     --------
-    ASSET.extract_synchronous_events : extract SSEs from given spike trains
-
+    ASSET.extract_synchronous_events : Extract SSEs from given spike trains.
     """
     sse_new = sse1.copy()
     for pixel1 in sse1.keys():
@@ -1592,7 +1589,6 @@ def _remove_empty_events(sse):
     -------
     sse_new : dict
         A copy of `sse` where all empty events have been removed.
-
     """
     sse_new = sse.copy()
     for pixel, link in sse.items():
@@ -1633,8 +1629,7 @@ def synchronous_events_identical(sse1, sse2):
 
     See Also
     --------
-    ASSET.extract_synchronous_events : extract SSEs from given spike trains
-
+    ASSET.extract_synchronous_events : Extract SSEs from given spike trains.
     """
     # Remove empty links from sse11 and sse22, if any
     sse11 = _remove_empty_events(sse1)
@@ -1672,8 +1667,7 @@ def synchronous_events_no_overlap(sse1, sse2):
 
     See Also
     --------
-    ASSET.extract_synchronous_events : extract SSEs from given spike trains
-
+    ASSET.extract_synchronous_events : Extract SSEs from given spike trains.
     """
     # Remove empty links from sse11 and sse22, if any
     sse11 = _remove_empty_events(sse1)
@@ -1722,8 +1716,7 @@ def synchronous_events_contained_in(sse1, sse2):
 
     See Also
     --------
-    ASSET.extract_synchronous_events : extract SSEs from given spike trains
-
+    ASSET.extract_synchronous_events : Extract SSEs from given spike trains.
     """
     # Remove empty links from sse11 and sse22, if any
     sse11 = _remove_empty_events(sse1)
@@ -1774,15 +1767,14 @@ def synchronous_events_contains_all(sse1, sse2):
     bool
         True if `sse1` strictly contains `sse2`.
 
+    See Also
+    --------
+    ASSET.extract_synchronous_events : Extract SSEs from given spike trains.
+
     Notes
     -----
     `synchronous_events_contains_all(sse1, sse2)` is identical to
     `synchronous_events_is_subsequence(sse2, sse1)`.
-
-    See Also
-    --------
-    ASSET.extract_synchronous_events : extract SSEs from given spike trains
-
     """
     return synchronous_events_contained_in(sse2, sse1)
 
@@ -1815,8 +1807,7 @@ def synchronous_events_overlap(sse1, sse2):
 
     See Also
     --------
-    ASSET.extract_synchronous_events : extract SSEs from given spike trains
-
+    ASSET.extract_synchronous_events : Extract SSEs from given spike trains.
     """
     contained_in = synchronous_events_contained_in(sse1, sse2)
     contains_all = synchronous_events_contains_all(sse1, sse2)
@@ -1844,6 +1835,10 @@ def get_neurons_in_sse(sse):
     list
         All neuron IDs present in the SSE, sorted in ascending order.
 
+    See Also
+    --------
+    ASSET.extract_synchronous_events : Extract SSEs from given spike trains.
+
     Examples
     --------
     >>> sse = {(268, 51): {22, 27},
@@ -1857,10 +1852,6 @@ def get_neurons_in_sse(sse):
     >>> neurons = get_neurons_in_sse(sse)
     >>> print(neurons)
     [9, 22, 26, 27, 77, 92]
-
-    See Also
-    --------
-    ASSET.extract_synchronous_events
     """
     all_neurons = []
     for neurons in sse.values():
@@ -1897,6 +1888,10 @@ def get_sse_start_and_end_time_bins(sse):
         the second element corresponds to the second sequence (elements `j`
         in the SSE pixel).
 
+    See Also
+    --------
+    ASSET.extract_synchronous_events : Extract SSEs from given spike trains.
+
     Examples
     --------
     >>> sse = {(268, 51): {22, 27},
@@ -1912,10 +1907,6 @@ def get_sse_start_and_end_time_bins(sse):
     [268, 51]
     >>> print(end)
     [277, 61]
-
-    See Also
-    --------
-    ASSET.extract_synchronous_events
     """
     pixels = list(sse.keys())
     start = list(pixels[0])
@@ -2024,7 +2015,6 @@ class ASSET(object):
         this value.
         Default: 'default'
 
-
     Raises
     ------
     ValueError
@@ -2032,6 +2022,10 @@ class ASSET(object):
           perfectly aligned;
 
           fully disjoint.
+
+    See Also
+    --------
+    :class:`elephant.conversion.BinnedSpikeTrain`
 
     Notes
     -----
@@ -2045,11 +2039,6 @@ class ASSET(object):
         >>> import logging
         >>> from elephant.asset.asset import logger as asset_logger
         >>> asset_logger.setLevel(logging.WARNING)
-
-    See Also
-    --------
-    :class:`elephant.conversion.BinnedSpikeTrain`
-
     """
 
     def __init__(self, spiketrains_i, spiketrains_j=None, bin_size=3 * pq.ms,
@@ -2131,8 +2120,8 @@ class ASSET(object):
 
         See Also
         --------
-        ASSET.intersection_matrix
-
+        ASSET.intersection_matrix : Generates the intersection matrix from a
+                                    list of spike trains.
         """
         return _quantities_almost_equal(self.x_edges[0], self.y_edges[0])
 
@@ -2173,7 +2162,6 @@ class ASSET(object):
             The floating point intersection matrix of a list of spike trains.
             It has the shape `(n, n)`, where `n` is the number of bins that
             time was discretized in.
-
         """
         imat = _intersection_matrix(self.spiketrains_i, self.spiketrains_j,
                                     self.bin_size,
@@ -2244,16 +2232,15 @@ class ASSET(object):
             STRICTLY LOWER than the observed overlap, under the null hypothesis
             of independence of the input spike trains.
 
+        See Also
+        --------
+        ASSET.probability_matrix_analytical : Analytical derivation of the
+                                              matrix.
+
         Notes
         -----
         We recommend playing with `surrogate_dt` parameter to see how it
         influences the result matrix. For this, refer to the ASSET tutorial.
-
-        See Also
-        --------
-        ASSET.probability_matrix_analytical : analytical derivation of the
-                                              matrix
-
         """
         if imat is None:
             # Compute the intersection matrix of the original data
@@ -2559,7 +2546,6 @@ class ASSET(object):
            caution -using your built-in Intel graphics card to perform
            computations may make the system unresponsive until the compute
            program terminates.
-
         """
         l, w = filter_shape
 
@@ -2649,10 +2635,12 @@ class ASSET(object):
 
         See Also
         --------
-        ASSET.probability_matrix_montecarlo : for `pmat` generation
-        ASSET.probability_matrix_analytical : for `pmat` generation
-        ASSET.joint_probability_matrix : for `jmat` generation
-
+        ASSET.probability_matrix_montecarlo : For `pmat` generation using a
+                                              Monte Carlo approach using
+                                              surrogate data.
+        ASSET.probability_matrix_analytical : For `pmat` generation using the
+                                              analytical derivation.
+        ASSET.joint_probability_matrix : For `jmat` generation.
         """
         if len(matrices) == 0:
             raise ValueError("Empty list of matrices")
@@ -2766,7 +2754,6 @@ class ASSET(object):
         See Also
         --------
         sklearn.cluster.DBSCAN
-
         """
 
         # Don't do anything if mat is identically zero

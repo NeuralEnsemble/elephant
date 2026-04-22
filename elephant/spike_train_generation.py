@@ -187,7 +187,7 @@ def spike_extraction(
         interval will modify the waveforms stored in the neo :class:`neo.core.SpikeTrain`, but it will not affect the
         spike times.
         Default: (-2 * pq.ms, 4 * pq.ms)
-    always_as_list: bool, optional
+    always_as_list : bool, optional
         If True, :class:`neo.core.spiketrainslist.SpikeTrainList` is returned.
         Default: False
 
@@ -293,7 +293,7 @@ def threshold_detection(
     sign : {'above', 'below'}, optional
         Determines whether to count threshold crossings that cross above or below the threshold.
         Default: 'above'
-    always_as_list: bool, optional
+    always_as_list : bool, optional
         If True, a :class:`neo.core.spiketrainslist.SpikeTrainList`.
         Default: False
 
@@ -414,7 +414,7 @@ def peak_detection(signal: neo.core.AnalogSignal,
     as_array : bool, optional
         If True, a NumPy array of the resulting peak times is returned instead of a (default) `neo.SpikeTrain` object.
         Default: False
-    always_as_list: bool, optional
+    always_as_list : bool, optional
         If True, a :class:`neo.core.spiketrainslist.SpikeTrainList` is returned.
         Default: False
 
@@ -930,11 +930,6 @@ class StationaryInverseGaussianProcess(RenewalProcess):
     Generates spike trains whose spikes are realizations of a stationary Gamma process with the given rate and `cv`
     starting at time `t_start` and stopping at time `t_stop`.
 
-    Raises
-    ------
-    ValueError
-        If one of `rate`, `t_start` and `t_stop` is not of type `pq.Quantity`.
-
     Parameters
     ----------
     rate : pq.Quantity
@@ -950,6 +945,11 @@ class StationaryInverseGaussianProcess(RenewalProcess):
     equilibrium : bool, optional
         Generate an equilibrium or an ordinary renewal process.
         Default: True
+
+    Raises
+    ------
+    ValueError
+        If one of `rate`, `t_start` and `t_stop` is not of type `pq.Quantity`.
 
     Examples
     --------
@@ -1206,7 +1206,6 @@ def homogeneous_poisson_process(rate, t_start=0.0 * pq.ms,
     >>> spikes = StationaryPoissonProcess(50*pq.Hz, t_start=0*pq.ms,
     ...     t_stop=1000*pq.ms,
     ...     refractory_period = 3*pq.ms).generate_spiketrain()
-
     """
     warnings.warn(
         "'homogeneous_poisson_process' is deprecated;"
@@ -1251,7 +1250,6 @@ def inhomogeneous_poisson_process(rate, as_array=False,
 
         If `refractory_period` is not None and the period between two successive spikes (`1 / rate`) is smaller than the
         `refractory_period`.
-
     """
     warnings.warn(
         "'inhomogeneous_poisson_process' is deprecated;"
@@ -1305,7 +1303,6 @@ def homogeneous_gamma_process(a, b, t_start=0.0 * pq.ms, t_stop=1000.0 * pq.ms,
     ...                                   ).generate_spiketrain()
     >>> spikes = StationaryPoissonProcess(20*pq.Hz, 5000*pq.ms,
     ... 10000*pq.ms).generate_spiketrain(as_array=True)
-
     """
     warnings.warn(
         "'homogeneous_gamma_process' is deprecated;"
@@ -1344,7 +1341,6 @@ def inhomogeneous_gamma_process(rate, shape_factor, as_array=False):
     ValueError
         If `rate` is not a neo AnalogSignal
         If `rate` contains a negative value.
-
     """
     warnings.warn(
         "'inhomogeneous_gamma_process' is deprecated;"
@@ -1377,7 +1373,6 @@ def _n_poisson(rate, t_stop, t_start=0.0 * pq.ms, n_spiketrains=1):
         If rate is a single pq.Quantity value, n specifies the number of SpikeTrains to be generated. If rate is an
         array, n is ignored and the number of SpikeTrains is equal to len(rate).
         Default: 1
-
 
     Returns
     -------
@@ -1421,8 +1416,6 @@ def single_interaction_process(
 
     Parameters
     ----------
-    t_stop : pq.Quantity
-        Total time of the simulated processes. The events are drawn between 0 and `t_stop`.
     rate : pq.Quantity
         Overall mean rate of the time series to be generated (coincidence rate `coincidence_rate` is subtracted to
         determine the background rate). Can be:
@@ -1434,6 +1427,8 @@ def single_interaction_process(
     coincidence_rate : pq.Quantity
         Coincidence rate (rate of coincidences for the n-dimensional SIP). The SIP spike trains will have coincident
         events with rate `coincidence_rate` plus independent 'background' events with rate `rate-rate_coincidence`.
+    t_stop : pq.Quantity
+        Total time of the simulated processes. The events are drawn between 0 and `t_stop`.
     n_spiketrains : int, optional
         If `rate` is a single pq.Quantity value, `n_spiketrains` specifies the number of SpikeTrains to be generated. If
         rate is an array, `n_spiketrains` is ignored and the number of SpikeTrains is equal to `len(rate)`.
@@ -1627,7 +1622,6 @@ def _sample_int_from_pdf(probability_density, n_samples):
     Draw n independent samples from the set {0,1,...,L}, where L=len(a)-1, according to the probability distribution a.
     a[j] is the probability to sample j, for each j from 0 to L.
 
-
     Parameters
     ----------
     probability_density : np.ndarray
@@ -1654,7 +1648,6 @@ def _mother_proc_cpp_stat(
         amplitude_distribution, t_stop, rate, t_start=0 * pq.ms):
     """
     Generate the hidden ("mother") Poisson process for a Compound Poisson Process (CPP).
-
 
     Parameters
     ----------

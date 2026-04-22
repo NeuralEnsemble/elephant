@@ -21,6 +21,26 @@ from datetime import date
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 sys.path.insert(0, '..')
 
+# -- numpydoc validation compatibility patch -----------------------------
+# Property descriptors do not always expose __module__.  numpydoc's
+# `mangle_docstrings` function that is run during the builtin validation
+# accesses `obj.__module__` unconditionally, which raises AttributeError for
+# such objects. This patch must be applied here (before Sphinx loads the
+# extensions) so that when numpydoc.setup() registers its handler, the patched
+# version is used.
+import numpydoc.numpydoc as _numpydoc_mod
+
+_orig_mangle_docstrings = _numpydoc_mod.mangle_docstrings
+
+
+def _safe_mangle_docstrings(app, what, name, obj, options, lines):
+    if not hasattr(obj, '__module__'):
+        return
+    return _orig_mangle_docstrings(app, what, name, obj, options, lines)
+
+
+_numpydoc_mod.mangle_docstrings = _safe_mangle_docstrings
+
 # -- General configuration -----------------------------------------------
 # If your documentation needs a minimal Sphinx version, state it here.
 # needs_sphinx = '1.0'
@@ -210,9 +230,33 @@ html_show_copyright = True
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'elephantdoc'
 
+# --- Options for numpydoc ---------------------------------------------
+
+# Validation checks not included:
+# - PR09: warnings triggered by the use of "Default: x" in the last line of
+#   parameter descriptions, which is a common and recommended way to specify
+#   the default and is more readable without a trailing period.
+
+# Notes:
+# - GL01: warnings are triggered for GPFA methods and statistics.cv due to
+#   non-conforming docstrings in sklearn and SciPy that are inherited.
+# - RT05: added in-line exceptions to supress warnings triggered for functions
+#   in `phase_analysis` where a trailing period is not used in the last line
+#   stating the range of the returned values.
+
+numpydoc_validation_checks = {
+    "GL01", "GL02", "GL03", "GL05", "GL06", "GL07",
+    "SS02", "SS03", "SS04",
+    "SA02", "SA03",
+    "PR02", "PR03", "PR05", "PR06", "PR07", "PR08", "PR10",
+    "RT04", "RT05",
+}
+
 # Suppresses  wrong numpy doc warnings
 # see here https://github.com/phn/pytpm/issues/3#issuecomment-12133978
 numpydoc_show_class_members = False
+
+# --- Options for bibtex -----------------------------------------------
 
 # path to bibtex-bibfiles.
 bibtex_bibfiles = ['bib/elephant.bib']
