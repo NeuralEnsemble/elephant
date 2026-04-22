@@ -216,7 +216,7 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
     return result_phases, result_amps, result_times
 
 
-def phase_locking_value(phases_i, phases_j):
+def phase_locking_value(phases_i, phases_j):  # numpydoc ignore=RT05
     r"""
     Calculates the phase locking value (PLV) :cite:`phase-Lachaux99_194`.
 
@@ -267,7 +267,7 @@ def phase_locking_value(phases_i, phases_j):
     return r
 
 
-def mean_phase_vector(phases, axis=0):
+def mean_phase_vector(phases, axis=0):  # numpydoc ignore=RT05
     r"""
     Calculates the mean vector of phases.
 
@@ -302,7 +302,7 @@ def mean_phase_vector(phases, axis=0):
     return z_mean_theta, z_mean_r
 
 
-def phase_difference(alpha, beta):
+def phase_difference(alpha, beta):  # numpydoc ignore=RT05
     r"""
     Calculates the difference between a pair of phases.
 
@@ -332,7 +332,7 @@ def phase_difference(alpha, beta):
 
 
 def weighted_phase_lag_index(signal_i, signal_j, sampling_frequency=None,
-                             absolute_value=True):
+                             absolute_value=True):  # numpydoc ignore=RT05
     r"""
     Calculates the Weigthed Phase-Lag Index (WPLI) :cite:`phase-Vinck11_1548`.
 

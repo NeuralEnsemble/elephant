@@ -236,19 +236,20 @@ htmlhelp_basename = 'elephantdoc'
 # - PR09: warnings triggered by the use of "Default: x" in the last line of
 #   parameter descriptions, which is a common and recommended way to specify
 #   the default and is more readable without a trailing period.
-# - RT05: warnings triggered for some functions where a trailing period is not
-#   used in the last line (e.g., "Range: x" in `phase_analysis`).
 
 # Notes:
 # - GL01: warnings are triggered for GPFA methods and statistics.cv due to
 #   non-conforming docstrings in sklearn and SciPy that are inherited.
+# - RT05: added in-line exceptions to supress warnings triggered for functions
+#   in `phase_analysis` where a trailing period is not used in the last line
+#   stating the range of the returned values.
 
 numpydoc_validation_checks = {
     "GL01", "GL02", "GL03", "GL05", "GL06", "GL07",
     "SS02", "SS03", "SS04",
     "SA02", "SA03",
     "PR02", "PR03", "PR05", "PR06", "PR07", "PR08", "PR10",
-    "RT04",
+    "RT04", "RT05",
 }
 
 # Suppresses  wrong numpy doc warnings

@@ -644,13 +644,11 @@ def cross_correlation_histogram(
 
         Consistent with the definition of `neo.AnalogSignals`, the time axis
         represents the left bin borders of each histogram bin. For example,
-        the time axis might be:
-        `np.array([-2.5 -1.5 -0.5 0.5 1.5]) * ms`
+        the time axis might be `np.array([-2.5 -1.5 -0.5 0.5 1.5]) * ms`.
     lags : np.ndarray
         Contains the IDs of the individual histogram bins, where the central
         bin has ID 0, bins to the left have negative IDs and bins to the right
-        have positive IDs, e.g.,:
-        `np.array([-3, -2, -1, 0, 1, 2, 3])`
+        have positive IDs, e.g., `np.array([-3, -2, -1, 0, 1, 2, 3])`.
 
     Notes
     -----

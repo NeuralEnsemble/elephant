@@ -196,7 +196,7 @@ def mean_firing_rate(spiketrain, t_start=None, t_stop=None, axis=None):
     Returns
     -------
     float or pq.Quantity or np.ndarray
-        The firing rate of the `spiketrain`
+        The firing rate of the `spiketrain`.
 
     Raises
     ------
