@@ -204,7 +204,7 @@ def spade(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
         'n_subsets': int
             Number of subsets of a concept used to approximate its stability.
             If `n_subsets` is 0, it is calculated according to the formula
-            given in Babin, Kuznetsov (2012), proposition 6:
+            given in :cite:t:`spade-Babin2012_7`, proposition 6:
 
             .. math::
                    n_{\text{subset}} = \frac{1}{2 \cdot \epsilon^2}
@@ -1741,7 +1741,7 @@ def approximate_stability(concepts, rel_matrix, n_subsets=0,
                           delta=0., epsilon=0.):
     r"""
     Approximate the stability of concepts. Uses the algorithm described
-    in Babin, Kuznetsov (2012): Approximating Concept Stability
+    in :cite:t:`spade-Babin2012_7`.
 
     Parameters
     ----------
@@ -1765,7 +1765,7 @@ def approximate_stability(concepts, rel_matrix, n_subsets=0,
     n_subsets : int
         Number of subsets of a concept used to approximate its stability.
         If `n_subsets` is 0, it is calculated according to to the formula
-        given in Babin, Kuznetsov (2012), proposition 6:
+        given in :cite:t:`spade-Babin2012_7`, proposition 6:
 
         .. math::
                n_{\text{subset}} = \frac{1}{2 \cdot \epsilon^2}
