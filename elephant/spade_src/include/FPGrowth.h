@@ -44,7 +44,7 @@
 #include <mpi.h>
 #endif
 
-#include <experimental/vector>
+// #include <experimental/vector>
 
 #include "Defines.h"
 #include "FPNode.h"
@@ -790,7 +790,13 @@ private:
 
 	void reduceTransactions(Transactions& transactions)
 	{
-		std::experimental::erase_if(transactions, [&minPatternLen = m_minPatternLen](const Transaction& t) { return t.size() < minPatternLen; });
+		// Replacing experimental method with erase-remove call, this lets us keep c++17
+		transactions.erase(
+					std::remove_if(transactions.begin(), transactions.end(),
+						[&minPatternLen = m_minPatternLen](const Transaction& t) { return t.size() < minPatternLen;} ),
+					transactions.end()
+				);
+		// std::experimental::erase_if(transactions, [&minPatternLen = m_minPatternLen](const Transaction& t) { return t.size() < minPatternLen; });
 	}
 
 private:
