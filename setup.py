@@ -29,7 +29,7 @@ if platform.system() == "Windows":
         libraries=[],
         extra_compile_args=[
             '-DMODULE_NAME=fim', '-DUSE_OPENMP', '-DWITH_SIG_TERM',
-            '-Dfim_EXPORTS', '-fopenmp', '/std:c++17'],
+            '-Dfim_EXPORTS', '-openmp', '/std:c++17'],
         optional=True
     )
 elif platform.system() == "Darwin":
