@@ -7,6 +7,11 @@ on:
       - master
   pull_request_review:
     types: [ submitted ]
+  pull_request:
+    branches:
+      - master
+    types:
+      - synchronize
 
 # Building wheels on Ubuntu, Windows and MacOS systems
 jobs:
