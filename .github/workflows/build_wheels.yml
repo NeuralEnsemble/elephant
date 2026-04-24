@@ -59,6 +59,7 @@ jobs:
           LDFLAGS: "-L/opt/homebrew/opt/libomp/lib ${{ env.LDFLAGS }}"
           CPPFLAGS: "-I/opt/homebrew/opt/libomp/include ${{ env.CPPFLAGS }}"
           CPLUS_INCLUDE_PATH: "/opt/homebrew/opt/libomp/include:${{ env.CPLUS_INCLUDE_PATH }}"
+          MACOSX_DEPLOYMENT_TARGET: "15.0"
           CIBW_ARCHS: "auto"
 
       - uses: actions/upload-artifact@v4
