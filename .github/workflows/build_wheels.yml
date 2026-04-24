@@ -54,7 +54,7 @@ jobs:
           echo ${{ env.CPPFLAGS }}
           echo ${{ env.CPLUS_INCLUDE_PATH }}
           python -m pip install --upgrade pip setuptools wheel build
-          python -m build --wheel --outdir wheelhouse
+          python -m cibuildwheel --output-dir wheelhouse
         env:
           LDFLAGS: "-L/opt/homebrew/opt/libomp/lib ${{ env.LDFLAGS }}"
           CPPFLAGS: "-I/opt/homebrew/opt/libomp/include ${{ env.CPPFLAGS }}"
