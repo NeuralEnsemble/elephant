@@ -51,12 +51,15 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           echo ${{env.LDFLAGS}}
+          echo ${{ env.CPPFLAGS }}
+          echo ${{ env.CPLUS_INCLUDE_PATH }}
           python -m pip install --upgrade pip setuptools wheel build
           python -m build --wheel --outdir wheelhouse
         env:
           LDFLAGS: "-L/opt/homebrew/opt/libomp/lib ${{ env.LDFLAGS }}"
           CPPFLAGS: "-I/opt/homebrew/opt/libomp/include ${{ env.CPPFLAGS }}"
           CPLUS_INCLUDE_PATH: "/opt/homebrew/opt/libomp/include:${{ env.CPLUS_INCLUDE_PATH }}"
+          CIBW_ARCHS: "auto"
 
       - uses: actions/upload-artifact@v4
         with:
