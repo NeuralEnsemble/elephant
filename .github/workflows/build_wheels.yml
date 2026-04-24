@@ -50,6 +50,7 @@ jobs:
       - name: Build wheels (macOS)
         if: runner.os == 'macOS'
         run: |
+          echo ${{env.LDFLAGS}}
           python -m pip install --upgrade pip setuptools wheel build
           python -m build --wheel --outdir wheelhouse
         env:
