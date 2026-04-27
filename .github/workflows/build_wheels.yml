@@ -48,6 +48,21 @@ jobs:
           CIBW_ARCHS: "auto"
           CIBW_SKIP: cp38-*
 
+      - name: Verify wheels contain compiled code
+        run: |
+          # Download elephant and deps wheels to a DIR
+          mkdir -p localwheels
+          pip wheel --wheel-dir localwheels .
+
+          # Remove downloaded elephant and copy wheeels from cibuildwheel
+          rm localwheels/elephant*.whl
+          cp wheelhouse/elephant*.whl localwheels/
+
+          # Install elephant and deps from local wheels and check for spade
+          pip install --no-index --find-links localwheels elephant
+          cd $HOME
+          python -c "from elephant.spade_src import fim"
+
       - uses: actions/upload-artifact@v4
         with:
           name: wheels-${{ matrix.os }}
