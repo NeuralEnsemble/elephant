@@ -20,7 +20,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest, macos-15-intel]
 
     steps:
       - uses: actions/checkout@v4
@@ -47,19 +47,24 @@ jobs:
           CIBW_PROJECT_REQUIRES_PYTHON: ">=3.9"
           CIBW_ARCHS: "auto64"
 
+      - name: Set macOS env vars
+        if: runner.os == 'macOS'
+        run: |
+          OMP_PATH=$(brew --prefix libomp)
+          echo "LDFLAGS=-L${OMP_PATH}/lib" >> $GITHUB_ENV
+          echo "CPPFLAGS=-I${OMP_PATH}/include" >> $GITHUB_ENV
+          if [ "$RUNNER_ARCH" = "ARM64" ]; then
+            echo "MACOSX_DEPLOYMENT_TARGET=15.0" >> $GITHUB_ENV
+          else
+            echo "MACOSX_DEPLOYMENT_TARGET=14.0" >> $GITHUB_ENV
+          fi
+
       - name: Build wheels (macOS)
         if: runner.os == 'macOS'
         run: |
-          echo ${{env.LDFLAGS}}
-          echo ${{ env.CPPFLAGS }}
-          echo ${{ env.CPLUS_INCLUDE_PATH }}
           python -m pip install --upgrade pip setuptools wheel build
           python -m cibuildwheel --output-dir wheelhouse
         env:
-          LDFLAGS: "-L/opt/homebrew/opt/libomp/lib ${{ env.LDFLAGS }}"
-          CPPFLAGS: "-I/opt/homebrew/opt/libomp/include ${{ env.CPPFLAGS }}"
-          CPLUS_INCLUDE_PATH: "/opt/homebrew/opt/libomp/include:${{ env.CPLUS_INCLUDE_PATH }}"
-          MACOSX_DEPLOYMENT_TARGET: "15.0"
           CIBW_ARCHS: "auto"
 
       - uses: actions/upload-artifact@v4
