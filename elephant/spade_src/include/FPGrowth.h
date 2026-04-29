@@ -44,7 +44,6 @@
 #include <mpi.h>
 #endif
 
-// #include <experimental/vector>
 
 #include "Defines.h"
 #include "FPNode.h"
