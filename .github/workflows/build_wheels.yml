@@ -54,14 +54,13 @@ jobs:
           mkdir -p localwheels
           pip wheel --wheel-dir localwheels .
 
-          # Remove downloaded elephant and copy wheeels from cibuildwheel
+          # Remove downloaded elephant and copy wheels from cibuildwheel
           rm localwheels/elephant*.whl
           cp wheelhouse/elephant*.whl localwheels/
 
           # Install elephant and deps from local wheels and check for spade
           pip install --no-index --find-links localwheels elephant
-          cd $HOME
-          python -c "from elephant.spade_src import fim"
+          python -P -c "from elephant.spade_src import fim"
 
       - uses: actions/upload-artifact@v4
         with:
