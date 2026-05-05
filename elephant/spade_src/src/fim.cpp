@@ -123,7 +123,10 @@ static PyMethodDef ModuleFunctions[] = {
 
 // Disable the missing-field-initializers warning as some
 // sub states of PyModuleDef won't be initialized here
-#if !defined(_MSC_VER) && !defined(__clang__)
+// Elephant PR 695, original author excluded clang, but the
+// warning fired on clang too. Also clang supports diagnostic
+// pragmas
+#if !defined(_MSC_VER)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 #endif
@@ -138,7 +141,7 @@ static struct PyModuleDef ModuleDefinitions = {
 	ModuleFunctions // Functions exposed to the module
 };
 
-#if !defined(_MSC_VER) && !defined(__clang__)
+#if !defined(_MSC_VER)
 #pragma GCC diagnostic pop
 #endif
 
