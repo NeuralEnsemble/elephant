@@ -1,10 +1,10 @@
-# This workflow will set up GitHub-hosted runners and install the required dependencies for elephant tests.
-# On a pull requests and on pushes to master it will run different tests for elephant.
+# This workflow sets up GitHub runners and runs unit tests
+# Triggered on pull requests, pushes to master and manual trigger from github web
 
+# Triggers
 name: tests
-# define events that trigger workflow 'tests'
 on:
-  workflow_dispatch: # enables manual triggering of workflow
+  workflow_dispatch:
     inputs:
       logLevel:
         description: 'Log level'
@@ -20,23 +20,9 @@ on:
     branches:
       - master
     types:
-      #- assigned
-      #- unassigned
-      #- labeled
-      #- unlabeled
       - opened
-      #- edited
-      #- closed
       - reopened
       - synchronize
-      #- converted_to_draft
-      #- ready_for_review
-      #- locked
-      #- unlocked
-      #- review_requested
-      #- review_request_removed
-      #- auto_merge_enabled
-      #- auto_merge_disabled
 
   push:
     branches:
