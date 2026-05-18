@@ -71,7 +71,7 @@ jobs:
         run: |
             echo "dataset_hash=$(git ls-remote https://gin.g-node.org/NeuralEnsemble/elephant-data.git HEAD | cut -f1)" >> $GITHUB_OUTPUT
 
-      - uses: actions/cache/restore@v4.2.2
+      - uses: actions/cache/restore@v5
         # Loading cache of elephant-data
         id: cache-datasets
         with:
@@ -103,15 +103,12 @@ jobs:
       - name: Test with pytest
         shell: bash
         run: pytest
-        env:
-          ELEPHANT_DATA_LOCATION: ${{ env.ELEPHANT_DATA_LOCATION }}
 
       - name: Submit Coveralls
         if: runner.os == 'Linux' && matrix.python-version == '3.12'
         run: coveralls --service=github || echo "Coveralls submission failed"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ELEPHANT_DATA_LOCATION: ${{ env.ELEPHANT_DATA_LOCATION }}
 
   #  __  __ ____ ___
   # |  \/  |  _ \_ _|
