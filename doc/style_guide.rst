@@ -34,6 +34,45 @@ The example below illustrates show it should be implemented.
     """
 
 
+Type Hinting
+------------
+
+Type hinting is a feature in Python that allows you to specify the expected data types of arguments and return values.
+It improves code readability, helps with debugging, and enables tools like linters and IDEs to provide better support.
+
+In Elephant, we use type hinting to ensure code clarity and consistency. Additionally, we use the `pydantic` library
+for runtime validation of inputs. This ensures that the provided arguments conform to the expected types and possible
+additional constraints.
+
+Here is an example of how to do type hinting in Elephant:
+
+.. code-block:: python
+
+    from typing import List, Union
+
+    def type_hinting_example(spiketrains: Union[neo.core.spiketrainlist.SpikeTrainList, List[neo.SpikeTrain]],
+         t_start: pq.Quantity,
+         t_stop: pq.Quantity) -> None:
+        """
+        This function processes some spiketrains inplace and returns None
+
+        Parameters
+        ----------
+        spiketrains : neo.core.spiketrainlist.SpikeTrainList or list of neo.SpikeTrain
+            The spike trains to be processed.
+        t_start : pq.Quantity
+            The start time for processing the spike trains.
+        t_stop : pq.Quantity
+            The stop time for processing the spike trains.
+
+        Returns
+        -------
+        out : None
+        """
+        print(f"Processing {spiketrains} from {t_start} to {t_stop}")
+        return None
+
+
 Function docstring. Naming conventions
 --------------------------------------
 
@@ -42,17 +81,39 @@ throughout Elephant.
 
 .. code-block:: python
 
-    def pair_of_signals_example(spiketrain_i, spiketrain_j):
+    def pair_of_signals_example(spiketrain_i: neo.SpikeTrain, spiketrain_j : neo.SpikeTrain):
         # Add '_i' and '_j' suffixes to a pair of signals, spiketrains or any
         # other variables that come in pairs.
 
-    def perfect_naming_of_parameters(spiketrains, spiketrain, reference_spiketrain,
-                         target_spiketrain, signal, signals, max_iterations,
-                         min_threshold, n_bins, n_surrogates, bin_size, max_size,
-                         time_limits, time_range, t_start, t_stop, period, order,
-                         error, capacity, source_matrix, cov_matrix,
-                         selection_method='aic'
-                         ):
+    # Import the relevant Classes from the typing module. We use Union to allow for backward
+    # compatibility with Python <= 3.9
+    from typing import List, Tuple, Union
+
+    def perfect_naming_of_parameters(
+        spiketrains: Union[neo.core.spiketrainlist.SpikeTrainList, List[neo.SpikeTrain]],
+        spiketrain: neo.SpikeTrain,
+        reference_spiketrain: neo.SpikeTrain,
+        target_spiketrain: neo.SpikeTrain,
+        signal: neo.AnalogSignal,
+        signals: List[neo.AnalogSignal],
+        max_iterations: int,
+        min_threshold: float,
+        n_bins: int,
+        n_surrogates: int,
+        bin_size: Union[pq.Quantity, float],
+        max_size: float,
+        time_limits: Union[List, Tuple],
+        time_range: List,
+        t_start: pq.Quantity,
+        t_stop: pq.Quantity,
+        period: pq.Quantity,
+        order: int,
+        error: float,
+        capacity: float,
+        source_matrix: np.ndarray,
+        cov_matrix: np.ndarray,
+        selection_method: str = 'aic'
+    ) -> Tuple[float, np.ndarray]:
         r"""
         Full example of the docstring and naming conventions.
 
@@ -391,7 +452,7 @@ Class docstrings follow function docstring format. Here is an example.
         <!-- This section is rarely used in class docstrings, but often in
         function docs. Follow the general recommendation of numpydoc.
         If there is more than one returned value, use variable names for the
-        returned value, like `error_matrix` below. -->
+        returned value, like `error_matrix` below. If there is just one return, use `out`. -->
         error_matrix : np.ndarray
             A matrix is stored in a variable called `error_matrix`, containing
             errors estimated from some calculations. The function "return"
@@ -540,7 +601,7 @@ Class docstrings follow function docstring format. Here is an example.
 
         """
 
-        def __init__(self, parameter):
+        def __init__(self, parameter: Union[int, float]) -> None:
             """
             Constructor
             (actual documentation is in class documentation, see above!)
@@ -548,8 +609,15 @@ Class docstrings follow function docstring format. Here is an example.
             self.parameter = parameter
             self.function_a()  # creates new attribute of self 'a'
 
-        def function_a(self, parameter, no_type_parameter, spiketrains,
-                       is_true=True, string_parameter='C', other_parameter=None):
+        def function_a(
+            self,
+            parameter: Union[int, float],
+            no_type_parameter,
+            spiketrains: Union[neo.SpikeTrain, List[neo.SpikeTrain]],
+            is_true: bool = True,
+            string_parameter: str = 'C',
+            other_parameter: Union[int, None] = None 
+            ) -> None:
             """
             One-line short description of the function.
 
@@ -594,7 +662,6 @@ Class docstrings follow function docstring format. Here is an example.
             <!-- See class docstring above -->
 
             """
-
             # Variables use underscore notation
             dummy_variable = 1
             a = 56  # This mini comment uses two spaces after the code!
