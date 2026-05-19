@@ -29,10 +29,7 @@ runs:
       if: runner.os == 'Windows'
       shell: pwsh
       run: |
-        Write-Output "$env:HOME"
-        Write-Host "---- HOME elephant-data ----"
-        Get-ChildItem "$env:HOME\elephant-data"
-        if (Test-Path "$env:HOME\elephant-data\elephant-data") {
+        if (Test-Path "$env:HOME\elephant-data") {
             "ELEPHANT_DATA_LOCATION=$env:HOME\elephant-data" >> $env:GITHUB_ENV
             Write-Output $env:HOME\elephant-data
         }
