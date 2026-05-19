@@ -29,6 +29,8 @@ runs:
       if: runner.os == 'Windows'
       shell: pwsh
       run: |
+        pwd
+        ls
         if (Test-Path "$env:USERPROFILE\elephant-data") {
             "ELEPHANT_DATA_LOCATION=$env:USERPROFILE\elephant-data" >> $env:GITHUB_ENV
             Write-Output $env:USERPROFILE\elephant-data
