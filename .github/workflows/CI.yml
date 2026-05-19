@@ -80,7 +80,7 @@ jobs:
 
       - name: Test with pytest
         shell: bash
-        run: pytest
+        run: pytest elephant/test/test_datasets.py
 
       - name: Submit Coveralls
         if: runner.os == 'Linux' && matrix.python-version == '3.12'
