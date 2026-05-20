@@ -114,18 +114,7 @@ jobs:
           cache: 'pip'
           cache-dependency-path: pyproject.toml
 
-      - name: Get current hash (SHA) of the elephant_data repo
-        id: elephant-data
-        run: |
-            echo "dataset_hash=$(git ls-remote https://gin.g-node.org/NeuralEnsemble/elephant-data.git HEAD | cut -f1)" >> $GITHUB_OUTPUT
-
-      - uses: actions/cache/restore@v4.2.2
-        id: cache-datasets
-        with:
-          path: ~/elephant-data
-          key: datasets-${{ steps.elephant-data.outputs.dataset_hash }}
-          restore-keys: datasets-
-          enableCrossOsArchive: true
+      - uses: ./.github/actions/restore-elephant-data
 
       - name: Setup environment
         run: |
@@ -141,14 +130,7 @@ jobs:
           python --version
 
       - name: Test with pytest
-        run: |
-          if [ -d ~/elephant-data ]; then
-          export ELEPHANT_DATA_LOCATION=~/elephant-data
-          echo $ELEPHANT_DATA_LOCATION
-          fi
-          mpiexec -n 1 python -m mpi4py -m pytest
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: mpiexec -n 1 python -m mpi4py -m pytest
 
   #   ____                _
   #  / ___|___  _ __   __| | __ _
