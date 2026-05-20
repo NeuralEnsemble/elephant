@@ -555,8 +555,8 @@ def cross_correlation_histogram(
         cross_correlation_coefficient=False):
     """
     Computes the cross-correlation histogram (CCH) between two binned spike
-    trains `binned_spiketrain_i` and `binned_spiketrain_j`.
-    :cite:`correlation-Eggermont2010_77`
+    trains `binned_spiketrain_i` and `binned_spiketrain_j`
+    :cite:`correlation-Eggermont2010_77`.
 
     Visualization of this function is covered in Viziphant:
     :func:`viziphant.spike_train_correlation.plot_cross_correlation_histogram`.
@@ -620,7 +620,7 @@ def cross_correlation_histogram(
     cross_correlation_coefficient : bool, optional
         If True, a normalization is applied to the CCH to obtain the
         cross-correlation  coefficient function ranging from -1 to 1 according
-        to Equation (5.10) in :cite:`correlation-Eggermont2010_77`. See Notes.
+        to Equation (5.10) in :cite:t:`correlation-Eggermont2010_77`. See Notes.
         Default: False
 
     Returns
@@ -655,7 +655,7 @@ def cross_correlation_histogram(
 
     Notes
     -----
-    1. The Eq. (5.10) in :cite:`correlation-Eggermont2010_77` is valid for
+    1. The Eq. (5.10) in :cite:t:`correlation-Eggermont2010_77` is valid for
        binned spike trains with at most one spike per bin. For a general case,
        refer to the implementation of `_covariance_sparse()`.
     2. Alias: `cch`
@@ -823,7 +823,7 @@ def spike_time_tiling_coefficient(spiketrain_i: neo.core.SpikeTrain,
                                   dt: pq.Quantity = 0.005 * pq.s) -> float:
     """
     Calculates the Spike Time Tiling Coefficient (STTC) as described in
-    :cite:`correlation-Cutts2014_14288` following their implementation in C.
+    :cite:t:`correlation-Cutts2014_14288` following their implementation in C.
     The STTC is a pairwise measure of correlation between spike trains.
     It has been proposed as a replacement for the correlation index as it
     presents several advantages (e.g. it's not confounded by firing rate,
@@ -994,9 +994,9 @@ sttc = spike_time_tiling_coefficient
 
 def spike_train_timescale(binned_spiketrain, max_tau):
     r"""
-    Calculates the auto-correlation time of a binned spike train; uses the
+    Calculates the auto-correlation time of a binned spike train. It uses the
     definition of the auto-correlation time proposed in
-    :cite:`correlation-Wieland2015_040901` (Eq. 6):
+    :cite:t:`correlation-Wieland2015_040901`, Equation 6:
 
     .. math::
         \tau_\mathrm{corr} = \int_{-\tau_\mathrm{max}}^{\tau_\mathrm{max}}\

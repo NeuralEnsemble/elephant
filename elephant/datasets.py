@@ -95,7 +95,7 @@ ELEPHANT_TMP_DIR = Path(tempfile.gettempdir()) / "elephant"
 def generate_conditional_granger_ground_truth(length_2d=30000,
                                               causality_type="indirect"):
     """
-    Recreated from Example 2 section 5.2 of :cite:'granger-Ding06-0608035'.
+    Recreated from Example 2 section 5.2 of :cite:t:`Ding06_0608035`.
     The following should generate three signals in one of the two ways:
      1. "indirect" would generate data which contains no direct
     causal influence from Y to X, but mediated through Z

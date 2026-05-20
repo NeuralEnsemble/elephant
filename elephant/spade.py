@@ -33,12 +33,12 @@ Notes
 This modules relies on the C++ implementation of the fp-growth
 algorithm developed by Forian Porrmann (available at
 https://github.com/fporrmann/FPG). The module replaces a more generic
-implementation of the algorithm by Christian Borgelt (
-http://www.borgelt.net/pyfim.html) that was used in previous versions of
+implementation of the algorithm by Christian Borgelt
+(http://www.borgelt.net/pyfim.html) that was used in previous versions of
 Elephant.
 
-If the module ``fim.so`` is not available in a precompiled format (
-currently Linux/Windows) or cannot be compiled on a given system during
+If the module ``fim.so`` is not available in a precompiled format
+(currently Linux/Windows) or cannot be compiled on a given system during
 install, SPADE will make use of a pure Python implementation of the fast fca
 algorithm contained in `elephant/spade_src/fast_fca.py`, which is
 significantly slower.
@@ -158,10 +158,10 @@ def spade(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
           alpha=None, stat_corr='fdr_bh', surr_method='dither_spikes',
           psr_param=None, output_format='patterns', **surr_kwargs):
     r"""
-    Perform the SPADE :cite:`spade-Torre2013_132`,
-    :cite:`spade-Quaglio2017_41`, :cite:`spade-Stella2019_104022` analysis for
-    the parallel input `spiketrains`. They are discretized with a temporal
-    resolution equal to `bin_size` in a sliding window of `winlen*bin_size`.
+    Perform the SPADE :cite:`spade-Torre2013_132,spade-Quaglio2017_41,\
+    spade-Stella2019_104022` analysis for the parallel input `spiketrains`.
+    They are discretized with a temporal resolution equal to `bin_size` in a
+    sliding window of `winlen*bin_size`.
 
     First, spike patterns are mined from the `spiketrains` using a technique
     called frequent itemset mining (FIM) or formal concept analysis (FCA). In
@@ -204,7 +204,7 @@ def spade(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
         'n_subsets': int
             Number of subsets of a concept used to approximate its stability.
             If `n_subsets` is 0, it is calculated according to the formula
-            given in Babin, Kuznetsov (2012), proposition 6:
+            given in :cite:t:`spade-Babin2012_7`, proposition 6:
 
             .. math::
                    n_{\text{subset}} = \frac{1}{2 \cdot \epsilon^2}
@@ -1741,7 +1741,7 @@ def approximate_stability(concepts, rel_matrix, n_subsets=0,
                           delta=0., epsilon=0.):
     r"""
     Approximate the stability of concepts. Uses the algorithm described
-    in Babin, Kuznetsov (2012): Approximating Concept Stability
+    in :cite:t:`spade-Babin2012_7`.
 
     Parameters
     ----------
@@ -1765,7 +1765,7 @@ def approximate_stability(concepts, rel_matrix, n_subsets=0,
     n_subsets : int
         Number of subsets of a concept used to approximate its stability.
         If `n_subsets` is 0, it is calculated according to to the formula
-        given in Babin, Kuznetsov (2012), proposition 6:
+        given in :cite:t:`spade-Babin2012_7`, proposition 6:
 
         .. math::
                n_{\text{subset}} = \frac{1}{2 \cdot \epsilon^2}

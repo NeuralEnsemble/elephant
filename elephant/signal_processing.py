@@ -563,7 +563,7 @@ def wavelet_transform(signal, frequency, n_cycles=6.0, sampling_frequency=1.0,
     r"""
     Compute the wavelet transform of a given signal with Morlet mother
     wavelet. The parametrization of the wavelet is based on
-    :cite:`signal-Le2001_83`.
+    :cite:t:`signal-Le2001_83`.
 
     Parameters
     ----------
@@ -579,7 +579,7 @@ def wavelet_transform(signal, frequency, n_cycles=6.0, sampling_frequency=1.0,
     n_cycles : float, optional
         Size of the mother wavelet (approximate number of oscillation cycles
         within a wavelet). Corresponds to :math:`nco` in
-        :cite:`signal-Le2001_83`. A larger `n_cycles` value leads to a higher
+        :cite:t:`signal-Le2001_83`. A larger `n_cycles` value leads to a higher
         frequency resolution and a lower temporal resolution, and vice versa.
         Typically used values are in a range of 3–8, but one should be cautious
         when using a value smaller than ~ 6, in which case the admissibility of
@@ -631,7 +631,7 @@ def wavelet_transform(signal, frequency, n_cycles=6.0, sampling_frequency=1.0,
     -----
     `n_cycles` is related to the wavelet number :math:`w` as
     :math:`w \sim 2 \pi \frac{n_{\text{cycles}}}{6}` as defined in
-    :cite:`signal-Le2001_83`.
+    :cite:t:`signal-Le2001_83`.
 
     Examples
     --------

@@ -705,7 +705,7 @@ class StationaryPoissonProcess(RenewalProcess):
         Default: 1.*pq.s
     refractory_period : pq.Quantity, optional
         The time period after one spike in which no other spike is emitted. This can be called an absolute refractory
-        period or a dead time as used in :cite:`generation-Deger12_443`.
+        period or a dead time as used in :cite:t:`generation-Deger12_443`.
         Default : None
     equilibrium : bool, optional
         Generate an equilibrium or an ordinary renewal process.
@@ -1810,7 +1810,8 @@ def _cpp_het_stat(amplitude_distribution, t_stop, rates, t_start=0.*pq.ms):
 def compound_poisson_process(
         rate, amplitude_distribution, t_stop, shift=None, t_start=0 * pq.ms):
     """
-    Generate a Compound Poisson Process (CPP; see :cite:`generation-Staude2010_327`) with a given
+    Generate a Compound Poisson Process (CPP) as described in
+    :cite:t:`generation-Staude2010_327`, using the given
     `amplitude_distribution` :math:`A` and stationary marginal rates `rate`.
 
     The CPP process is a model for parallel, correlated processes with Poisson spiking statistics at pre-defined firing

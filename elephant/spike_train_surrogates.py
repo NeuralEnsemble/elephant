@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
 Module to generate surrogates of a spike train by randomising its spike times
-in different ways (see :cite:`surrogates-Gerstein2004_203`,
-:cite:`surrogates-Louis2010_127`, and :cite:`surrogates-Louis2010_359`).
+in different ways (see :cite:t:`surrogates-Gerstein2004_203`,
+:cite:t:`surrogates-Louis2010_127`, and :cite:t:`surrogates-Louis2010_359`).
 Different methods destroy different features of the original data.
 
 
@@ -745,7 +745,7 @@ def _continuous_time_bin_shuffling(spiketrain, max_displacement, bin_size,
 class JointISI(object):
     r"""
     Joint-ISI dithering implementation, based on the ideas from
-    :cite:`surrogates-Gerstein2004_203` and :cite:`surrogates-Louis2010_127`.
+    :cite:t:`surrogates-Gerstein2004_203` and :cite:t:`surrogates-Louis2010_127`.
 
     The main function is :func:`JointISI.dithering`.
 
@@ -781,7 +781,7 @@ class JointISI(object):
         Default: True
     use_sqrt : bool, optional
         If True, the joint-ISI histogram is preprocessed by
-        applying a square root (following :cite:`surrogates-Gerstein2004_203`).
+        applying a square root (following :cite:t:`surrogates-Gerstein2004_203`).
         Default: False
     method : {'fast', 'window'}, optional
         * 'fast': the spike can move in the whole range between the

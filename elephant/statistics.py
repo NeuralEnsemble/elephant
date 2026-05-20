@@ -645,7 +645,7 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
         triangular, epanechnikovlike, gaussian, laplacian, exponential, and
         alpha function.
         If 'auto', the optimized kernel width for the rate estimation is
-        calculated according to :cite:`statistics-Shimazaki2010_171` and a
+        calculated according to :cite:t:`statistics-Shimazaki2010_171` and a
         Gaussian kernel is constructed with this width. Automatized calculation
         of the kernel width is not available for other than Gaussian kernel
         shapes.
@@ -1335,8 +1335,9 @@ def complexity_pdf(spiketrains, bin_size):
 
 class Complexity(object):
     """
-    Class for complexity distribution (i.e. number of synchronous spikes found)
-    :cite:`statistics-Gruen2007_96` of a list of `neo.SpikeTrain` objects.
+    Class for computing the complexity distribution (the number of synchronous
+    spikes) of a list of `neo.SpikeTrain` objects, as described in
+    :cite:t:`statistics-Gruen2007_96`.
 
     Complexity is calculated by counting the number of spikes (i.e. non-empty
     bins) that occur separated by `spread - 1` or less empty bins, within and
