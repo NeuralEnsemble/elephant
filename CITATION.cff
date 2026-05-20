@@ -1,0 +1,40 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: Elephant
+message: Please cite this software using these metadata.
+type: software
+authors:
+  - given-names: Michael
+    family-names: Denker
+    affiliation: >-
+      Institute of Neuroscience and Medicine (INM-6) and
+      Institute for Advanced Simulation (IAS-6) and
+      JARA-Institute Brain Structure-Function Relationships
+      (INM-10), Jülich Research Centre, Jülich, Germany
+    orcid: 'https://orcid.org/0000-0003-1255-7300'
+  - given-names: Moritz
+    family-names: Kern
+    affiliation: >-
+      Institute of Neuroscience and Medicine (INM-6) and
+      Institute for Advanced Simulation (IAS-6) and
+      JARA-Institute Brain Structure-Function Relationships
+      (INM-10), Jülich Research Centre, Jülich, Germany
+    orcid: 'https://orcid.org/0000-0001-7292-1982'
+identifiers:
+  - type: doi
+    value: 10.12751/incf.ni2018.0019
+    description: Concept of publication
+repository-code: 'https://github.com/NeuralEnsemble/elephant'
+url: 'http://python-elephant.org'
+keywords:
+  - neuroscience
+  - neurophysiology
+  - electrophysiology
+  - statistics
+  - data-analysis
+license: BSD-3-Clause
+commit: 77274f6
+version: 1.0.0
+date-released: '2023-11-10'
