@@ -138,17 +138,12 @@ jobs:
   # | |__| (_) | | | | (_| | (_| |
   #  \____\___/|_| |_|\__,_|\__,_|
 
-  # install dependencies with conda and run tests with pytest
   test-conda:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        # python versions for elephant: [3.8, 3.9, 3.10, 3.11]
-        python-version: [3.11]
-        # OS [ubuntu-latest, macos-latest, windows-latest]
+        python-version: [3.12]
         os: [ubuntu-latest]
-
-      # do not cancel all in-progress jobs if any matrix job fails
       fail-fast: false
 
     steps:
@@ -170,19 +165,8 @@ jobs:
 
           key: ${{ runner.os }}-pip-${{hashFiles('requirements/environment-tests.yml') }}-${{ hashFiles('**/CI.yml') }}-${{ steps.date.outputs.date }}
 
-      - name: Get current hash (SHA) of the elephant_data repo
-        id: elephant-data
-        run: |
-            echo "dataset_hash=$(git ls-remote https://gin.g-node.org/NeuralEnsemble/elephant-data.git HEAD | cut -f1)" >> $GITHUB_OUTPUT
 
-      - uses: actions/cache/restore@v4.2.2
-        # Loading cache of elephant-data
-        id: cache-datasets
-        with:
-          path: ~/elephant-data
-          key: datasets-${{ steps.elephant-data.outputs.dataset_hash }}
-          restore-keys: datasets-
-          enableCrossOsArchive: true 
+      - uses: ./.github/actions/restore-elephant-data
 
       - uses: mamba-org/setup-micromamba@v2
         with:
@@ -194,7 +178,7 @@ jobs:
         shell: bash -el {0}
         run: |
           python --version
-          micromamba install -y -c conda-forge pytest pytest-cov coveralls mpi4py openmpi
+          micromamba install -y -c conda-forge pytest mpi4py openmpi
           pip install -e .
 
       - name: List packages
@@ -202,16 +186,10 @@ jobs:
         run: |
           pip list
           micromamba list
-          python --version
 
       - name: Test with pytest
         shell: bash -el {0}
-        run: |
-          if [ -d ~/elephant-data ]; then
-          export ELEPHANT_DATA_LOCATION=~/elephant-data
-          echo $ELEPHANT_DATA_LOCATION
-          fi
-          pytest --cov=elephant
+        run: pytest
 
   #  ____
   # |  _ \  ___   ___ ___
