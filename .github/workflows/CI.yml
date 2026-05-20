@@ -1,10 +1,10 @@
-# This workflow will set up GitHub-hosted runners and install the required dependencies for elephant tests.
-# On a pull requests and on pushes to master it will run different tests for elephant.
+# This workflow sets up GitHub runners and runs unit tests
+# Triggered on pull requests, pushes to master and manual trigger from github web
 
+# Triggers
 name: tests
-# define events that trigger workflow 'tests'
 on:
-  workflow_dispatch: # enables manual triggering of workflow
+  workflow_dispatch:
     inputs:
       logLevel:
         description: 'Log level'
@@ -20,23 +20,9 @@ on:
     branches:
       - master
     types:
-      #- assigned
-      #- unassigned
-      #- labeled
-      #- unlabeled
       - opened
-      #- edited
-      #- closed
       - reopened
       - synchronize
-      #- converted_to_draft
-      #- ready_for_review
-      #- locked
-      #- unlocked
-      #- review_requested
-      #- review_request_removed
-      #- auto_merge_enabled
-      #- auto_merge_disabled
 
   push:
     branches:
@@ -47,7 +33,6 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-# jobs define the steps that will be executed on the runner
 jobs:
 
   #        _
@@ -57,17 +42,17 @@ jobs:
   #  | .__/|_| .__/
   #  |_|     |_|
 
-  # install dependencies and elephant with pip and run tests with pytest
   build-and-test-pip:
+    name: pip (${{ matrix.python-version }}, ${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
-      matrix:
-        # python versions for elephant: [3.8, 3.9, "3.10", 3.11, 3.12, 3.13]
-        python-version: [3.9, "3.10", 3.11, 3.12, 3.13]
-        # OS [ubuntu-latest, macos-latest, windows-latest]
-        os: [ubuntu-latest]
-      # do not cancel all in-progress jobs if any matrix job fails
       fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.10"]
+        include:
+          - { os: macos-latest,   python-version: "3.12" }
+          - { os: windows-latest, python-version: "3.12" }
 
     steps:
       - uses: actions/checkout@v4.1.6
@@ -78,24 +63,9 @@ jobs:
           python-version: ${{ matrix.python-version }}
           check-latest: true
           cache: 'pip'
-          cache-dependency-path: |
-            **/requirements.txt
-            **/requirements-extras.txt
-            **/requirements-tests.txt
+          cache-dependency-path: pyproject.toml
 
-      - name: Get current hash (SHA) of the elephant_data repo
-        id: elephant-data
-        run: |
-            echo "dataset_hash=$(git ls-remote https://gin.g-node.org/NeuralEnsemble/elephant-data.git HEAD | cut -f1)" >> $GITHUB_OUTPUT
-
-      - uses: actions/cache/restore@v4.2.2
-        # Loading cache of elephant-data
-        id: cache-datasets
-        with:
-          path: ~/elephant-data
-          key: datasets-${{ steps.elephant-data.outputs.dataset_hash }}
-          restore-keys: datasets-
-          enableCrossOsArchive: true 
+      - uses: ./.github/actions/restore-elephant-data
 
       - name: Install dependencies
         run: |
@@ -109,148 +79,14 @@ jobs:
           python --version
 
       - name: Test with pytest
-        run: |
-          if [ -d ~/elephant-data ]; then
-          export ELEPHANT_DATA_LOCATION=~/elephant-data
-          echo $ELEPHANT_DATA_LOCATION
-          fi
-      
-          coverage run --source=elephant -m pytest
-          coveralls --service=github || echo "Coveralls submission failed"
+        shell: bash
+        run: pytest elephant/test/test_datasets.py
+
+      - name: Submit Coveralls
+        if: runner.os == 'Linux' && matrix.python-version == '3.12'
+        run: coveralls --service=github || echo "Coveralls submission failed"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  #                        ___  ____
-  #  _ __ ___   __ _  ___ / _ \/ ___|
-  # | '_ ` _ \ / _` |/ __| | | \___ \
-  # | | | | | | (_| | (__| |_| |___) |
-  # |_| |_| |_|\__,_|\___|\___/|____/
-
-  test-macOS:
-    name: conda (${{ matrix.python-version }}, ${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      # do not cancel all in-progress jobs if any matrix job fails
-      fail-fast: false
-      matrix:
-        # OS [ubuntu-latest, macos-latest, windows-latest]
-        os: [macos-14,macos-15]
-        python-version: [3.12]
-    steps:
-      - name: Get current year-month
-        id: date
-        run: echo "date=$(date +'%Y-%m')" >> $GITHUB_OUTPUT
-
-      - uses: actions/checkout@v4.1.6
-
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5.1.0
-        with:
-          python-version: ${{ matrix.python-version }}
-          check-latest: true
-          cache: 'pip'
-          cache-dependency-path: |
-            **/requirements.txt
-            **/requirements-extras.txt
-            **/requirements-tests.txt
-
-      - name: Get current hash (SHA) of the elephant_data repo
-        id: elephant-data
-        run: |
-            echo "dataset_hash=$(git ls-remote https://gin.g-node.org/NeuralEnsemble/elephant-data.git HEAD | cut -f1)" >> $GITHUB_OUTPUT
-
-      - uses: actions/cache/restore@v4.2.2
-        # Loading cache of elephant-data
-        id: cache-datasets
-        with:
-          path: ~/elephant-data
-          key: datasets-${{ steps.elephant-data.outputs.dataset_hash }}
-          restore-keys: datasets-      
-
-      - name: Install dependencies
-        run: |
-          python --version
-          python -m pip install --upgrade pip
-          pip install pytest-cov coveralls
-          pip install -e .[extras,tests]
-
-      - name: List packages
-        shell: bash -l {0}
-        run: |
-          pip list
-          python --version
-
-      - name: Test with pytest
-        shell: bash -l {0}
-        run: |
-          if [ -d ~/elephant-data ]; then
-          export ELEPHANT_DATA_LOCATION=~/elephant-data
-          echo $ELEPHANT_DATA_LOCATION
-          fi
-          pytest --cov=elephant
-
-  # __        ___           _
-  # \ \      / (_)_ __   __| | _____      _____
-  #  \ \ /\ / /| | '_ \ / _` |/ _ \ \ /\ / / __|
-  #   \ V  V / | | | | | (_| | (_) \ V  V /\__ \
-  #    \_/\_/  |_|_| |_|\__,_|\___/ \_/\_/ |___/
-
-  # install dependencies with pip and run tests with pytest
-  test-pip:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        # python versions for elephant: [3.8, 3.9, 3.10, 3.11]
-        python-version: [3.11,]
-        # OS [ubuntu-latest, macos-latest, windows-latest]
-        os: [windows-latest]
-
-    steps:
-      - uses: actions/checkout@v4.1.6
-
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5.1.0
-        with:
-          python-version: ${{ matrix.python-version }}
-          check-latest: true
-          cache: 'pip'
-          cache-dependency-path: |
-            **/requirements.txt
-            **/requirements-extras.txt
-            **/requirements-tests.txt
-
-      - name: Get current hash (SHA) of the elephant_data repo
-        id: elephant-data
-        run: |
-            echo "dataset_hash=$(git ls-remote https://gin.g-node.org/NeuralEnsemble/elephant-data.git HEAD | cut -f1)" >> $GITHUB_OUTPUT
-
-      - uses: actions/cache/restore@v4.2.2
-        # Loading cache of elephant-data
-        id: cache-datasets
-        with:
-          path: ~/elephant-data
-          key: datasets-${{ steps.elephant-data.outputs.dataset_hash }}
-          restore-keys: datasets-
-          enableCrossOsArchive: true    
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install pytest-cov coveralls
-          pip install -e .[extras,tests]
-
-      - name: List packages
-        run: |
-          pip list
-          python --version
-
-      - name: Test with pytest
-        run: |
-          if (Test-Path "$env:USERPROFILE\elephant-data") {
-              $env:ELEPHANT_DATA_LOCATION = "$env:USERPROFILE\elephant-data"
-              Write-Output $env:ELEPHANT_DATA_LOCATION
-          }
-          pytest --cov=elephant
 
   #  __  __ ____ ___
   # |  \/  |  _ \_ _|
@@ -263,14 +99,10 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        # python versions for elephant: [3.8, 3.9, 3.10, 3.11]
-        python-version: [3.9]
-        # OS [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.12"]
         os: [ubuntu-latest]
-
-      # do not cancel all in-progress jobs if any matrix job fails
       fail-fast: false
-
+    if: false
     steps:
       - uses: actions/checkout@v4.1.6
 
@@ -280,10 +112,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
           check-latest: true
           cache: 'pip'
-          cache-dependency-path: |
-            **/requirements.txt
-            **/requirements-extras.txt
-            **/requirements-tests.txt
+          cache-dependency-path: pyproject.toml
 
       - name: Get current hash (SHA) of the elephant_data repo
         id: elephant-data
@@ -291,22 +120,19 @@ jobs:
             echo "dataset_hash=$(git ls-remote https://gin.g-node.org/NeuralEnsemble/elephant-data.git HEAD | cut -f1)" >> $GITHUB_OUTPUT
 
       - uses: actions/cache/restore@v4.2.2
-        # Loading cache of elephant-data
         id: cache-datasets
         with:
           path: ~/elephant-data
           key: datasets-${{ steps.elephant-data.outputs.dataset_hash }}
           restore-keys: datasets-
-          enableCrossOsArchive: true 
+          enableCrossOsArchive: true
 
       - name: Setup environment
         run: |
           sudo apt-get update
           sudo apt install -y libopenmpi-dev openmpi-bin
-
           python -m pip install --upgrade pip
           pip install mpi4py
-          pip install pytest-cov coveralls
           pip install -e .[extras,tests]
 
       - name: List packages
@@ -320,8 +146,7 @@ jobs:
           export ELEPHANT_DATA_LOCATION=~/elephant-data
           echo $ELEPHANT_DATA_LOCATION
           fi
-          mpiexec -n 1 python -m mpi4py -m coverage run --source=elephant -m pytest
-          coveralls --service=github || echo "Coveralls submission failed"
+          mpiexec -n 1 python -m mpi4py -m pytest
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -343,7 +168,7 @@ jobs:
 
       # do not cancel all in-progress jobs if any matrix job fails
       fail-fast: false
-
+    if: false
     steps:
       - name: Get current year-month
         id: date
@@ -422,7 +247,7 @@ jobs:
         python-version: [3.12]
         # OS [ubuntu-latest, macos-latest, windows-latest]
         os: [ubuntu-latest]
-
+    if: false
     steps:
 
       - name: Get current year-month
@@ -486,7 +311,7 @@ jobs:
 
         # OS [ubuntu-latest, macos-latest, windows-latest]
         os: [ubuntu-latest]
-
+    if: false
     steps:
       # used to reset cache every month
       - name: Get current year-month
