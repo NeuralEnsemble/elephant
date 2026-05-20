@@ -168,7 +168,18 @@ public:
 	}
 
 private:
+	// Elephant PR 695
+	// `m_size` is unused private attribute, and clang fires warning for this
+	// Being third party code, not removing `m_size` now
+	// Adding diagnostic pragma to skip warning for this line alone
+	#ifdef __clang__
+	#pragma GCC diagnostic push
+	#pragma GCC diagnostic ignored "-Wunused-private-field"
+	#endif
 	std::size_t m_size;
+	#ifdef __clang__
+	#pragma GCC diagnostic pop
+	#endif
 	std::size_t m_cnt;
 	ClosedTree* m_pTrees;
 };

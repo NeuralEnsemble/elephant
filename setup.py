@@ -29,7 +29,7 @@ if platform.system() == "Windows":
         libraries=[],
         extra_compile_args=[
             '-DMODULE_NAME=fim', '-DUSE_OPENMP', '-DWITH_SIG_TERM',
-            '-Dfim_EXPORTS', '-fopenmp', '/std:c++17'],
+            '-Dfim_EXPORTS', '-openmp', '/std:c++17'],
         optional=True
     )
 elif platform.system() == "Darwin":
@@ -102,7 +102,7 @@ setup_kwargs = {
 options = {"--no-compile": None, "--no-compile-spade": fim_module}
 # check if any option was specified
 if not any([True for key in options.keys() if key in sys.argv]):
-    if platform.system() in ["Windows", "Linux"]:
+    if platform.system() in ["Windows", "Linux", "Darwin"]:
         setup_kwargs["ext_modules"] = [fim_module]
 else:  # ...any option was specified
     # select extensions accordingly

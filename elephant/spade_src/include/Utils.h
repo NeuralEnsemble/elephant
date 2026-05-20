@@ -391,6 +391,10 @@ uint64_t GetCurrentRSS()
 	in.close();
 
 	return static_cast<uint64_t>(resident * sysconf(_SC_PAGE_SIZE));
+#else
+	// macos: not implemented by original author, so return 0 is a no-op
+	// Adding this as a fix to Wreturn-type clang warning, see Elephant PR #695
+	return 0;
 #endif
 }
 

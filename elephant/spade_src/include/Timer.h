@@ -42,11 +42,13 @@
 #define FILL_CNT   3
 #endif
 
-#ifdef _MSC_VER
+// Elephant PR #695
+// Original author used alias `high_resolution_clock` for non MSVC platforms
+// this resolves to `steady_clock` on macos which lacks method `to_time_t` used
+// here in overloading << operator.
+// Fix is to ditch the alias and use `system_clock` accross all platforms
+// There is a tradeoff in precision that is acceptable for this use case.
 using Clock = std::chrono::system_clock;
-#else
-using Clock = std::chrono::high_resolution_clock;
-#endif
 
 class Timer
 {
