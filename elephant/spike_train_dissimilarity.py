@@ -309,7 +309,8 @@ def van_rossum_distance(spiketrains, time_constant=1.0 * pq.s, sort=True):
 
     Parameters
     ----------
-    spiketrains : Sequence of :class:`neo.core.SpikeTrain` objects of
+    spiketrains : list of neo.SpikeTrain
+        Sequence of :class:`neo.core.SpikeTrain` objects of
         which the van Rossum distance will be calculated pairwise.
     time_constant : Quantity scalar
         Decay rate of the exponential function as time scalar. Controls for

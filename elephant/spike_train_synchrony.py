@@ -154,7 +154,6 @@ def spike_contrast(spiketrains, t_start=None, t_stop=None,
     ...     t_stop=1000*pq.ms).generate_spiketrain()
     >>> round(spike_contrast([spiketrain_1, spiketrain_2]),3)
     0.419
-
     """
     if not 0. < bin_shrink_factor < 1.:
         raise ValueError(f"'bin_shrink_factor' ({bin_shrink_factor}) must be "
@@ -255,10 +254,9 @@ class Synchrotool(Complexity):
     This class inherits from :class:`elephant.statistics.Complexity`, see its
     documentation for more details and input parameters description.
 
-    See also
+    See Also
     --------
     elephant.statistics.Complexity
-
     """
 
     def __init__(self, spiketrains,
@@ -308,13 +306,6 @@ class Synchrotool(Complexity):
 
             Default: 'delete'
 
-        Raises
-        ------
-        ValueError
-            If `mode` is not one in {'delete', 'extract'}.
-
-            If `threshold <= 1`.
-
         Returns
         -------
         list of neo.SpikeTrain
@@ -326,6 +317,12 @@ class Synchrotool(Complexity):
               * If ``in_place`` is False, the returned list is a deepcopy of
                 ``self.input_spiketrains``.
 
+        Raises
+        ------
+        ValueError
+            If `mode` is not one in {'delete', 'extract'}.
+
+            If `threshold <= 1`.
         """
 
         if not self.annotated:

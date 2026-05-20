@@ -191,7 +191,6 @@ def cell_assembly_detection(binned_spiketrain, max_lag, reference_lag=2,
     Notes
     -----
     Alias: cad
-
     """
     initial_time = time.time()
 
@@ -599,7 +598,6 @@ def _test_pair(ensemble, spiketrain2, n2, max_lag, size_chunks, reference_lag,
     item_candidate : list of list with two components
         in the first component there are the neurons involved in the assembly,
         in the second there are the correspondent lags.
-
     """
 
     # list with the binned spike trains of the two neurons
@@ -1062,7 +1060,6 @@ def _subgroup_pruning_step(pre_pruning_assembly):
     --------
     final_assembly : list
         contains the assemblies filtered by inclusion
-
     """
 
     # reversing the semifinal_assembly makes the computation quicker
@@ -1140,7 +1137,6 @@ def _raise_errors(binned_spiketrain, max_lag, alpha, min_occurrences,
         if the maximal assembly order is not between 2
         and the number of neurons
         if the time series is too short (less than 100 bins)
-
     """
 
     if not isinstance(binned_spiketrain, conv.BinnedSpikeTrain):

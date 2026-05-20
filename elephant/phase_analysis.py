@@ -113,7 +113,6 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
     >>> times # doctest: +SKIP
     [array([6.41327152e+00, 2.02715221e+01, 1.05827312e+02, ...,
         9.99692942e+04, 9.99808429e+04, 9.99870120e+04]) * ms]
-
     """
 
     # Convert inputs to lists
@@ -217,7 +216,7 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
     return result_phases, result_amps, result_times
 
 
-def phase_locking_value(phases_i, phases_j):
+def phase_locking_value(phases_i, phases_j):  # numpydoc ignore=RT05
     r"""
     Calculates the phase locking value (PLV) :cite:`phase-Lachaux99_194`.
 
@@ -254,7 +253,6 @@ def phase_locking_value(phases_i, phases_j):
 
     where :math:`\theta(t, n) = \phi_x(t, n) - \phi_y(t, n)`
     is the phase difference at time `t` for trial `n`.
-
     """
     if np.shape(phases_i) != np.shape(phases_j):
         raise ValueError("trial number and trial length of signal x and y "
@@ -269,7 +267,7 @@ def phase_locking_value(phases_i, phases_j):
     return r
 
 
-def mean_phase_vector(phases, axis=0):
+def mean_phase_vector(phases, axis=0):  # numpydoc ignore=RT05
     r"""
     Calculates the mean vector of phases.
 
@@ -304,7 +302,7 @@ def mean_phase_vector(phases, axis=0):
     return z_mean_theta, z_mean_r
 
 
-def phase_difference(alpha, beta):
+def phase_difference(alpha, beta):  # numpydoc ignore=RT05
     r"""
     Calculates the difference between a pair of phases.
 
@@ -334,7 +332,7 @@ def phase_difference(alpha, beta):
 
 
 def weighted_phase_lag_index(signal_i, signal_j, sampling_frequency=None,
-                             absolute_value=True):
+                             absolute_value=True):  # numpydoc ignore=RT05
     r"""
     Calculates the Weigthed Phase-Lag Index (WPLI) :cite:`phase-Vinck11_1548`.
 
@@ -347,16 +345,19 @@ def weighted_phase_lag_index(signal_i, signal_j, sampling_frequency=None,
     signal_i, signal_j : np.array, pq.quantity.Quantity, neo.AnalogSignal
         Time-series of the first and second signals,
         with `t` time points and `n` trials.
-    sampling_frequency : pq.quantity.Quantity (default: None)
+    sampling_frequency : pq.quantity.Quantity
         Sampling frequency of the signals in Hz. Not needed if signal i and j
         are neo.AnalogSignals.
-    absolute_value : boolean (default: True)
+        Default: None
+    absolute_value : bool
         Takes the absolute value of the numerator in the WPLI-formula.
         When set to `False`, the WPLI contains additional directionality
         information about which signal leads/lags the other signal:
 
         * wpli > 0 : first signal i leads second signal j
         * wpli < 0 : first signal i lags second signal j
+
+        Default: True
 
     Returns
     -------
@@ -387,7 +388,6 @@ def weighted_phase_lag_index(signal_i, signal_j, sampling_frequency=None,
     * :math:`X = Z_i Z_{j}^{*}` : cross-spectrum, averaged across trials
     * :math:`Z_i, Z_j`: complex-valued matrix, representing the Fourier
       spectra of a particular frequency of the signals i and j.
-
     """
     if isinstance(signal_i, neo.AnalogSignal) and \
             isinstance(signal_j, neo.AnalogSignal):  # neo.AnalogSignal input

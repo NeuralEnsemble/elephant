@@ -44,7 +44,7 @@ def waveform_width(waveform, cutoff=0.75):
     Returns
     -------
     width : int
-        Width of a waveform expressed as a number of data points
+        Width of a waveform expressed as a number of data points.
 
     Raises
     ------
@@ -59,7 +59,6 @@ def waveform_width(waveform, cutoff=0.75):
     >>> from elephant.waveform_features import waveform_width
     >>> waveform_width([20, 25, 10, -5, -2, 7, 15], cutoff=0.75)
     3
-
     """
     waveform = np.squeeze(waveform)
     if np.ndim(waveform) != 1:
@@ -117,7 +116,6 @@ def waveform_snr(waveforms):
     >>> waveforms = [[20, 25, 10, -5, -2, 7, 15], [17, 29, 11, -4, 0, 5, 20]]
     >>> waveform_snr(waveforms)
     12.249999999999998
-
     """
     if isinstance(waveforms, neo.SpikeTrain):
         warnings.warn("spiketrain input is deprecated; pass "

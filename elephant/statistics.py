@@ -141,7 +141,6 @@ def isi(spiketrain, axis=-1):
     >>> from elephant import statistics
     >>> statistics.isi([0.3, 4.5, 6.7, 9.3])
     array([4.2, 2.2, 2.6])
-
     """
     if isinstance(spiketrain, neo.SpikeTrain):
         intervals = np.diff(spiketrain.magnitude, axis=axis)
@@ -197,7 +196,7 @@ def mean_firing_rate(spiketrain, t_start=None, t_stop=None, axis=None):
     Returns
     -------
     float or pq.Quantity or np.ndarray
-        The firing rate of the `spiketrain`
+        The firing rate of the `spiketrain`.
 
     Raises
     ------
@@ -215,7 +214,6 @@ def mean_firing_rate(spiketrain, t_start=None, t_stop=None, axis=None):
     >>> from elephant import statistics
     >>> statistics.mean_firing_rate([0.3, 4.5, 6.7, 9.3])
     0.4301075268817204
-
     """
     if isinstance(spiketrain, neo.SpikeTrain) and t_start is None \
             and t_stop is None and axis is None:
@@ -333,7 +331,6 @@ def fanofactor(spiketrains: Union[List[neo.SpikeTrain], List[pq.Quantity], List[
     ... ]
     >>> statistics.fanofactor(spiketrains)
     0.07142857142857142
-
     """
     def _check_input_spiketrains_durations(spiketrains: Union[List[neo.SpikeTrain], List[pq.Quantity],
                                                               List[np.ndarray]]) -> None:
@@ -442,7 +439,6 @@ def cv2(time_intervals, with_nan=False):
     >>> from elephant import statistics
     >>> statistics.cv2([0.3, 4.5, 6.7, 9.3])
     0.8226190476190478
-
     """
     # convert to array, cast to float
     time_intervals = np.asarray(time_intervals)
@@ -510,7 +506,6 @@ def lv(time_intervals, with_nan=False):
     >>> from elephant import statistics
     >>> statistics.lv([0.3, 4.5, 6.7, 9.3])
     0.8306154336734695
-
     """
     # convert to array, cast to float
     time_intervals = np.asarray(time_intervals)
@@ -702,13 +697,13 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
         change strongly. Only possible in the case of a Gaussian kernel.
 
         Default: False
-    pool_trials: bool, optional
+    pool_trials : bool, optional
         If True, calculate firing rates averaged over trials if `spiketrains` is
         of type :mod:`elephant.trials`. Has no effect for single spike train
         or lists of spike trains.
 
         Default: False
-    pool_spike_trains: bool, optional
+    pool_spike_trains : bool, optional
         If True, calculate firing rates averaged over spike trains. If the
         input is a :mod:`elephant.trials` object, spike trains are pooled
         across spike trains within each trial, and pool_trials determines
@@ -734,23 +729,28 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
         If `spiketrains` is a list of :class:`neo.core.SpikeTrain` then output
         is a single :class:`neo.core.AnalogSignal`. `n_estimates` depends on the
         pooling options:
-           -  `pool_spike_trains=True` results in `n_estimates = 1`.
-           -  `pool_spike_trains=False` results in `n_estimates = len(spiketrains)`
+
+          - `pool_spike_trains=True` results in `n_estimates = 1`.
+          - `pool_spike_trains=False` results in `n_estimates = len(spiketrains)`
 
         If `spiketrains` is a :mod:`elephant.trials` object then output is a
         :class:`neo.core.AnalogSignal` or list of :class:`neo.core.AnalogSignal`.
-        The output type depends on `pool_trials`.
-           -  If `pool_trials=False` then output is a list of :class:`neo.core.AnalogSignal`
-             with length equal to number of trials. For each element, representing
-             the rate estimates of a given trial, `n_estimates` depends on the
-             pooling of spike trains within each trial:
-               -  `pool_spike_trains=True` results in `n_estimates = 1`
-               -  `pool_spike_trains=False` results in `n_estimates = len(spiketrains)`
-           -  If `pool_trials=True` then output is a single :class:`neo.core.AnalogSignal`
-             with rates pooled across trials. `n_estimates` depends on the pooling
-             of spike trains within each trial:
-               -  `pool_spike_trains=True` results in `n_estimates = 1`
-               -  `pool_spike_trains=False` results in `n_estimates = len(spiketrains)`
+        The output type depends on `pool_trials`:
+
+          - If `pool_trials=False` then output is a list of :class:`neo.core.AnalogSignal`
+            with length equal to number of trials. For each element, representing
+            the rate estimates of a given trial, `n_estimates` depends on the
+            pooling of spike trains within each trial:
+
+              - `pool_spike_trains=True` results in `n_estimates = 1`
+              - `pool_spike_trains=False` results in `n_estimates = len(spiketrains)`
+
+          - If `pool_trials=True` then output is a single :class:`neo.core.AnalogSignal`
+            with rates pooled across trials. `n_estimates` depends on the pooling
+            of spike trains within each trial:
+
+              - `pool_spike_trains=True` results in `n_estimates = 1`
+              - `pool_spike_trains=False` results in `n_estimates = len(spiketrains)`
 
         A table summarizing the return types and array shapes is given in the
         :ref:`notes below <summary-of-outputs>`.
@@ -802,7 +802,6 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
        ``[0, 1)`` ``[1, 2)`` ``[2, 3)`` ``[3, 4]``,
 
        the last interval ``[4, 4.5]`` is excluded from all calculations.
-
 
     .. _summary-of-outputs:
 
@@ -881,7 +880,6 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
            [0.60883028],
            [0.22928759],
            [0.05842767]])
-
     """
     if isinstance(spiketrains, elephant.trials.Trials):
         kwargs = {
@@ -1215,7 +1213,7 @@ def time_histogram(spiketrains: Union[List[neo.SpikeTrain], neo.SpikeTrain],
         If `t_stop` is None and the objects in `spiketrains` have different
         `t_stop` values.
 
-    See also
+    See Also
     --------
     :func:`elephant.conversion.BinnedSpikeTrain`
 
@@ -1244,7 +1242,6 @@ def time_histogram(spiketrains: Union[List[neo.SpikeTrain], neo.SpikeTrain],
 
     >>> hist.magnitude.flatten()
     array([2, 0, 0, 0, 2, 0, 1, 0, 1, 1])
-
     """
     # Bin the spike trains and sum across columns
     if binary:
@@ -1321,7 +1318,7 @@ def complexity_pdf(spiketrains, bin_size):
         `neo.AnalogSignal[j]` is the histogram computed between
         `t_start + j * bin_size` and `t_start + (j + 1) * bin_size`.
 
-    See also
+    See Also
     --------
     elephant.conversion.BinnedSpikeTrain
     """
@@ -1437,6 +1434,11 @@ class Complexity(object):
         If no sampling rate is supplied which may lead to rounding errors
         when using the epoch to slice spike trains.
 
+    See Also
+    --------
+    elephant.conversion.BinnedSpikeTrain
+    elephant.spike_train_synchrony.Synchrotool
+
     Notes
     -----
     Note that with most common parameter combinations spike times can end up
@@ -1444,11 +1446,6 @@ class Complexity(object):
     is accounted for by moving spikes which are within tolerance of the next
     bin edge into the following bin. This can be adjusted using the tolerance
     parameter and turned off by setting `tolerance=None`.
-
-    See also
-    --------
-    elephant.conversion.BinnedSpikeTrain
-    elephant.spike_train_synchrony.Synchrotool
 
     Examples
     --------
@@ -1503,7 +1500,6 @@ class Complexity(object):
     array([[0.5],
            [0.4],
            [0.1]])
-
     """
 
     def __init__(self, spiketrains,
@@ -1757,7 +1753,6 @@ def fftkernel(x, w):
        RIKEN Brain Science Insitute
        http://2000.jukuin.keio.ac.jp/shimazaki
     2. Ported to Python: Subhasis Ray, NCBS. Tue Jun 10 10:42:38 IST 2014
-
     """
     L = len(x)
     Lmax = L + 3 * w
@@ -1792,7 +1787,6 @@ def cost_function(x, N, w, dt):
     Computes the cost function for `sskernel`.
 
     Cn(w) = sum_{i,j} int k(x - x_i) k(x - x_j) dx - 2 sum_{i~=j} k(x_i - x_j)
-
     """
     yh = np.abs(fftkernel(x, w / dt))  # density
     # formula for density
@@ -1856,7 +1850,6 @@ def optimal_kernel_bandwidth(spiketimes, times=None, bandwidth=None,
 
         If no optimal kernel could be found, all entries of the dictionary are
         set to None.
-
     """
 
     if times is None:

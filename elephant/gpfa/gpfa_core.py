@@ -473,7 +473,6 @@ def learn_gp_params(seqs_latent, params, verbose=False):
     ValueError
         If `params['covType'] != 'rbf'`.
         If `params['notes']['learnGPNoise']` set to True.
-
     """
     if params['covType'] != 'rbf':
         raise ValueError("Only 'rbf' GP covariance type is supported.")

@@ -472,7 +472,7 @@ def load_data(name):
 
     Parameters
     ----------
-    name: str
+    name : str
         The name of the data to load. The available data names and their
         content are defined in the main
         :doc:`datasets documentation </reference/datasets>` page.
