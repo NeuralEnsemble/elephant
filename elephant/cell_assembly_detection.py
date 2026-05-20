@@ -77,17 +77,22 @@ from scipy.stats import f
 
 import elephant.conversion as conv
 
-__all__ = [
-    "cell_assembly_detection"
-]
+__all__ = ["cell_assembly_detection"]
 
 
-def cell_assembly_detection(binned_spiketrain, max_lag, reference_lag=2,
-                            alpha=0.05, min_occurrences=1, size_chunks=100,
-                            max_spikes=np.inf, significance_pruning=True,
-                            subgroup_pruning=True,
-                            same_configuration_pruning=False,
-                            verbose=False):
+def cell_assembly_detection(
+    binned_spiketrain,
+    max_lag,
+    reference_lag=2,
+    alpha=0.05,
+    min_occurrences=1,
+    size_chunks=100,
+    max_spikes=np.inf,
+    significance_pruning=True,
+    subgroup_pruning=True,
+    same_configuration_pruning=False,
+    verbose=False,
+):
     """
     Perform the CAD analysis :cite:`cad-Russo2017_e19428` for the binned
     (discretized) spike trains given in the input. The method looks for
@@ -196,12 +201,14 @@ def cell_assembly_detection(binned_spiketrain, max_lag, reference_lag=2,
     initial_time = time.time()
 
     # check parameter input and raise errors if necessary
-    _raise_errors(binned_spiketrain=binned_spiketrain,
-                  max_lag=max_lag,
-                  alpha=alpha,
-                  min_occurrences=min_occurrences,
-                  size_chunks=size_chunks,
-                  max_spikes=max_spikes)
+    _raise_errors(
+        binned_spiketrain=binned_spiketrain,
+        max_lag=max_lag,
+        alpha=alpha,
+        min_occurrences=min_occurrences,
+        size_chunks=size_chunks,
+        max_spikes=max_spikes,
+    )
 
     bin_size = binned_spiketrain.bin_size
     t_start = binned_spiketrain.t_start
@@ -214,21 +221,26 @@ def cell_assembly_detection(binned_spiketrain, max_lag, reference_lag=2,
 
     # initialize empty assembly
 
-    assembly_in = [{'neurons': None,
-                    'lags': None,
-                    'pvalue': None,
-                    'times': None,
-                    'signature': None} for _ in range(n_neurons)]
+    assembly_in = [
+        {
+            "neurons": None,
+            "lags": None,
+            "pvalue": None,
+            "times": None,
+            "signature": None,
+        }
+        for _ in range(n_neurons)
+    ]
 
     # initializing the dictionaries
     if verbose:
-        print('Initializing the dictionaries...')
+        print("Initializing the dictionaries...")
     for w1 in range(n_neurons):
-        assembly_in[w1]['neurons'] = [w1]
-        assembly_in[w1]['lags'] = []
-        assembly_in[w1]['pvalue'] = []
-        assembly_in[w1]['times'] = binned_spiketrain[w1]
-        assembly_in[w1]['signature'] = [[1, sum(binned_spiketrain[w1])]]
+        assembly_in[w1]["neurons"] = [w1]
+        assembly_in[w1]["lags"] = []
+        assembly_in[w1]["pvalue"] = []
+        assembly_in[w1]["times"] = binned_spiketrain[w1]
+        assembly_in[w1]["signature"] = [[1, sum(binned_spiketrain[w1])]]
 
     # first order = test over pairs
 
@@ -243,13 +255,13 @@ def cell_assembly_detection(binned_spiketrain, max_lag, reference_lag=2,
     alph = alpha
     alpha = alph * 2 / float(number_test_performed)
     if verbose:
-        print('actual significance_level', alpha)
+        print("actual significance_level", alpha)
 
     # sign_pairs_matrix is the matrix with entry as 1 for the significant pairs
     sign_pairs_matrix = np.zeros((n_neurons, n_neurons), dtype=int)
     assembly = []
     if verbose:
-        print('Testing on pairs...')
+        print("Testing on pairs...")
 
     # nns: count of the existing assemblies
     nns = 0
@@ -275,7 +287,8 @@ def cell_assembly_detection(binned_spiketrain, max_lag, reference_lag=2,
                 size_chunks=size_chunks,
                 reference_lag=reference_lag,
                 existing_patterns=existing_patterns,
-                same_configuration_pruning=same_configuration_pruning)
+                same_configuration_pruning=same_configuration_pruning,
+            )
             if same_configuration_pruning:
                 assem_tp = call_tp[0]
             else:
@@ -283,8 +296,10 @@ def cell_assembly_detection(binned_spiketrain, max_lag, reference_lag=2,
 
             # if the assembly given in output is significant and the number
             # of occurrences is higher than the minimum requested number
-            if assem_tp['pvalue'][-1] < alpha and \
-                    assem_tp['signature'][-1][1] > min_occurrences:
+            if (
+                assem_tp["pvalue"][-1] < alpha
+                and assem_tp["signature"][-1][1] > min_occurrences
+            ):
                 # save the assembly in the output
                 assembly.append(assem_tp)
                 sign_pairs_matrix[w1][w2] = 1
@@ -309,7 +324,7 @@ def cell_assembly_detection(binned_spiketrain, max_lag, reference_lag=2,
     # the algorithm will return assemblies composed by
     # maximum max_spikes elements
     if verbose:
-        print('\nTesting on higher order assemblies...\n')
+        print("\nTesting on higher order assemblies...\n")
 
     # keep the count of the current size of the assembly
     current_size_agglomeration = 2
@@ -326,8 +341,7 @@ def cell_assembly_detection(binned_spiketrain, max_lag, reference_lag=2,
     w1 = 0
 
     while w1 < n_as:
-
-        w1_elements = assembly[w1]['neurons']
+        w1_elements = assembly[w1]["neurons"]
 
         # Add only neurons that have significant first order
         # co-occurrences with members of the assembly
@@ -341,13 +355,11 @@ def cell_assembly_detection(binned_spiketrain, max_lag, reference_lag=2,
 
         # list with the elements to test
         # that are not already in the assembly
-        w2_to_test = [item for item in w2_to_test_p
-                      if item not in w1_elements]
+        w2_to_test = [item for item in w2_to_test_p if item not in w1_elements]
         pop_flag = 0
 
         # check that there are candidate neurons for agglomeration
         if w2_to_test:
-
             # bonferroni correction only for the tests actually performed
             alpha = alph / float(len(w2_to_test) * n_as * (2 * max_lag + 1))
 
@@ -367,7 +379,8 @@ def cell_assembly_detection(binned_spiketrain, max_lag, reference_lag=2,
                     size_chunks=size_chunks,
                     reference_lag=reference_lag,
                     existing_patterns=existing_patterns,
-                    same_configuration_pruning=same_configuration_pruning)
+                    same_configuration_pruning=same_configuration_pruning,
+                )
                 if same_configuration_pruning:
                     assem_tp = call_tp[0]
                 else:
@@ -376,26 +389,32 @@ def cell_assembly_detection(binned_spiketrain, max_lag, reference_lag=2,
                 # if it is significant and
                 # the number of occurrences is sufficient and
                 # the length of the assembly is less than the input limit
-                if assem_tp['pvalue'][-1] < alpha and \
-                        assem_tp['signature'][-1][1] > min_occurrences and \
-                        assem_tp['signature'][-1][0] <= max_spikes:
+                if (
+                    assem_tp["pvalue"][-1] < alpha
+                    and assem_tp["signature"][-1][1] > min_occurrences
+                    and assem_tp["signature"][-1][0] <= max_spikes
+                ):
                     # the assembly is saved in the output list of
                     # assemblies
                     assembly.append(assem_tp)
                     assembly_flag = 1
 
-                    if len(assem_tp['neurons']) > current_size_agglomeration:
+                    if len(assem_tp["neurons"]) > current_size_agglomeration:
                         # up to the next agglomeration level
                         current_size_agglomeration += 1
                         # Pruning step 1
                         # between two assemblies with the same unit set
                         # arranged into different
                         # configurations, choose the most significant one
-                        if significance_pruning is True and \
-                                current_size_agglomeration > 3:
-                            assembly, n_filtered_assemblies = \
+                        if (
+                            significance_pruning is True
+                            and current_size_agglomeration > 3
+                        ):
+                            assembly, n_filtered_assemblies = (
                                 _significance_pruning_step(
-                                    pre_pruning_assembly=assembly)
+                                    pre_pruning_assembly=assembly
+                                )
+                            )
                     if same_configuration_pruning:
                         item_candidate = call_tp[1]
                         existing_patterns.append(item_candidate)
@@ -426,23 +445,21 @@ def cell_assembly_detection(binned_spiketrain, max_lag, reference_lag=2,
 
     # Reformat of the activation times
     for pattern in assembly:
-        times = np.where(pattern['times'] > 0)[0] * bin_size + t_start
-        pattern['times'] = times
-        pattern['lags'] = pattern['lags'] * bin_size
-        pattern['signature'] = np.array(pattern['signature'], dtype=int)
+        times = np.where(pattern["times"] > 0)[0] * bin_size + t_start
+        pattern["times"] = times
+        pattern["lags"] = pattern["lags"] * bin_size
+        pattern["signature"] = np.array(pattern["signature"], dtype=int)
 
     # Give as output only the maximal groups
     if verbose:
-        print('\nGiving outputs of the method...\n')
-        print('final_assembly')
+        print("\nGiving outputs of the method...\n")
+        print("final_assembly")
         for item in assembly:
-            print(item['neurons'],
-                  item['lags'],
-                  item['signature'])
+            print(item["neurons"], item["lags"], item["signature"])
 
     # Time needed for the computation
     if verbose:
-        print('\ntime', time.time() - initial_time)
+        print("\ntime", time.time() - initial_time)
 
     return assembly
 
@@ -470,7 +487,9 @@ def _chunking(binned_pair, size_chunks, max_lag, best_lag):
         number of chunks
     """
 
-    length = len(binned_pair[0], )
+    length = len(
+        binned_pair[0],
+    )
 
     # number of chunks
     n_chunks = math.ceil((length - max_lag) / size_chunks)
@@ -485,34 +504,33 @@ def _chunking(binned_pair, size_chunks, max_lag, best_lag):
 
     # cut the time series according to best_lag
 
-    binned_pair_cut = np.array([np.zeros(length - max_lag, dtype=int),
-                                np.zeros(length - max_lag, dtype=int)])
+    binned_pair_cut = np.array(
+        [np.zeros(length - max_lag, dtype=int), np.zeros(length - max_lag, dtype=int)]
+    )
 
     # choose which entries to consider according to the best lag chosen
     if best_lag == 0:
-        binned_pair_cut[0] = binned_pair[0][0:length - max_lag]
-        binned_pair_cut[1] = binned_pair[1][0:length - max_lag]
+        binned_pair_cut[0] = binned_pair[0][0 : length - max_lag]
+        binned_pair_cut[1] = binned_pair[1][0 : length - max_lag]
     elif best_lag > 0:
-        binned_pair_cut[0] = binned_pair[0][0:length - max_lag]
-        binned_pair_cut[1] = binned_pair[1][
-                             best_lag:length - max_lag + best_lag]
+        binned_pair_cut[0] = binned_pair[0][0 : length - max_lag]
+        binned_pair_cut[1] = binned_pair[1][best_lag : length - max_lag + best_lag]
     else:
-        binned_pair_cut[0] = binned_pair[0][
-                             -best_lag:length - max_lag - best_lag]
-        binned_pair_cut[1] = binned_pair[1][0:length - max_lag]
+        binned_pair_cut[0] = binned_pair[0][-best_lag : length - max_lag - best_lag]
+        binned_pair_cut[1] = binned_pair[1][0 : length - max_lag]
 
     # put the cut data into the chunked object
     for iii in range(n_chunks - 1):
         chunked[iii][0] = binned_pair_cut[0][
-                          size_chunks * iii:size_chunks * (iii + 1)]
+            size_chunks * iii : size_chunks * (iii + 1)
+        ]
         chunked[iii][1] = binned_pair_cut[1][
-                          size_chunks * iii:size_chunks * (iii + 1)]
+            size_chunks * iii : size_chunks * (iii + 1)
+        ]
 
     # last chunk can be of slightly different size
-    chunked[n_chunks - 1][0] = binned_pair_cut[0][
-                               size_chunks * (n_chunks - 1):length]
-    chunked[n_chunks - 1][1] = binned_pair_cut[1][
-                               size_chunks * (n_chunks - 1):length]
+    chunked[n_chunks - 1][0] = binned_pair_cut[0][size_chunks * (n_chunks - 1) : length]
+    chunked[n_chunks - 1][1] = binned_pair_cut[1][size_chunks * (n_chunks - 1) : length]
 
     return chunked, n_chunks
 
@@ -539,16 +557,25 @@ def _assert_same_pattern(item_candidate, existing_patterns, max_lag):
     """
     # unique representation of pattern in term of lags, maxlag and neurons
     # participating
-    item_candidate = sorted(item_candidate[0] * 2 * max_lag +
-                            item_candidate[1] + max_lag)
+    item_candidate = sorted(
+        item_candidate[0] * 2 * max_lag + item_candidate[1] + max_lag
+    )
     if item_candidate in existing_patterns:
         return True
     else:
         return False
 
 
-def _test_pair(ensemble, spiketrain2, n2, max_lag, size_chunks, reference_lag,
-               existing_patterns, same_configuration_pruning):
+def _test_pair(
+    ensemble,
+    spiketrain2,
+    n2,
+    max_lag,
+    size_chunks,
+    reference_lag,
+    existing_patterns,
+    same_configuration_pruning,
+):
     """
     Tests if two spike trains have repetitive patterns occurring more
     frequently than chance.
@@ -603,7 +630,7 @@ def _test_pair(ensemble, spiketrain2, n2, max_lag, size_chunks, reference_lag,
     """
 
     # list with the binned spike trains of the two neurons
-    binned_pair = [ensemble['times'], spiketrain2]
+    binned_pair = [ensemble["times"], spiketrain2]
 
     # For large bin_sizes, the binned spike counts may potentially fluctuate
     # around a high mean level and never fall below some minimum count
@@ -612,8 +639,9 @@ def _test_pair(ensemble, spiketrain2, n2, max_lag, size_chunks, reference_lag,
     # to the coincidence count although they are completely
     # uninformative, so we subtract the minima.
 
-    binned_pair = np.array([binned_pair[0] - min(binned_pair[0]),
-                            binned_pair[1] - min(binned_pair[1])])
+    binned_pair = np.array(
+        [binned_pair[0] - min(binned_pair[0]), binned_pair[1] - min(binned_pair[1])]
+    )
 
     ntp = len(binned_pair[0])  # trial length
 
@@ -628,8 +656,9 @@ def _test_pair(ensemble, spiketrain2, n2, max_lag, size_chunks, reference_lag,
 
     for i in range(maxrate):
         par_processes[i] = np.array(binned_pair > i, dtype=int)
-        par_proc_expectation[i] = (np.sum(par_processes[i][0]) * np.sum(
-            par_processes[i][1])) / float(ntp)
+        par_proc_expectation[i] = (
+            np.sum(par_processes[i][0]) * np.sum(par_processes[i][1])
+        ) / float(ntp)
 
     # Decide which is the lag with most coincidences (l_ : best lag)
     # we are calculating the joint spike count of units A and B at lag l.
@@ -643,21 +672,23 @@ def _test_pair(ensemble, spiketrain2, n2, max_lag, size_chunks, reference_lag,
     bwd_coinc_count = np.array([0 for _ in range(max_lag + 1)])
 
     for lag in range(max_lag + 1):
-        time_fwd_cc = np.array([binned_pair[0][
-                                0:len(binned_pair[0]) - max_lag],
-                                binned_pair[1][
-                                lag:len(binned_pair[1]) - max_lag + lag]])
+        time_fwd_cc = np.array(
+            [
+                binned_pair[0][0 : len(binned_pair[0]) - max_lag],
+                binned_pair[1][lag : len(binned_pair[1]) - max_lag + lag],
+            ]
+        )
 
-        time_bwd_cc = np.array([binned_pair[0][
-                                lag:len(binned_pair[0]) - max_lag + lag],
-                                binned_pair[1][
-                                0:len(binned_pair[1]) - max_lag]])
+        time_bwd_cc = np.array(
+            [
+                binned_pair[0][lag : len(binned_pair[0]) - max_lag + lag],
+                binned_pair[1][0 : len(binned_pair[1]) - max_lag],
+            ]
+        )
 
         # taking the minimum, place by place for the coincidences
-        fwd_coinc_count[lag] = np.sum(np.minimum(time_fwd_cc[0],
-                                                 time_fwd_cc[1]))
-        bwd_coinc_count[lag] = np.sum(np.minimum(time_bwd_cc[0],
-                                                 time_bwd_cc[1]))
+        fwd_coinc_count[lag] = np.sum(np.minimum(time_fwd_cc[0], time_fwd_cc[1]))
+        bwd_coinc_count[lag] = np.sum(np.minimum(time_bwd_cc[0], time_bwd_cc[1]))
 
     # choice of the best lag, taking into account the reference lag
     if reference_lag <= 0:
@@ -670,12 +701,12 @@ def _test_pair(ensemble, spiketrain2, n2, max_lag, size_chunks, reference_lag,
             fwd_flag = 2
             global_maximum_index = np.argmax(bwd_coinc_count)
         best_lag = (fwd_flag == 1) * global_maximum_index - (
-                fwd_flag == 2) * global_maximum_index
-        max_coinc_count = max(np.amax(fwd_coinc_count),
-                              np.amax(bwd_coinc_count))
+            fwd_flag == 2
+        ) * global_maximum_index
+        max_coinc_count = max(np.amax(fwd_coinc_count), np.amax(bwd_coinc_count))
     else:
         # reverse the ctAB_ object and not take into account the first entry
-        bwd_coinc_count_rev = bwd_coinc_count[1:len(bwd_coinc_count)][::-1]
+        bwd_coinc_count_rev = bwd_coinc_count[1 : len(bwd_coinc_count)][::-1]
         hab_l = np.append(bwd_coinc_count_rev, fwd_coinc_count)
         lags = range(-max_lag, max_lag + 1)
         max_coinc_count = np.amax(hab_l)
@@ -692,13 +723,13 @@ def _test_pair(ensemble, spiketrain2, n2, max_lag, size_chunks, reference_lag,
     # is already in the list of the significant patterns
     # if it is, don't do the testing
     # if it is not, continue
-    previous_neu = ensemble['neurons']
+    previous_neu = ensemble["neurons"]
     pattern_candidate = copy.copy(previous_neu)
     pattern_candidate.append(n2)
     pattern_candidate = np.array(pattern_candidate)
 
     # add both the new lag and zero
-    previous_lags = ensemble['lags']
+    previous_lags = ensemble["lags"]
     lags_candidate = copy.copy(previous_lags)
     lags_candidate.append(best_lag)
 
@@ -708,23 +739,27 @@ def _test_pair(ensemble, spiketrain2, n2, max_lag, size_chunks, reference_lag,
     item_candidate = [[pattern_candidate], [lags_candidate]]
 
     if same_configuration_pruning:
-        if _assert_same_pattern(item_candidate=item_candidate,
-                                existing_patterns=existing_patterns,
-                                max_lag=max_lag):
-            en_neurons = copy.copy(ensemble['neurons'])
+        if _assert_same_pattern(
+            item_candidate=item_candidate,
+            existing_patterns=existing_patterns,
+            max_lag=max_lag,
+        ):
+            en_neurons = copy.copy(ensemble["neurons"])
             en_neurons.append(n2)
-            en_lags = copy.copy(ensemble['lags'])
+            en_lags = copy.copy(ensemble["lags"])
             en_lags.append(np.inf)
-            en_pvalue = copy.copy(ensemble['pvalue'])
+            en_pvalue = copy.copy(ensemble["pvalue"])
             en_pvalue.append(1)
-            en_n_occ = copy.copy(ensemble['signature'])
+            en_n_occ = copy.copy(ensemble["signature"])
             en_n_occ.append([0, 0])
             item_candidate = []
-            assembly = {'neurons': en_neurons,
-                        'lags': en_lags,
-                        'pvalue': en_pvalue,
-                        'times': [],
-                        'signature': en_n_occ}
+            assembly = {
+                "neurons": en_neurons,
+                "lags": en_lags,
+                "pvalue": en_pvalue,
+                "times": [],
+                "signature": en_n_occ,
+            }
             return assembly, item_candidate
     else:
         # I go on with the testing
@@ -732,22 +767,27 @@ def _test_pair(ensemble, spiketrain2, n2, max_lag, size_chunks, reference_lag,
         pair_expectation = np.sum(par_proc_expectation)
         # case of no coincidences or limit for the F asimptotical
         # distribution (too few coincidences)
-        if max_coinc_count == 0 or pair_expectation <= 5 or \
-                pair_expectation >= (min(np.sum(binned_pair[0]),
-                                         np.sum(binned_pair[1])) - 5):
-            en_neurons = copy.copy(ensemble['neurons'])
+        if (
+            max_coinc_count == 0
+            or pair_expectation <= 5
+            or pair_expectation
+            >= (min(np.sum(binned_pair[0]), np.sum(binned_pair[1])) - 5)
+        ):
+            en_neurons = copy.copy(ensemble["neurons"])
             en_neurons.append(n2)
-            en_lags = copy.copy(ensemble['lags'])
+            en_lags = copy.copy(ensemble["lags"])
             en_lags.append(np.inf)
-            en_pvalue = copy.copy(ensemble['pvalue'])
+            en_pvalue = copy.copy(ensemble["pvalue"])
             en_pvalue.append(1)
-            en_n_occ = copy.copy(ensemble['signature'])
+            en_n_occ = copy.copy(ensemble["signature"])
             en_n_occ.append([0, 0])
-            assembly = {'neurons': en_neurons,
-                        'lags': en_lags,
-                        'pvalue': en_pvalue,
-                        'times': [],
-                        'signature': en_n_occ}
+            assembly = {
+                "neurons": en_neurons,
+                "lags": en_lags,
+                "pvalue": en_pvalue,
+                "times": [],
+                "signature": en_n_occ,
+            }
             if same_configuration_pruning:
                 item_candidate = []
                 return assembly, item_candidate
@@ -762,12 +802,13 @@ def _test_pair(ensemble, spiketrain2, n2, max_lag, size_chunks, reference_lag,
                     for i in range(maxrate):  # for all parallel processes
                         par_processes_a = par_processes[i][0]
                         par_processes_b = par_processes[i][1]
-                        activation_series = \
-                            np.add(activation_series,
-                                   np.multiply(par_processes_a,
-                                               par_processes_b))
-                    coinc_count_matrix = np.array([[0, fwd_coinc_count[0]],
-                                                   [bwd_coinc_count[2], 0]])
+                        activation_series = np.add(
+                            activation_series,
+                            np.multiply(par_processes_a, par_processes_b),
+                        )
+                    coinc_count_matrix = np.array(
+                        [[0, fwd_coinc_count[0]], [bwd_coinc_count[2], 0]]
+                    )
                     # matrix with #AB and #BA
                     # here we specifically choose
                     # 'l* = -2' for the synchrony case
@@ -777,66 +818,79 @@ def _test_pair(ensemble, spiketrain2, n2, max_lag, size_chunks, reference_lag,
                         par_processes_b = par_processes[i][1]
                         # multiplication between the two binned time series
                         # shifted by best_lag
-                        activation_series[0:length - best_lag] = \
-                            np.add(activation_series[0:length - best_lag],
-                                   np.multiply(par_processes_a[
-                                               0:length - best_lag],
-                                               par_processes_b[
-                                               best_lag:length]))
-                    coinc_count_matrix = \
-                        np.array([[0, fwd_coinc_count[global_maximum_index]],
-                                  [bwd_coinc_count[global_maximum_index], 0]])
+                        activation_series[0 : length - best_lag] = np.add(
+                            activation_series[0 : length - best_lag],
+                            np.multiply(
+                                par_processes_a[0 : length - best_lag],
+                                par_processes_b[best_lag:length],
+                            ),
+                        )
+                    coinc_count_matrix = np.array(
+                        [
+                            [0, fwd_coinc_count[global_maximum_index]],
+                            [bwd_coinc_count[global_maximum_index], 0],
+                        ]
+                    )
                 else:
                     for i in range(maxrate):
                         par_processes_a = par_processes[i][0]
                         par_processes_b = par_processes[i][1]
-                        activation_series[-best_lag:length] = \
-                            np.add(activation_series[-best_lag:length],
-                                   np.multiply(par_processes_a[
-                                               -best_lag:length],
-                                               par_processes_b[
-                                               0:length + best_lag]))
-                    coinc_count_matrix = \
-                        np.array([[0, fwd_coinc_count[global_maximum_index]],
-                                  [bwd_coinc_count[global_maximum_index], 0]])
+                        activation_series[-best_lag:length] = np.add(
+                            activation_series[-best_lag:length],
+                            np.multiply(
+                                par_processes_a[-best_lag:length],
+                                par_processes_b[0 : length + best_lag],
+                            ),
+                        )
+                    coinc_count_matrix = np.array(
+                        [
+                            [0, fwd_coinc_count[global_maximum_index]],
+                            [bwd_coinc_count[global_maximum_index], 0],
+                        ]
+                    )
             else:
                 if best_lag == 0:
                     for i in range(maxrate):
                         par_processes_a = par_processes[i][0]
                         par_processes_b = par_processes[i][1]
-                        activation_series = \
-                            np.add(activation_series,
-                                   np.multiply(par_processes_a,
-                                               par_processes_b))
+                        activation_series = np.add(
+                            activation_series,
+                            np.multiply(par_processes_a, par_processes_b),
+                        )
                 elif best_lag > 0:
                     for i in range(maxrate):
                         par_processes_a = par_processes[i][0]
                         par_processes_b = par_processes[i][1]
-                        activation_series[0:length - best_lag] = \
-                            np.add(activation_series[0:length - best_lag],
-                                   np.multiply(par_processes_a[
-                                               0:length - best_lag],
-                                               par_processes_b[
-                                               best_lag:length]))
+                        activation_series[0 : length - best_lag] = np.add(
+                            activation_series[0 : length - best_lag],
+                            np.multiply(
+                                par_processes_a[0 : length - best_lag],
+                                par_processes_b[best_lag:length],
+                            ),
+                        )
                 else:
                     for i in range(maxrate):
                         par_processes_a = par_processes[i][0]
                         par_processes_b = par_processes[i][1]
-                        activation_series[-best_lag:length] = \
-                            np.add(activation_series[-best_lag:length],
-                                   np.multiply(par_processes_a[
-                                               -best_lag:length],
-                                               par_processes_b[
-                                               0:length + best_lag]))
-                coinc_count_matrix = np.array([[0, max_coinc_count],
-                                               [coinc_count_ref, 0]])
+                        activation_series[-best_lag:length] = np.add(
+                            activation_series[-best_lag:length],
+                            np.multiply(
+                                par_processes_a[-best_lag:length],
+                                par_processes_b[0 : length + best_lag],
+                            ),
+                        )
+                coinc_count_matrix = np.array(
+                    [[0, max_coinc_count], [coinc_count_ref, 0]]
+                )
 
         # chunking
 
-        chunked, nch = _chunking(binned_pair=binned_pair,
-                                 size_chunks=size_chunks,
-                                 max_lag=max_lag,
-                                 best_lag=best_lag)
+        chunked, nch = _chunking(
+            binned_pair=binned_pair,
+            size_chunks=size_chunks,
+            max_lag=max_lag,
+            best_lag=best_lag,
+        )
 
         marginal_counts = np.zeros((nch, maxrate, 2), dtype=int)
 
@@ -854,25 +908,26 @@ def _test_pair(ensemble, spiketrain2, n2, max_lag, size_chunks, reference_lag,
 
         for iii in range(nch):
             binned_pair_chunked = np.array(chunked[iii])
-            maxrate_t[iii] = max(max(binned_pair_chunked[0]),
-                                 max(binned_pair_chunked[1]))
+            maxrate_t[iii] = max(
+                max(binned_pair_chunked[0]), max(binned_pair_chunked[1])
+            )
             ch_nn[iii] = len(chunked[iii][0])
-            par_processes_chunked = [None for _ in range(
-                int(maxrate_t[iii]))]
+            par_processes_chunked = [None for _ in range(int(maxrate_t[iii]))]
 
             for i in range(int(maxrate_t[iii])):
                 par_processes_chunked[i] = np.zeros(
-                    (2, len(binned_pair_chunked[0])), dtype=int)
-                par_processes_chunked[i] = np.array(binned_pair_chunked > i,
-                                                    dtype=int)
+                    (2, len(binned_pair_chunked[0])), dtype=int
+                )
+                par_processes_chunked[i] = np.array(binned_pair_chunked > i, dtype=int)
 
             for i in range(int(maxrate_t[iii])):
                 par_processes_a = par_processes_chunked[i][0]
                 par_processes_b = par_processes_chunked[i][1]
                 marginal_counts[iii][i][0] = int(np.sum(par_processes_a))
                 marginal_counts[iii][i][1] = int(np.sum(par_processes_b))
-                count_sum = count_sum + min(marginal_counts[iii][i][0],
-                                            marginal_counts[iii][i][1])
+                count_sum = count_sum + min(
+                    marginal_counts[iii][i][0], marginal_counts[iii][i][1]
+                )
 
         # marginal_counts[iii][i] has in its entries
         # '[ #_a^{\alpha,c} , #_b^{\alpha,c}]'
@@ -893,20 +948,21 @@ def _test_pair(ensemble, spiketrain2, n2, max_lag, size_chunks, reference_lag,
 
             # evaluation of AB + variance and covariance
 
-            cov_abab[iii] = [[0 for _ in range(maxrate_t[iii])]
-                             for _ in range(maxrate_t[iii])]
+            cov_abab[iii] = [
+                [0 for _ in range(maxrate_t[iii])] for _ in range(maxrate_t[iii])
+            ]
             # for every rate up to the maxrate in that chunk
             for i in range(maxrate_t[iii]):
-                par_marg_counts_i = \
-                    np.outer(marginal_counts[iii][i], np.ones(2))
+                par_marg_counts_i = np.outer(marginal_counts[iii][i], np.ones(2))
 
-                cov_abab[iii][i][i] = \
+                cov_abab[iii][i][i] = np.multiply(
+                    np.multiply(par_marg_counts_i, par_marg_counts_i.T)
+                    / float(ch_size),
                     np.multiply(
-                        np.multiply(par_marg_counts_i, par_marg_counts_i.T)
-                        / float(ch_size),
-                        np.multiply(ch_size - par_marg_counts_i,
-                                    ch_size - par_marg_counts_i.T)
-                        / float(ch_size * (ch_size - 1)))
+                        ch_size - par_marg_counts_i, ch_size - par_marg_counts_i.T
+                    )
+                    / float(ch_size * (ch_size - 1)),
+                )
 
                 # calculation of the variance
                 var_t[iii] = var_t[iii] + cov_abab[iii][i][i]
@@ -914,50 +970,55 @@ def _test_pair(ensemble, spiketrain2, n2, max_lag, size_chunks, reference_lag,
                 # cross covariances terms
                 if maxrate_t[iii] > 1:
                     for j in range(i + 1, maxrate_t[iii]):
-                        par_marg_counts_j = \
-                            np.outer(marginal_counts[iii][j], np.ones(2))
-                        cov_abab[iii][i][j] = \
-                            2 * np.multiply(
-                                np.multiply(par_marg_counts_j,
-                                            par_marg_counts_j.T)
-                                / float(ch_size),
-                                np.multiply(ch_size - par_marg_counts_i,
-                                            ch_size - par_marg_counts_i.T)
-                                / float(ch_size * (ch_size - 1)))
+                        par_marg_counts_j = np.outer(
+                            marginal_counts[iii][j], np.ones(2)
+                        )
+                        cov_abab[iii][i][j] = 2 * np.multiply(
+                            np.multiply(par_marg_counts_j, par_marg_counts_j.T)
+                            / float(ch_size),
+                            np.multiply(
+                                ch_size - par_marg_counts_i,
+                                ch_size - par_marg_counts_i.T,
+                            )
+                            / float(ch_size * (ch_size - 1)),
+                        )
 
                         # update of the variance
                         var_t[iii] = var_t[iii] + cov_abab[iii][i][j]
 
             # evaluation of coinc_count_matrix = #AB - #BA
 
-            cov_abba[iii] = [[0 for _ in range(maxrate_t[iii])]
-                             for _ in range(maxrate_t[iii])]
+            cov_abba[iii] = [
+                [0 for _ in range(maxrate_t[iii])] for _ in range(maxrate_t[iii])
+            ]
 
             for i in range(maxrate_t[iii]):
-                par_marg_counts_i = \
-                    np.outer(marginal_counts[iii][i], np.ones(2))
-                cov_abba[iii][i][i] = \
+                par_marg_counts_i = np.outer(marginal_counts[iii][i], np.ones(2))
+                cov_abba[iii][i][i] = np.multiply(
+                    np.multiply(par_marg_counts_i, par_marg_counts_i.T)
+                    / float(ch_size),
                     np.multiply(
-                        np.multiply(par_marg_counts_i, par_marg_counts_i.T)
-                        / float(ch_size),
-                        np.multiply(ch_size - par_marg_counts_i,
-                                    ch_size - par_marg_counts_i.T)
-                        / float(ch_size * (ch_size - 1) ** 2))
+                        ch_size - par_marg_counts_i, ch_size - par_marg_counts_i.T
+                    )
+                    / float(ch_size * (ch_size - 1) ** 2),
+                )
                 cov_x[iii] = cov_x[iii] + cov_abba[iii][i][i]
 
                 if maxrate_t[iii] > 1:
                     for j in range((i + 1), maxrate_t[iii]):
-                        par_marg_counts_j = \
-                            np.outer(marginal_counts[iii][j], np.ones(2))
+                        par_marg_counts_j = np.outer(
+                            marginal_counts[iii][j], np.ones(2)
+                        )
 
-                        cov_abba[iii][i][j] = \
-                            2 * np.multiply(
-                                np.multiply(par_marg_counts_j,
-                                            par_marg_counts_j.T)
-                                / float(ch_size),
-                                np.multiply(ch_size - par_marg_counts_i,
-                                            ch_size - par_marg_counts_i.T)
-                                / float(ch_size * (ch_size - 1) ** 2))
+                        cov_abba[iii][i][j] = 2 * np.multiply(
+                            np.multiply(par_marg_counts_j, par_marg_counts_j.T)
+                            / float(ch_size),
+                            np.multiply(
+                                ch_size - par_marg_counts_i,
+                                ch_size - par_marg_counts_i.T,
+                            )
+                            / float(ch_size * (ch_size - 1) ** 2),
+                        )
 
                         cov_x[iii] = cov_x[iii] + cov_abba[iii][i][j]
 
@@ -973,23 +1034,25 @@ def _test_pair(ensemble, spiketrain2, n2, max_lag, size_chunks, reference_lag,
         # p-value obtained through approximation to a Fischer F distribution
         # (here we employ the survival function)
         else:
-            fstat = coinc_count_matrix ** 2 / var_tot
+            fstat = coinc_count_matrix**2 / var_tot
             pr_f = f.sf(fstat[0][1], 1, n)
 
         # Creation of the dictionary with the results
-        en_neurons = copy.copy(ensemble['neurons'])
+        en_neurons = copy.copy(ensemble["neurons"])
         en_neurons.append(n2)
-        en_lags = copy.copy(ensemble['lags'])
+        en_lags = copy.copy(ensemble["lags"])
         en_lags.append(best_lag)
-        en_pvalue = copy.copy(ensemble['pvalue'])
+        en_pvalue = copy.copy(ensemble["pvalue"])
         en_pvalue.append(pr_f)
-        en_n_occ = copy.copy(ensemble['signature'])
+        en_n_occ = copy.copy(ensemble["signature"])
         en_n_occ.append([len(en_neurons), sum(activation_series)])
-        assembly = {'neurons': en_neurons,
-                    'lags': en_lags,
-                    'pvalue': en_pvalue,
-                    'times': activation_series,
-                    'signature': en_n_occ}
+        assembly = {
+            "neurons": en_neurons,
+            "lags": en_lags,
+            "pvalue": en_pvalue,
+            "times": activation_series,
+            "signature": en_n_occ,
+        }
         if same_configuration_pruning:
             return assembly, item_candidate
         else:
@@ -1024,14 +1087,13 @@ def _significance_pruning_step(pre_pruning_assembly):
     assembly = []
 
     for i in range(nns):
-        elem = sorted(pre_pruning_assembly[i]['neurons'])
+        elem = sorted(pre_pruning_assembly[i]["neurons"])
         # in the list, so that membership can be checked
         if elem in selection:
             # find the element that was already in the list
             pre = selection.index(elem)
 
-            if pre_pruning_assembly[i]['pvalue'][-1] <= \
-                    assembly[pre]['pvalue'][-1]:
+            if pre_pruning_assembly[i]["pvalue"][-1] <= assembly[pre]["pvalue"][-1]:
                 # if the new element has a p-value that is smaller
                 # than the one had previously
                 selection[pre] = elem
@@ -1075,10 +1137,10 @@ def _subgroup_pruning_step(pre_pruning_assembly):
     for i in range(nns):
         # check only in the range of the already selected assemblies
         if selection[i]:
-            a = pre_pruning_assembly_r[i]['neurons']
+            a = pre_pruning_assembly_r[i]["neurons"]
             for j in range(i + 1, nns):
                 if selection[j]:
-                    b = pre_pruning_assembly_r[j]['neurons']
+                    b = pre_pruning_assembly_r[j]["neurons"]
                     # check if a is included in b or vice versa
                     if set(a).issuperset(set(b)):
                         selection[j] = False
@@ -1101,8 +1163,9 @@ def _subgroup_pruning_step(pre_pruning_assembly):
     return assembly
 
 
-def _raise_errors(binned_spiketrain, max_lag, alpha, min_occurrences,
-                  size_chunks, max_spikes):
+def _raise_errors(
+    binned_spiketrain, max_lag, alpha, min_occurrences, size_chunks, max_spikes
+):
     """
     Returns errors if the parameters given in input are not correct.
 
@@ -1144,29 +1207,31 @@ def _raise_errors(binned_spiketrain, max_lag, alpha, min_occurrences,
     """
 
     if not isinstance(binned_spiketrain, conv.BinnedSpikeTrain):
-        raise TypeError(
-            'data must be in BinnedSpikeTrain format')
+        raise TypeError("data must be in BinnedSpikeTrain format")
 
     if max_lag < 2:
-        raise ValueError('max_lag value cant be less than 2')
+        raise ValueError("max_lag value cant be less than 2")
 
     if alpha < 0 or alpha > 1:
-        raise ValueError('significance level has to be in interval [0,1]')
+        raise ValueError("significance level has to be in interval [0,1]")
 
     if min_occurrences < 1:
-        raise ValueError('minimal number of occurrences for an assembly '
-                         'must be at least 1')
+        raise ValueError(
+            "minimal number of occurrences for an assembly must be at least 1"
+        )
 
     if size_chunks < 2:
-        raise ValueError('length of the chunks cannot be 1 or less')
+        raise ValueError("length of the chunks cannot be 1 or less")
 
     if max_spikes < 2:
-        raise ValueError('maximal assembly order must be less than 2')
+        raise ValueError("maximal assembly order must be less than 2")
 
     if binned_spiketrain.shape[1] - max_lag < 100:
-        raise ValueError('The time series is too short, consider '
-                         'taking a longer portion of spike train '
-                         'or diminish the bin size to be tested')
+        raise ValueError(
+            "The time series is too short, consider "
+            "taking a longer portion of spike train "
+            "or diminish the bin size to be tested"
+        )
 
 
 # alias for the function

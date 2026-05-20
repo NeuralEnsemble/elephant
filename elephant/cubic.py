@@ -52,9 +52,7 @@ import warnings
 import scipy.special
 import scipy.stats
 
-__all__ = [
-    "cubic"
-]
+__all__ = ["cubic"]
 
 
 # Based on matlab code by Benjamin Staude
@@ -107,12 +105,14 @@ def cubic(histogram, max_iterations=100, alpha=0.05):
         iteration, `max_iterations`.
     """
     if alpha < 0 or alpha > 1:
-        raise ValueError(f'the significance level alpha ({alpha}) has to be '
-                         f'in [0, 1] range')
+        raise ValueError(
+            f"the significance level alpha ({alpha}) has to be in [0, 1] range"
+        )
 
     if not isinstance(max_iterations, int) or max_iterations < 0:
-        raise ValueError(f"'max_iterations' ({max_iterations}) has to be a "
-                         "positive integer")
+        raise ValueError(
+            f"'max_iterations' ({max_iterations}) has to be a positive integer"
+        )
 
     # dict of all possible rate functions
     try:
@@ -125,7 +125,7 @@ def cubic(histogram, max_iterations=100, alpha=0.05):
     kappa = _kstat(histogram)
     xi_hat = 1
     xi = 1
-    pval = 0.
+    pval = 0.0
     p = []
     test_aborted = False
 
@@ -133,8 +133,10 @@ def cubic(histogram, max_iterations=100, alpha=0.05):
     while pval < alpha:
         xi_hat = xi
         if xi > max_iterations:
-            warnings.warn(f'Test aborted after ximax={max_iterations} '
-                          f'iterations with p-value={pval}')
+            warnings.warn(
+                f"Test aborted after ximax={max_iterations} "
+                f"iterations with p-value={pval}"
+            )
             test_aborted = True
             break
 
@@ -170,11 +172,13 @@ def _H03xi(kappa, xi, L):
 
     # Check the order condition of the cumulants necessary to perform CuBIC
     if kappa[1] < kappa[0]:
-        raise ValueError(f"The null hypothesis H_0 cannot be tested: the "
-                         f"population count histogram variance ({kappa[1]}) "
-                         f"is less than the mean ({kappa[0]}). This can "
-                         f"happen when the spike train population is not "
-                         f"large enough or the bin size is small.")
+        raise ValueError(
+            f"The null hypothesis H_0 cannot be tested: the "
+            f"population count histogram variance ({kappa[1]}) "
+            f"is less than the mean ({kappa[0]}). This can "
+            f"happen when the spike train population is not "
+            f"large enough or the bin size is small."
+        )
     else:
         # computation of the maximized cumulants
         kstar = [_kappamstar(kappa[:2], i, xi) for i in range(2, 7)]
@@ -182,8 +186,10 @@ def _H03xi(kappa, xi, L):
 
         # variance of third cumulant (from Stuart & Ord)
         sigmak3star = math.sqrt(
-            kstar[4] / L + 9 * (kstar[2] * kstar[0] + kstar[1] ** 2) /
-            (L - 1) + 6 * L * kstar[0] ** 3 / ((L - 1) * (L - 2)))
+            kstar[4] / L
+            + 9 * (kstar[2] * kstar[0] + kstar[1] ** 2) / (L - 1)
+            + 6 * L * kstar[0] ** 3 / ((L - 1) * (L - 2))
+        )
         # computation of the p-value (the third cumulant is supposed to
         # be gaussian distributed)
         p = 1 - scipy.stats.norm(k3star, sigmak3star).cdf(kappa[2])
@@ -212,9 +218,9 @@ def _kappamstar(kappa, m, xi):
     if xi == 1:
         kappa_out = kappa[1]
     else:
-        kappa_out = \
-            (kappa[1] * (xi ** (m - 1) - 1) -
-                kappa[0] * (xi ** (m - 1) - xi)) / (xi - 1)
+        kappa_out = (
+            kappa[1] * (xi ** (m - 1) - 1) - kappa[0] * (xi ** (m - 1) - xi)
+        ) / (xi - 1)
     return kappa_out
 
 
@@ -236,7 +242,7 @@ def _kstat(data):
         The first three unbiased cumulants of the population count
     """
     if len(data) == 0:
-        raise ValueError('The input data must be a non-empty array')
+        raise ValueError("The input data must be a non-empty array")
     # Due to issues with precision, ensure float64 (default) is the precision of the data array. (scipy == 1.14.0)
     moments = [scipy.stats.kstat(data.astype(np.float64), n=n) for n in [1, 2, 3]]
     return moments

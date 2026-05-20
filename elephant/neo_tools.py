@@ -26,12 +26,13 @@ __all__ = [
     "extract_neo_attributes",
     "get_all_spiketrains",
     "get_all_events",
-    "get_all_epochs"
+    "get_all_epochs",
 ]
 
 
-def extract_neo_attributes(neo_object, parents=True, child_first=True,
-                           skip_array=False, skip_none=False):
+def extract_neo_attributes(
+    neo_object, parents=True, child_first=True, skip_array=False, skip_none=False
+):
     """
     Given a Neo object, return a dictionary of attributes and annotations.
 
@@ -67,18 +68,16 @@ def extract_neo_attributes(neo_object, parents=True, child_first=True,
     if not skip_array and hasattr(neo_object, "array_annotations"):
         # Exclude labels and durations, and any other fields that should not
         # be a part of array_annotation.
-        required_keys = set(neo_object.array_annotations).difference(
-            dir(neo_object))
+        required_keys = set(neo_object.array_annotations).difference(dir(neo_object))
         for a in required_keys:
             if "array_annotations" not in attrs:
                 attrs["array_annotations"] = {}
-            attrs["array_annotations"][a] = \
-                neo_object.array_annotations[a].copy()
+            attrs["array_annotations"][a] = neo_object.array_annotations[a].copy()
     for attr in neo_object._necessary_attrs + neo_object._recommended_attrs:
         if skip_array and len(attr) >= 3 and attr[2]:
             continue
         attr = attr[0]
-        if attr == getattr(neo_object, '_quantity_attr', None):
+        if attr == getattr(neo_object, "_quantity_attr", None):
             continue
         attrs[attr] = getattr(neo_object, attr, None)
 
@@ -90,13 +89,16 @@ def extract_neo_attributes(neo_object, parents=True, child_first=True,
     if not parents:
         return attrs
 
-    for parent in getattr(neo_object, 'parents', []):
+    for parent in getattr(neo_object, "parents", []):
         if parent is None:
             continue
-        newattr = extract_neo_attributes(parent, parents=True,
-                                         child_first=child_first,
-                                         skip_array=skip_array,
-                                         skip_none=skip_none)
+        newattr = extract_neo_attributes(
+            parent,
+            parents=True,
+            child_first=child_first,
+            skip_array=skip_array,
+            skip_none=skip_none,
+        )
         if child_first:
             newattr.update(attrs)
             attrs = newattr
@@ -107,8 +109,10 @@ def extract_neo_attributes(neo_object, parents=True, child_first=True,
 
 
 def extract_neo_attrs(*args, **kwargs):
-    warnings.warn("'extract_neo_attrs' function is deprecated; "
-                  "use 'extract_neo_attributes'", DeprecationWarning)
+    warnings.warn(
+        "'extract_neo_attrs' function is deprecated; use 'extract_neo_attributes'",
+        DeprecationWarning,
+    )
     return extract_neo_attributes(*args, **kwargs)
 
 
@@ -143,19 +147,18 @@ def _get_all_objs(container, class_name):
     """
     if container.__class__.__name__ == class_name:
         return [container]
-    classholder = class_name.lower() + 's'
+    classholder = class_name.lower() + "s"
     if hasattr(container, classholder):
         vals = getattr(container, classholder)
-    elif hasattr(container, 'list_children_by_class'):
+    elif hasattr(container, "list_children_by_class"):
         vals = container.list_children_by_class(class_name)
-    elif hasattr(container, 'values') and not hasattr(container, 'ndim'):
+    elif hasattr(container, "values") and not hasattr(container, "ndim"):
         vals = container.values()
-    elif hasattr(container, '__iter__') and not hasattr(container, 'ndim'):
+    elif hasattr(container, "__iter__") and not hasattr(container, "ndim"):
         vals = container
     else:
-        raise ValueError('Cannot handle object of type %s' % type(container))
-    res = list(chain.from_iterable(_get_all_objs(obj, class_name)
-                                   for obj in vals))
+        raise ValueError("Cannot handle object of type %s" % type(container))
+    res = list(chain.from_iterable(_get_all_objs(obj, class_name) for obj in vals))
     return unique_objs(res)
 
 
@@ -183,7 +186,7 @@ def get_all_spiketrains(container):
         in `container`.
 
     """
-    return SpikeTrainList(_get_all_objs(container, 'SpikeTrain'))
+    return SpikeTrainList(_get_all_objs(container, "SpikeTrain"))
 
 
 def get_all_events(container):
@@ -208,7 +211,7 @@ def get_all_events(container):
         A list of the unique `neo.Event` objects in `container`.
 
     """
-    return _get_all_objs(container, 'Event')
+    return _get_all_objs(container, "Event")
 
 
 def get_all_epochs(container):
@@ -233,4 +236,4 @@ def get_all_epochs(container):
         A list of the unique `neo.Epoch` objects in `container`.
 
     """
-    return _get_all_objs(container, 'Epoch')
+    return _get_all_objs(container, "Epoch")

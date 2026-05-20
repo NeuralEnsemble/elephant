@@ -21,43 +21,37 @@ import elephant.kernels as kernels
 class kernel_TestCase(unittest.TestCase):
     def setUp(self):
         self.kernel_types = tuple(
-            kern_cls for kern_cls in kernels.__dict__.values()
-            if isinstance(kern_cls, type) and
-            issubclass(kern_cls, kernels.Kernel) and
-            kern_cls is not kernels.Kernel and
-            kern_cls is not kernels.SymmetricKernel)
+            kern_cls
+            for kern_cls in kernels.__dict__.values()
+            if isinstance(kern_cls, type)
+            and issubclass(kern_cls, kernels.Kernel)
+            and kern_cls is not kernels.Kernel
+            and kern_cls is not kernels.SymmetricKernel
+        )
 
     def test_error_kernels(self):
         """
         Test of various error cases in the kernels module.
         """
         # pass multidimensional sigma
-        self.assertRaises(TypeError, kernels.RectangularKernel,
-                          sigma=[2.0, 2.3] * pq.s)
+        self.assertRaises(TypeError, kernels.RectangularKernel, sigma=[2.0, 2.3] * pq.s)
         # pass one-dimensional sigma, this should be handled
-        self.assertEqual(
-            kernels.RectangularKernel(sigma=[2.0] * pq.s).sigma.ndim, 0)
+        self.assertEqual(kernels.RectangularKernel(sigma=[2.0] * pq.s).sigma.ndim, 0)
         self.assertRaises(TypeError, kernels.RectangularKernel, sigma=2.0)
-        self.assertRaises(
-            ValueError, kernels.RectangularKernel, sigma=-0.03 * pq.s)
-        self.assertRaises(
-            ValueError, kernels.AlphaKernel, sigma=2.0 * pq.ms,
-            invert=2)
+        self.assertRaises(ValueError, kernels.RectangularKernel, sigma=-0.03 * pq.s)
+        self.assertRaises(ValueError, kernels.AlphaKernel, sigma=2.0 * pq.ms, invert=2)
         rec_kernel = kernels.RectangularKernel(sigma=0.3 * pq.ms)
-        self.assertRaises(
-            TypeError, rec_kernel, [1, 2, 3])
-        self.assertRaises(
-            TypeError, rec_kernel, [1, 2, 3] * pq.V)
+        self.assertRaises(TypeError, rec_kernel, [1, 2, 3])
+        self.assertRaises(TypeError, rec_kernel, [1, 2, 3] * pq.V)
         kernel = kernels.Kernel(sigma=0.3 * pq.ms)
+        self.assertRaises(NotImplementedError, kernel._evaluate, [1, 2, 3] * pq.V)
         self.assertRaises(
-            NotImplementedError, kernel._evaluate, [1, 2, 3] * pq.V)
+            NotImplementedError, kernel.boundary_enclosing_area_fraction, fraction=0.9
+        )
         self.assertRaises(
-            NotImplementedError, kernel.boundary_enclosing_area_fraction,
-            fraction=0.9)
-        self.assertRaises(TypeError,
-                          rec_kernel.boundary_enclosing_area_fraction, [1, 2])
-        self.assertRaises(ValueError,
-                          rec_kernel.boundary_enclosing_area_fraction, -10)
+            TypeError, rec_kernel.boundary_enclosing_area_fraction, [1, 2]
+        )
+        self.assertRaises(ValueError, rec_kernel.boundary_enclosing_area_fraction, -10)
         self.assertEqual(kernel.is_symmetric(), False)
         self.assertEqual(rec_kernel.is_symmetric(), True)
 
@@ -73,16 +67,17 @@ class kernel_TestCase(unittest.TestCase):
         sigma = 0.1 * pq.mV
         fraction = 0.9999
         kernel_resolution = sigma / 100.0
-        kernel_list = [kernel_type(sigma, invert=False) for
-                       kernel_type in self.kernel_types]
+        kernel_list = [
+            kernel_type(sigma, invert=False) for kernel_type in self.kernel_types
+        ]
         for kernel in kernel_list:
             b = kernel.boundary_enclosing_area_fraction(fraction).magnitude
             n_points = int(2 * b / kernel_resolution.magnitude)
-            restric_defdomain = np.linspace(
-                -b, b, num=n_points) * sigma.units
+            restric_defdomain = np.linspace(-b, b, num=n_points) * sigma.units
             kern = kernel(restric_defdomain)
-            norm = spint.cumulative_trapezoid(y=kern.magnitude,
-                                  x=restric_defdomain.magnitude)[-1]
+            norm = spint.cumulative_trapezoid(
+                y=kern.magnitude, x=restric_defdomain.magnitude
+            )[-1]
             self.assertAlmostEqual(norm, 1, delta=0.003)
 
     def test_kernels_stddev(self):
@@ -94,23 +89,28 @@ class kernel_TestCase(unittest.TestCase):
         fraction = 0.9999
         kernel_resolution = sigma / 50.0
         for invert in (False, True):
-            kernel_list = [kernel_type(sigma, invert) for
-                           kernel_type in self.kernel_types]
+            kernel_list = [
+                kernel_type(sigma, invert) for kernel_type in self.kernel_types
+            ]
             for kernel in kernel_list:
-                b = kernel.boundary_enclosing_area_fraction(
-                    fraction).magnitude
+                b = kernel.boundary_enclosing_area_fraction(fraction).magnitude
                 n_points = int(2 * b / kernel_resolution.magnitude)
-                restric_defdomain = np.linspace(
-                    -b, b, num=n_points) * sigma.units
+                restric_defdomain = np.linspace(-b, b, num=n_points) * sigma.units
                 kern = kernel(restric_defdomain)
                 av_integr = kern * restric_defdomain
-                average = spint.cumulative_trapezoid(
-                    y=av_integr.magnitude,
-                    x=restric_defdomain.magnitude)[-1] * sigma.units
+                average = (
+                    spint.cumulative_trapezoid(
+                        y=av_integr.magnitude, x=restric_defdomain.magnitude
+                    )[-1]
+                    * sigma.units
+                )
                 var_integr = (restric_defdomain - average) ** 2 * kern
-                variance = spint.cumulative_trapezoid(
-                    y=var_integr.magnitude,
-                    x=restric_defdomain.magnitude)[-1] * sigma.units ** 2
+                variance = (
+                    spint.cumulative_trapezoid(
+                        y=var_integr.magnitude, x=restric_defdomain.magnitude
+                    )[-1]
+                    * sigma.units**2
+                )
                 stddev = np.sqrt(variance)
                 self.assertAlmostEqual(stddev, sigma, delta=0.01 * sigma)
 
@@ -123,17 +123,18 @@ class kernel_TestCase(unittest.TestCase):
         """
         sigma = 0.5 * pq.s
         kernel_resolution = sigma / 500.0
-        kernel_list = [kernel_type(sigma, invert=False) for
-                       kernel_type in self.kernel_types]
+        kernel_list = [
+            kernel_type(sigma, invert=False) for kernel_type in self.kernel_types
+        ]
         for fraction in np.arange(0.15, 1.0, 0.4):
             for kernel in kernel_list:
                 b = kernel.boundary_enclosing_area_fraction(fraction).magnitude
                 n_points = int(2 * b / kernel_resolution.magnitude)
-                restric_defdomain = np.linspace(
-                    -b, b, num=n_points) * sigma.units
+                restric_defdomain = np.linspace(-b, b, num=n_points) * sigma.units
                 kern = kernel(restric_defdomain)
-                frac = spint.cumulative_trapezoid(y=kern.magnitude,
-                                      x=restric_defdomain.magnitude)[-1]
+                frac = spint.cumulative_trapezoid(
+                    y=kern.magnitude, x=restric_defdomain.magnitude
+                )[-1]
                 self.assertAlmostEqual(frac, fraction, delta=0.002)
 
     def test_kernel_output_same_size(self):
@@ -177,7 +178,7 @@ class kernel_TestCase(unittest.TestCase):
             for fraction in fractions_test:
                 self.assertAlmostEqual(
                     kernel.boundary_enclosing_area_fraction(fraction),
-                    kernel_inverted.boundary_enclosing_area_fraction(fraction)
+                    kernel_inverted.boundary_enclosing_area_fraction(fraction),
                 )
 
     def test_icdf(self):
@@ -190,7 +191,7 @@ class kernel_TestCase(unittest.TestCase):
                 # ICDF(0) for several kernels produces -inf
                 # of fsolve complains about stuck at local optima
                 with warnings.catch_warnings():
-                    warnings.simplefilter('ignore', RuntimeWarning)
+                    warnings.simplefilter("ignore", RuntimeWarning)
                     icdf = kernel.icdf(fraction)
                     icdf_inverted = kernel_inverted.icdf(fraction)
                 if kernel.is_symmetric():
@@ -210,9 +211,10 @@ class kernel_TestCase(unittest.TestCase):
                     # ICDF(0) for several kernels produces -inf
                     # of fsolve complains about stuck at local optima
                     with warnings.catch_warnings():
-                        warnings.simplefilter('ignore', RuntimeWarning)
+                        warnings.simplefilter("ignore", RuntimeWarning)
                         self.assertAlmostEqual(
-                            kernel.cdf(kernel.icdf(fraction)), fraction)
+                            kernel.cdf(kernel.icdf(fraction)), fraction
+                        )
 
     def test_icdf_cdf(self):
         sigma = 1 * pq.s
@@ -222,19 +224,19 @@ class kernel_TestCase(unittest.TestCase):
                 kernel = kern_cls(sigma=sigma, invert=invert)
                 for t in times:
                     cdf = kernel.cdf(t)
-                    self.assertGreaterEqual(cdf, 0.)
-                    self.assertLessEqual(cdf, 1.)
+                    self.assertGreaterEqual(cdf, 0.0)
+                    self.assertLessEqual(cdf, 1.0)
                     if 0 < cdf < 1:
-                        self.assertAlmostEqual(
-                            kernel.icdf(cdf), t, places=2)
+                        self.assertAlmostEqual(kernel.icdf(cdf), t, places=2)
 
     def test_icdf_at_1(self):
         sigma = 1 * pq.s
         for kern_cls in self.kernel_types:
             for invert in (False, True):
                 kernel = kern_cls(sigma=sigma, invert=invert)
-                if isinstance(kernel, (kernels.RectangularKernel,
-                                       kernels.TriangularKernel)):
+                if isinstance(
+                    kernel, (kernels.RectangularKernel, kernels.TriangularKernel)
+                ):
                     icdf = kernel.icdf(1.0)
                     # check finite
                     self.assertLess(np.abs(icdf.magnitude), np.inf)
@@ -245,8 +247,10 @@ class kernel_TestCase(unittest.TestCase):
         sigma = 1 * pq.s
         cutoff = 1e2 * sigma  # a large value
         times = np.linspace(-cutoff, cutoff, num=10)
-        kern_symmetric = filter(lambda kern_type: issubclass(
-            kern_type, kernels.SymmetricKernel), self.kernel_types)
+        kern_symmetric = filter(
+            lambda kern_type: issubclass(kern_type, kernels.SymmetricKernel),
+            self.kernel_types,
+        )
         for kern_cls in kern_symmetric:
             kernel = kern_cls(sigma=sigma, invert=False)
             kernel_inverted = kern_cls(sigma=sigma, invert=True)
@@ -257,11 +261,13 @@ class kernel_TestCase(unittest.TestCase):
 class KernelOldImplementation(unittest.TestCase):
     def setUp(self):
         self.kernel_types = tuple(
-            kern_cls for kern_cls in kernels.__dict__.values()
-            if isinstance(kern_cls, type) and
-            issubclass(kern_cls, kernels.Kernel) and
-            kern_cls is not kernels.Kernel and
-            kern_cls is not kernels.SymmetricKernel)
+            kern_cls
+            for kern_cls in kernels.__dict__.values()
+            if isinstance(kern_cls, type)
+            and issubclass(kern_cls, kernels.Kernel)
+            and kern_cls is not kernels.Kernel
+            and kern_cls is not kernels.SymmetricKernel
+        )
         self.sigma = 1 * pq.s
         self.time_input = np.linspace(-10, 10, num=100) * self.sigma.units
 
@@ -276,8 +282,9 @@ class KernelOldImplementation(unittest.TestCase):
 
         for invert in (False, True):
             kernel = kernels.TriangularKernel(self.sigma, invert=invert)
-            assert_array_almost_equal(kernel(self.time_input),
-                                      evaluate_old(self.time_input))
+            assert_array_almost_equal(
+                kernel(self.time_input), evaluate_old(self.time_input)
+            )
 
     def test_gaussian(self):
         def evaluate_old(t):
@@ -285,14 +292,16 @@ class KernelOldImplementation(unittest.TestCase):
             t = t.magnitude
             sigma = kernel.sigma.rescale(t_units).magnitude
             kernel_pdf = (1.0 / (math.sqrt(2.0 * math.pi) * sigma)) * np.exp(
-                -0.5 * (t / sigma) ** 2)
+                -0.5 * (t / sigma) ** 2
+            )
             kernel_pdf = pq.Quantity(kernel_pdf, units=1 / t_units)
             return kernel_pdf
 
         for invert in (False, True):
             kernel = kernels.GaussianKernel(self.sigma, invert=invert)
-            assert_array_almost_equal(kernel(self.time_input),
-                                      evaluate_old(self.time_input))
+            assert_array_almost_equal(
+                kernel(self.time_input), evaluate_old(self.time_input)
+            )
 
     def test_laplacian(self):
         def evaluate_old(t):
@@ -305,8 +314,9 @@ class KernelOldImplementation(unittest.TestCase):
 
         for invert in (False, True):
             kernel = kernels.LaplacianKernel(self.sigma, invert=invert)
-            assert_array_almost_equal(kernel(self.time_input),
-                                      evaluate_old(self.time_input))
+            assert_array_almost_equal(
+                kernel(self.time_input), evaluate_old(self.time_input)
+            )
 
     def test_exponential(self):
         def evaluate_old(t):
@@ -322,18 +332,21 @@ class KernelOldImplementation(unittest.TestCase):
 
         for invert in (False, True):
             kernel = kernels.ExponentialKernel(self.sigma, invert=invert)
-            assert_array_almost_equal(kernel(self.time_input),
-                                      evaluate_old(self.time_input))
+            assert_array_almost_equal(
+                kernel(self.time_input), evaluate_old(self.time_input)
+            )
 
 
 class KernelMedianIndex(unittest.TestCase):
     def setUp(self):
         kernel_types = tuple(
-            kern_cls for kern_cls in kernels.__dict__.values()
-            if isinstance(kern_cls, type) and
-            issubclass(kern_cls, kernels.Kernel) and
-            kern_cls is not kernels.Kernel and
-            kern_cls is not kernels.SymmetricKernel)
+            kern_cls
+            for kern_cls in kernels.__dict__.values()
+            if isinstance(kern_cls, type)
+            and issubclass(kern_cls, kernels.Kernel)
+            and kern_cls is not kernels.Kernel
+            and kern_cls is not kernels.SymmetricKernel
+        )
         self.sigma = 1 * pq.s
         self.time_input = np.linspace(-10, 10, num=100) * self.sigma.units
         self.kernels = []
@@ -358,13 +371,12 @@ class KernelMedianIndex(unittest.TestCase):
     def test_non_support(self):
         time_negative = np.linspace(-100, -20) * pq.s
         for kernel in self.kernels:
-            if isinstance(kernel, (kernels.GaussianKernel,
-                                   kernels.LaplacianKernel)):
+            if isinstance(kernel, (kernels.GaussianKernel, kernels.LaplacianKernel)):
                 continue
             kernel.invert = False
             median_id = kernel.median_index(time_negative)
             self.assertEqual(median_id, len(time_negative) // 2)
-            self.assertAlmostEqual(kernel.cdf(time_negative[median_id]), 0.)
+            self.assertAlmostEqual(kernel.cdf(time_negative[median_id]), 0.0)
 
     def test_old_implementation(self):
         def median_index(t):
@@ -382,5 +394,5 @@ class KernelMedianIndex(unittest.TestCase):
             self.assertLessEqual(abs(median_id - median_id_old), 1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

@@ -64,13 +64,12 @@ def get_seqs(data, bin_size, use_sqrt=True):
             binned = np.sqrt(binned_spiketrain.to_array())
         else:
             binned = binned_spiketrain.to_array()
-        seqs.append(
-            (binned_spiketrain.n_bins, binned))
-    seqs = np.array(seqs, dtype=[('T', int), ('y', 'O')])
+        seqs.append((binned_spiketrain.n_bins, binned))
+    seqs = np.array(seqs, dtype=[("T", int), ("y", "O")])
 
     # Remove trials that are shorter than one bin width
     if len(seqs) > 0:
-        trials_to_keep = seqs['T'] > 0
+        trials_to_keep = seqs["T"] > 0
         seqs = seqs[trials_to_keep]
 
     return seqs
@@ -120,24 +119,28 @@ def cut_trials(seq_in, seg_length=20):
         seqOut = seq_in
         return seqOut
 
-    dtype_seqOut = [('segId', int), ('T', int),
-                    ('y', object)]
+    dtype_seqOut = [("segId", int), ("T", int), ("y", object)]
     seqOut_buff = []
     for n, seqIn_n in enumerate(seq_in):
-        T = seqIn_n['T']
+        T = seqIn_n["T"]
 
         # Skip trials that are shorter than segLength
         if T < seg_length:
             warnings.warn(
-                'trial corresponding to index {} shorter than one segLength...'
-                'skipping'.format(n))
+                "trial corresponding to index {} shorter than one segLength..."
+                "skipping".format(n)
+            )
             continue
 
         numSeg = int(np.ceil(float(T) / seg_length))
 
         # Randomize the sizes of overlaps
         if numSeg == 1:
-            cumOL = np.array([0, ])
+            cumOL = np.array(
+                [
+                    0,
+                ]
+            )
         else:
             totalOL = (seg_length * numSeg) - T
             probs = np.ones(numSeg - 1, float) / (numSeg - 1)
@@ -145,11 +148,11 @@ def cut_trials(seq_in, seg_length=20):
             cumOL = np.hstack([0, np.cumsum(randOL)])
 
         seg = np.empty(numSeg, dtype_seqOut)
-        seg['T'] = seg_length
+        seg["T"] = seg_length
 
         for s, seg_s in enumerate(seg):
             tStart = seg_length * s - cumOL[s]
-            seg_s['y'] = seqIn_n['y'][:, tStart:tStart + seg_length]
+            seg_s["y"] = seqIn_n["y"][:, tStart : tStart + seg_length]
 
         seqOut_buff.append(seg)
 
@@ -211,21 +214,22 @@ def make_k_big(params, n_timesteps):
         If `params['covType'] != 'rbf'`.
 
     """
-    if params['covType'] != 'rbf':
+    if params["covType"] != "rbf":
         raise ValueError("Only 'rbf' GP covariance type is supported.")
 
-    xDim = params['C'].shape[1]
+    xDim = params["C"].shape[1]
 
     K_big = np.zeros((xDim * n_timesteps, xDim * n_timesteps))
     K_big_inv = np.zeros((xDim * n_timesteps, xDim * n_timesteps))
-    Tdif = np.tile(np.arange(0, n_timesteps), (n_timesteps, 1)).T \
-        - np.tile(np.arange(0, n_timesteps), (n_timesteps, 1))
+    Tdif = np.tile(np.arange(0, n_timesteps), (n_timesteps, 1)).T - np.tile(
+        np.arange(0, n_timesteps), (n_timesteps, 1)
+    )
     logdet_K_big = 0
 
     for i in range(xDim):
-        K = (1 - params['eps'][i]) * np.exp(-params['gamma'][i] / 2 *
-                                            Tdif ** 2) \
-            + params['eps'][i] * np.eye(n_timesteps)
+        K = (1 - params["eps"][i]) * np.exp(-params["gamma"][i] / 2 * Tdif**2) + params[
+            "eps"
+        ][i] * np.eye(n_timesteps)
         K_big[i::xDim, i::xDim] = K
         # the original MATLAB program uses here a special algorithm, provided
         # in C and MEX, for inversion of Toeplitz matrix:
@@ -300,25 +304,25 @@ def inv_persymm(M, blk_size):
 
 def fill_persymm(p_in, blk_size, n_blocks, blk_size_vert=None):
     """
-     Fills in the bottom half of a block persymmetric matrix, given the
-     top half.
+    Fills in the bottom half of a block persymmetric matrix, given the
+    top half.
 
-     Parameters
-     ----------
-     p_in :  (xDim*Thalf, xDim*T) np.ndarray
-        Top half of block persymmetric matrix, where Thalf = ceil(T/2)
-     blk_size : int
-        Edge length of one block
-     n_blocks : int
-        Number of blocks making up a row of Pin
-     blk_size_vert : int, optional
-        Vertical block edge length if blocks are not square.
-        `blk_size` is assumed to be the horizontal block edge length.
+    Parameters
+    ----------
+    p_in :  (xDim*Thalf, xDim*T) np.ndarray
+       Top half of block persymmetric matrix, where Thalf = ceil(T/2)
+    blk_size : int
+       Edge length of one block
+    n_blocks : int
+       Number of blocks making up a row of Pin
+    blk_size_vert : int, optional
+       Vertical block edge length if blocks are not square.
+       `blk_size` is assumed to be the horizontal block edge length.
 
-     Returns
-     -------
-     Pout : (xDim*T, xDim*T) np.ndarray
-        Full block persymmetric matrix
+    Returns
+    -------
+    Pout : (xDim*T, xDim*T) np.ndarray
+       Full block persymmetric matrix
     """
     if blk_size_vert is None:
         blk_size_vert = blk_size
@@ -329,14 +333,16 @@ def fill_persymm(p_in, blk_size, n_blocks, blk_size_vert=None):
     THalf = int(np.ceil(n_blocks / 2.0))
 
     Pout = np.empty((blk_size_vert * n_blocks, blk_size * n_blocks))
-    Pout[:blk_size_vert * THalf, :] = p_in
+    Pout[: blk_size_vert * THalf, :] = p_in
     for i in range(Thalf):
         for j in range(n_blocks):
-            Pout[Nv - (i + 1) * blk_size_vert:Nv - i * blk_size_vert,
-                 Nh - (j + 1) * blk_size:Nh - j * blk_size] \
-                = p_in[i * blk_size_vert:(i + 1) *
-                       blk_size_vert,
-                       j * blk_size:(j + 1) * blk_size]
+            Pout[
+                Nv - (i + 1) * blk_size_vert : Nv - i * blk_size_vert,
+                Nh - (j + 1) * blk_size : Nh - j * blk_size,
+            ] = p_in[
+                i * blk_size_vert : (i + 1) * blk_size_vert,
+                j * blk_size : (j + 1) * blk_size,
+            ]
 
     return Pout
 
@@ -375,35 +381,42 @@ def make_precomp(seqs, xDim):
     Finally, see the notes in the GPFA README.
     """
 
-    Tall = seqs['T']
+    Tall = seqs["T"]
     Tmax = (Tall).max()
-    Tdif = np.tile(np.arange(0, Tmax), (Tmax, 1)).T \
-        - np.tile(np.arange(0, Tmax), (Tmax, 1))
+    Tdif = np.tile(np.arange(0, Tmax), (Tmax, 1)).T - np.tile(
+        np.arange(0, Tmax), (Tmax, 1)
+    )
 
     # assign some helpful precomp items
     # this is computationally cheap, so we keep a few loops in MATLAB
     # for ease of readability.
-    precomp = np.empty(xDim, dtype=[(
-        'absDif', object), ('difSq', object), ('Tall', object),
-        ('Tu', object)])
+    precomp = np.empty(
+        xDim,
+        dtype=[("absDif", object), ("difSq", object), ("Tall", object), ("Tu", object)],
+    )
     for i in range(xDim):
-        precomp[i]['absDif'] = np.abs(Tdif)
-        precomp[i]['difSq'] = Tdif ** 2
-        precomp[i]['Tall'] = Tall
+        precomp[i]["absDif"] = np.abs(Tdif)
+        precomp[i]["difSq"] = Tdif**2
+        precomp[i]["Tall"] = Tall
     # find unique numbers of trial lengths
     trial_lengths_num_unique = np.unique(Tall)
     # Loop once for each state dimension (each GP)
     for i in range(xDim):
-        precomp_Tu = np.empty(len(trial_lengths_num_unique), dtype=[(
-            'nList', object), ('T', int), ('numTrials', int),
-            ('PautoSUM', object)])
+        precomp_Tu = np.empty(
+            len(trial_lengths_num_unique),
+            dtype=[
+                ("nList", object),
+                ("T", int),
+                ("numTrials", int),
+                ("PautoSUM", object),
+            ],
+        )
         for j, trial_len_num in enumerate(trial_lengths_num_unique):
-            precomp_Tu[j]['nList'] = np.where(Tall == trial_len_num)[0]
-            precomp_Tu[j]['T'] = trial_len_num
-            precomp_Tu[j]['numTrials'] = len(precomp_Tu[j]['nList'])
-            precomp_Tu[j]['PautoSUM'] = np.zeros((trial_len_num,
-                                                  trial_len_num))
-            precomp[i]['Tu'] = precomp_Tu
+            precomp_Tu[j]["nList"] = np.where(Tall == trial_len_num)[0]
+            precomp_Tu[j]["T"] = trial_len_num
+            precomp_Tu[j]["numTrials"] = len(precomp_Tu[j]["nList"])
+            precomp_Tu[j]["PautoSUM"] = np.zeros((trial_len_num, trial_len_num))
+            precomp[i]["Tu"] = precomp_Tu
 
     # at this point the basic precomp is built.  The previous steps
     # should be computationally cheap.  We now try to embed the
@@ -419,10 +432,10 @@ def make_precomp(seqs, xDim):
         # Loop once for each trial length (each of Tu)
         for j in range(len(trial_lengths_num_unique)):
             # Loop once for each trial (each of nList)
-            for n in precomp[i]['Tu'][j]['nList']:
-                precomp[i]['Tu'][j]['PautoSUM'] += seqs[n]['VsmGP'][:, :, i] \
-                    + np.outer(seqs[n]['latent_variable'][i, :],
-                               seqs[n]['latent_variable'][i, :])
+            for n in precomp[i]["Tu"][j]["nList"]:
+                precomp[i]["Tu"][j]["PautoSUM"] += seqs[n]["VsmGP"][:, :, i] + np.outer(
+                    seqs[n]["latent_variable"][i, :], seqs[n]["latent_variable"][i, :]
+                )
     return precomp
 
 
@@ -448,18 +461,18 @@ def grad_betgam(p, pre_comp, const):
     df : float
         gradient at p
     """
-    Tall = pre_comp['Tall']
+    Tall = pre_comp["Tall"]
     Tmax = Tall.max()
 
     # temp is Tmax x Tmax
-    temp = (1 - const['eps']) * np.exp(-np.exp(p) / 2 * pre_comp['difSq'])
-    Kmax = temp + const['eps'] * np.eye(Tmax)
-    dKdgamma_max = -0.5 * temp * pre_comp['difSq']
+    temp = (1 - const["eps"]) * np.exp(-np.exp(p) / 2 * pre_comp["difSq"])
+    Kmax = temp + const["eps"] * np.eye(Tmax)
+    dKdgamma_max = -0.5 * temp * pre_comp["difSq"]
 
     dEdgamma = 0
     f = 0
-    for j in range(len(pre_comp['Tu'])):
-        T = pre_comp['Tu'][j]['T']
+    for j in range(len(pre_comp["Tu"])):
+        T = pre_comp["Tu"][j]["T"]
         Thalf = int(np.ceil(T / 2.0))
 
         Kinv = np.linalg.inv(Kmax[:T, :T])
@@ -471,20 +484,22 @@ def grad_betgam(p, pre_comp, const):
         dg_KinvM = np.diag(KinvM)
         tr_KinvM = 2 * dg_KinvM.sum() - np.fmod(T, 2) * dg_KinvM[-1]
 
-        mkr = int(np.ceil(0.5 * T ** 2))
-        numTrials = pre_comp['Tu'][j]['numTrials']
-        PautoSUM = pre_comp['Tu'][j]['PautoSUM']
+        mkr = int(np.ceil(0.5 * T**2))
+        numTrials = pre_comp["Tu"][j]["numTrials"]
+        PautoSUM = pre_comp["Tu"][j]["PautoSUM"]
 
-        pauto_kinv_dot = PautoSUM.ravel('F')[:mkr].dot(
-            KinvMKinv.ravel('F')[:mkr])
-        pauto_kinv_dot_rest = PautoSUM.ravel('F')[-1:mkr - 1:- 1].dot(
-            KinvMKinv.ravel('F')[:(T ** 2 - mkr)])
-        dEdgamma = dEdgamma - 0.5 * numTrials * tr_KinvM \
-            + 0.5 * pauto_kinv_dot \
+        pauto_kinv_dot = PautoSUM.ravel("F")[:mkr].dot(KinvMKinv.ravel("F")[:mkr])
+        pauto_kinv_dot_rest = PautoSUM.ravel("F")[-1 : mkr - 1 : -1].dot(
+            KinvMKinv.ravel("F")[: (T**2 - mkr)]
+        )
+        dEdgamma = (
+            dEdgamma
+            - 0.5 * numTrials * tr_KinvM
+            + 0.5 * pauto_kinv_dot
             + 0.5 * pauto_kinv_dot_rest
+        )
 
-        f = f - 0.5 * numTrials * logdet_K \
-            - 0.5 * (PautoSUM * Kinv).sum()
+        f = f - 0.5 * numTrials * logdet_K - 0.5 * (PautoSUM * Kinv).sum()
 
     f = -f
     # exp(p) is needed because we're computing gradients with
@@ -556,8 +571,8 @@ def segment_by_trial(seqs, x, fn):
         If `seqs['T']) != x.shape[1]`.
 
     """
-    if np.sum(seqs['T']) != x.shape[1]:
-        raise ValueError('size of X incorrect.')
+    if np.sum(seqs["T"]) != x.shape[1]:
+        raise ValueError("size of X incorrect.")
 
     dtype_new = [(i, seqs[i].dtype) for i in seqs.dtype.names]
     dtype_new.append((fn, object))
@@ -566,8 +581,8 @@ def segment_by_trial(seqs, x, fn):
         seqs_new[dtype_name] = seqs[dtype_name]
 
     ctr = 0
-    for n, T in enumerate(seqs['T']):
-        seqs_new[n][fn] = x[:, ctr:ctr + T]
+    for n, T in enumerate(seqs["T"]):
+        seqs_new[n][fn] = x[:, ctr : ctr + T]
         ctr += T
 
     return seqs_new
