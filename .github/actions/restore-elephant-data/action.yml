@@ -25,7 +25,7 @@ runs:
           echo "$DATA_DIR"
         fi
 
-    - name: Export Data Location (Windows)	
+    - name: Export Data Location (Windows)
       if: runner.os == 'Windows'
       shell: pwsh
       run: |
