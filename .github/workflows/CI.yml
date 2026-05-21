@@ -236,60 +236,43 @@ jobs:
           cd doc
           make html
 
-  # install dependencies and elephant with pip and run tests with pytest
+#  _____               _______        _
+# |  __ \  ___   ___  |__   __|   ___| |_ ___
+# | |  | |/ _ \ / __|    | |/ _ \/ __| __/ __|
+# | |__| | (_) | (__     | |  __/\__ \ |_\__ \
+# |_____/ \___/ \___|    |_|\___||___/\__|___/
   doctests:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        # python versions for elephant: [3.7, 3.8, 3.9, "3.10"]
-        python-version: ["3.10"]
-
-        # OS [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.12"]
         os: [ubuntu-latest]
 
     steps:
-      # used to reset cache every month
-      - name: Get current year-month
-        id: date
-        run: echo "::set-output name=date::$(date +'%Y-%m')"
       - uses: actions/checkout@v4.1.6
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5.1.0
         with:
           python-version: ${{ matrix.python-version }}
-
-      - name: Cache test_env
-        uses: actions/cache@v4.2.2
-        with:
-          path: ~/test_env
-          # Look to see if there is a cache hit for the corresponding requirements files
-          # cache will be reset on changes to any requirements or every month
-          key: ${{ runner.os }}-venv-${{ hashFiles('**/requirements.txt') }}-${{ hashFiles('**/requirements-tests.txt') }}
-            -${{ hashFiles('**/requirements-extras.txt') }}-${{ hashFiles('**/CI.yml') }}-${{ hashFiles('setup.py') }}
-            -${{ steps.date.outputs.date }}
+          check-latest: true
+          cache: 'pip'
+          cache-dependency-path: pyproject.toml
 
       - name: Install dependencies
         run: |
-          # create an environment and install everything
-          python -m venv ~/test_env
-          source ~/test_env/bin/activate
           sudo apt-get update
           sudo apt install -y libopenmpi-dev openmpi-bin
-
           python -m pip install --upgrade pip
           pip install mpi4py
-          pip install pytest-cov coveralls
           pip install -e .[extras,tests]
 
       - name: List packages
         run: |
-          source ~/test_env/bin/activate
           pip list
           python --version
 
       - name: Run doctests
         run: |
-          source ~/test_env/bin/activate
           printf "def pytest_configure(config):\n    import numpy as np\n    import builtins\n    np.set_printoptions(legacy='1.25')\n    builtins.np = np\n" > conftest.py
           pytest elephant --doctest-modules --ignore=elephant/test/
