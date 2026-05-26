@@ -1,21 +1,16 @@
 name: elephant
 
 channels:
-  - conda-forge  # required for MPI
+  - conda-forge  # required for MPI and pandoc
 
 dependencies:
-  - python=3.12
+  - python>=3.9
+  - mpi4py
   - openmpi
   - pandoc
   - libstdcxx-ng
-  - mpi4py
-  - numpy>=1.19.5
-  - scipy
-  - tqdm
-  - scikit-learn
-  - statsmodels
-  - jinja2
   - pip:
-    - neo>=0.10.0
-    - viziphant
-    # neo, viziphant can be removed once it is integrated into requirements-tutorials.txt
+    - -r requirements.txt
+    - -r requirements-extras.txt
+    - -r requirements-docs.txt
+    - -r requirements-tutorials.txt

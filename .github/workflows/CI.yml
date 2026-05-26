@@ -199,7 +199,6 @@ jobs:
         shell: bash -el {0}
         run: |
           python --version
-          micromamba install -y -c conda-forge pytest mpi4py openmpi
           pip install -e .
 
       - name: List packages
