@@ -24,6 +24,10 @@ on:
       - reopened
       - synchronize
 
+  pull_request_review:
+    types:
+      - submitted
+
   push:
     branches:
       - master
@@ -33,7 +37,28 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Single source of truth for CI matrix sizes.
+# Fast CI: ubuntu-latest + 3.12 only. Full CI: all OS/Python combos.
+env:
+  FAST_MATRIX: '{"os":["ubuntu-latest"],"python-version":["3.12"]}'
+  FULL_MATRIX: '{"os":["ubuntu-latest","macos-latest","windows-latest"],"python-version":["3.10","3.11","3.12","3.13","3.14"]}'
+
 jobs:
+
+  # Selects fast or full matrix based on PR approval.
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      pip-matrix: ${{ steps.pick.outputs.pip-matrix }}
+    steps:
+      - id: pick
+        run: |
+          if [[ "${{ github.event.action }}" == "submitted" && \
+                "${{ github.event.review.state }}" == "approved" ]]; then
+            echo "pip-matrix=$FULL_MATRIX" >> $GITHUB_OUTPUT
+          else
+            echo "pip-matrix=$FAST_MATRIX" >> $GITHUB_OUTPUT
+          fi
 
   #        _
   #  _ __ (_)_ __
@@ -43,16 +68,12 @@ jobs:
   #  |_|     |_|
 
   build-and-test-pip:
+    needs: setup
     name: pip (${{ matrix.python-version }}, ${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
-      matrix:
-        os: [ubuntu-latest]
-        python-version: ["3.10"]
-        include:
-          - { os: macos-latest,   python-version: "3.12" }
-          - { os: windows-latest, python-version: "3.12" }
+      matrix: ${{ fromJSON(needs.setup.outputs.pip-matrix) }}
 
     steps:
       - uses: actions/checkout@v4.1.6
