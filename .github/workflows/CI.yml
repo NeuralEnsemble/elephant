@@ -76,10 +76,10 @@ jobs:
       matrix: ${{ fromJSON(needs.setup.outputs.pip-matrix) }}
 
     steps:
-      - uses: actions/checkout@v4.1.6
+      - uses: actions/checkout@v6.0.2
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5.1.0
+        uses: actions/setup-python@v6.2.0
         with:
           python-version: ${{ matrix.python-version }}
           check-latest: true
@@ -126,10 +126,10 @@ jobs:
       fail-fast: false
 
     steps:
-      - uses: actions/checkout@v4.1.6
+      - uses: actions/checkout@v6.0.2
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5.1.0
+        uses: actions/setup-python@v6.2.0
         with:
           python-version: ${{ matrix.python-version }}
           check-latest: true
@@ -181,7 +181,7 @@ jobs:
         id: date
         run: echo "date=$(date +'%Y-%m')" >> $GITHUB_OUTPUT
 
-      - uses: actions/checkout@v4.1.6
+      - uses: actions/checkout@v6.0.2
 
       - name: Get pip cache dir
         id: pip-cache
@@ -189,7 +189,7 @@ jobs:
           echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
 
       - name: Cache pip
-        uses: actions/cache@v4.2.2
+        uses: actions/cache@v5.0.5
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
 
@@ -198,7 +198,7 @@ jobs:
 
       - uses: ./.github/actions/restore-elephant-data
 
-      - uses: mamba-org/setup-micromamba@v2
+      - uses: mamba-org/setup-micromamba@v3.0.0
         with:
           create-args: python=${{ matrix.python-version }}
           environment-file: requirements/environment-tests.yml
@@ -235,10 +235,10 @@ jobs:
         os: [ubuntu-latest]
 
     steps:
-      - uses: actions/checkout@v4.1.6
+      - uses: actions/checkout@v6.0.2
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5.1.0
+        uses: actions/setup-python@v6.2.0
         with:
           python-version: ${{ matrix.python-version }}
           check-latest: true
@@ -278,10 +278,10 @@ jobs:
         os: [ubuntu-latest]
 
     steps:
-      - uses: actions/checkout@v4.1.6
+      - uses: actions/checkout@v6.0.2
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5.1.0
+        uses: actions/setup-python@v6.2.0
         with:
           python-version: ${{ matrix.python-version }}
           check-latest: true
