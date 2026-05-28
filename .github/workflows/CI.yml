@@ -48,6 +48,7 @@ jobs:
   # Selects fast or full matrix based on PR approval.
   setup:
     runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request_review' || github.event.review.state == 'approved'
     outputs:
       pip-matrix: ${{ steps.pick.outputs.pip-matrix }}
     steps:
@@ -118,6 +119,7 @@ jobs:
 
   # install dependencies and elephant with pip and run MPI
   test-pip-MPI:
+    needs: setup
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -169,6 +171,7 @@ jobs:
   #  \____\___/|_| |_|\__,_|\__,_|
 
   test-conda:
+    needs: setup
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -227,6 +230,7 @@ jobs:
   # |____/ \___/ \___|___/
 
   docs:
+    needs: setup
     name: docs (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
@@ -271,6 +275,7 @@ jobs:
 # | |__| | (_) | (__     | |  __/\__ \ |_\__ \
 # |_____/ \___/ \___|    |_|\___||___/\__|___/
   doctests:
+    needs: setup
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
