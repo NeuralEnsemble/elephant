@@ -41,7 +41,7 @@ concurrency:
 # Fast CI: ubuntu-latest + 3.12 only. Full CI: all OS/Python combos.
 env:
   FAST_MATRIX: '{"os":["ubuntu-latest"],"python-version":["3.12"]}'
-  FULL_MATRIX: '{"os":["ubuntu-latest","macos-latest","windows-latest"],"python-version":["3.10","3.11","3.12","3.13","3.14"]}'
+  FULL_MATRIX: '{"os":["ubuntu-latest","macos-latest","windows-latest"],"python-version":["3.9","3.10","3.11","3.12","3.13","3.14"]}'
 
 jobs:
 
