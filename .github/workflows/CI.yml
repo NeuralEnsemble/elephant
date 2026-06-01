@@ -120,6 +120,7 @@ jobs:
   # install dependencies and elephant with pip and run MPI
   test-pip-MPI:
     needs: setup
+    name: mpi (${{ matrix.python-version }}, ${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -172,6 +173,7 @@ jobs:
 
   test-conda:
     needs: setup
+    name: conda (${{ matrix.python-version }}, ${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -231,7 +233,7 @@ jobs:
 
   docs:
     needs: setup
-    name: docs (${{ matrix.os }})
+    name: docs (${{ matrix.python-version }}, ${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -276,6 +278,7 @@ jobs:
 # |_____/ \___/ \___|    |_|\___||___/\__|___/
   doctests:
     needs: setup
+    name: doctests (${{ matrix.python-version }}, ${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
