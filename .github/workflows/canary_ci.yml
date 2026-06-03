@@ -46,8 +46,8 @@ jobs:
     name: latest-dependencies (${{ matrix.python-version }})
     runs-on: ubuntu-latest
     strategy:
-      matrix:
-        - python-version: "3.12"
+      matrix: 
+        python-version: ["3.12"]
 
     steps:
       - uses: actions/checkout@v6.0.2
