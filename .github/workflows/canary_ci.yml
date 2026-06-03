@@ -19,13 +19,6 @@ on:
           - info
           - warning
           - debug
-  pull_request:
-    branches:
-      - master
-    types:
-      - opened
-      - reopened
-      - synchronize
 
 # At the moment quantites breaks on numpy prerelease
 # this is caused by an int() wrapper on numpy version in quanities which doesn't
