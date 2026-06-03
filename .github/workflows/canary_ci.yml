@@ -1,7 +1,7 @@
 # Like the poor old canaries in mines, elephant gets tested against the unknown
 #
-# For dependencies that need compile, a pre release version from PyPI is used
-# for all other dependencies, the HEAD branch from default repo is used
+# For dependencies that need compilation, the latest stable from PyPI is used.
+# For all other dependencies, the HEAD of the default branch is used.
 
 name: Canary Tests
 
@@ -28,14 +28,14 @@ on:
       - synchronize
 
 env:
-  PRERELEASE: |
+  PYPI: |
       numpy
       scipy
       scikit-learn
       statsmodels
-      nixio
   GITSOURCES: |
       NeuralEnsemble/python-neo
+      G-Node/nixpy
       python-quantities/python-quantities
       tqdm/tqdm
       pallets/jinja
@@ -60,10 +60,10 @@ jobs:
 
       - uses: ./.github/actions/restore-elephant-data
 
-      - name: Install pre release packages
+      - name: Install compiled packages
         run: |
           python -m pip install --upgrade pip
-          pip install --pre $PRERELEASE
+          pip install $PYPI
 
       - name: Install dependencies from source
         run: |
