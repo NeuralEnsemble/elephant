@@ -1,0 +1,64 @@
+# Like the poor old canaries in mines, elephant gets tested against the unknown
+#
+# For dependencies that need compile, a pre release version from PyPI is used
+# for all other dependencies, the HEAD branch from default repo is used
+
+name: Canary Tests
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'   # Every Monday 06:00 UTC
+  workflow_dispatch:
+
+env:
+  PRERELEASE: |
+      numpy
+      scipy
+      scikit-learn
+      statsmodels
+  GITSOURCES: |
+      NeuralEnsemble/python-neo
+      python-quantities/python-quantities
+      tqdm/tqdm
+      pallets/jinja
+
+jobs:
+  test-dep-masters:
+    name: latest-dependencies (${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        - python-version: "3.12"
+
+    steps:
+      - uses: actions/checkout@v6.0.2
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v6.2.0
+        with:
+          python-version: ${{ matrix.python-version }}
+          check-latest: true
+
+      - uses: ./.github/actions/restore-elephant-data
+
+      - name: Install pre release packages
+        run: |
+          python -m pip install --upgrade pip
+          pip install --pre $PRERELEASE
+
+      - name: Install dependencies from source
+        run: |
+          for dep in $GITSOURCES; do
+            pip install "git+https://github.com/$dep.git"
+          done
+
+      - name: Install elephant
+        run: pip install -e .[extras,tests]
+
+      - name: List installed packages
+        run: |
+          pip list
+          python --version
+
+      - name: Test with pytest
+        run: pytest
