@@ -29,6 +29,7 @@ jobs:
         with:
           path: ~/elephant-data
           key: datasets-${{ steps.elephant-data.outputs.dataset_hash }}
+          enableCrossOsArchive: true
 
       - name: Cache found?
         run: echo "Cache-hit == ${{steps.cache-datasets.outputs.cache-hit == 'true'}}"

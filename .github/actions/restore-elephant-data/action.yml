@@ -1,0 +1,35 @@
+# Composite action: restore the elephant-data cache and set ELEPHANT_DATA_LOCATION.
+name: Restore elephant-data cache
+runs:
+  using: "composite"
+  steps:
+    - name: Get elephant_data hash
+      id: elephant-data
+      shell: bash
+      run: echo "dataset_hash=$(git ls-remote https://gin.g-node.org/NeuralEnsemble/elephant-data.git HEAD | cut -f1)" >> $GITHUB_OUTPUT
+
+    - uses: actions/cache/restore@v5
+      with:
+        path: ~/elephant-data
+        key: datasets-${{ steps.elephant-data.outputs.dataset_hash }}
+        restore-keys: datasets-
+        enableCrossOsArchive: true
+
+    - name: Export Data Location (Unix)
+      shell: bash
+      if: runner.os != 'Windows'
+      run: |
+        DATA_DIR="$HOME/elephant-data"
+        if [ -d "$DATA_DIR" ]; then
+          echo "ELEPHANT_DATA_LOCATION=$DATA_DIR" >> "$GITHUB_ENV"
+          echo "$DATA_DIR"
+        fi
+
+    - name: Export Data Location (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        if (Test-Path "$env:USERPROFILE\elephant-data") {
+            "ELEPHANT_DATA_LOCATION=$env:USERPROFILE\elephant-data" >> $env:GITHUB_ENV
+            Write-Output $env:USERPROFILE\elephant-data
+        }
