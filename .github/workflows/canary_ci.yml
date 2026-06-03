@@ -16,11 +16,13 @@ env:
       scipy
       scikit-learn
       statsmodels
+      nixio
   GITSOURCES: |
       NeuralEnsemble/python-neo
       python-quantities/python-quantities
       tqdm/tqdm
       pallets/jinja
+      pytest-dev/pytest
 
 jobs:
   test-dep-masters:
@@ -53,7 +55,7 @@ jobs:
           done
 
       - name: Install elephant
-        run: pip install -e .[extras,tests]
+        run: pip install --no-deps -e .
 
       - name: List installed packages
         run: |
