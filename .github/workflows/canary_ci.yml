@@ -30,12 +30,12 @@ on:
 env:
   PYPI: |
       numpy
-      scipy
-      scikit-learn
-      statsmodels
   GITSOURCES: |
       NeuralEnsemble/python-neo
+      scikit-learn/scikit-learn
+      statsmodels/statsmodels
       G-Node/nixpy
+      scipy/scipy
       python-quantities/python-quantities
       tqdm/tqdm
       pallets/jinja
