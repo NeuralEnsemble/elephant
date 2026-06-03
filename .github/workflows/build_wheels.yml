@@ -17,9 +17,9 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest, macos-15-intel]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6.0.2
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6.2.0
         with:
           python-version: '3.13'
 
@@ -59,7 +59,7 @@ jobs:
           pip install --no-index --find-links localwheels elephant
           python -P -c "from elephant.spade_src import fim"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7.0.1
         with:
           name: wheels-${{ matrix.os }}
           path: ./wheelhouse/*.whl
@@ -69,7 +69,7 @@ jobs:
     needs: build_wheels
     steps:
       - name: Merge Artifacts
-        uses: actions/upload-artifact/merge@v4
+        uses: actions/upload-artifact/merge@v7.0.1
         with:
           name: all-wheels
           pattern: wheels-*
