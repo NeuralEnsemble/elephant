@@ -19,6 +19,13 @@ on:
           - info
           - warning
           - debug
+  pull_request:
+    branches:
+      - master
+    types:
+      - opened
+      - reopened
+      - synchronize
 
 env:
   PRERELEASE: |
