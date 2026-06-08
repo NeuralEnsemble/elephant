@@ -46,7 +46,7 @@
 
         {
             "scheme": "doi",
-            "identifier": "10.5281/zenodo.13133971",
+            "identifier": "10.5281/zenodo.18863432",
             "relation": "isNewVersionOf",
             "resource_type": "software"
         },
