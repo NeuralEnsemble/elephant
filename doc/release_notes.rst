@@ -8,13 +8,11 @@ This is a patch release of Elephant, restoring full C++ acceleration for the SPA
 
 Bug Fixes
 ---------
-
 - Restored full macOS and Windows C++ compiled wheel support for the SPADE module, resolving the limitation noted in 1.2.0 where macOS received a pure-Python SPADE fallback. (#695)
 
 Other Changes
 -------------
-
-- Migrated from setup.py to pyproject.toml. setup.py is retained only for platform-specific C extension compilation, which requires dynamic logic not supported in static TOML. Dependency declarations now use a single source of truth via requirements/*.txt files. (#608)
+- Migrated from `setup.py` to `pyproject.toml`. `setup.py` is retained only for platform-specific C++ extension compilation, which requires dynamic logic not supported in static TOML. Dependency declarations now use a single source of truth via requirements/*.txt files. (#608)
 - Added a weekly CI workflow that tests Elephant against the latest upstream builds of core dependencies to catch breaking changes early. (#698)
 - Bumped GitHub Actions versions to resolve Node.js 20 deprecation warnings. (#696, #697)
 - Restructured CI.yml to reduce duplication: merged pip test jobs into a single matrix job, added a composite action for shared cache restore steps, and fixed a race condition in coveralls partial coverage uploads. (#608)
