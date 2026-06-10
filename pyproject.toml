@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "elephant"
 dynamic = ["version", "dependencies", "optional-dependencies"]
-description = "Elephant (Electrophysiology Analysis Toolkit) - open-source library for th e analysis of electrophysiological data in Python."
+description = "Elephant (Electrophysiology Analysis Toolkit) is an open-source library for the analysis of electrophysiological data in Python."
 license = "BSD-3-Clause"
 license-files = [ "LICENSE.txt"]
 classifiers = [
