@@ -75,7 +75,7 @@ Run tutorial interactively:
    :target: https://mybinder.org/v2/gh/NeuralEnsemble/elephant/master
             ?filepath=doc/tutorials/granger_causality.ipynb
 
-:copyright: Copyright 2014-2024 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2026 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -357,7 +357,7 @@ def _optimal_vector_arm(signals, dimension, max_order,
 
     length = np.size(signals[0])
 
-    optimal_ic = np.infty
+    optimal_ic = np.inf
     optimal_order = 1
     optimal_coeffs = np.zeros((dimension, dimension, optimal_order))
     optimal_cov_matrix = np.zeros((dimension, dimension))

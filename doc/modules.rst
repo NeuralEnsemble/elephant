@@ -103,3 +103,4 @@ Miscellaneous
     reference/neo_tools
     reference/utils
     reference/parallel
+    reference/datasets

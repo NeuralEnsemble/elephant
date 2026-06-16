@@ -1,2 +1,3 @@
 pytest
+pytest-cov
 nixio>=1.5.0

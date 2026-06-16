@@ -58,7 +58,7 @@ References
    :keyprefix: statistics-
 
 
-:copyright: Copyright 2014-2024 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2026 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -74,7 +74,7 @@ import scipy.stats
 import scipy.signal
 from numpy import ndarray
 from scipy.special import erf
-from typing import Union
+from typing import List, Optional, Union
 
 import elephant.conversion as conv
 import elephant.kernels as kernels
@@ -270,10 +270,11 @@ def mean_firing_rate(spiketrain, t_start=None, t_stop=None, axis=None):
     return rates
 
 
-def fanofactor(spiketrains, warn_tolerance=0.1 * pq.ms):
+def fanofactor(spiketrains: Union[List[neo.SpikeTrain], List[pq.Quantity], List[np.ndarray], elephant.trials.Trials],
+               warn_tolerance: pq.Quantity = 0.1 * pq.ms) -> Union[float, List[float], List[List[float]]]:
     r"""
     Evaluates the empirical Fano factor F of the spike counts of
-    a list of `neo.SpikeTrain` objects.
+    a list of :class:`neo.core.SpikeTrain` objects or :mod:`elephant.trials` object.
 
     Given the vector v containing the observed spike counts (one per
     spike train) in the time window [t0, t1], F is defined as:
@@ -288,32 +289,38 @@ def fanofactor(spiketrains, warn_tolerance=0.1 * pq.ms):
 
     Parameters
     ----------
-    spiketrains : list
-        List of `neo.SpikeTrain` or `pq.Quantity` or `np.ndarray` or list of
-        spike times for which to compute the Fano factor of spike counts.
-    warn_tolerance : pq.Quantity
-        In case of a list of input neo.SpikeTrains, if their durations vary by
-        more than `warn_tolerence` in their absolute values, throw a warning
+    spiketrains : list or :mod:`elephant.trials`
+        List of :class:`neo.core.SpikeTrain` or `pq.Quantity` or `np.ndarray` or list of
+        spike times for which to compute the Fano factor of spike counts, or
+        an :mod:`elephant.trials` object. If a :mod:`elephant.trials` object is
+        used, spike trains are pooled across trials before computing the Fano factor.
+    warn_tolerance : pq.Quantity, optional
+        In case of a list of input :class:`neo.core.SpikeTrain`, if their durations
+        vary by more than `warn_tolerance` in their absolute values, throw a warning
         (see Notes).
         Default: 0.1 ms
 
     Returns
     -------
-    fano : float
-        The Fano factor of the spike counts of the input spike trains.
-        Returns np.NaN if an empty list is specified, or if all spike trains
-        are empty.
+    output : float or list of float
+        The Fano factor of the spike counts of the input spike trains. If a list
+        was provided as input, `output` is a single number. In case an
+        :mod:`elephant.trials` object was provided as input, `output` is a
+        list of Fano factors, one for each spike train across the trials.
+        `output` is `np.nan` if an empty list is specified, or if all spike trains are
+        empty. An :mod:`elephant.trials` object without spike trains will return
+        an empty list.
 
     Raises
     ------
     TypeError
-        If the input spiketrains are neo.SpikeTrain objects, but
+        If the input spiketrains are :class:`neo.core.SpikeTrain` objects, but
         `warn_tolerance` is not a quantity.
 
     Notes
     -----
     The check for the equal duration of the input spike trains is performed
-    only if the input is of type`neo.SpikeTrain`: if you pass a numpy array,
+    only if the input is of type :class:`neo.core.SpikeTrain`: if you pass e.g. a numpy array,
     please make sure that they all have the same duration manually.
 
     Examples
@@ -328,29 +335,36 @@ def fanofactor(spiketrains, warn_tolerance=0.1 * pq.ms):
     0.07142857142857142
 
     """
-    # Build array of spike counts (one per spike train)
-    spike_counts = np.array([len(st) for st in spiketrains])
+    def _check_input_spiketrains_durations(spiketrains: Union[List[neo.SpikeTrain], List[pq.Quantity],
+                                                              List[np.ndarray]]) -> None:
+        if all(isinstance(st, neo.SpikeTrain) for st in spiketrains):
+            # Check if warn tolerance parameters is of the correct type
+            if not is_time_quantity(warn_tolerance):
+                raise TypeError(f"'warn_tolerance' must be a time quantity, but got {type(warn_tolerance)}")
+            durations = np.array(tuple(st.duration for st in spiketrains))
+            if np.max(durations) - np.min(durations) > warn_tolerance:
+                warnings.warn(f"Fano factor calculated for spike trains of "
+                              f"different duration (minimum: {np.min(durations)}s, maximum "
+                              f"{np.max(durations)}s).")
 
-    # Compute FF
-    if all(count == 0 for count in spike_counts):
-        # empty list of spiketrains reaches this branch, and NaN is returned
-        return np.nan
+    def _compute_fano(spiketrains: Union[List[neo.SpikeTrain], List[pq.Quantity], List[np.ndarray]]) -> float:
+        # Build array of spike counts (one per spike train)
+        spike_counts = np.array(tuple(len(st) for st in spiketrains))
+        # Compute FF
+        if np.all(spike_counts == 0):
+            # empty list of spiketrains reaches this branch, and NaN is returned
+            return np.nan
+        _check_input_spiketrains_durations(spiketrains)
+        return spike_counts.var()/spike_counts.mean()
 
-    if all(isinstance(st, neo.SpikeTrain) for st in spiketrains):
-        if not is_time_quantity(warn_tolerance):
-            raise TypeError("'warn_tolerance' must be a time quantity.")
-        durations = [(st.t_stop - st.t_start).simplified.item()
-                     for st in spiketrains]
-        durations_min = min(durations)
-        durations_max = max(durations)
-        if durations_max - durations_min > warn_tolerance.simplified.item():
-            warnings.warn("Fano factor calculated for spike trains of "
-                          "different duration (minimum: {_min}s, maximum "
-                          "{_max}s).".format(_min=durations_min,
-                                             _max=durations_max))
-
-    fano = spike_counts.var() / spike_counts.mean()
-    return fano
+    if isinstance(spiketrains, elephant.trials.Trials):
+        list_of_lists_of_spiketrains = [
+            spiketrains.get_spiketrains_from_trial_as_list(trial_id=trial_no)
+            for trial_no in range(spiketrains.n_trials)]
+        return [_compute_fano([list_of_lists_of_spiketrains[trial_no][st_no]
+                               for trial_no in range(len(list_of_lists_of_spiketrains))])
+                for st_no in range(len(list_of_lists_of_spiketrains[0]))]
+    return _compute_fano(spiketrains)
 
 
 def __variation_check(v, with_nan):
@@ -365,7 +379,7 @@ def __variation_check(v, with_nan):
             warnings.warn("The input size is too small. Please provide"
                           "an input with more than 1 entry. Returning `NaN`"
                           "since the argument `with_nan` is `True`")
-            return np.NaN
+            return np.nan
         raise ValueError("Input size is too small. Please provide "
                          "an input with more than 1 entry. Set 'with_nan' "
                          "to True to replace the error by a warning.")
@@ -613,17 +627,18 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
 
     Parameters
     ----------
-    spiketrains : neo.SpikeTrain, list of neo.SpikeTrain or elephant.trials.Trials  # noqa
+    spiketrains : :class:`neo.core.SpikeTrain`, list of :class:`neo.core.SpikeTrain` or :mod:`elephant.trials`
         Input spike train(s) for which the instantaneous firing rate is
         calculated. If a list of spike trains is supplied, the parameter
         pool_spike_trains determines the behavior of the function. If a Trials
         object is supplied, the behavior is determined by the parameters
         pool_spike_trains (within a trial) and pool_trials (across trials).
     sampling_period : pq.Quantity
-        Time stamp resolution of the spike times. The same resolution will
-        be assumed for the kernel.
+        Time resolution of the resulting rate estimate. The same resolution
+        will be used for the kernel. To avoid effects of binning, set this
+        value to the time stamp resolution of the spike train.
     kernel : 'auto' or Kernel, optional
-        The string 'auto' or callable object of class `kernels.Kernel`.
+        The string 'auto' or callable object of class :mod:`elephant.kernels`.
         The kernel is used for convolution with the spike train and its
         standard deviation determines the time resolution of the instantaneous
         rate estimation. Currently, implemented kernel forms are rectangular,
@@ -684,41 +699,69 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
         at the borders of the spike trains, i.e., close to t_start and t_stop.
         The correction is done by estimating the mass of the kernel outside
         these spike train borders under the assumption that the rate does not
-        change strongly.
-        Only possible in the case of a Gaussian kernel.
+        change strongly. Only possible in the case of a Gaussian kernel.
 
         Default: False
     pool_trials: bool, optional
-        If true, calculate firing rates averaged over trials if spiketrains is
-        of type elephant.trials.Trials
-        Has no effect for single spike train or lists of spike trains.
+        If True, calculate firing rates averaged over trials if `spiketrains` is
+        of type :mod:`elephant.trials`. Has no effect for single spike train
+        or lists of spike trains.
 
         Default: False
     pool_spike_trains: bool, optional
-        If true, calculate firing rates averaged over spike trains. If the
-        input is a Trials object, spike trains are pooled across spike trains
-        within each trial, and pool_trials determines whether spike trains are
-        additionally pooled across trials.
+        If True, calculate firing rates averaged over spike trains. If the
+        input is a :mod:`elephant.trials` object, spike trains are pooled
+        across spike trains within each trial, and pool_trials determines
+        whether spike trains are additionally pooled across trials.
         Has no effect for a single spike train.
 
         Default: False
 
     Returns
     -------
-    rate : neo.AnalogSignal
-        2D matrix that contains the rate estimation in unit hertz (Hz) of shape
-        ``(time, len(spiketrains))`` or ``(time, 1)`` in case of a single
-        input spiketrain. `rate.times` contains the time axis of the rate
-        estimate: the unit of this property is the same as the resolution that
-        is given via the argument `sampling_period` to the function.
+    output : :class:`neo.core.AnalogSignal` or list of :class:`neo.core.AnalogSignal`
+        In general, the returned rate estimates are provided as
+        :class:`neo.core.AnalogSignal` objects with units of Hertz (Hz). Its
+        shape is `(n_bins, n_estimates)` where
+        `n_bins = (t_stop - t_start) / sampling_period` and `n_estimates`
+        depends on pooling options as detailed below. The time axis is available
+        as ``output.times`` and has the same  units/resolution as specified by
+        `sampling_period`.
+
+        If `spiketrains` is :class:`neo.core.SpikeTrain` then output is a
+        single :class:`neo.core.AnalogSignal` with `n_estimates = 1`.
+
+        If `spiketrains` is a list of :class:`neo.core.SpikeTrain` then output
+        is a single :class:`neo.core.AnalogSignal`. `n_estimates` depends on the
+        pooling options:
+           -  `pool_spike_trains=True` results in `n_estimates = 1`.
+           -  `pool_spike_trains=False` results in `n_estimates = len(spiketrains)`
+
+        If `spiketrains` is a :mod:`elephant.trials` object then output is a
+        :class:`neo.core.AnalogSignal` or list of :class:`neo.core.AnalogSignal`.
+        The output type depends on `pool_trials`.
+           -  If `pool_trials=False` then output is a list of :class:`neo.core.AnalogSignal`
+             with length equal to number of trials. For each element, representing
+             the rate estimates of a given trial, `n_estimates` depends on the
+             pooling of spike trains within each trial:
+               -  `pool_spike_trains=True` results in `n_estimates = 1`
+               -  `pool_spike_trains=False` results in `n_estimates = len(spiketrains)`
+           -  If `pool_trials=True` then output is a single :class:`neo.core.AnalogSignal`
+             with rates pooled across trials. `n_estimates` depends on the pooling
+             of spike trains within each trial:
+               -  `pool_spike_trains=True` results in `n_estimates = 1`
+               -  `pool_spike_trains=False` results in `n_estimates = len(spiketrains)`
+
+        A table summarizing the return types and array shapes is given in the
+        :ref:`notes below <summary-of-outputs>`.
 
     Raises
     ------
     TypeError
-        *  If `spiketrain` is not an instance of `neo.SpikeTrain`.
+        *  If `spiketrain` is not an instance of :class:`neo.core.SpikeTrain`.
         *  If `sampling_period` is not a `pq.Quantity`.
         *  If `sampling_period` is not larger than zero.
-        *  If `kernel` is neither instance of `kernels.Kernel` nor string
+        *  If `kernel` is neither instance of :mod:`elephant.kernels` nor string
            'auto'.
         *  If `cutoff` is neither `float` nor `int`.
         *  If `t_start` and `t_stop` are neither None nor a `pq.Quantity`.
@@ -727,6 +770,7 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
         *  If `sampling_period` is smaller than zero.
         *  If `kernel` is 'auto' and the function was unable to calculate
            optimal kernel width for instantaneous rate from input data.
+        *  If `kernel` length is larger than binned spiketrain length
 
     Warns
     -----
@@ -760,6 +804,36 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
        the last interval ``[4, 4.5]`` is excluded from all calculations.
 
 
+    .. _summary-of-outputs:
+
+    * Summary of the output type:
+
+            +------------------------------+-----------------+-----------------------+--------------------------------+------------------------------------+
+            | ``spiketrains`` type         | ``pool_trials`` | ``pool_spike_trains`` | Return type                    | Output shape (per AnalogSignal)    |
+            +==============================+=================+=======================+================================+====================================+
+            | :class:`neo.core.SpikeTrain` | —               | —                     | :class:`neo.core.AnalogSignal` | ``(n_bins, 1)``                    |
+            +------------------------------+-----------------+-----------------------+--------------------------------+------------------------------------+
+            | list of                      | —               | ``False``             | :class:`neo.core.AnalogSignal` | ``(n_bins, len(spiketrains))``     |
+            | :class:`neo.core.SpikeTrain` |                 |                       |                                |                                    |
+            +------------------------------+-----------------+-----------------------+--------------------------------+------------------------------------+
+            | list of                      | —               | ``True``              | :class:`neo.core.AnalogSignal` | ``(n_bins, 1)``                    |
+            | :class:`neo.core.SpikeTrain` |                 |                       |                                |                                    |
+            +------------------------------+-----------------+-----------------------+--------------------------------+------------------------------------+
+            | :mod:`elephant.trials`       | ``True``        | ``False``             | :class:`neo.core.AnalogSignal` | ``(n_bins, n_spiketrains)``        |
+            |                              |                 |                       |                                | (columns: estimate per spike train |
+            |                              |                 |                       |                                | pooled across trials)              |
+            +------------------------------+-----------------+-----------------------+--------------------------------+------------------------------------+
+            | :mod:`elephant.trials`       | ``True``        | ``True``              | :class:`neo.core.AnalogSignal` | ``(n_bins, 1)``                    |
+            |                              |                 |                       |                                | (pooled across trials              |
+            |                              |                 |                       |                                | and spike trains)                  |
+            +------------------------------+-----------------+-----------------------+--------------------------------+------------------------------------+
+            | :mod:`elephant.trials`       | ``False``       | ``False``             | list of                        | each element (i.e., trial):        |
+            |                              |                 |                       | :class:`neo.core.AnalogSignal` | ``(n_bins, n_spiketrains)``        |
+            +------------------------------+-----------------+-----------------------+--------------------------------+------------------------------------+
+            | :mod:`elephant.trials`       | ``False``       | ``True``              | list of                        | each element (i.e., trial):        |
+            |                              |                 |                       | :class:`neo.core.AnalogSignal` | ``(n_bins, 1)`` (spike trains      |
+            |                              |                 |                       |                                | pooled within-trial)               |
+            +------------------------------+-----------------+-----------------------+--------------------------------+------------------------------------+
 
     Examples
     --------
@@ -850,7 +924,6 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
                                 sampling_period=analog_signal.sampling_period,
                                 units=analog_signal.units,
                                 t_start=analog_signal.t_start,
-                                t_stop=analog_signal.t_stop,
                                 kernel=analog_signal.annotations)
                         )
 
@@ -859,7 +932,6 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
                 sampling_period=rates_cross_trials[0].sampling_period,
                 units=rates_cross_trials[0].units,
                 t_start=rates_cross_trials[0].t_start,
-                t_stop=rates_cross_trials[0].t_stop,
                 kernel=rates_cross_trials[0].annotations)
 
             return list_of_average_rates_cross_trial
@@ -883,7 +955,6 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
                                  sampling_period=analog_signal.sampling_period,
                                  units=analog_signal.units,
                                  t_start=analog_signal.t_start,
-                                 t_stop=analog_signal.t_stop,
                                  kernel=analog_signal.annotations)
                 for average_rate, analog_signal in zip(average_rates, rates)]
 
@@ -1010,7 +1081,20 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
 
     # Define mode for scipy.signal.fftconvolve
     if trim:
+        # PR 688 Adding assertion on length of kernel
+        # A 'valid' convolution is only performed when:
+        # len(kernel) <= len(binned_spiketrain)
+        #
+        # This prevents ambiguous output lengths
+        # that occur when the kernel exceeds the binned spike train length.
+        if t_arr_kernel_length > n_bins:
+            raise ValueError(
+            f"Kernel length ({t_arr_kernel_length}) is longer than binned spike train "
+            f"length ({n_bins}) for 'valid' convolution. Try adjusting the "
+            "kernel width, 'sampling_period', or using 'trim=False'."
+            )
         fft_mode = 'valid'
+
     else:
         fft_mode = 'same'
 
@@ -1031,13 +1115,12 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
                              sigma=str(kernel.sigma),
                              invert=kernel.invert)
 
-    if isinstance(spiketrains, neo.core.spiketrainlist.SpikeTrainList) and (
-                  pool_spike_trains):
+    if pool_spike_trains:
         rate = np.mean(rate, axis=1)
 
     rate = neo.AnalogSignal(signal=rate,
                             sampling_period=sampling_period,
-                            units=pq.Hz, t_start=t_start, t_stop=t_stop,
+                            units=pq.Hz, t_start=t_start,
                             kernel=kernel_annotation)
 
     if border_correction:
@@ -1062,46 +1145,51 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
 
 
 @deprecated_alias(binsize='bin_size')
-def time_histogram(spiketrains, bin_size, t_start=None, t_stop=None,
-                   output='counts', binary=False):
+def time_histogram(spiketrains: Union[List[neo.SpikeTrain], neo.SpikeTrain],
+                   bin_size: pq.Quantity,
+                   t_start: Optional[pq.Quantity] = None,
+                   t_stop: Optional[pq.Quantity] = None,
+                   output: str = 'counts',
+                   binary: bool = False) -> neo.AnalogSignal:
     """
-    Time Histogram of a list of `neo.SpikeTrain` objects.
+    Time Histogram of a list of :class:`neo.core.SpikeTrain` objects.
 
     Visualization of this function is covered in Viziphant:
     :func:`viziphant.statistics.plot_time_histogram`.
 
     Parameters
     ----------
-    spiketrains : list of neo.SpikeTrain
-        `neo.SpikeTrain`s with a common time axis (same `t_start` and `t_stop`)
+    spiketrains : list of :class:`neo.core.SpikeTrain` or :class:`neo.core.SpikeTrain`
+        `neo.SpikeTrain` objects with a common time axis (same `t_start` and `t_stop`)
     bin_size : pq.Quantity
         Width of the histogram's time bins.
     t_start : pq.Quantity, optional
         Start time of the histogram. Only events in `spiketrains` falling
         between `t_start` and `t_stop` (both included) are considered in the
         histogram.
-        If None, the maximum `t_start` of all `neo.SpikeTrain`s is used as
+        If None, the maximum `t_start` of all :class:`neo.core.SpikeTrain` objects is used as
         `t_start`.
         Default: None
     t_stop : pq.Quantity, optional
         Stop time of the histogram. Only events in `spiketrains` falling
         between `t_start` and `t_stop` (both included) are considered in the
         histogram.
-        If None, the minimum `t_stop` of all `neo.SpikeTrain`s is used as
+        If None, the minimum `t_stop` of all :class:`neo.core.SpikeTrain` objects is used as
         `t_stop`.
         Default: None
     output : {'counts', 'mean', 'rate'}, optional
         Normalization of the histogram. Can be one of:
-        *  'counts': spike counts at each bin (as integer numbers).
-        *  'mean': mean spike counts per spike train.
-        *  'rate': mean spike rate per spike train. Like 'mean', but the
-        counts are additionally normalized by the bin width.
+
+        - 'counts': spike counts at each bin (as integer numbers).
+        - 'mean': mean spike counts per spike train.
+        - 'rate': mean spike rate per spike train. Like 'mean', but the counts are additionally normalized
+          by the bin width.
 
         Default: 'counts'
     binary : bool, optional
-        If True, indicates whether all `neo.SpikeTrain` objects should first
+        If True, indicates whether all :class:`neo.core.SpikeTrain` objects should first
         be binned to a binary representation (using the
-        `conversion.BinnedSpikeTrain` class) and the calculation of the
+        :class:`elephant.conversion.BinnedSpikeTrain` class). The calculation of the
         histogram is based on this representation.
         Note that the output is not binary, but a histogram of the converted,
         binary representation.
@@ -1109,10 +1197,10 @@ def time_histogram(spiketrains, bin_size, t_start=None, t_stop=None,
 
     Returns
     -------
-    neo.AnalogSignal
-        A `neo.AnalogSignal` object containing the histogram values.
-        `neo.AnalogSignal[j]` is the histogram computed between
-        `t_start + j * bin_size` and `t_start + (j + 1) * bin_size`.
+    result : :class:`neo.core.AnalogSignal`
+        A :class:`neo.core.AnalogSignal` object containing the histogram values.
+        `result[j]` is the histogram computed between `t_start + j * bin_size` and
+        `t_start + (j + 1) * bin_size`.
 
     Raises
     ------
@@ -1129,7 +1217,7 @@ def time_histogram(spiketrains, bin_size, t_start=None, t_stop=None,
 
     See also
     --------
-    elephant.conversion.BinnedSpikeTrain
+    :func:`elephant.conversion.BinnedSpikeTrain`
 
     Examples
     --------
@@ -1178,17 +1266,17 @@ def time_histogram(spiketrains, bin_size, t_start=None, t_stop=None,
 
     def _counts() -> pq.Quantity:
         # 'counts': spike counts at each bin (as integer numbers).
-        return pq.Quantity(bin_hist, units=pq.dimensionless, copy=False)
+        return pq.Quantity(bin_hist, units=pq.dimensionless)
 
     def _mean() -> pq.Quantity:
         # 'mean': mean spike counts per spike train.
-        return pq.Quantity(bin_hist / len(spiketrains),
-                           units=pq.dimensionless, copy=False)
+        return pq.Quantity(bin_hist / binned_spiketrain.shape[0],
+                           units=pq.dimensionless)
 
     def _rate() -> pq.Quantity:
         # 'rate': mean spike rate per spike train. Like 'mean', but the
         #         counts are additionally normalized by the bin width.
-        return bin_hist / (len(spiketrains) * bin_size)
+        return bin_hist / (binned_spiketrain.shape[0] * bin_size)
 
     output_mapping = {"counts": _counts, "mean": _mean, "rate": _rate}
     try:

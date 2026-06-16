@@ -2,7 +2,7 @@
 """
 Unit tests for the spike_train_correlation module.
 
-:copyright: Copyright 2014-2024 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2026 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 
@@ -264,7 +264,7 @@ class CorrCoefTestCase(unittest.TestCase):
             result = sc.correlation_coefficient(binned_12, fast=False)
 
         # test for NaNs in the output array
-        target = np.zeros((2, 2)) * np.NaN
+        target = np.zeros((2, 2)) * np.nan
         target[0, 0] = 1.0
         assert_array_almost_equal(result, target)
 

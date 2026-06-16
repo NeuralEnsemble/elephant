@@ -2,7 +2,7 @@
 """
 Unit tests for the statistics module.
 
-:copyright: Copyright 2014-2024 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2026 by the Elephant team, see `doc/authors.rst`.
 :license: Modified BSD, see LICENSE.txt for details.
 """
 from __future__ import division
@@ -21,7 +21,7 @@ import elephant.kernels as kernels
 from elephant import statistics
 from elephant.spike_train_generation import StationaryPoissonProcess
 from elephant.test.test_trials import _create_trials_block
-from elephant.trials import TrialsFromBlock
+from elephant.trials import TrialsFromBlock, TrialsFromLists
 
 
 class IsiTestCase(unittest.TestCase):
@@ -269,32 +269,34 @@ class MeanFiringRateTestCase(unittest.TestCase):
 
 
 class FanoFactorTestCase(unittest.TestCase):
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
         np.random.seed(100)
         num_st = 300
-        self.test_spiketrains = []
-        self.test_array = []
-        self.test_quantity = []
-        self.test_list = []
-        self.sp_counts = np.zeros(num_st)
+        cls.test_spiketrains = []
+        cls.test_array = []
+        cls.test_quantity = []
+        cls.test_list = []
+        cls.sp_counts = np.zeros(num_st)
         for i in range(num_st):
             r = np.random.rand(np.random.randint(20) + 1)
             st = neo.core.SpikeTrain(r * pq.ms,
                                      t_start=0.0 * pq.ms,
                                      t_stop=20.0 * pq.ms)
-            self.test_spiketrains.append(st)
-            self.test_array.append(r)
-            self.test_quantity.append(r * pq.ms)
-            self.test_list.append(list(r))
+            cls.test_spiketrains.append(st)
+            cls.test_array.append(r)
+            cls.test_quantity.append(r * pq.ms)
+            cls.test_list.append(list(r))
             # for cross-validation
-            self.sp_counts[i] = len(st)
+            cls.sp_counts[i] = len(st)
+
+        cls.test_trials = TrialsFromLists([cls.test_spiketrains, cls.test_spiketrains])
 
     def test_fanofactor_spiketrains(self):
         # Test with list of spiketrains
         self.assertEqual(
             np.var(self.sp_counts) / np.mean(self.sp_counts),
             statistics.fanofactor(self.test_spiketrains))
-
         # One spiketrain in list
         st = self.test_spiketrains[0]
         self.assertEqual(statistics.fanofactor([st]), 0.0)
@@ -307,10 +309,18 @@ class FanoFactorTestCase(unittest.TestCase):
         # Test with empty quantity
         self.assertTrue(np.isnan(statistics.fanofactor([] * pq.ms)))
 
-        # Empty spiketrain
+        # Empty spiketrain should yield NaN
         st = neo.core.SpikeTrain([] * pq.ms, t_start=0 * pq.ms,
                                  t_stop=1.5 * pq.ms)
         self.assertTrue(np.isnan(statistics.fanofactor(st)))
+
+        # Trials object with an empty spike train should yield NaN
+        st = neo.core.SpikeTrain([] * pq.ms, t_start=0 * pq.ms,
+                                 t_stop=1.5 * pq.ms)
+        self.assertTrue(np.isnan(statistics.fanofactor(TrialsFromLists([[st],[st]]))))
+
+        # Trials object with no spike trains should yield an empty list
+        self.assertEqual(statistics.fanofactor(TrialsFromLists([[],[]])),[])
 
     def test_fanofactor_spiketrains_same(self):
         # Test with same spiketrains in list
@@ -351,6 +361,18 @@ class FanoFactorTestCase(unittest.TestCase):
         st1 = neo.SpikeTrain([1, 2, 3] * pq.s, t_stop=4 * pq.s)
         self.assertRaises(TypeError, statistics.fanofactor, [st1],
                           warn_tolerance=1e-4)
+
+    def test_fanofactor_trials(self):
+        results = statistics.fanofactor(self.test_trials)
+        self.assertEqual(len(results), self.test_trials.n_spiketrains_trial_by_trial[0])
+
+    def test_fanofactor_trials_result(self):
+        results = statistics.fanofactor(self.test_trials)
+        for st_idx, result in enumerate(results):
+            spiketrains = [trial.spiketrains[st_idx] for trial in self.test_trials.get_trials_as_list()]
+            sp_count = sum([len(spiketrain) for spiketrain in spiketrains])
+            self.assertEqual(np.var(sp_count) / np.mean(sp_count),
+                             result)
 
 
 class LVTestCase(unittest.TestCase):
@@ -482,19 +504,22 @@ class CV2TestCase(unittest.TestCase):
         self.assertRaises(ValueError, statistics.cv2, np.array([seq, seq]))
 
 
-class InstantaneousRateTest(unittest.TestCase):
+class InstantaneousRateTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
         """
         Run once before tests:
         """
-
-        block = _create_trials_block(n_trials=36)
+        cls.n_trials = 36
+        cls.n_spiketrains = 5
+        block = _create_trials_block(n_trials=cls.n_trials, n_spiketrains=cls.n_spiketrains)
         cls.block = block
         cls.trial_object = TrialsFromBlock(block,
                                            description='trials are segments')
-
+        sts = block.segments[0].spiketrains[0]
+        cls.sam_period = 0.1 * pq.ms
+        cls.n_bins = int(((sts.t_stop - sts.t_start) / cls.sam_period).simplified)
         # create a poisson spike train:
         cls.st_tr = (0, 20.0)  # seconds
         cls.st_dur = cls.st_tr[1] - cls.st_tr[0]  # seconds
@@ -568,6 +593,13 @@ class InstantaneousRateTest(unittest.TestCase):
             ValueError, statistics.instantaneous_rate,
             spiketrains=[self.spike_train, self.spike_train],
             sampling_period=10 * pq.ms, kernel='auto')
+        # Kernel length > binned spiketrain length, PR #688
+        self.assertRaisesRegex(
+            ValueError, r"Kernel length .* is longer than binned spike train",
+            statistics.instantaneous_rate,
+            spiketrains= neo.SpikeTrain(pq.Quantity([-5.0, 5.0],'s'), t_start=-5, t_stop=5),
+            sampling_period=0.01*pq.s, cutoff=5.0, trim=True,
+            kernel=kernels.GaussianKernel(sigma=1*pq.s, invert=False))
 
     def test_instantaneous_rate_output(self):
         # return type correct
@@ -690,6 +722,9 @@ class InstantaneousRateTest(unittest.TestCase):
                     kernel=kernel, center_kernel=True)
                 self.assertGreater(rate.mean(), rate_expected)
 
+    @unittest.skip("PR 688: Test replaced since zero instantaneous rate "
+                   "assumption only holds only for finite-support kernels. "
+                   "Replaced by trim_output_length/trim_rate_estimation tests")
     def test_instantaneous_rate_spikes_on_edges(self):
         # this test demonstrates that the trimming (convolve valid mode)
         # removes the edges of the rate estimate, underestimating the true
@@ -719,6 +754,98 @@ class InstantaneousRateTest(unittest.TestCase):
                     center_kernel=center_kernel)
                 assert_array_almost_equal(rate.magnitude, 0, decimal=2)
 
+    def test_instantaneous_rate_trim_output_length(self):
+        # This test checks the output shape of rate with trim=True
+        # Based on known convolution result
+        # output length = N - K + 1 (for valid conv)
+        # N is signal length, and K is kernel length
+        cutoff = 5
+        kernel = kernels.RectangularKernel(sigma=0.5 * pq.s)
+        assert cutoff > kernel.min_cutoff, "Choose larger cutoff"
+        kernel_types = tuple(
+            kern_cls for kern_cls in kernels.__dict__.values()
+            if isinstance(kern_cls, type) and
+            issubclass(kern_cls, kernels.SymmetricKernel) and
+            kern_cls is not kernels.SymmetricKernel)
+        kernels_collected = [kern_cls(sigma=0.5 * pq.s, invert=False)
+                             for kern_cls in kernel_types]
+        for kernel in kernels_collected:
+            signal_N = int(((self.spike_train.t_stop - self.spike_train.t_start)/
+                               self.sampling_period).simplified)
+            half_kernel_K = int(cutoff * (kernel.sigma / self.sampling_period).simplified)
+            kernel_K  = 2 * half_kernel_K + 1
+            for center_kernel in (False, True):
+                rate_ = statistics.instantaneous_rate(
+                        self.spike_train, sampling_period=self.sampling_period,
+                        kernel=kernel, cutoff=cutoff, trim=True,
+                        center_kernel=center_kernel)
+                self.assertEqual(rate_.shape[0], signal_N - kernel_K + 1)
+
+    def test_instantaneous_rate_trim_rate_estimation(self):
+        # Test that trimming removes edge contributions from the rate estimate
+        # so that area under the curve with trim=True (valid) is less than or
+        # equal to trim=False (same)
+        kernel_types = tuple(
+            kern_cls for kern_cls in kernels.__dict__.values()
+            if isinstance(kern_cls, type) and
+            issubclass(kern_cls, kernels.Kernel) and
+            kern_cls is not kernels.Kernel and
+            kern_cls is not kernels.SymmetricKernel)
+        # set sigma
+        kernels_available = [kern_cls(sigma=0.5 * pq.s, invert=False)
+                             for kern_cls in kernel_types]
+        kernels_available.append('auto')
+        kernel_resolution = 0.01 * pq.s
+        # Make a edge-biased spiketrain
+        spikes = np.array([0.100, 0.113, 0.228, 3.901, 8.137,
+                             9.007, 9.837, 9.999])
+        spiketrain = neo.SpikeTrain(spikes*pq.s, t_start=0.*pq.s, t_stop=10.*pq.s)
+        for kernel in kernels_available:
+            for center_kernel in (False, True):
+                areas = {}
+                for trim in (False, True):
+                    rate_estimate = statistics.instantaneous_rate(
+                        spiketrain,
+                        sampling_period=kernel_resolution,
+                        kernel=kernel,
+                        t_start=spiketrain.t_start,
+                        t_stop=spiketrain.t_stop,
+                        trim=trim,
+                        center_kernel=center_kernel,
+                    )
+                    area_under_curve = spint.cumulative_trapezoid(
+                        y=rate_estimate.magnitude[:, 0],
+                        x=rate_estimate.times.rescale('s').magnitude)[-1]
+                    areas[trim] = area_under_curve
+
+                # area with trim=True < area with trim=False
+                self.assertTrue(areas[True] < areas[False])
+
+    def test_instantaneous_rate_trim_edges(self):
+        # PR 688: Test checks if t_start and t_stop values correct with
+        # trim=True to ensure no incorrect offset in rate values
+        spikes = np.array([0.100, 0.113, 0.228, 3.901, 8.137,
+                             9.007, 9.837, 9.999])
+        spiketrain = neo.SpikeTrain(spikes*pq.s, t_start=0.*pq.s, t_stop=10.*pq.s)
+        cutoff = 5
+        sampling_period = 0.01 * pq.s
+        kernel = kernels.RectangularKernel(sigma=0.5 * pq.s)
+        assert cutoff > kernel.min_cutoff, "Choose larger cutoff"
+        kernel_types = tuple(
+            kern_cls for kern_cls in kernels.__dict__.values()
+            if isinstance(kern_cls, type) and
+            issubclass(kern_cls, kernels.SymmetricKernel) and
+            kern_cls is not kernels.SymmetricKernel)
+        kernels_list = [kern_cls(sigma=0.5 * pq.s, invert=False)
+                             for kern_cls in kernel_types]
+        for kernel in kernels_list:
+            rate = statistics.instantaneous_rate(
+                spiketrain, sampling_period=sampling_period,
+                kernel=kernel, cutoff=cutoff, trim=True,
+                center_kernel=True)
+            self.assertLess(rate.t_stop, spiketrain.t_stop)
+            self.assertGreater(rate.t_start, spiketrain.t_start)
+
     def test_instantaneous_rate_center_kernel(self):
         # this test is obsolete since trimming is now always done by
         # np.fftconvolve, in earlier version trimming was implemented for
@@ -730,14 +857,15 @@ class InstantaneousRateTest(unittest.TestCase):
         t_spikes = np.linspace(-cutoff, cutoff, num=(2 * cutoff + 1)) * pq.s
         spiketrain = neo.SpikeTrain(t_spikes, t_start=t_spikes[0],
                                     t_stop=t_spikes[-1])
-        kernel = kernels.RectangularKernel(sigma=1 * pq.s)
+        # PR 688: Reduced sigma for smaller kernel length relative to spike train
+        kernel = kernels.RectangularKernel(sigma=0.5 * pq.s)
         assert cutoff > kernel.min_cutoff, "Choose larger cutoff"
         kernel_types = tuple(
             kern_cls for kern_cls in kernels.__dict__.values()
             if isinstance(kern_cls, type) and
             issubclass(kern_cls, kernels.SymmetricKernel) and
             kern_cls is not kernels.SymmetricKernel)
-        kernels_symmetric = [kern_cls(sigma=1 * pq.s, invert=False)
+        kernels_symmetric = [kern_cls(sigma=0.5 * pq.s, invert=False)
                              for kern_cls in kernel_types]
         for kernel in kernels_symmetric:
             for trim in (False, True):
@@ -980,37 +1108,160 @@ class InstantaneousRateTest(unittest.TestCase):
                             (1. - rtol) * rate.item())
 
     def test_instantaneous_rate_trials_pool_trials(self):
+        # Input:
+        #   Trials object with self.n_trials, self.n_spiketrains
+        #   Conditions:
+        #       pool_spike_trains = False
+        #       pool_trials = True
+        #
+        # Expected output:
+        #   rate: single AnalogSignal
+        #       shape = (n_bins, self.n_spiketrains)
+        #       where n_bins = (t_stop-t_start)/sampling_period
         kernel = kernels.GaussianKernel(sigma=500 * pq.ms)
-
         rate = statistics.instantaneous_rate(self.trial_object,
-                                             sampling_period=0.1 * pq.ms,
+                                             sampling_period=self.sam_period,
                                              kernel=kernel,
                                              pool_spike_trains=False,
                                              pool_trials=True)
         self.assertIsInstance(rate, neo.core.AnalogSignal)
+        self.assertEqual(rate.shape[1], self.n_spiketrains)
+        self.assertEqual(rate.shape[0], self.n_bins)
 
-    def test_instantaneous_rate_list_pool_spike_trains(self):
+    def test_instantaneous_rate_trials_pool_spiketrains(self):
+        # Input:
+        #   Trials obj with self.n_trials, self.n_spiketrains
+        #   Conditions: pool_spike_trains = True
+        #               pool_trials = False
+        #
+        # Expected output:
+        #   rate: list of length self.n_trials
+        #   each element:
+        #       AnalogSignal with shape (n_bins, 1)
+        #       where n_bins = (t_stop - t_start) / sampling_period
+        kernel = kernels.GaussianKernel(sigma=500 * pq.ms)
+        rates = statistics.instantaneous_rate(self.trial_object,
+                                             sampling_period=self.sam_period,
+                                             kernel=kernel,
+                                             pool_spike_trains=True,
+                                             pool_trials=False)
+        self.assertIsInstance(rates, list)
+        self.assertEqual(len(rates), self.n_trials)
+        for rate in rates:
+            self.assertEqual(rate.shape[1], 1)
+            self.assertEqual(rate.shape[0], self.n_bins)
+
+    def test_instantaneous_rate_trials_pool_spiketrains_pool_trials(self):
+        # Input:
+        #   Trials object with self.n_trials, self.n_spiketrains
+        #   Conditions:
+        #       pool_spike_trains = True
+        #       pool_trials = True
+        #
+        # Expected output:
+        #   rate: single AnalogSignal
+        #       shape = (n_bins, 1)
+        #       where n_bins = (t_stop - t_start) / sampling_period
+        kernel = kernels.GaussianKernel(sigma=500 * pq.ms)
+
+        rate = statistics.instantaneous_rate(self.trial_object,
+                                             sampling_period=self.sam_period,
+                                             kernel=kernel,
+                                             pool_spike_trains=True,
+                                             pool_trials=True)
+        self.assertIsInstance(rate, neo.AnalogSignal)
+        self.assertEqual(rate.shape[1], 1)
+        self.assertEqual(rate.shape[0], self.n_bins)
+
+    def test_instantaneous_rate_trials_pool_spiketrains_false_pool_trials_false(self):
+        # Input:
+        #   Trials object with self.n_trials, self.n_spiketrains
+        #   Conditions:
+        #       pool_spike_trains = False
+        #       pool_trials = False
+        #
+        # Expected output:
+        #   rate: list of length self.n_trials
+        #   Each element:
+        #       AnalogSignal with shape (n_bins, self.n_spiketrains)
+        #       where n_bins = (t_stop - t_start) / sampling_period
+        kernel = kernels.GaussianKernel(sigma=500 * pq.ms)
+
+        rates = statistics.instantaneous_rate(self.trial_object,
+                                             sampling_period=self.sam_period,
+                                             kernel=kernel,
+                                             pool_spike_trains=False,
+                                             pool_trials=False)
+        self.assertIsInstance(rates, list)
+        self.assertEqual(len(rates), self.n_trials)
+        for rate in rates:
+            self.assertEqual(rate.shape[1], self.n_spiketrains)
+            self.assertEqual(rate.shape[0], self.n_bins)
+
+    def test_instantaneous_rate_spiketrainlist_pool_spike_trains(self):
+        # Input:
+        #  SpikeTrainList
+        #  Conditions: pool_spike_trains = True
+        #              pool_trials = False
+        #
+        # Expected output:
+        #   rate: single AnalogSignal
+        #       shape (n_bins, 1)
+        #       where n_bins = (t_stop - t_start) / sampling_period
         kernel = kernels.GaussianKernel(sigma=500 * pq.ms)
 
         rate = statistics.instantaneous_rate(
             self.trial_object.get_spiketrains_from_trial_as_list(0),
-            sampling_period=0.1 * pq.ms,
+            sampling_period=self.sam_period,
             kernel=kernel,
             pool_spike_trains=True,
             pool_trials=False)
         self.assertIsInstance(rate, neo.core.AnalogSignal)
-        self.assertEqual(rate.magnitude.shape[1], 1)
+        self.assertEqual(rate.shape[1], 1)
+        self.assertEqual(rate.shape[0], self.n_bins)
+
+    def test_instantaneous_rate_list_pool_spike_trains(self):
+        # Input:
+        #  list of spiketrains
+        #  Conditions: pool_spike_trains = True
+        #              pool_trials = False
+        #
+        # Expected output:
+        #   rate: single AnalogSignal
+        #       shape (n_bins, 1)
+        #       where n_bins = (t_stop - t_start) / sampling_period
+        kernel = kernels.GaussianKernel(sigma=500 * pq.ms)
+
+        rate = statistics.instantaneous_rate(
+            list(self.trial_object.get_spiketrains_from_trial_as_list(0)),
+            sampling_period=self.sam_period,
+            kernel=kernel,
+            pool_spike_trains=True,
+            pool_trials=False)
+        self.assertIsInstance(rate, neo.core.AnalogSignal)
+        self.assertEqual(rate.shape[1], 1)
+        self.assertEqual(rate.shape[0], self.n_bins)
 
     def test_instantaneous_rate_list_of_spike_trains(self):
+        # Input:
+        #  SpikeTrainList
+        #  Conditions: pool_spike_trains = False
+        #              pool_trials = False
+        #
+        # Expected output:
+        #   rate: single AnalogSignal
+        #       shape (n_bins, self.n_spiketrains)
+        #       where n_bins = (t_stop - t_start) / sampling_period
         kernel = kernels.GaussianKernel(sigma=500 * pq.ms)
         rate = statistics.instantaneous_rate(
             self.trial_object.get_spiketrains_from_trial_as_list(0),
-            sampling_period=0.1 * pq.ms,
+            sampling_period=self.sam_period,
             kernel=kernel,
             pool_spike_trains=False,
             pool_trials=False)
         self.assertIsInstance(rate, neo.core.AnalogSignal)
-        self.assertEqual(rate.magnitude.shape[1], 2)
+        self.assertEqual(rate.magnitude.shape[1], self.n_spiketrains)
+        self.assertEqual(rate.magnitude.shape[0], self.n_bins)
 
 
 class TimeHistogramTestCase(unittest.TestCase):
@@ -1088,6 +1339,25 @@ class TimeHistogramTestCase(unittest.TestCase):
                                                   output=output)
             self.assertIn('normalization', histogram.annotations)
             self.assertEqual(histogram.annotations['normalization'], output)
+
+    def test_time_histogram_regression_648_single_spiketrain(self):
+        # Create a single spike train and target results
+        spiketrain = neo.SpikeTrain([0.1, 0.5, 1.0, 1.5, 2.0] * pq.s, t_stop=3.0 * pq.s)
+        targets = {'rate': [2., 2., 2., 2., 2., 0.]*pq.Hz,
+                   'counts': [1, 1, 1, 1, 1, 0]*pq.dimensionless,
+                   'mean': [1, 1, 1, 1, 1, 0]*pq.dimensionless }
+
+        for out_type, res in targets.items():
+
+            # Run time_histogram with spiketrain directly and wrapped as list
+            histogram_direct = statistics.time_histogram(spiketrain, output=out_type, bin_size=0.5 * pq.s)
+            histogram_wrapped = statistics.time_histogram([spiketrain], output=out_type, bin_size=0.5 * pq.s)
+
+            # Assert direct and wrapped produce same result
+            np.testing.assert_array_equal(histogram_direct.magnitude, histogram_wrapped.magnitude)
+
+            # Assert direct computation produces correct result a single spiketrain
+            np.testing.assert_array_equal(histogram_direct.magnitude.flatten(), res)
 
 
 class ComplexityTestCase(unittest.TestCase):

@@ -99,7 +99,7 @@ Time for pvalue spectrum computation: ...
 
 Refer to Viziphant documentation to check how to visualzie such patterns.
 
-:copyright: Copyright 2014-2024 by the Elephant team, see `doc/authors.rst`.
+:copyright: Copyright 2014-2026 by the Elephant team, see `doc/authors.rst`.
 :license: BSD, see LICENSE.txt for details.
 """
 from __future__ import division, print_function, unicode_literals
@@ -1450,7 +1450,7 @@ def _get_pvalue_spec(max_occs, min_spikes, max_spikes, min_occ, n_surr, winlen,
             counts, occs = np.histogram(
                 max_occs_size_dur,
                 bins=np.arange(min_occ,
-                               np.max(max_occs_size_dur) + 2))
+                               np.max(max_occs_size_dur).astype(np.int16) + 2))
             occs = occs[:-1].astype(np.uint16)
             pvalues = np.cumsum(counts[::-1])[::-1] / n_surr
             for occ_id, occ in enumerate(occs):
