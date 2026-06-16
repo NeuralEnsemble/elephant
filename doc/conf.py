@@ -240,7 +240,7 @@ htmlhelp_basename = 'elephantdoc'
 # Notes:
 # - GL01: warnings are triggered for GPFA methods and statistics.cv due to
 #   non-conforming docstrings in sklearn and SciPy that are inherited.
-# - RT05: added in-line exceptions to supress warnings triggered for functions
+# - RT05: added in-line exceptions to suppress warnings triggered for functions
 #   in `phase_analysis` where a trailing period is not used in the last line
 #   stating the range of the returned values.
 
