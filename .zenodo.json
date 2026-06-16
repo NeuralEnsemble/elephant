@@ -22,7 +22,7 @@
         }
     ],
 
-    "title": "Elephant 1.2.0",
+    "title": "Elephant 1.2.1",
 
     "keywords": [
     "neuroscience",
@@ -46,7 +46,7 @@
 
         {
             "scheme": "doi",
-            "identifier": "10.5281/zenodo.13133971",
+            "identifier": "10.5281/zenodo.18863432",
             "relation": "isNewVersionOf",
             "resource_type": "software"
         },
