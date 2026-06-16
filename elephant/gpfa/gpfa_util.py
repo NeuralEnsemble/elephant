@@ -112,7 +112,6 @@ def cut_trials(seq_in, seg_length=20):
     ------
     ValueError
         If `seq_length == 0`.
-
     """
     if seg_length == 0:
         raise ValueError("At least 1 extracted trial must be returned")
@@ -209,7 +208,6 @@ def make_k_big(params, n_timesteps):
     ------
     ValueError
         If `params['covType'] != 'rbf'`.
-
     """
     if params['covType'] != 'rbf':
         raise ValueError("Only 'rbf' GP covariance type is supported.")
@@ -554,7 +552,6 @@ def segment_by_trial(seqs, x, fn):
     ------
     ValueError
         If `seqs['T']) != x.shape[1]`.
-
     """
     if np.sum(seqs['T']) != x.shape[1]:
         raise ValueError('size of X incorrect.')

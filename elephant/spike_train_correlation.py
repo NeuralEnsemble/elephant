@@ -333,7 +333,7 @@ def covariance(binned_spiketrain, binary=False, fast=True):
 
     See Also
     --------
-    correlation_coefficient : Pearson correlation coefficient
+    correlation_coefficient : Pearson correlation coefficient.
 
     Notes
     -----
@@ -362,8 +362,6 @@ def covariance(binned_spiketrain, binary=False, fast=True):
     >>> cov_matrix # doctest: +SKIP
     array([[ 0.05432316, -0.00152276],
        [-0.00152276,  0.04917234]])
-
-
     """
     if binary:
         binned_spiketrain = binned_spiketrain.binarize()
@@ -404,7 +402,6 @@ def correlation_coefficient(binned_spiketrain, binary=False, fast=True):
 
     Visualization of this function is covered in Viziphant:
     :func:`viziphant.spike_train_correlation.plot_corrcoef`.
-
 
     Parameters
     ----------
@@ -471,7 +468,6 @@ def correlation_coefficient(binned_spiketrain, binary=False, fast=True):
     >>> corrcoef # doctest: +SKIP
     array([[ 1.        , -0.02946313],
            [-0.02946313,  1.        ]])
-
     """
     if binary:
         binned_spiketrain = binned_spiketrain.binarize()
@@ -555,8 +551,8 @@ def cross_correlation_histogram(
         cross_correlation_coefficient=False):
     """
     Computes the cross-correlation histogram (CCH) between two binned spike
-    trains `binned_spiketrain_i` and `binned_spiketrain_j`.
-    :cite:`correlation-Eggermont2010_77`
+    trains `binned_spiketrain_i` and `binned_spiketrain_j`
+    :cite:`correlation-Eggermont2010_77`.
 
     Visualization of this function is covered in Viziphant:
     :func:`viziphant.spike_train_correlation.plot_cross_correlation_histogram`.
@@ -568,21 +564,24 @@ def cross_correlation_histogram(
         of :class:`elephant.conversion.BinnedSpikeTrain`. The input
         spike trains can have any `t_start` and `t_stop`.
     window : {'valid', 'full'} or list of int, optional
-        ‘full’: This returns the cross-correlation at each point of overlap,
-              with an output shape of (N+M-1,). At the end-points of the
-              cross-correlogram, the signals do not overlap completely, and
-              boundary effects may be seen.
-        ‘valid’: Mode valid returns output of length max(M, N) - min(M, N) + 1.
-              The cross-correlation product is only given for points where
-              the signals overlap completely.
-              Values outside the signal boundary have no effect.
-        List of integers (min_lag, max_lag):
-              The entries of window are two integers representing the left and
-              right extremes (expressed as number of bins) where the
-              cross-correlation is computed.
-    Default: 'full'
+        Specifies the mode or lag range used to compute the cross-correlation.
+        The options are:
+
+          - ‘full’: This returns the cross-correlation at each point of
+            overlap, with an output shape of (N+M-1,). At the end-points of
+            the cross-correlogram, the signals do not overlap completely, and
+            boundary effects may be seen.
+          - ‘valid’: Mode valid returns output of length
+            max(M, N) - min(M, N) + 1. The cross-correlation product is only
+            given for points where the signals overlap completely. Values
+            outside the signal boundary have no effect.
+          - List of integers (min_lag, max_lag): The entries of window are
+            two integers representing the left and right extremes (expressed
+            as number of bins) where the cross-correlation is computed.
+
+        Default: 'full'
     border_correction : bool, optional
-        whether to correct for the border effect. If True, the value of the
+        Whether to correct for the border effect. If True, the value of the
         CCH at bin :math:`b` (for :math:`b=-H,-H+1, ...,H`, where :math:`H` is
         the CCH half-length) is multiplied by the correction factor:
 
@@ -645,13 +644,11 @@ def cross_correlation_histogram(
 
         Consistent with the definition of `neo.AnalogSignals`, the time axis
         represents the left bin borders of each histogram bin. For example,
-        the time axis might be:
-        `np.array([-2.5 -1.5 -0.5 0.5 1.5]) * ms`
+        the time axis might be `np.array([-2.5 -1.5 -0.5 0.5 1.5]) * ms`.
     lags : np.ndarray
         Contains the IDs of the individual histogram bins, where the central
         bin has ID 0, bins to the left have negative IDs and bins to the right
-        have positive IDs, e.g.,:
-        `np.array([-3, -2, -1, 0, 1, 2, 3])`
+        have positive IDs, e.g., `np.array([-3, -2, -1, 0, 1, 2, 3])`.
 
     Notes
     -----
@@ -694,8 +691,6 @@ def cross_correlation_histogram(
     array([-10,  -9,  -8,  -7,  -6,  -5,  -4,  -3,  -2,  -1,
          0,   1,   2,   3,   4,   5,   6,   7,   8,   9,
         10], dtype=int32)
-
-
     """
 
     # Check that the spike trains are binned with the same temporal
@@ -856,7 +851,7 @@ def spike_time_tiling_coefficient(spiketrain_i: neo.core.SpikeTrain,
     spiketrain_i, spiketrain_j : :class:`neo.core.SpikeTrain`
         Spike trains to cross-correlate. They must have the same `t_start` and
         `t_stop`.
-    dt : pq.Quantity.
+    dt : pq.Quantity
         The synchronicity window is used for both: the quantification of the
         proportion of total recording time that lies `[-dt, +dt]` of each spike
         in each train and the proportion of spikes in `spiketrain_i` that lies
@@ -885,7 +880,6 @@ def spike_time_tiling_coefficient(spiketrain_i: neo.core.SpikeTrain,
     ...     units='ms', t_stop=50)
     >>> spike_time_tiling_coefficient(spiketrain1, spiketrain2)
     0.4958601655933762
-
     """
     # input checks
     if dt <= 0 * pq.s:
@@ -994,8 +988,9 @@ sttc = spike_time_tiling_coefficient
 
 def spike_train_timescale(binned_spiketrain, max_tau):
     r"""
-    Calculates the auto-correlation time of a binned spike train; uses the
-    definition of the auto-correlation time proposed in
+    Calculates the auto-correlation time of a binned spike train.
+
+    It uses the definition of the auto-correlation time proposed in
     :cite:`correlation-Wieland2015_040901` (Eq. 6):
 
     .. math::
@@ -1044,7 +1039,6 @@ def spike_train_timescale(binned_spiketrain, max_tau):
     >>> bst = BinnedSpikeTrain(spiketrain, bin_size=1 * pq.ms)
     >>> spike_train_timescale(bst, max_tau=5 * pq.ms)
     array(14.11111111) * ms
-
     """
     if binned_spiketrain.get_num_of_spikes() < 2:
         warnings.warn("Spike train contains less than 2 spikes! "

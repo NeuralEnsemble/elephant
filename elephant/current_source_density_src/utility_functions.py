@@ -247,7 +247,6 @@ def generate_electrodes(dim, xlims=[0.1, 0.9], ylims=[0.1, 0.9],
         Returns
         -------
         ele_x, ele_y, ele_z : flattened np.array of the electrode pos
-
     """
     if dim == 1:
         ele_x = np.mgrid[xlims[0]: xlims[1]: complex(0, res)]

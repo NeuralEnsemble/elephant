@@ -273,7 +273,7 @@ def spade(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
     output_format : {'concepts', 'patterns'}
         Distinguish the format of the output (see Returns).
         Default: 'patterns'
-    surr_kwargs
+    **surr_kwargs
         Keyword arguments that are passed to the surrogate methods.
 
     Returns
@@ -332,8 +332,6 @@ def spade(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
     >>> result_spade = spade(
     ...                     spiketrains, bin_size, winlen) # doctest: +ELLIPSIS
     Time for data mining: ...
-
-
     """
     if HAVE_MPI:  # pragma: no cover
         comm = MPI.COMM_WORLD  # create MPI communicator
@@ -878,7 +876,6 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
          each formed by:
             (pattern size, number of occurrences, difference between last
             and first spike of the pattern, number of patterns)
-
     """
     if min_neu < 1:
         raise ValueError('min_neu must be an integer >=1')
@@ -1266,24 +1263,23 @@ def pvalue_spectrum(
         method defined in
         :func:`elephant.spike_train_surrogates.dither_spikes`.
         Default: 'dither_spikes'
-    surr_kwargs
+    **surr_kwargs
         Keyword arguments that are passed to the surrogate methods.
 
     Returns
     -------
     pv_spec : list
 
-        if spectrum == '#':
+        If spectrum == '#':
             A list of triplets (z,c,p), where (z,c) is a pattern signature
             and p is the corresponding p-value (fraction of surrogates
             containing signatures (z*,c*)>=(z,c)).
-        if spectrum == '3d#':
+        If spectrum == '3d#':
             A list of triplets (z,c,l,p), where (z,c,l) is a pattern signature
             and p is the corresponding p-value (fraction of surrogates
             containing signatures (z*,c*,l*)>=(z,c,l)).
 
         Signatures whose empirical p-value is 0 are not listed.
-
     """
     # Initializing variables for parallel computing
     if HAVE_MPI:  # pragma: no cover
@@ -1646,7 +1642,7 @@ def test_signature_significance(pv_spec, concepts, alpha, winlen,
     -------
     sig_spectrum : list
         Significant signatures of pvalue_spectrum, in the format specified
-        by `report`
+        by `report`.
     """
     # If alpha == 1 all signatures are significant
     if alpha == 1:
@@ -1741,7 +1737,7 @@ def approximate_stability(concepts, rel_matrix, n_subsets=0,
                           delta=0., epsilon=0.):
     r"""
     Approximate the stability of concepts. Uses the algorithm described
-    in Babin, Kuznetsov (2012): Approximating Concept Stability
+    in Babin, Kuznetsov (2012): Approximating Concept Stability.
 
     Parameters
     ----------
@@ -1773,10 +1769,10 @@ def approximate_stability(concepts, rel_matrix, n_subsets=0,
 
         Default: 0
     delta : float, optional
-        delta: probability with at least :math:`1-\delta`
+        Probability with at least :math:`1-\delta`
         Default: 0.0
     epsilon : float, optional
-        epsilon: absolute error
+        Absolute error
         Default: 0.0
 
     Returns
@@ -1799,7 +1795,6 @@ def approximate_stability(concepts, rel_matrix, n_subsets=0,
     since the random generation will always contain the same
     numbers and the algorithm will be stuck searching for
     other (random) numbers.
-
     """
     if HAVE_MPI:  # pragma: no cover
         comm = MPI.COMM_WORLD  # create MPI communicator
@@ -2290,7 +2285,7 @@ def concept_output_to_patterns(concepts, winlen, bin_size, pv_spec=None,
 
         Default: '#'
     t_start : pq.Quantity
-        t_start of the analyzed spike trains
+        Start time of the analyzed spike trains
 
     Returns
     -------
@@ -2321,7 +2316,6 @@ def concept_output_to_patterns(concepts, winlen, bin_size, pv_spec=None,
         'pvalue':
             The p-value corresponding to the pattern. If `n_surr==0`,
             all p-values are set to -1.
-
     """
     if pv_spec is not None:
         pvalue_dict = defaultdict(float)
