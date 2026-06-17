@@ -1213,7 +1213,8 @@ def trial_shifting(spiketrains, dither, n_surrogates=1):
         A list of spike trains of the same neuron
         where each element corresponds to one trial.
     dither : pq.Quantity
-        Amount of dithering.
+        Amount of dithering. Each trial is shifted by a random amount
+        uniformly drawn from the range `(-dither, +dither)`.
     n_surrogates : int, optional
         Number of surrogates to be generated.
         Default: 1
