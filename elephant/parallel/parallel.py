@@ -33,7 +33,7 @@ class SingleProcess(object):
         args_iterate : list
             A list of (different) values of the first argument of the `handler`
             function.
-        kwargs
+        **kwargs
             Additional key arguments to `handler`.
 
         Returns
@@ -87,7 +87,7 @@ class ProcessPoolExecutor(SingleProcess):
         args_iterate : list
             A list of (different) values of the first argument of the `handler`
             function.
-        kwargs
+        **kwargs
             Additional key arguments to `handler`.
 
         Returns

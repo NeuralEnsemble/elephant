@@ -2,6 +2,21 @@
 Release Notes
 =============
 
+Release 1.2.1
+=============
+This is a patch release of Elephant, restoring full C++ acceleration for the SPADE module on macOS and Windows, and modernizing the build system.
+
+Bug Fixes
+---------
+- Restored full macOS and Windows C++ compiled wheel support for the SPADE module, resolving the limitation noted in 1.2.0 where macOS received a pure-Python SPADE fallback. (#695)
+
+Other Changes
+-------------
+- Migrated from `setup.py` to `pyproject.toml`. `setup.py` is retained only for platform-specific C++ extension compilation, which requires dynamic logic not supported in static TOML. Dependency declarations now use a single source of truth via requirements/*.txt files. (#608)
+- Added a weekly CI workflow that tests Elephant against the latest upstream builds of core dependencies to catch breaking changes early. (#698)
+- Bumped GitHub Actions versions to resolve Node.js 20 deprecation warnings. (#696, #697)
+- Restructured CI.yml to reduce duplication: merged pip test jobs into a single matrix job, added a composite action for shared cache restore steps, and fixed a race condition in coveralls partial coverage uploads. (#608)
+
 Release 1.2.0
 =============
 This release of Elephant marks the change to Numpy 2.x, while Numpy 1.x is no longer supported. Along with this change, a number of new features and improvements for existing functionality were added, in part related to the new concept for managing experimental trials using `elephant.trials` objects.

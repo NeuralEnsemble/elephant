@@ -57,7 +57,6 @@ def is_binary(array):
     -------
     bool
         Whether the input array is binary or not.
-
     """
     array = np.asarray(array)
     return ((array == 0) | (array == 1)).all()
@@ -86,7 +85,6 @@ def deprecated_alias(**aliases):
     >>> @deprecated_alias(binsize='bin_size')
     ... def my_function(bin_size):
     ...     pass
-
     """
 
     def deco(func):
@@ -128,7 +126,6 @@ def is_time_quantity(*quantities, allow_none=False):
     bool
         Whether the input is a time Quantity (True) or not (False).
         If the input is None and `allow_none` is set to True, returns True.
-
     """
     for quantity in quantities:
         if allow_none and quantity is None:

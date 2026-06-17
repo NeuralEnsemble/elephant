@@ -370,7 +370,7 @@ def download_datasets(repo_path, filepath=None, checksum=None,
             if local_file.is_file():
                 # If a checksum is given, check integrity of the local file
                 if checksum and not check_integrity(local_file, checksum):
-                    raise ValueError(f"Local file at {local_file} does "
+                    raise ValueError(f"Local file at {local_file.as_posix()} does "
                                      "not agree with MD5 hash "
                                      f"{checksum}.")
 
@@ -472,7 +472,7 @@ def load_data(name):
 
     Parameters
     ----------
-    name: str
+    name : str
         The name of the data to load. The available data names and their
         content are defined in the main
         :doc:`datasets documentation </reference/datasets>` page.

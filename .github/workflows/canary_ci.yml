@@ -1,0 +1,81 @@
+# Like the poor old canaries in mines, elephant gets tested against the unknown
+#
+# For dependencies that need compilation, latest stable/prerelease from PyPI is used.
+# For all other dependencies, the HEAD of the default branch is used.
+
+name: Canary Tests
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'   # Every Monday 06:00 UTC
+  workflow_dispatch:
+    inputs:
+      logLevel:
+        description: 'Log level'
+        required: true
+        default: 'warning'
+        type: choice
+        options:
+          - info
+          - warning
+          - debug
+
+# At the moment quantites breaks on numpy prerelease
+# this is caused by an int() wrapper on numpy version in quanities which doesn't
+# strip rc from version string
+env:
+  PYPI: |
+      numpy
+  PYPI_PRERELEASE: |
+      scipy
+  GITSOURCES: |
+      NeuralEnsemble/python-neo
+      scikit-learn/scikit-learn
+      statsmodels/statsmodels
+      G-Node/nixpy
+      python-quantities/python-quantities
+      tqdm/tqdm
+      pallets/jinja
+      pytest-dev/pytest
+
+jobs:
+  test-dep-masters:
+    name: latest-dependencies (${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: 
+        python-version: ["3.12"]
+
+    steps:
+      - uses: actions/checkout@v6.0.2
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v6.2.0
+        with:
+          python-version: ${{ matrix.python-version }}
+          check-latest: true
+
+      - uses: ./.github/actions/restore-elephant-data
+
+      - name: Install compiled packages
+        run: |
+          python -m pip install --upgrade pip
+          pip install $PYPI
+          pip install --pre $PYPI_PRERELEASE
+
+      - name: Install dependencies from source
+        run: |
+          for dep in $GITSOURCES; do
+            pip install "git+https://github.com/$dep.git"
+          done
+
+      - name: Install elephant
+        run: pip install --no-deps -e .
+
+      - name: List installed packages
+        run: |
+          pip list
+          python --version
+
+      - name: Test with pytest
+        run: pytest

@@ -1,10 +1,10 @@
-# This workflow will set up GitHub-hosted runners and install the required dependencies for elephant tests.
-# On a pull requests and on pushes to master it will run different tests for elephant.
+# This workflow sets up GitHub runners and runs unit tests
+# Triggered on pull requests, pushes to master and manual trigger from github web
 
+# Triggers
 name: tests
-# define events that trigger workflow 'tests'
 on:
-  workflow_dispatch: # enables manual triggering of workflow
+  workflow_dispatch:
     inputs:
       logLevel:
         description: 'Log level'
@@ -20,23 +20,13 @@ on:
     branches:
       - master
     types:
-      #- assigned
-      #- unassigned
-      #- labeled
-      #- unlabeled
       - opened
-      #- edited
-      #- closed
       - reopened
       - synchronize
-      #- converted_to_draft
-      #- ready_for_review
-      #- locked
-      #- unlocked
-      #- review_requested
-      #- review_request_removed
-      #- auto_merge_enabled
-      #- auto_merge_disabled
+
+  pull_request_review:
+    types:
+      - submitted
 
   push:
     branches:
@@ -47,8 +37,29 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-# jobs define the steps that will be executed on the runner
+# Single source of truth for CI matrix sizes.
+# Fast CI: ubuntu-latest + 3.12 only. Full CI: all OS/Python combos.
+env:
+  FAST_MATRIX: '{"os":["ubuntu-latest"],"python-version":["3.12"]}'
+  FULL_MATRIX: '{"os":["ubuntu-latest","macos-latest","windows-latest"],"python-version":["3.9","3.10","3.11","3.12","3.13","3.14"]}'
+
 jobs:
+
+  # Selects fast or full matrix based on PR approval.
+  setup:
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request_review' || github.event.review.state == 'approved'
+    outputs:
+      pip-matrix: ${{ steps.pick.outputs.pip-matrix }}
+    steps:
+      - id: pick
+        run: |
+          if [[ "${{ github.event.action }}" == "submitted" && \
+                "${{ github.event.review.state }}" == "approved" ]]; then
+            echo "pip-matrix=$FULL_MATRIX" >> $GITHUB_OUTPUT
+          else
+            echo "pip-matrix=$FAST_MATRIX" >> $GITHUB_OUTPUT
+          fi
 
   #        _
   #  _ __ (_)_ __
@@ -57,50 +68,30 @@ jobs:
   #  | .__/|_| .__/
   #  |_|     |_|
 
-  # install dependencies and elephant with pip and run tests with pytest
   build-and-test-pip:
+    needs: setup
+    name: pip (${{ matrix.python-version }}, ${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
-      matrix:
-        # python versions for elephant: [3.8, 3.9, "3.10", 3.11, 3.12, 3.13]
-        python-version: [3.9, "3.10", 3.11, 3.12, 3.13]
-        # OS [ubuntu-latest, macos-latest, windows-latest]
-        os: [ubuntu-latest]
-      # do not cancel all in-progress jobs if any matrix job fails
       fail-fast: false
+      matrix: ${{ fromJSON(needs.setup.outputs.pip-matrix) }}
 
     steps:
-      - uses: actions/checkout@v4.1.6
+      - uses: actions/checkout@v6.0.2
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5.1.0
+        uses: actions/setup-python@v6.2.0
         with:
           python-version: ${{ matrix.python-version }}
           check-latest: true
           cache: 'pip'
-          cache-dependency-path: |
-            **/requirements.txt
-            **/requirements-extras.txt
-            **/requirements-tests.txt
+          cache-dependency-path: pyproject.toml
 
-      - name: Get current hash (SHA) of the elephant_data repo
-        id: elephant-data
-        run: |
-            echo "dataset_hash=$(git ls-remote https://gin.g-node.org/NeuralEnsemble/elephant-data.git HEAD | cut -f1)" >> $GITHUB_OUTPUT
-
-      - uses: actions/cache/restore@v4.2.2
-        # Loading cache of elephant-data
-        id: cache-datasets
-        with:
-          path: ~/elephant-data
-          key: datasets-${{ steps.elephant-data.outputs.dataset_hash }}
-          restore-keys: datasets-
-          enableCrossOsArchive: true 
+      - uses: ./.github/actions/restore-elephant-data
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install coveralls
           pip install -e .[extras,tests]
 
       - name: List packages
@@ -109,148 +100,16 @@ jobs:
           python --version
 
       - name: Test with pytest
-        run: |
-          if [ -d ~/elephant-data ]; then
-          export ELEPHANT_DATA_LOCATION=~/elephant-data
-          echo $ELEPHANT_DATA_LOCATION
-          fi
-      
-          coverage run --source=elephant -m pytest
-          coveralls --service=github || echo "Coveralls submission failed"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: pytest --cov=elephant --cov-report=lcov:coverage.lcov
 
-  #                        ___  ____
-  #  _ __ ___   __ _  ___ / _ \/ ___|
-  # | '_ ` _ \ / _` |/ __| | | \___ \
-  # | | | | | | (_| | (__| |_| |___) |
-  # |_| |_| |_|\__,_|\___|\___/|____/
-
-  test-macOS:
-    name: conda (${{ matrix.python-version }}, ${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      # do not cancel all in-progress jobs if any matrix job fails
-      fail-fast: false
-      matrix:
-        # OS [ubuntu-latest, macos-latest, windows-latest]
-        os: [macos-14,macos-15]
-        python-version: [3.12]
-    steps:
-      - name: Get current year-month
-        id: date
-        run: echo "date=$(date +'%Y-%m')" >> $GITHUB_OUTPUT
-
-      - uses: actions/checkout@v4.1.6
-
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5.1.0
+      - name: Upload coverage to Coveralls
+        uses: coverallsapp/github-action@v2
         with:
-          python-version: ${{ matrix.python-version }}
-          check-latest: true
-          cache: 'pip'
-          cache-dependency-path: |
-            **/requirements.txt
-            **/requirements-extras.txt
-            **/requirements-tests.txt
-
-      - name: Get current hash (SHA) of the elephant_data repo
-        id: elephant-data
-        run: |
-            echo "dataset_hash=$(git ls-remote https://gin.g-node.org/NeuralEnsemble/elephant-data.git HEAD | cut -f1)" >> $GITHUB_OUTPUT
-
-      - uses: actions/cache/restore@v4.2.2
-        # Loading cache of elephant-data
-        id: cache-datasets
-        with:
-          path: ~/elephant-data
-          key: datasets-${{ steps.elephant-data.outputs.dataset_hash }}
-          restore-keys: datasets-      
-
-      - name: Install dependencies
-        run: |
-          python --version
-          python -m pip install --upgrade pip
-          pip install pytest-cov coveralls
-          pip install -e .[extras,tests]
-
-      - name: List packages
-        shell: bash -l {0}
-        run: |
-          pip list
-          python --version
-
-      - name: Test with pytest
-        shell: bash -l {0}
-        run: |
-          if [ -d ~/elephant-data ]; then
-          export ELEPHANT_DATA_LOCATION=~/elephant-data
-          echo $ELEPHANT_DATA_LOCATION
-          fi
-          pytest --cov=elephant
-
-  # __        ___           _
-  # \ \      / (_)_ __   __| | _____      _____
-  #  \ \ /\ / /| | '_ \ / _` |/ _ \ \ /\ / / __|
-  #   \ V  V / | | | | | (_| | (_) \ V  V /\__ \
-  #    \_/\_/  |_|_| |_|\__,_|\___/ \_/\_/ |___/
-
-  # install dependencies with pip and run tests with pytest
-  test-pip:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        # python versions for elephant: [3.8, 3.9, 3.10, 3.11]
-        python-version: [3.11,]
-        # OS [ubuntu-latest, macos-latest, windows-latest]
-        os: [windows-latest]
-
-    steps:
-      - uses: actions/checkout@v4.1.6
-
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5.1.0
-        with:
-          python-version: ${{ matrix.python-version }}
-          check-latest: true
-          cache: 'pip'
-          cache-dependency-path: |
-            **/requirements.txt
-            **/requirements-extras.txt
-            **/requirements-tests.txt
-
-      - name: Get current hash (SHA) of the elephant_data repo
-        id: elephant-data
-        run: |
-            echo "dataset_hash=$(git ls-remote https://gin.g-node.org/NeuralEnsemble/elephant-data.git HEAD | cut -f1)" >> $GITHUB_OUTPUT
-
-      - uses: actions/cache/restore@v4.2.2
-        # Loading cache of elephant-data
-        id: cache-datasets
-        with:
-          path: ~/elephant-data
-          key: datasets-${{ steps.elephant-data.outputs.dataset_hash }}
-          restore-keys: datasets-
-          enableCrossOsArchive: true    
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install pytest-cov coveralls
-          pip install -e .[extras,tests]
-
-      - name: List packages
-        run: |
-          pip list
-          python --version
-
-      - name: Test with pytest
-        run: |
-          if (Test-Path "$env:USERPROFILE\elephant-data") {
-              $env:ELEPHANT_DATA_LOCATION = "$env:USERPROFILE\elephant-data"
-              Write-Output $env:ELEPHANT_DATA_LOCATION
-          }
-          pytest --cov=elephant
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          flag-name: py${{ matrix.python-version }}-${{ matrix.os }}
+          parallel: true
+          file: coverage.lcov
 
   #  __  __ ____ ___
   # |  \/  |  _ \_ _|
@@ -260,53 +119,34 @@ jobs:
 
   # install dependencies and elephant with pip and run MPI
   test-pip-MPI:
+    needs: setup
+    name: mpi (${{ matrix.python-version }}, ${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        # python versions for elephant: [3.8, 3.9, 3.10, 3.11]
-        python-version: [3.9]
-        # OS [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.12"]
         os: [ubuntu-latest]
-
-      # do not cancel all in-progress jobs if any matrix job fails
       fail-fast: false
 
     steps:
-      - uses: actions/checkout@v4.1.6
+      - uses: actions/checkout@v6.0.2
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5.1.0
+        uses: actions/setup-python@v6.2.0
         with:
           python-version: ${{ matrix.python-version }}
           check-latest: true
           cache: 'pip'
-          cache-dependency-path: |
-            **/requirements.txt
-            **/requirements-extras.txt
-            **/requirements-tests.txt
+          cache-dependency-path: pyproject.toml
 
-      - name: Get current hash (SHA) of the elephant_data repo
-        id: elephant-data
-        run: |
-            echo "dataset_hash=$(git ls-remote https://gin.g-node.org/NeuralEnsemble/elephant-data.git HEAD | cut -f1)" >> $GITHUB_OUTPUT
-
-      - uses: actions/cache/restore@v4.2.2
-        # Loading cache of elephant-data
-        id: cache-datasets
-        with:
-          path: ~/elephant-data
-          key: datasets-${{ steps.elephant-data.outputs.dataset_hash }}
-          restore-keys: datasets-
-          enableCrossOsArchive: true 
+      - uses: ./.github/actions/restore-elephant-data
 
       - name: Setup environment
         run: |
           sudo apt-get update
           sudo apt install -y libopenmpi-dev openmpi-bin
-
           python -m pip install --upgrade pip
           pip install mpi4py
-          pip install pytest-cov coveralls
           pip install -e .[extras,tests]
 
       - name: List packages
@@ -315,15 +155,15 @@ jobs:
           python --version
 
       - name: Test with pytest
-        run: |
-          if [ -d ~/elephant-data ]; then
-          export ELEPHANT_DATA_LOCATION=~/elephant-data
-          echo $ELEPHANT_DATA_LOCATION
-          fi
-          mpiexec -n 1 python -m mpi4py -m coverage run --source=elephant -m pytest
-          coveralls --service=github || echo "Coveralls submission failed"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: mpiexec -n 1 python -m mpi4py -m pytest --cov=elephant --cov-report=lcov:coverage.lcov
+
+      - name: Upload coverage to Coveralls
+        uses: coverallsapp/github-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          flag-name: mpi
+          parallel: true
+          file: coverage.lcov
 
   #   ____                _
   #  / ___|___  _ __   __| | __ _
@@ -331,17 +171,14 @@ jobs:
   # | |__| (_) | | | | (_| | (_| |
   #  \____\___/|_| |_|\__,_|\__,_|
 
-  # install dependencies with conda and run tests with pytest
   test-conda:
+    needs: setup
+    name: conda (${{ matrix.python-version }}, ${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        # python versions for elephant: [3.8, 3.9, 3.10, 3.11]
-        python-version: [3.11]
-        # OS [ubuntu-latest, macos-latest, windows-latest]
+        python-version: [3.12]
         os: [ubuntu-latest]
-
-      # do not cancel all in-progress jobs if any matrix job fails
       fail-fast: false
 
     steps:
@@ -349,7 +186,7 @@ jobs:
         id: date
         run: echo "date=$(date +'%Y-%m')" >> $GITHUB_OUTPUT
 
-      - uses: actions/checkout@v4.1.6
+      - uses: actions/checkout@v6.0.2
 
       - name: Get pip cache dir
         id: pip-cache
@@ -357,27 +194,16 @@ jobs:
           echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
 
       - name: Cache pip
-        uses: actions/cache@v4.2.2
+        uses: actions/cache@v5.0.5
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
 
           key: ${{ runner.os }}-pip-${{hashFiles('requirements/environment-tests.yml') }}-${{ hashFiles('**/CI.yml') }}-${{ steps.date.outputs.date }}
 
-      - name: Get current hash (SHA) of the elephant_data repo
-        id: elephant-data
-        run: |
-            echo "dataset_hash=$(git ls-remote https://gin.g-node.org/NeuralEnsemble/elephant-data.git HEAD | cut -f1)" >> $GITHUB_OUTPUT
 
-      - uses: actions/cache/restore@v4.2.2
-        # Loading cache of elephant-data
-        id: cache-datasets
-        with:
-          path: ~/elephant-data
-          key: datasets-${{ steps.elephant-data.outputs.dataset_hash }}
-          restore-keys: datasets-
-          enableCrossOsArchive: true 
+      - uses: ./.github/actions/restore-elephant-data
 
-      - uses: mamba-org/setup-micromamba@v2
+      - uses: mamba-org/setup-micromamba@v3.0.0
         with:
           create-args: python=${{ matrix.python-version }}
           environment-file: requirements/environment-tests.yml
@@ -387,7 +213,6 @@ jobs:
         shell: bash -el {0}
         run: |
           python --version
-          micromamba install -y -c conda-forge pytest pytest-cov coveralls mpi4py openmpi
           pip install -e .
 
       - name: List packages
@@ -395,16 +220,10 @@ jobs:
         run: |
           pip list
           micromamba list
-          python --version
 
       - name: Test with pytest
         shell: bash -el {0}
-        run: |
-          if [ -d ~/elephant-data ]; then
-          export ELEPHANT_DATA_LOCATION=~/elephant-data
-          echo $ELEPHANT_DATA_LOCATION
-          fi
-          pytest --cov=elephant
+        run: pytest
 
   #  ____
   # |  _ \  ___   ___ ___
@@ -412,124 +231,107 @@ jobs:
   # | |_| | (_) | (__\__ \
   # |____/ \___/ \___|___/
 
-  # install dependencies for the documentation and build .html
   docs:
-    name: docs (${{ matrix.os }})
+    needs: setup
+    name: docs (${{ matrix.python-version }}, ${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        # python versions for elephant: [3.8, 3.9, 3.10, 3.11, 3.12]
         python-version: [3.12]
-        # OS [ubuntu-latest, macos-latest, windows-latest]
         os: [ubuntu-latest]
 
     steps:
+      - uses: actions/checkout@v6.0.2
 
-      - name: Get current year-month
-        id: date
-        run: echo "date=$(date +'%Y-%m')" >> $GITHUB_OUTPUT
-
-      - uses: actions/checkout@v4.1.6
-
-      - name: Get pip cache dir
-        id: pip-cache
-        run: |
-          echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
-
-      - name: Cache pip
-        uses: actions/cache@v4.2.2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v6.2.0
         with:
-          path: ${{ steps.pip-cache.outputs.dir }}
-          # Look to see if there is a cache hit for the corresponding requirements files
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements-docs.txt') }}-${{ hashFiles('**/requirements-tutorials.txt') }}-${{ hashFiles('**/environment-docs.yml') }}
-           -${{ hashFiles('**/CI.yml') }}-${{ steps.date.outputs.date }}
-
-      - uses: mamba-org/setup-micromamba@v2
-        with:
-          create-args: python=${{ matrix.python-version }}
-          environment-file: requirements/environment.yml
-          init-shell: bash
+          python-version: ${{ matrix.python-version }}
+          check-latest: true
+          cache: 'pip'
+          cache-dependency-path: pyproject.toml
 
       - name: Install dependencies
         shell: bash -el {0}
         run: |
           sudo apt-get update
-          sudo apt install -y libopenmpi-dev openmpi-bin
-          # Moved openmpi pandoc and libstdcxx-ng to environment-docs file        
-          # micromamba install -y -c conda-forge openmpi pandoc libstdcxx-ng # fix libstdc++.so.6: version for new scipy versions > 1.9.1
-          micromamba env update --file requirements/environment-docs.yml --name elephant
+          sudo apt install -y libopenmpi-dev openmpi-bin pandoc
           python -m pip install --upgrade pip
+          pip install mpi4py
           pip install -e .[extras,tutorials,docs]
-          # run notebooks
           sed -i -E "s/nbsphinx_execute *=.*/nbsphinx_execute = 'always'/g" doc/conf.py
 
       - name: List packages
-        shell: bash -el {0}
         run: |
           pip list
-          micromamba list
           python --version
 
       - name: make html
-        shell: bash -el {0}
         run: |
           cd doc
           make html
 
-  # install dependencies and elephant with pip and run tests with pytest
+#  _____               _______        _
+# |  __ \  ___   ___  |__   __|   ___| |_ ___
+# | |  | |/ _ \ / __|    | |/ _ \/ __| __/ __|
+# | |__| | (_) | (__     | |  __/\__ \ |_\__ \
+# |_____/ \___/ \___|    |_|\___||___/\__|___/
   doctests:
+    needs: setup
+    name: doctests (${{ matrix.python-version }}, ${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        # python versions for elephant: [3.7, 3.8, 3.9, "3.10"]
-        python-version: ["3.10"]
-
-        # OS [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.12"]
         os: [ubuntu-latest]
 
     steps:
-      # used to reset cache every month
-      - name: Get current year-month
-        id: date
-        run: echo "::set-output name=date::$(date +'%Y-%m')"
-      - uses: actions/checkout@v4.1.6
+      - uses: actions/checkout@v6.0.2
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5.1.0
+        uses: actions/setup-python@v6.2.0
         with:
           python-version: ${{ matrix.python-version }}
-
-      - name: Cache test_env
-        uses: actions/cache@v4.2.2
-        with:
-          path: ~/test_env
-          # Look to see if there is a cache hit for the corresponding requirements files
-          # cache will be reset on changes to any requirements or every month
-          key: ${{ runner.os }}-venv-${{ hashFiles('**/requirements.txt') }}-${{ hashFiles('**/requirements-tests.txt') }}
-            -${{ hashFiles('**/requirements-extras.txt') }}-${{ hashFiles('**/CI.yml') }}-${{ hashFiles('setup.py') }}
-            -${{ steps.date.outputs.date }}
+          check-latest: true
+          cache: 'pip'
+          cache-dependency-path: pyproject.toml
 
       - name: Install dependencies
         run: |
-          # create an environment and install everything
-          python -m venv ~/test_env
-          source ~/test_env/bin/activate
           sudo apt-get update
           sudo apt install -y libopenmpi-dev openmpi-bin
-
           python -m pip install --upgrade pip
           pip install mpi4py
-          pip install pytest-cov coveralls
           pip install -e .[extras,tests]
 
       - name: List packages
         run: |
-          source ~/test_env/bin/activate
           pip list
           python --version
 
       - name: Run doctests
         run: |
-          source ~/test_env/bin/activate
           printf "def pytest_configure(config):\n    import numpy as np\n    import builtins\n    np.set_printoptions(legacy='1.25')\n    builtins.np = np\n" > conftest.py
-          pytest elephant --doctest-modules --ignore=elephant/test/
+          pytest elephant --doctest-modules --ignore=elephant/test/ --cov=elephant --cov-report=lcov:coverage.lcov
+
+      - name: Upload coverage to Coveralls
+        uses: coverallsapp/github-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          flag-name: doctests
+          parallel: true
+          file: coverage.lcov
+
+
+  # Coveralls Finish Job
+  # Combine coverals report and make PR comment
+  coveralls-finish:
+    needs: [build-and-test-pip, test-pip-MPI, doctests]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Coveralls finished
+        uses: coverallsapp/github-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          parallel-finished: true
