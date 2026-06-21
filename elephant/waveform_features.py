@@ -17,10 +17,7 @@ import warnings
 import neo
 import numpy as np
 
-__all__ = [
-    "waveform_width",
-    "waveform_snr"
-]
+__all__ = ["waveform_width", "waveform_snr"]
 
 
 def waveform_width(waveform, cutoff=0.75):
@@ -62,11 +59,11 @@ def waveform_width(waveform, cutoff=0.75):
     """
     waveform = np.squeeze(waveform)
     if np.ndim(waveform) != 1:
-        raise ValueError('Expected 1-dimensional waveform.')
+        raise ValueError("Expected 1-dimensional waveform.")
     if len(waveform) < 2:
-        raise ValueError('Too short waveform.')
+        raise ValueError("Too short waveform.")
     if not (0 <= cutoff < 1):
-        raise ValueError('Cuttoff must be in range [0, 1).')
+        raise ValueError("Cuttoff must be in range [0, 1).")
 
     min_border = max(1, int(len(waveform) * cutoff))
     idx_min = np.argmin(waveform[:min_border])
@@ -118,8 +115,10 @@ def waveform_snr(waveforms):
     12.249999999999998
     """
     if isinstance(waveforms, neo.SpikeTrain):
-        warnings.warn("spiketrain input is deprecated; pass "
-                      "'spiketrain.waveforms' directly.", DeprecationWarning)
+        warnings.warn(
+            "spiketrain input is deprecated; pass 'spiketrain.waveforms' directly.",
+            DeprecationWarning,
+        )
         waveforms = waveforms.waveforms
     # asarray removes quantities, if present
     waveforms = np.squeeze(np.asarray(waveforms))
@@ -135,6 +134,6 @@ def waveform_snr(waveforms):
 
     snr = peak_range / noise
     if np.isnan(snr).any():
-        warnings.warn('The waveforms noise was evaluated to 0. Returning NaN')
+        warnings.warn("The waveforms noise was evaluated to 0. Returning NaN")
 
     return snr

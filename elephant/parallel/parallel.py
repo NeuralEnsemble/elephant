@@ -8,8 +8,9 @@ class SingleProcess(object):
     """
 
     def __repr__(self):
-        return "{name}({extra})".format(name=self.__class__.__name__,
-                                        extra=self._extra_repr())
+        return "{name}({extra})".format(
+            name=self.__class__.__name__, extra=self._extra_repr()
+        )
 
     def _extra_repr(self):
         return ""
@@ -64,6 +65,7 @@ class ProcessPoolExecutor(SingleProcess):
         worker processes will be created as the machine has processors.
         Default: None
     """
+
     def __init__(self, max_workers=None):
         self.max_workers = max_workers
 
