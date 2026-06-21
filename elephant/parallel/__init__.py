@@ -44,12 +44,9 @@ try:
     from .mpi import MPIPoolExecutor, MPICommExecutor
 except ImportError:
     # mpi4py is missing
-    warnings.warn("mpi4py package is missing. Please run 'pip install mpi4py' "
-                  "in a terminal to activate MPI features.")
+    warnings.warn(
+        "mpi4py package is missing. Please run 'pip install mpi4py' "
+        "in a terminal to activate MPI features."
+    )
 
-__all__ = [
-    "ProcessPoolExecutor",
-    "SingleProcess",
-    "MPIPoolExecutor",
-    "MPICommExecutor"
-]
+__all__ = ["ProcessPoolExecutor", "SingleProcess", "MPIPoolExecutor", "MPICommExecutor"]
