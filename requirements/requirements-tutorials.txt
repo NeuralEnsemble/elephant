@@ -1,4 +1,6 @@
 # Packages required to execute jupyter notebook tutorials
+# Capped at <3.9 because viziphant 0.4.0 (latest release, 2023-11) calls
+# matplotlib.cm.get_cmap, which matplotlib removed in 3.9.
 matplotlib>=3.3.2, <3.9.0
 h5py>=3.1.0
 nixio>=1.5.0
