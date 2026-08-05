@@ -1152,6 +1152,16 @@ class InstantaneousRateTestCase(unittest.TestCase):
         self.assertAlmostEqual(mean_spike_count, area_under_curve,
                                delta=0.01 * mean_spike_count)
 
+        # The same spike trains wrapped in a Trials object already take this
+        # order, the trials branch estimates the rates per spike train and
+        # averages the corrected result afterwards. Both routes have to give
+        # the same answer.
+        rate_from_trials = statistics.instantaneous_rate(
+            TrialsFromLists([spiketrains]), pool_trials=False,
+            pool_spike_trains=True, **kwargs)[0]
+        assert_array_almost_equal(rate_from_trials.magnitude,
+                                  rate_pooled.magnitude)
+
     def test_instantaneous_rate_trials_pool_trials(self):
         # Input:
         #   Trials object with self.n_trials, self.n_spiketrains
