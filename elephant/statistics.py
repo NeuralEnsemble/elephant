@@ -1113,9 +1113,6 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
                              sigma=str(kernel.sigma),
                              invert=kernel.invert)
 
-    if pool_spike_trains:
-        rate = np.mean(rate, axis=1)
-
     rate = neo.AnalogSignal(signal=rate,
                             sampling_period=sampling_period,
                             units=pq.Hz, t_start=t_start,
@@ -1138,6 +1135,21 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
             if len(spiketrain) > 0:
                 rate[:, i] *= len(spiketrain) /\
                               (np.mean(rate[:, i]).magnitude * duration)
+
+    # Pooling happens after the border correction, because the correction is
+    # defined per spike train: it rescales each column so that the integral
+    # over that column returns the spike count of the corresponding spike
+    # train. Pooling first collapses the column axis to a single column and
+    # leaves the loop above indexing columns that no longer exist. Correcting
+    # first also keeps the pooled rate equal to the mean over the columns of
+    # the corresponding `pool_spike_trains=False` result, which is the order
+    # already used for `elephant.trials` input.
+    if pool_spike_trains:
+        rate = neo.AnalogSignal(
+            signal=np.mean(rate.magnitude, axis=1, keepdims=True),
+            sampling_period=rate.sampling_period,
+            units=rate.units, t_start=rate.t_start,
+            kernel=kernel_annotation)
 
     return rate
 
