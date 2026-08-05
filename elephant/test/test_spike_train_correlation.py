@@ -839,6 +839,43 @@ class SpikeTimeTilingCoefficientTestCase(unittest.TestCase):
                                     spiketrain_B3, dt=0.10 * pq.s)
         self.assertAlmostEqual(sttc_unsorted_E8_B3, sttc_sorted_E8_B3)
 
+    def test_sttc_synchronicity_window_is_exactly_dt(self):
+        # Two spikes 12 ms apart are not synchronous for dt = 5 ms, no matter
+        # how far the recording is from t = 0. Previously the window was built
+        # with np.isclose, whose default rtol=1e-5 widened it by
+        # 1e-5 * |spike time|, so the same pair of spikes was counted as
+        # synchronous once the recording started late enough.
+        for t_offset in (0., 1000., 100000.):
+            spiketrain_i = neo.SpikeTrain(
+                [10. + t_offset], units='s',
+                t_start=t_offset * pq.s, t_stop=(20. + t_offset) * pq.s)
+            spiketrain_j = neo.SpikeTrain(
+                [10.012 + t_offset], units='s',
+                t_start=t_offset * pq.s, t_stop=(20. + t_offset) * pq.s)
+            sttc = sc.sttc(spiketrain_i, spiketrain_j, dt=0.005 * pq.s)
+            self.assertAlmostEqual(sttc, -0.0005, places=6)
+
+    def test_sttc_invariant_under_time_shift(self):
+        # The STTC of a pair of spike trains must not change when the whole
+        # recording is shifted in time.
+        spiketrain_i = neo.SpikeTrain(
+            [1.3, 7.56, 15.87, 28.23, 30.9, 34.2, 38.2, 43.2],
+            units='s', t_stop=50. * pq.s)
+        spiketrain_j = neo.SpikeTrain(
+            [1.02, 2.71, 18.82, 28.46, 28.79, 43.6],
+            units='s', t_stop=50. * pq.s)
+        target = sc.sttc(spiketrain_i, spiketrain_j, dt=0.005 * pq.s)
+
+        for t_offset in (100., 3600., 86400.):
+            shifted_i = neo.SpikeTrain(
+                spiketrain_i.times.magnitude + t_offset, units='s',
+                t_start=t_offset * pq.s, t_stop=(50. + t_offset) * pq.s)
+            shifted_j = neo.SpikeTrain(
+                spiketrain_j.times.magnitude + t_offset, units='s',
+                t_start=t_offset * pq.s, t_stop=(50. + t_offset) * pq.s)
+            self.assertAlmostEqual(
+                sc.sttc(shifted_i, shifted_j, dt=0.005 * pq.s), target)
+
     def test_sttc_validation_test(self):
         """This test checks the results of elephants implementation of
         the spike time tiling coefficient against the results of the
