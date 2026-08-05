@@ -70,6 +70,65 @@ class PairwiseCrossCorrelationTest(unittest.TestCase):
         # Test if vector of lags tau has correct length
         assert len(rho.times) == 2 * int(nlags) + 1
 
+    def test_cross_correlation_nlags_time_axis(self):
+        """
+        The returned lag axis has to follow the cut applied by `n_lags`.
+        """
+        nlags = 30
+        signal = np.zeros((self.n_samples, 2))
+        signal[:, 0] = 0.2 * np.sin(2. * np.pi * self.freq * self.times)
+        signal[:, 1] = 5.3 * np.cos(2. * np.pi * self.freq * self.times)
+        # Convert signal to neo.AnalogSignal
+        signal = neo.AnalogSignal(signal, units='mV', t_start=0. * pq.ms,
+                                  sampling_rate=self.sampling_rate,
+                                  dtype=float)
+        rho = elephant.signal_processing.cross_correlation_function(
+            signal, [0, 1], n_lags=nlags)
+
+        # The lag axis runs from -nlags to +nlags in units of the sampling
+        # period, so zero lag sits in the centre sample.
+        expected_times = np.arange(-nlags, nlags + 1) * \
+            self.sampling_period.rescale('s').magnitude
+        assert_array_almost_equal(rho.times.rescale('s').magnitude,
+                                  expected_times)
+        self.assertAlmostEqual(
+            rho.t_start.rescale('s').magnitude.item(), expected_times[0])
+        self.assertAlmostEqual(
+            rho.times[nlags].rescale('s').magnitude.item(), 0.)
+
+        # Cross-correlation of sine and cosine is a sine of the lag. This is
+        # the same identity that the un-cut case is checked against in
+        # test_cross_correlation_freqs, and it only holds if the lag axis
+        # matches the returned values.
+        assert_array_almost_equal(
+            rho.magnitude[:, 0], np.sin(2. * np.pi * self.freq * rho.times),
+            decimal=2)
+
+    def test_cross_correlation_nlags_too_large(self):
+        """
+        More lags than the signal provides has to be rejected.
+        """
+        n_samples = 100
+        signal = np.zeros((n_samples, 2))
+        times = np.arange(n_samples) * self.sampling_period
+        signal[:, 0] = np.sin(2. * np.pi * self.freq * times)
+        signal[:, 1] = np.cos(2. * np.pi * self.freq * times)
+        signal = neo.AnalogSignal(signal, units='mV', t_start=0. * pq.ms,
+                                  sampling_rate=self.sampling_rate,
+                                  dtype=float)
+        # 100 samples give lags -50 ... 49, so 49 is the largest symmetric
+        # cut. Larger values used to produce a negative slice start, which
+        # wraps around and returns an array of the wrong length instead of
+        # the documented 2 * n_lags + 1 samples.
+        rho = elephant.signal_processing.cross_correlation_function(
+            signal, [0, 1], n_lags=49)
+        self.assertEqual(rho.shape, (99, 1))
+        for n_lags in (50, 60):
+            self.assertRaises(
+                ValueError,
+                elephant.signal_processing.cross_correlation_function,
+                signal, [0, 1], n_lags=n_lags)
+
     def test_cross_correlation_phi(self):
         """
         Sine with phase shift phi vs cosine
