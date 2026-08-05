@@ -1,10 +1,16 @@
 # Packages required to build docs (in addition to requirements-tutorials.rst)
 numpydoc>=1.1.0
 jupyter>=1.0.0
+# IPython 9.16 removed the public `backend2gui` alias from IPython.core.pylabtools.
+# matplotlib<3.9 imports that alias in pyplot.install_repl_displayhook(), so the two
+# cannot be installed together. Lift this pin once the matplotlib cap below is lifted.
+ipython<9.16
 sphinx>=3.3.0
 nbsphinx>=0.8.0
 sphinxcontrib-bibtex>1.0.0
 sphinx-tabs>=1.3.0
+# Capped at <3.9 because viziphant 0.4.0 (latest release, 2023-11) calls
+# matplotlib.cm.get_cmap, which matplotlib removed in 3.9.
 matplotlib>=3.3.2, <3.9.0
 docutils<0.22
 # conda install -c conda-forge pandoc
