@@ -64,7 +64,7 @@ def welch_psd(signal, n_segments=8, len_segment=None,
 
     Parameters
     ----------
-    signal : neo.AnalogSignal or pq.Quantity or np.ndarray or elephant.conversion.BinnedSpikeTrain
+    signal : neo.AnalogSignal or pq.Quantity or np.ndarray or BinnedSpikeTrain
         Time series data, of which PSD is estimated. When `signal` is
         `pq.Quantity` or `np.ndarray`, sampling frequency should be given
         through the keyword argument `fs`. Otherwise, the default value is
@@ -203,7 +203,7 @@ def welch_psd(signal, n_segments=8, len_segment=None,
 
 
     """
-    if isinstance(signal,elephant.conversion.BinnedSpikeTrain):
+    if isinstance(signal, elephant.conversion.BinnedSpikeTrain):
         # Convert spike train to an analog signal with units of Hz
         signal = signal.to_analog_signal(scaling="normalized")
 
@@ -305,7 +305,7 @@ def multitaper_psd(signal, fs=1, nw=4, num_tapers=None, peak_resolution=None,
 
     Parameters
     ----------
-    signal : neo.AnalogSignal or pq.Quantity or np.ndarray or elephant.conversion.BinnedSpikeTrain
+    signal : neo.AnalogSignal or pq.Quantity or np.ndarray or BinnedSpikeTrain
         Time series data of which PSD is estimated. When `signal` is np.ndarray
         sampling frequency should be given through keyword argument `fs`.
         Signal should be passed as (n_channels, n_samples)
@@ -357,11 +357,8 @@ def multitaper_psd(signal, fs=1, nw=4, num_tapers=None, peak_resolution=None,
 
     # When the input is AnalogSignal, the data is added after rolling the axis
     # for time index to the last
-    if isinstance(signal,elephant.conversion.BinnedSpikeTrain):
-        # signal = neo.AnalogSignal(
-        #     signal.to_array().transpose()/signal.bin_size.rescale(pq.s).magnitude*pq.dimensionless,
-        #     t_start=signal.t_start,
-        #     sampling_period=signal.bin_size)
+    if isinstance(signal, elephant.conversion.BinnedSpikeTrain):
+        # Convert spike train to an analog signal with units of Hz
         signal = signal.to_analog_signal(scaling="normalized")
 
     data = np.asarray(signal)
@@ -534,13 +531,9 @@ def segmented_multitaper_psd(signal, n_segments=1, len_segment=None,
     TypeError
         If `peak_resolution` is None and `num_tapers` is not an int.
     """
-    if isinstance(signal,elephant.conversion.BinnedSpikeTrain):
-        # signal = neo.AnalogSignal(
-        #     signal.to_array().transpose()/signal.bin_size.rescale(pq.s).magnitude*pq.dimensionless,
-        #     t_start=signal.t_start,
-        #     sampling_period=signal.bin_size)
+    if isinstance(signal, elephant.conversion.BinnedSpikeTrain):
+        # Convert spike train to an analog signal with units of Hz
         signal = signal.to_analog_signal(scaling="normalized")
-
 
     # When the input is AnalogSignal, the data is added after rolling the axis
     # for time index to the last
