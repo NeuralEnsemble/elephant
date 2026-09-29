@@ -40,19 +40,20 @@ def spike_triggered_average(signal, spiketrains, window):
 
     Parameters
     ----------
-    signal : neo AnalogSignal object
+    signal : neo.AnalogSignal
         'signal' contains n analog signals.
-    spiketrains : one SpikeTrain or one numpy ndarray or a list of n of either of these
+    spiketrains : neo.SpikeTrain | np.ndarray | list[neo.SpikeTrain] | list[np.ndarray]
         'spiketrains' contains the times of the spikes in the spiketrains.
-    window : tuple of 2 Quantity objects with dimensions of time
+    window : tuple[pq.Quantity]
         'window' is the start time and the stop time, relative to a spike, of
-        the time interval for signal averaging.
+        the time interval considered for signal averaging.
         If the window size is not a multiple of the sampling interval of the
         signal the window will be extended to the next multiple.
+        The values of the window have to be given as time quantities.
 
     Returns
     -------
-    result_sta : neo AnalogSignal object
+    result_sta : neo.AnalogSignal
         'result_sta' contains the spike-triggered averages of each of the
         analog signals with respect to the spikes in the corresponding
         spiketrains. The length of 'result_sta' is calculated as the number
@@ -212,9 +213,9 @@ def spike_field_coherence(signal, spiketrain, **kwargs):
 
     Parameters
     ----------
-    signal : neo AnalogSignal object
+    signal : neo.AnalogSignal
         'signal' contains n analog signals.
-    spiketrain : SpikeTrain or BinnedSpikeTrain
+    spiketrain : neo.SpikeTrain or BinnedSpikeTrain
         Single spike train to perform the analysis on. The bin_size of the
         binned spike train must match the sampling_rate of signal.
     **kwargs
@@ -222,11 +223,12 @@ def spike_field_coherence(signal, spiketrain, **kwargs):
 
     Returns
     -------
-    coherence : complex Quantity array
+    coherence : pq.Quantity
         Contains the coherence values calculated for each analog signal trace
         in combination with the spike train. The first dimension corresponds to
-        the frequency, the second to the number of the signal trace.
-    frequencies : Quantity array
+        the frequency, the second to the number of the signal trace. The
+        values are complex numbers.
+    frequencies : pq.Quantity
         Contains the frequency values corresponding to the first dimension of
         the 'coherence' array.
 

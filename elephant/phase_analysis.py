@@ -364,7 +364,7 @@ def weighted_phase_lag_index(signal_i, signal_j, sampling_frequency=None,
     freqs : pq.quantity.Quantity
         Positive frequencies in Hz associated with the estimates of `wpli`.
         Range: :math:`[0, sampling frequency/2]`
-    wpli : np.ndarray with dtype=float
+    wpli : np.ndarray
         Weighted phase-lag index of `signal_i` and `signal_j` across trials.
         Range: :math:`[0, 1]`
 

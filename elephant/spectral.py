@@ -311,7 +311,7 @@ def multitaper_psd(signal, fs=1, nw=4, num_tapers=None, peak_resolution=None,
         Number of tapers used in 1. to obtain estimate of PSD. By default,
         [2*nw] - 1 is chosen.
         Default: None.
-    peak_resolution : pq.Quantity float, optional
+    peak_resolution : pq.Quantity | float, optional
         Quantity in Hz determining the number of tapers used for analysis.
         Fine peak resolution --> low numerical value --> low number of tapers
         High peak resolution --> high numerical value --> high number of tapers
@@ -599,7 +599,7 @@ def multitaper_cross_spectrum(signals, fs=1.0, nw=4.0, num_tapers=None,
         Number of tapers used in step 2 (see above) to obtain estimate of PSD.
         By default, [2*nw] - 1 is chosen.
         Default: None (see Notes [1])
-    peak_resolution : pq.Quantity float, optional
+    peak_resolution : pq.Quantity | float, optional
         Quantity in Hz determining the number of tapers used for analysis.
         Fine peak resolution --> low numerical value --> low number of tapers
         High peak resolution --> high numerical value --> high number of tapers
@@ -968,7 +968,7 @@ def segmented_multitaper_cross_spectrum(signals, n_segments=1,
         Number of tapers used in step 2 (see above) to obtain estimate of PSD.
         By default, [2*nw] - 1 is chosen.
         Default: None
-    peak_resolution : pq.Quantity float, optional
+    peak_resolution : pq.Quantity | float, optional
         Quantity in Hz determining the number of tapers used for analysis.
         Fine peak resolution --> low numerical value --> low number of tapers
         High peak resolution --> high numerical value --> high number of tapers
@@ -1080,7 +1080,7 @@ def multitaper_coherence(signal_i, signal_j, n_segments=1, len_segment=None,
         Number of tapers used in 1. to obtain estimate of PSD. By default,
         [2*nw] - 1 is chosen.
         Default: None
-    peak_resolution : pq.Quantity float, optional
+    peak_resolution : pq.Quantity | float, optional
         Quantity in Hz determining the number of tapers used for analysis.
         Fine peak resolution --> low numerical value --> low number of tapers
         High peak resolution --> high numerical value --> high number of tapers

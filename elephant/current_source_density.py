@@ -93,9 +93,9 @@ def estimate_csd(lfp, coordinates='coordinates', method=None,
         In the kcsd methods this corresponds to cross_validate -
         the parameters are passed as kwargs here ie., lambdas and Rs
         Defaults to True
-    **kwargs : parameters to each method
-        The parameters corresponding to the method chosen
-        See the documentation of the individual method
+    **kwargs
+        The parameters corresponding to the method chosen. See the
+        documentation of the individual method.
         Default is {} - picks the best parameters,
 
     Returns
