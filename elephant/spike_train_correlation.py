@@ -301,7 +301,7 @@ def covariance(binned_spiketrain, binary=False, fast=True):
 
     Parameters
     ----------
-    binned_spiketrain : (N, ) elephant.conversion.BinnedSpikeTrain
+    binned_spiketrain : (N,) elephant.conversion.BinnedSpikeTrain
         A binned spike train containing the spike trains to be evaluated.
     binary : bool, optional
         If True, the spikes of a particular spike train falling in the same bin
@@ -405,7 +405,7 @@ def correlation_coefficient(binned_spiketrain, binary=False, fast=True):
 
     Parameters
     ----------
-    binned_spiketrain : (N, ) elephant.conversion.BinnedSpikeTrain
+    binned_spiketrain : (N,) elephant.conversion.BinnedSpikeTrain
         A binned spike train containing the spike trains to be evaluated.
     binary : bool, optional
         If True, two spikes of a particular spike train falling in the same bin
@@ -508,7 +508,7 @@ def _covariance_sparse(binned_spiketrain, corrcoef_norm):
 
     Parameters
     ----------
-    binned_spiketrain : (N, ) elephant.conversion.BinnedSpikeTrain
+    binned_spiketrain : (N,) elephant.conversion.BinnedSpikeTrain
         See `covariance()` or `corrcoef()`, respectively.
     corrcoef_norm : bool
         Use normalization factor for the correlation coefficient rather than

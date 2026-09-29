@@ -91,7 +91,7 @@ def total_spiking_probability_edges(
 
     Parameters
     ----------
-    spike_trains : (N, ) elephant.conversion.BinnedSpikeTrain
+    spike_trains : (N,) elephant.conversion.BinnedSpikeTrain
         A binned spike train containing all neurons for connectivity estimation
     surrounding_window_sizes : List[int]
         Array of window sizes for the surrounding area of the point of

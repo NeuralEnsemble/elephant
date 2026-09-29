@@ -83,7 +83,7 @@ def multiple_filter_test(window_sizes, spiketrain, t_final, alpha,
         maximum.
         If None, will be set according to the :func:`empirical_parameters`.
         Default: None
-    test_param : (3, num. of windows) np.ndarray or None, optional
+    test_param : (3, n_windows) np.ndarray or None, optional
         First row: list of `h`, second and third rows: empirical means and
         variances of the limit process corresponding to `h`. This will be
         used to normalize the *filter processes* in order to give to the
@@ -290,7 +290,7 @@ def empirical_parameters(window_sizes, t_final, alpha, n_surrogates=1000,
         of these maxima is larger than this value, it is assumed the
         presence of a change point (cp) at the time corresponding to that
         maximum.
-    test_param : (3, num. of windows) np.ndarray
+    test_param : (3, n_windows) np.ndarray
         First row: list of `h`, second and third rows: empirical means and
         variances of the limit process corresponding to `h`. This will be
         used to normalize the *filter processes* in order to give to the

@@ -2158,7 +2158,7 @@ class ASSET(object):
 
         Returns
         -------
-        imat : (n,n) np.ndarray
+        imat : (n, n) np.ndarray
             The floating point intersection matrix of a list of spike trains.
             It has the shape `(n, n)`, where `n` is the number of bins that
             time was discretized in.
@@ -2200,7 +2200,7 @@ class ASSET(object):
         n_surrogates : int
             The number of spike train surrogates to generate for the bootstrap
             procedure.
-        imat : (n,n) np.ndarray or None, optional
+        imat : (n, n) np.ndarray or None, optional
             The floating point intersection matrix of a list of spike trains.
             It has the shape `(n, n)`, where `n` is the number of bins that
             time was discretized in.
@@ -2324,7 +2324,7 @@ class ASSET(object):
 
         Parameters
         ----------
-        imat : (n,n) np.ndarray or None, optional
+        imat : (n, n) np.ndarray or None, optional
             The intersection matrix of a list of spike trains.
             It has the shape `(n, n)`, where `n` is the number of bins that
             time was discretized in.
@@ -2816,7 +2816,7 @@ class ASSET(object):
 
         Parameters
         ----------
-        cmat : (n,n) np.ndarray
+        cmat : (n, n) np.ndarray
             The cluster matrix, the output of
             :func:`ASSET.cluster_matrix_entries`.
         ids : list, optional
