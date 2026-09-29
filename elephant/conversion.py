@@ -822,14 +822,14 @@ class BinnedSpikeTrain(object):
 
         Parameters
         ----------
-        spikes : {"left", "center", "random"}, optional
+        spikes : {'left', 'center', 'random'}, optional
             Specifies how to generate spikes inside bins.
 
-              * "left": align spikes from left to right to have equal inter-
+              * 'left': align spikes from left to right to have equal inter-
                 spike interval;
-              * "center": align spikes around center to have equal inter-spike
+              * 'center': align spikes around center to have equal inter-spike
                 interval;
-              * "random": generate spikes from a homogenous Poisson process;
+              * 'random': generate spikes from a homogenous Poisson process;
                 it's the fastest mode.
 
             Default: "random"
