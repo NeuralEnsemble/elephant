@@ -848,7 +848,7 @@ def spike_time_tiling_coefficient(spiketrain_i: neo.core.SpikeTrain,
 
     Parameters
     ----------
-    spiketrain_i, spiketrain_j : :class:`neo.core.SpikeTrain`
+    spiketrain_i, spiketrain_j : neo.SpikeTrain
         Spike trains to cross-correlate. They must have the same `t_start` and
         `t_stop`.
     dt : pq.Quantity
@@ -860,7 +860,7 @@ def spike_time_tiling_coefficient(spiketrain_i: neo.core.SpikeTrain,
 
     Returns
     -------
-    index : :class:`float` or :obj:`numpy.nan`
+    index : float or np.nan
         The spike time tiling coefficient (STTC). Returns :obj:`numpy.nan` if
         any spike train is empty.
 

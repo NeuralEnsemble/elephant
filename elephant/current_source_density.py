@@ -69,7 +69,7 @@ def estimate_csd(lfp, coordinates='coordinates', method=None,
 
     Parameters
     ----------
-    lfp : :class:`neo.core.AnalogSignal`
+    lfp : neo.AnalogSignal
         Positions of electrodes can be added as an array annotation
     coordinates : array-like Quantity or str
         Specifies the corresponding spatial coordinates of the electrodes.
@@ -250,7 +250,7 @@ def generate_lfp(csd_profile, x_positions, y_positions=None, z_positions=None,
 
     Returns
     -------
-    LFP : :class:`neo.core.AnalogSignal`
+    LFP : neo.AnalogSignal
        The potentials created by the csd profile at the electrode positions.
        The electrode positions are attached as an annotation named
        'coordinates'.

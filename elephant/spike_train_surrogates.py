@@ -161,7 +161,7 @@ def dither_spikes(spiketrain: neo.SpikeTrain,
 
     Parameters
     ----------
-    spiketrain : :class:`neo.core.SpikeTrain`
+    spiketrain : neo.SpikeTrain
         The spike train from which to generate the surrogates.
     dither : pq.Quantity
         Amount of dithering. A spike at time `t` is placed randomly within
@@ -193,7 +193,7 @@ def dither_spikes(spiketrain: neo.SpikeTrain,
 
     Returns
     -------
-    list of :class:`neo.core.SpikeTrain`
+    list of neo.SpikeTrain
         Each surrogate spike train obtained independently of `spiketrain` by
         randomly dithering its spikes. The range of the surrogate spike trains
         is the same as of `spiketrain`.
@@ -408,7 +408,7 @@ def dither_spike_train(spiketrain, shift, n_surrogates=1, decimals=None,
 
     Parameters
     ----------
-    spiketrain : :class:`neo.core.SpikeTrain`
+    spiketrain : neo.SpikeTrain
         The spike train from which to generate the surrogates.
     shift : pq.Quantity
         Amount of shift. `spiketrain` is shifted by a random amount uniformly
@@ -428,7 +428,7 @@ def dither_spike_train(spiketrain, shift, n_surrogates=1, decimals=None,
 
     Returns
     -------
-    list of :class:`neo.core.SpikeTrain`
+    list of neo.SpikeTrain
         Each surrogate spike train obtained independently of `spiketrain` by
         randomly dithering the whole spike train. The time range of the
         surrogate spike trains is the same as in `spiketrain`.

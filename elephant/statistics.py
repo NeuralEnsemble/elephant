@@ -287,7 +287,7 @@ def fanofactor(spiketrains: Union[List[neo.SpikeTrain], List[pq.Quantity], List[
 
     Parameters
     ----------
-    spiketrains : list or :mod:`elephant.trials`
+    spiketrains : list[neo.SpikeTrain] or list[pq.Quantity] or list[np.ndarray] or elephant.trials.Trials
         List of :class:`neo.core.SpikeTrain` or `pq.Quantity` or `np.ndarray` or list of
         spike times for which to compute the Fano factor of spike counts, or
         an :mod:`elephant.trials` object. If a :mod:`elephant.trials` object is
@@ -622,7 +622,7 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
 
     Parameters
     ----------
-    spiketrains : :class:`neo.core.SpikeTrain`, list of :class:`neo.core.SpikeTrain` or :mod:`elephant.trials`
+    spiketrains : neo.SpikeTrain, list of neo.SpikeTrain or elephant.trials.Trials
         Input spike train(s) for which the instantaneous firing rate is
         calculated. If a list of spike trains is supplied, the parameter
         pool_spike_trains determines the behavior of the function. If a Trials
@@ -714,7 +714,7 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
 
     Returns
     -------
-    output : :class:`neo.core.AnalogSignal` or list of :class:`neo.core.AnalogSignal`
+    output : neo.AnalogSignal or list of neo.AnalogSignal
         In general, the returned rate estimates are provided as
         :class:`neo.core.AnalogSignal` objects with units of Hertz (Hz). Its
         shape is `(n_bins, n_estimates)` where
@@ -1157,7 +1157,7 @@ def time_histogram(spiketrains: Union[List[neo.SpikeTrain], neo.SpikeTrain],
 
     Parameters
     ----------
-    spiketrains : list of :class:`neo.core.SpikeTrain` or :class:`neo.core.SpikeTrain`
+    spiketrains : list of neo.SpikeTrain or neo.SpikeTrain
         `neo.SpikeTrain` objects with a common time axis (same `t_start` and `t_stop`)
     bin_size : pq.Quantity
         Width of the histogram's time bins.
@@ -1195,7 +1195,7 @@ def time_histogram(spiketrains: Union[List[neo.SpikeTrain], neo.SpikeTrain],
 
     Returns
     -------
-    result : :class:`neo.core.AnalogSignal`
+    result : neo.AnalogSignal
         A :class:`neo.core.AnalogSignal` object containing the histogram values.
         `result[j]` is the histogram computed between `t_start + j * bin_size` and
         `t_start + (j + 1) * bin_size`.
