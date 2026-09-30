@@ -193,7 +193,7 @@ def dither_spikes(spiketrain: neo.SpikeTrain,
 
     Returns
     -------
-    list of neo.SpikeTrain
+    list[neo.SpikeTrain]
         Each surrogate spike train obtained independently of `spiketrain` by
         randomly dithering its spikes. The range of the surrogate spike trains
         is the same as of `spiketrain`.
@@ -278,7 +278,7 @@ def randomise_spikes(spiketrain, n_surrogates=1, decimals=None):
 
     Returns
     -------
-    list of neo.SpikeTrain
+    list[neo.SpikeTrain]
         Each surrogate spike train obtained independently from `spiketrain` by
         randomly distributing its spikes in the interval
         `[spiketrain.t_start, spiketrain.t_stop]`.
@@ -342,7 +342,7 @@ def shuffle_isis(spiketrain, n_surrogates=1, decimals=None):
 
     Returns
     -------
-    list of neo.SpikeTrain
+    list[neo.SpikeTrain]
         Each surrogate spike train obtained independently from `spiketrain` by
         random ISI shuffling. The time range of the surrogate spike trains is
         the same as in `spiketrain`.
@@ -428,7 +428,7 @@ def dither_spike_train(spiketrain, shift, n_surrogates=1, decimals=None,
 
     Returns
     -------
-    list of neo.SpikeTrain
+    list[neo.SpikeTrain]
         Each surrogate spike train obtained independently of `spiketrain` by
         randomly dithering the whole spike train. The time range of the
         surrogate spike trains is the same as in `spiketrain`.
@@ -512,7 +512,7 @@ def jitter_spikes(spiketrain, bin_size, n_surrogates=1):
 
     Returns
     -------
-    list of neo.SpikeTrain
+    list[neo.SpikeTrain]
         Each surrogate spike train obtained independently from `spiketrain` by
         randomly replacing its spikes within bins of user-defined width. The
         time range of the surrogate spike trains is the same as in
@@ -1042,7 +1042,7 @@ class JointISI(object):
 
         Returns
         -------
-        dithered_sts : list of neo.SpikeTrain
+        dithered_sts : list[neo.SpikeTrain]
             Spike trains, that are dithered versions of the given
             :attr:`spiketrain`.
         """
@@ -1209,7 +1209,7 @@ def trial_shifting(spiketrains, dither, n_surrogates=1):
 
     Parameters
     ----------
-    spiketrains : list of neo.SpikeTrain
+    spiketrains : list[neo.SpikeTrain]
         A list of spike trains of the same neuron
         where each element corresponds to one trial.
     dither : pq.Quantity
@@ -1220,7 +1220,7 @@ def trial_shifting(spiketrains, dither, n_surrogates=1):
 
     Returns
     -------
-    surrogate_spiketrains : list of list of neo.SpikeTrain
+    surrogate_spiketrains : list[list[neo.SpikeTrain]]
         Each surrogate spike train obtained independently from `spiketrain` by
         randomly dithering its spikes. The range of the surrogate spike trains
         is the same as of `spiketrain`.
@@ -1389,7 +1389,7 @@ def surrogates(spiketrain, n_surrogates=1, method='dither_spike_train',
 
     Returns
     -------
-    list of neo.SpikeTrain
+    list[neo.SpikeTrain]
         Each surrogate spike train obtained independently from `spiketrain`
         according to chosen surrogate type. The time range of the surrogate
         spike trains is the same as in `spiketrain`.

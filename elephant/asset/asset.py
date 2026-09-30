@@ -1989,7 +1989,7 @@ class ASSET(object):
 
     Parameters
     ----------
-    spiketrains_i, spiketrains_j : list of neo.SpikeTrain
+    spiketrains_i, spiketrains_j : list[neo.SpikeTrain]
         Input spike trains for the first and second time dimensions,
         respectively, to compute the p-values from.
         If `spiketrains_y` is None, it's set to `spiketrains`.
@@ -2461,7 +2461,7 @@ class ASSET(object):
             :func:`ASSET.probability_matrix_analytical`, of cumulative
             probability values between 0 and 1. The values are assumed
             to be uniformly distributed in the said range.
-        filter_shape : tuple of int
+        filter_shape : tuple[int]
             A pair of integers representing the kernel shape `(l, w)`.
         n_largest : int
             The number of the largest neighbors to collect for each entry in
@@ -2613,7 +2613,7 @@ class ASSET(object):
 
         Parameters
         ----------
-        matrices : list of np.ndarray
+        matrices : list[np.ndarray]
             The matrices which are compared to the respective thresholds to
             build the mask. All matrices must have the same shape.
             Typically, it is a list `[pmat, jmat]`, i.e., the (cumulative)

@@ -1306,7 +1306,7 @@ def complexity_pdf(spiketrains, bin_size):
 
     Parameters
     ----------
-    spiketrains : list of neo.SpikeTrain
+    spiketrains : list[neo.SpikeTrain]
         Spike trains with a common time axis (same `t_start` and `t_stop`)
     bin_size : pq.Quantity
         Width of the histogram's time bins.
@@ -1343,7 +1343,7 @@ class Complexity(object):
 
     Parameters
     ----------
-    spiketrains : list of neo.SpikeTrain
+    spiketrains : list[neo.SpikeTrain]
         Spike trains with a common time axis (same `t_start` and `t_stop`)
     sampling_rate : pq.Quantity | None, optional
         Sampling rate of the spike trains with units of 1/time.

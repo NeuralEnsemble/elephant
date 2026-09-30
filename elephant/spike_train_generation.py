@@ -1836,7 +1836,7 @@ def compound_poisson_process(
 
     Returns
     -------
-    list of neo.SpikeTrain
+    list[neo.SpikeTrain]
         A list of `len(A) - 1` neo.SpikeTrains with specified firing rates forming the CPP with amplitude distribution
         :math:`A`.
     """

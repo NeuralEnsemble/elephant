@@ -59,13 +59,13 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
 
     Returns
     -------
-    phases : list of np.ndarray
+    phases : list[np.ndarray]
         Spike-triggered phases. Entries in the list correspond to the
         `neo.SpikeTrain`s in `spiketrains`. Each entry contains an array with
         the spike-triggered angles (in rad) of the signal.
-    amp : list of pq.Quantity
+    amp : list[pq.Quantity]
         Corresponding spike-triggered amplitudes.
-    times : list of pq.Quantity
+    times : list[pq.Quantity]
         A list of times corresponding to the signal. They correspond to the
         times of the `neo.SpikeTrain` referred by the list item.
 

@@ -71,7 +71,7 @@ def victor_purpura_distance(spiketrains, cost_factor=1.0 * pq.Hz, kernel=None,
 
     Parameters
     ----------
-    spiketrains : list of neo.SpikeTrain
+    spiketrains : list[neo.SpikeTrain]
         Spike trains to calculate pairwise distance.
     cost_factor : pq.Quantity, optional
         A cost factor :math:`q` for spike shifts as inverse time scalar.
@@ -309,7 +309,7 @@ def van_rossum_distance(spiketrains, time_constant=1.0 * pq.s, sort=True):
 
     Parameters
     ----------
-    spiketrains : list of neo.SpikeTrain
+    spiketrains : list[neo.SpikeTrain]
         Sequence of :class:`neo.core.SpikeTrain` objects of
         which the van Rossum distance will be calculated pairwise.
     time_constant : pq.Quantity

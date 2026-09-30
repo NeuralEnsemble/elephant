@@ -845,7 +845,7 @@ class BinnedSpikeTrain(object):
 
         Returns
         -------
-        spiketrains : list of neo.SpikeTrain
+        spiketrains : list[neo.SpikeTrain]
             A list of spike trains - one possible realisation of spiketrains
             that could have been used as the input to `BinnedSpikeTrain`.
         """

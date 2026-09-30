@@ -172,7 +172,7 @@ def spade(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
 
     Parameters
     ----------
-    spiketrains : list of neo.SpikeTrain
+    spiketrains : list[neo.SpikeTrain]
         List containing the parallel spike trains to analyze
     bin_size : pq.Quantity
         The time precision used to discretize the spiketrains (binning).
@@ -1209,7 +1209,7 @@ def pvalue_spectrum(
 
     Parameters
     ----------
-    spiketrains : list of neo.SpikeTrain
+    spiketrains : list[neo.SpikeTrain]
         List containing the parallel spike trains to analyze
     bin_size : pq.Quantity
         The time precision used to discretize the `spiketrains` (binning).
@@ -1577,7 +1577,7 @@ def test_signature_significance(pv_spec, concepts, alpha, winlen,
     pv_spec : list
         A list of triplets (z,c,p), where z is pattern size, c is pattern
         support and p is the p-value of signature (z,c)
-    concepts : list of tuple
+    concepts : list[tuple]
         Output of the concepts mining for the original data.
     alpha : float
         Significance level of the statistical test

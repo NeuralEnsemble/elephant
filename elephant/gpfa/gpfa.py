@@ -145,12 +145,12 @@ class GPFA(sklearn.base.BaseEstimator):
 
     Attributes
     ----------
-    valid_data_names : tuple of str
+    valid_data_names : tuple[str]
         Names of the data contained in the resultant data structure, used to
         check the validity of users' request
-    has_spikes_bool : np.ndarray of bool
-        Indicates if a neuron has any spikes across trials of the training
-        data.
+    has_spikes_bool : np.ndarray
+        Array of boolean values indicating if a neuron has any spikes across
+        trials of the training data.
     params_estimated : dict
         Estimated model parameters. Updated at each run of the fit() method.
 
@@ -405,7 +405,7 @@ class GPFA(sklearn.base.BaseEstimator):
             trial must be fixed such that `spiketrains[l][n]` and
             `spiketrains[k][n]` refer to spike trains of the same neuron
             for any choices of `l`, `k`, and `n`.
-        returned_data : list of str
+        returned_data : list[str]
             The dimensionality reduction transform generates the following
             resultant data:
 
@@ -512,7 +512,7 @@ class GPFA(sklearn.base.BaseEstimator):
         spiketrains : elephant.trials.Trials | list[neo.SpikeTrainList] | list[list[neo.SpikeTrain]]
             Refer to the :func:`GPFA.fit` docstring.
 
-        returned_data : list of str
+        returned_data : list[str]
             Refer to the :func:`GPFA.transform` docstring.
 
         Returns

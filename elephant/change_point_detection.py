@@ -64,7 +64,7 @@ def multiple_filter_test(window_sizes, spiketrain, t_final, alpha,
 
     Parameters
     ----------
-    window_sizes : list of pq.Quantity
+    window_sizes : list[pq.Quantity]
         List that contains windows sizes
     spiketrain : neo.SpikeTrain | pq.Quantity
         A spiketrain object to analyze.
@@ -97,7 +97,7 @@ def multiple_filter_test(window_sizes, spiketrain, t_final, alpha,
 
     Returns
     -------
-    cps : list of list
+    cps : list[list]
         The change points,
         one list for each window size `h`, containing the points detected with
         the corresponding `filter_process`. N.B.: only cps whose h-neighborhood
@@ -268,7 +268,7 @@ def empirical_parameters(window_sizes, t_final, alpha, n_surrogates=1000,
 
     Parameters
     ----------
-    window_sizes : list of pq.Quantity
+    window_sizes : list[pq.Quantity]
         List that contains windows sizes
     t_final : pq.Quantity
         The final time of the spike train which is to be analysed
