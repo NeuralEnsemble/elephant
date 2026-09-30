@@ -563,7 +563,7 @@ def cross_correlation_histogram(
         Binned spike trains of lengths N and M to cross-correlate - the output
         of :class:`elephant.conversion.BinnedSpikeTrain`. The input
         spike trains can have any `t_start` and `t_stop`.
-    window : {'valid', 'full'} or list of int, optional
+    window : {'valid', 'full'} | list[int], optional
         Specifies the mode or lag range used to compute the cross-correlation.
         The options are:
 
@@ -594,7 +594,7 @@ def cross_correlation_histogram(
         If True, spikes falling in the same bin are counted as a single spike;
         otherwise they are counted as different spikes.
         Default: False
-    kernel : np.ndarray or None, optional
+    kernel : np.ndarray | None, optional
         A one dimensional array containing a smoothing kernel applied
         to the resulting CCH. The length N of the kernel indicates the
         smoothing window. The smoothing window cannot be larger than the
@@ -860,7 +860,7 @@ def spike_time_tiling_coefficient(spiketrain_i: neo.core.SpikeTrain,
 
     Returns
     -------
-    index : float or np.nan
+    index : float | np.nan
         The spike time tiling coefficient (STTC). Returns :obj:`numpy.nan` if
         any spike train is empty.
 

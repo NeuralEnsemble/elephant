@@ -215,7 +215,7 @@ def spike_field_coherence(signal, spiketrain, **kwargs):
     ----------
     signal : neo.AnalogSignal
         'signal' contains n analog signals.
-    spiketrain : neo.SpikeTrain or BinnedSpikeTrain
+    spiketrain : neo.SpikeTrain | BinnedSpikeTrain
         Single spike train to perform the analysis on. The bin_size of the
         binned spike train must match the sampling_rate of signal.
     **kwargs

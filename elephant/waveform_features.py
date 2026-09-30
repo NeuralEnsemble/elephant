@@ -94,7 +94,7 @@ def waveform_snr(waveforms):
 
     Returns
     -------
-    snr : float or np.ndarray
+    snr : float | np.ndarray
         Signal-to-noise ratio according to
         :cite:`waveforms-Hatsopoulos2007_5105`. If the input `waveforms`
         shape is ``(n_waveforms, time)`` or ``(n_waveforms, 1, time)``, a

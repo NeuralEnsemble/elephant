@@ -119,7 +119,7 @@ def isi(spiketrain, axis=-1):
 
     Parameters
     ----------
-    spiketrain : neo.SpikeTrain or pq.Quantity or array-like
+    spiketrain : neo.SpikeTrain | pq.Quantity | np.ndarray | list
         The spike times.
     axis : int, optional
         The axis along which the difference is taken.
@@ -127,7 +127,7 @@ def isi(spiketrain, axis=-1):
 
     Returns
     -------
-    intervals : np.ndarray or pq.Quantity
+    intervals : np.ndarray | pq.Quantity
         The inter-spike intervals of the `spiketrain`.
 
     Warns
@@ -172,15 +172,15 @@ def mean_firing_rate(spiketrain, t_start=None, t_stop=None, axis=None):
 
     Parameters
     ----------
-    spiketrain : neo.SpikeTrain or pq.Quantity or np.ndarray
+    spiketrain : neo.SpikeTrain | pq.Quantity | np.ndarray
         The spike times.
-    t_start : float or pq.Quantity, optional
+    t_start : float | pq.Quantity, optional
         The start time to use for the interval.
         If None, retrieved from the `t_start` attribute of `spiketrain`. If
         that is not present, default to 0. All spiketrain's spike times below
         this value are ignored.
         Default: None
-    t_stop : float or pq.Quantity, optional
+    t_stop : float | pq.Quantity, optional
         The stop time to use for the time points.
         If not specified, retrieved from the `t_stop` attribute of
         `spiketrain`. If that is not present, default to the maximum value of
@@ -195,7 +195,7 @@ def mean_firing_rate(spiketrain, t_start=None, t_stop=None, axis=None):
 
     Returns
     -------
-    float or pq.Quantity or np.ndarray
+    float | pq.Quantity | np.ndarray
         The firing rate of the `spiketrain`.
 
     Raises
@@ -287,7 +287,7 @@ def fanofactor(spiketrains: Union[List[neo.SpikeTrain], List[pq.Quantity], List[
 
     Parameters
     ----------
-    spiketrains : list[neo.SpikeTrain] or list[pq.Quantity] or list[np.ndarray] or elephant.trials.Trials
+    spiketrains : list[neo.SpikeTrain] | list[pq.Quantity] | list[np.ndarray] | elephant.trials.Trials
         List of :class:`neo.core.SpikeTrain` or `pq.Quantity` or `np.ndarray` or list of
         spike times for which to compute the Fano factor of spike counts, or
         an :mod:`elephant.trials` object. If a :mod:`elephant.trials` object is
@@ -300,7 +300,7 @@ def fanofactor(spiketrains: Union[List[neo.SpikeTrain], List[pq.Quantity], List[
 
     Returns
     -------
-    output : float or list of float
+    output : float | list[float]
         The Fano factor of the spike counts of the input spike trains. If a list
         was provided as input, `output` is a single number. In case an
         :mod:`elephant.trials` object was provided as input, `output` is a
@@ -405,7 +405,7 @@ def cv2(time_intervals, with_nan=False):
 
     Parameters
     ----------
-    time_intervals : pq.Quantity or np.ndarray or list
+    time_intervals : pq.Quantity | np.ndarray | list
         Vector of consecutive time intervals.
     with_nan : bool, optional
         If True, `cv2` of a spike train with less than two spikes results in a
@@ -472,7 +472,7 @@ def lv(time_intervals, with_nan=False):
 
     Parameters
     ----------
-    time_intervals : pq.Quantity or np.ndarray or list
+    time_intervals : pq.Quantity | np.ndarray | list
         Vector of consecutive time intervals.
     with_nan : bool, optional
         If True, the Lv of a spike train with less than two spikes results in a
@@ -539,10 +539,10 @@ def lvr(time_intervals, R=5*pq.ms, with_nan=False):
 
     Parameters
     ----------
-    time_intervals : pq.Quantity or np.ndarray or list
-        Vector of consecutive time intervals. Must have time units, if not unit
-        is passed `ms` are assumed.
-    R : pq.Quantity or int or float
+    time_intervals : pq.Quantity | np.ndarray | list
+        Vector of consecutive time intervals. Must have time units. If no unit
+        is passed, `ms` are assumed.
+    R : pq.Quantity | int | float
         Refractoriness constant (R >= 0). If no quantity is passed `ms` are
         assumed.
         Default: 5 ms
@@ -622,7 +622,7 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
 
     Parameters
     ----------
-    spiketrains : neo.SpikeTrain, list of neo.SpikeTrain or elephant.trials.Trials
+    spiketrains : neo.SpikeTrain | list[neo.SpikeTrain] | elephant.trials.Trials
         Input spike train(s) for which the instantaneous firing rate is
         calculated. If a list of spike trains is supplied, the parameter
         pool_spike_trains determines the behavior of the function. If a Trials
@@ -632,7 +632,7 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
         Time resolution of the resulting rate estimate. The same resolution
         will be used for the kernel. To avoid effects of binning, set this
         value to the time stamp resolution of the spike train.
-    kernel : 'auto' or Kernel, optional
+    kernel : 'auto' | Kernel, optional
         The string 'auto' or callable object of class :mod:`elephant.kernels`.
         The kernel is used for convolution with the spike train and its
         standard deviation determines the time resolution of the instantaneous
@@ -714,7 +714,7 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
 
     Returns
     -------
-    output : neo.AnalogSignal or list of neo.AnalogSignal
+    output : neo.AnalogSignal | list[neo.AnalogSignal]
         In general, the returned rate estimates are provided as
         :class:`neo.core.AnalogSignal` objects with units of Hertz (Hz). Its
         shape is `(n_bins, n_estimates)` where
@@ -1157,7 +1157,7 @@ def time_histogram(spiketrains: Union[List[neo.SpikeTrain], neo.SpikeTrain],
 
     Parameters
     ----------
-    spiketrains : list of neo.SpikeTrain or neo.SpikeTrain
+    spiketrains : list[neo.SpikeTrain] | neo.SpikeTrain
         `neo.SpikeTrain` objects with a common time axis (same `t_start` and `t_stop`)
     bin_size : pq.Quantity
         Width of the histogram's time bins.
@@ -1345,13 +1345,13 @@ class Complexity(object):
     ----------
     spiketrains : list of neo.SpikeTrain
         Spike trains with a common time axis (same `t_start` and `t_stop`)
-    sampling_rate : pq.Quantity or None, optional
+    sampling_rate : pq.Quantity | None, optional
         Sampling rate of the spike trains with units of 1/time.
         Used to shift the epoch edges in order to avoid rounding errors.
         If None using the epoch to slice spike trains may introduce
         rounding errors.
         Default: None
-    bin_size : pq.Quantity or None, optional
+    bin_size : pq.Quantity | None, optional
         Width of the histogram's time bins with units of time.
         The user must specify the `bin_size` or the `sampling_rate`.
         *  If None and the `sampling_rate` is available
@@ -1378,7 +1378,7 @@ class Complexity(object):
         or less than `n - 1` empty bins.
 
         Default: 0
-    tolerance : float or None, optional
+    tolerance : float | None, optional
         Tolerance for rounding errors in the binning process and in the input
         data.
         If None possible binning errors are not accounted for.
@@ -1814,11 +1814,11 @@ def optimal_kernel_bandwidth(spiketimes, times=None, bandwidth=None,
     ----------
     spiketimes : np.ndarray
         Sequence of spike times (sorted to be ascending).
-    times : np.ndarray or None, optional
+    times : np.ndarray | None, optional
         Time points at which the kernel bandwidth is to be estimated.
         If None, `spiketimes` is used.
         Default: None
-    bandwidth : np.ndarray or None, optional
+    bandwidth : np.ndarray | None, optional
         Vector of kernel bandwidths (standard deviation sigma).
         If specified, optimal bandwidth is selected from this.
         If None, `bandwidth` is obtained through a golden-section search on a

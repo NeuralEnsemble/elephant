@@ -61,7 +61,7 @@ def zscore(signal, inplace=True):
 
     Parameters
     ----------
-    signal : neo.AnalogSignal or list of neo.AnalogSignal
+    signal : neo.AnalogSignal | list[neo.AnalogSignal]
         Signals for which to calculate the z-score.
     inplace : bool, optional
         If True, the contents of the input `signal` is replaced by the
@@ -72,7 +72,7 @@ def zscore(signal, inplace=True):
 
     Returns
     -------
-    signal_ztransformed : neo.AnalogSignal or list of neo.AnalogSignal
+    signal_ztransformed : neo.AnalogSignal | list[neo.AnalogSignal]
         The output format matches the input format: for each input
         `neo.AnalogSignal`, a corresponding `neo.AnalogSignal` is returned,
         containing the z-transformed signal with dimensionless unit.
@@ -221,7 +221,7 @@ def cross_correlation_function(signal, channel_pairs, hilbert_envelope=False,
     ----------
     signal : (nt, nch) neo.AnalogSignal
         Signal with `nt` number of samples that contains `nch` LFP channels.
-    channel_pairs : list or (n, 2) np.ndarray
+    channel_pairs : list | (n, 2) np.ndarray
         List with `n` channel pairs for which to compute cross-correlation.
         Each element of the list must contain 2 channel indices.
         If `np.ndarray`, the second axis must have dimension 2.
@@ -394,15 +394,15 @@ def butter(signal, highpass_frequency=None, lowpass_frequency=None, order=4,
 
     Parameters
     ----------
-    signal : neo.AnalogSignal or pq.Quantity or np.ndarray
+    signal : neo.AnalogSignal | pq.Quantity | np.ndarray
         Time series data to be filtered.
         If `pq.Quantity` or `np.ndarray`, the sampling frequency should be
         given through the keyword argument `fs`.
-    highpass_frequency : pq.Quantity of float, optional
+    highpass_frequency : pq.Quantity | float, optional
         High-pass cut-off frequency. If `float`, the given value is taken as
         frequency in Hz.
         Default: None
-    lowpass_frequency : pq.Quantity or float, optional
+    lowpass_frequency : pq.Quantity | float, optional
         Low-pass cut-off frequency. If `float`, the given value is taken as
         frequency in Hz.
         Filter type is determined depending on the values of
@@ -431,7 +431,7 @@ def butter(signal, highpass_frequency=None, lowpass_frequency=None, order=4,
         filtering, in particular higher order filters, use 'sosfiltfilt'
         (see https://github.com/NeuralEnsemble/elephant/issues/220).
         Default: 'filtfilt'
-    sampling_frequency : pq.Quantity or float, optional
+    sampling_frequency : pq.Quantity | float, optional
         The sampling frequency of the input time series. When given as
         `float`, its value is taken as frequency in Hz. When `signal` is given
         as `neo.AnalogSignal`, its attribute is used to specify the sampling
@@ -443,7 +443,7 @@ def butter(signal, highpass_frequency=None, lowpass_frequency=None, order=4,
 
     Returns
     -------
-    filtered_signal : neo.AnalogSignal or pq.Quantity or np.ndarray
+    filtered_signal : neo.AnalogSignal | pq.Quantity | np.ndarray
         Filtered input data. The shape and type is identical to those of the
         input `signal`.
 
@@ -563,12 +563,12 @@ def wavelet_transform(signal, frequency, n_cycles=6.0, sampling_frequency=1.0,
 
     Parameters
     ----------
-    signal : (Nt, Nch) neo.AnalogSignal or np.ndarray or list
+    signal : (Nt, Nch) neo.AnalogSignal | np.ndarray | list
         Time series data to be wavelet-transformed. When multi-dimensional
         `np.ndarray` or list is given, the time axis must be the last
         dimension. If `neo.AnalogSignal`, `Nt` is the number of time points
         and `Nch` is the number of channels.
-    frequency : float or list of float
+    frequency : float | list[float]
         Center frequency of the Morlet wavelet in Hz. Multiple center
         frequencies can be given as a list, in which case the function
         computes the wavelet transforms for all the given frequencies at once.
@@ -743,7 +743,7 @@ def hilbert(signal, padding='nextpow'):
     ----------
     signal : neo.AnalogSignal
         Signal(s) to transform.
-    padding : int, {'none', 'nextpow'}, or None, optional
+    padding : {'none', 'nextpow'} | int | None, optional
         Defines whether the signal is zero-padded.
         The `padding` argument corresponds to `N` in
         `scipy.signal.hilbert(signal, N=padding)` function.
@@ -846,7 +846,7 @@ def rauc(signal, baseline=None, bin_duration=None, t_start=None, t_stop=None):
     signal : neo.AnalogSignal
         The signal to integrate. If `signal` contains more than one channel,
         each is integrated separately.
-    baseline : pq.Quantity or {'mean', 'median'}, optional
+    baseline : pq.Quantity | {'mean', 'median'}, optional
         A factor to subtract from the signal before rectification.
         If 'mean', the mean value of the entire `signal` is subtracted on a
         channel-by-channel basis.
@@ -877,7 +877,7 @@ def rauc(signal, baseline=None, bin_duration=None, t_start=None, t_stop=None):
 
     Returns
     -------
-    pq.Quantity or neo.AnalogSignal
+    pq.Quantity | neo.AnalogSignal
         If the number of bins is 1, the returned object is a scalar or
         vector `pq.Quantity` containing a single RAUC value for each channel.
         Otherwise, the returned object is a `neo.AnalogSignal` containing the

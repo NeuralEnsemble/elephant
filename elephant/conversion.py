@@ -113,20 +113,20 @@ def binarize(spiketrain, sampling_rate=None, t_start=None, t_stop=None,
 
     Parameters
     ----------
-    spiketrain : neo.SpikeTrain or pq.Quantity or np.ndarray
+    spiketrain : neo.SpikeTrain | pq.Quantity | np.ndarray
         The spike times.  Does not have to be sorted.
-    sampling_rate : float or pq.Quantity, optional
+    sampling_rate : float | pq.Quantity, optional
         The sampling rate to use for the time points.
         If not specified, retrieved from the `sampling_rate` attribute of
         `spiketrain`.
         Default: None
-    t_start : float or pq.Quantity, optional
+    t_start : float | pq.Quantity, optional
         The start time to use for the time points.
         If not specified, retrieved from the `t_start` attribute of
         `spiketrain`. If this is not present, defaults to `0`.  Any element of
         `spiketrain` lower than `t_start` is ignored.
         Default: None
-    t_stop : float or pq.Quantity, optional
+    t_stop : float | pq.Quantity, optional
         The stop time to use for the time points.
         If not specified, retrieved from the `t_stop` attribute of
         `spiketrain`. If this is not present, defaults to the maximum value of
@@ -139,11 +139,12 @@ def binarize(spiketrain, sampling_rate=None, t_start=None, t_stop=None,
 
     Returns
     -------
-    values : np.ndarray of bool
-        A True value at a particular index indicates the presence of one or
-        more spikes at the corresponding time point.
-    times : np.ndarray or pq.Quantity, optional
-        The time points.  This will have the same units as `spiketrain`.
+    values : np.ndarray
+        An array of boolean values. A True value at a particular index
+        indicates the presence of one or more spikes at the corresponding time
+        point.
+    times : np.ndarray | pq.Quantity, optional
+        The time points. This will have the same units as `spiketrain`.
         If `spiketrain` has no units, this will be an `np.ndarray` array.
 
     Raises
@@ -270,7 +271,7 @@ class BinnedSpikeTrain(object):
 
     Parameters
     ----------
-    spiketrains : neo.SpikeTrain or list of neo.SpikeTrain or np.ndarray
+    spiketrains : neo.SpikeTrain | list[neo.SpikeTrain] | np.ndarray
         Spike train(s) to be binned.
     bin_size : pq.Quantity, optional
         Width of a time bin.
@@ -396,7 +397,7 @@ class BinnedSpikeTrain(object):
 
         Parameters
         ----------
-        units : pq.Quantity or str
+        units : pq.Quantity | str
             New quantity units.
 
         Raises
@@ -452,7 +453,7 @@ class BinnedSpikeTrain(object):
 
         Parameters
         ----------
-        spiketrains : neo.SpikeTrain or list or np.ndarray of neo.SpikeTrain
+        spiketrains : neo.SpikeTrain | list[neo.SpikeTrain] | np.ndarray
         """
         def get_n_bins():
             n_bins = (self._t_stop - self._t_start) / self._bin_size
@@ -602,7 +603,7 @@ class BinnedSpikeTrain(object):
 
         Returns
         -------
-        scipy.sparse.csr_matrix or scipy.sparse.csc_matrix
+        scipy.sparse.csr_matrix | scipy.sparse.csc_matrix
             Sparse matrix, binary, boolean version.
 
         See Also
@@ -675,7 +676,7 @@ class BinnedSpikeTrain(object):
 
         Parameters
         ----------
-        item : int or slice or tuple
+        item : int | slice | tuple
             Spike train and bin index slicing, passed to
             ``self.sparse_matrix``.
 
@@ -746,9 +747,9 @@ class BinnedSpikeTrain(object):
 
         Parameters
         ----------
-        key : int or list or tuple or slice
+        key : int | list | tuple | slice
             The binned sparse matrix keys (axes slice) to change.
-        value : int or list or tuple or slice
+        value : int | list | tuple | slice
             New values of the sparse matrix selection.
         """
         self.sparse_matrix[key] = value
@@ -761,8 +762,8 @@ class BinnedSpikeTrain(object):
 
         Parameters
         ----------
-        t_start, t_stop : pq.Quantity or None, optional
-            Start and stop times or Nones.
+        t_start, t_stop : pq.Quantity | None, optional
+            Start and stop times or None.
             Default: None
         copy : bool, optional
             Copy the sparse matrix or not.
@@ -898,7 +899,7 @@ class BinnedSpikeTrain(object):
 
         Returns
         -------
-        n_spikes_per_row : int or np.ndarray
+        n_spikes_per_row : int | np.ndarray
             The number of binned spikes.
         """
         if axis is None:
@@ -1046,7 +1047,7 @@ class BinnedSpikeTrain(object):
 
         Returns
         -------
-        bst : BinnedSpikeTrain or BinnedSpikeTrainView
+        bst : BinnedSpikeTrain | BinnedSpikeTrainView
             A (view of) `BinnedSpikeTrain` with the sparse matrix data clipped
             to zeros and ones.
         """
@@ -1091,7 +1092,7 @@ class BinnedSpikeTrain(object):
 
         Parameters
         ----------
-        spiketrains : neo.SpikeTrain or list of neo.SpikeTrain
+        spiketrains : neo.SpikeTrain | list[neo.SpikeTrain]
             Spike trains to bin.
         """
 
@@ -1180,7 +1181,7 @@ class BinnedSpikeTrainView(BinnedSpikeTrain):
         The units of input spike trains.
     sparse_matrix : scipy.sparse.csr_matrix
         Binned sparse matrix.
-    tolerance : float or None, optional
+    tolerance : float | None, optional
         The tolerance property of the original `BinnedSpikeTrain`.
         Default: 1e-8
 
@@ -1234,15 +1235,15 @@ def discretise_spiketimes(spiketrains, sampling_rate):
 
     Parameters
     ----------
-    spiketrains : neo.SpikeTrain or list of neo.SpikeTrain
-        The spiketrain(s) to discretise
+    spiketrains : neo.SpikeTrain | list[neo.SpikeTrain]
+        The spiketrain(s) to discretise.
     sampling_rate : pq.Quantity
-        The desired sampling rate
+        The desired sampling rate.
 
     Returns
     -------
-    neo.SpikeTrain or list of neo.SpikeTrain
-        The discretised spiketrain(s)
+    neo.SpikeTrain | list[neo.SpikeTrain]
+        The discretised spiketrain(s).
 
     Examples
     --------

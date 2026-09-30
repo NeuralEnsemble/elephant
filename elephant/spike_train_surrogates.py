@@ -169,7 +169,7 @@ def dither_spikes(spiketrain: neo.SpikeTrain,
     n_surrogates : int, optional
         Number of surrogates to be generated.
         Default: 1
-    decimals : int or None, optional
+    decimals : int | None, optional
         Number of decimal points for every spike time in the surrogates at a
         millisecond level.
         If None, machine precision is used.
@@ -180,7 +180,7 @@ def dither_spikes(spiketrain: neo.SpikeTrain,
         (for `edges = True`) or set them to the range's closest end
         (for `edges = False`).
         Default: True
-    refractory_period : pq.Quantity or None, optional
+    refractory_period : pq.Quantity | None, optional
         The dither range of each spike is adjusted such that the spike can not
         fall into the `refractory_period` of the previous or next spike.
         To account this, the refractory period is estimated as the smallest ISI
@@ -271,7 +271,7 @@ def randomise_spikes(spiketrain, n_surrogates=1, decimals=None):
     n_surrogates : int, optional
         Number of surrogates to be generated.
         Default: 1
-    decimals : int or None, optional
+    decimals : int | None, optional
         Number of decimal points for every spike time in the surrogates.
         If None, machine precision is used.
         Default: None
@@ -335,7 +335,7 @@ def shuffle_isis(spiketrain, n_surrogates=1, decimals=None):
     n_surrogates : int, optional
         Number of surrogates to be generated.
         Default: 1
-    decimals : int or None, optional
+    decimals : int | None, optional
         Number of decimal points for every spike time in the surrogates.
         If None, machine precision is used.
         Default: None
@@ -416,7 +416,7 @@ def dither_spike_train(spiketrain, shift, n_surrogates=1, decimals=None,
     n_surrogates : int, optional
         Number of surrogates to be generated.
         Default: 1
-    decimals : int or None, optional
+    decimals : int | None, optional
         Number of decimal points for every spike time in the surrogates.
         If None, machine precision is used.
         Default: None
@@ -588,12 +588,12 @@ def bin_shuffling(
 
     Parameters
     ----------
-    spiketrain : conv.BinnedSpikeTrain or neo.SpikeTrain
+    spiketrain : conv.BinnedSpikeTrain | neo.SpikeTrain
         The binned spike train or a continuous time spike train
         to create surrogates of.
     max_displacement : int
         Number of bins that a single spike can be displaced.
-    bin_size : pq.Quantity or None
+    bin_size : pq.Quantity | None
         The bin size needs to be specified only if a not-binned spike train
         is passed to the method
     n_surrogates : int, optional
@@ -606,7 +606,7 @@ def bin_shuffling(
 
     Returns
     -------
-    binned_surrogates : list of conv.BinnedSpikeTrain or list of neo.SpikeTrain
+    binned_surrogates : list[BinnedSpikeTrain] | list[neo.SpikeTrain]
         Each entry of the list is a surrogate spike train either binned or in
         continuous time.
     """
@@ -912,7 +912,7 @@ class JointISI(object):
 
         Returns
         -------
-        np.ndarray or None
+        np.ndarray | None
             An array of inter-spike intervals of the `spiketrain`.
             None, if not enough spikes in the `spiketrain`.
         """
@@ -936,7 +936,7 @@ class JointISI(object):
 
         Returns
         -------
-        indices : np.ndarray or int
+        indices : np.ndarray | int
             The corresponding indices/index for each ISI. When the input is an
             array, also the output is.
         """
@@ -953,7 +953,7 @@ class JointISI(object):
 
         Returns
         -------
-        np.ndarray or float
+        np.ndarray | float
             The corresponding ISI(s) for each indices/index. When the input is
             an array, also the output is.
         """
@@ -966,7 +966,7 @@ class JointISI(object):
 
         Returns
         -------
-        joint_isi_histogram : np.ndarray or None
+        joint_isi_histogram : np.ndarray | None
             A np.ndarray with shape `n_bins` x `n_bins` containing the
             joint-ISI histogram.
             None, if not enough spikes in the `spiketrain`.
@@ -1350,7 +1350,7 @@ def surrogates(spiketrain, n_surrogates=1, method='dither_spike_train',
 
     Parameters
     ----------
-    spiketrain : neo.SpikeTrain or list of neo.SpikeTrain
+    spiketrain : neo.SpikeTrain | list[neo.SpikeTrain]
         The spike train from which to generate the surrogates.
         The only method that accepts a list of spike trains instead of a single
         spike train to generate the surrogates from is 'trial_shifting'.

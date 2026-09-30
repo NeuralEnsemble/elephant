@@ -193,7 +193,7 @@ def spike_extraction(
 
     Returns
     -------
-    result_st : neo.SpikeTrain or neo.core.spiketrainslist.SpikeTrainList
+    result_st : neo.SpikeTrain | neo.SpikeTrainList
         Contains the time_stamps of each of the spikes and the waveforms in `result_st.waveforms`.
 
     See Also
@@ -299,7 +299,7 @@ def threshold_detection(
 
     Returns
     ------- # noqa
-    result_st : neo.SpikeTrain or neo.core.spiketrainlist.SpikeTrainList
+    result_st : neo.SpikeTrain | neo.SpikeTrainList
         Contains the spike times of each of the events (spikes) extracted from the signal. If `signal` is an
         AnalogSignal with multiple channels, or `always_return_list=True` , a
         :class:`neo.core.spiketrainlist.SpikeTrainList` is returned.
@@ -420,7 +420,7 @@ def peak_detection(signal: neo.core.AnalogSignal,
 
     Returns
     ------- # noqa
-    result_st : neo.SpikeTrain or neo.core.spiketrainslist.SpikeTrainList or np.ndarray or list[np.ndarray]
+    result_st : neo.SpikeTrain | neo.SpikeTrainList | np.ndarray | list[np.ndarray]
         Contains the spike times of each of the events (spikes) extracted from the signal. If `signal` is an
         AnalogSignal with multiple channels or `always_return_list=True` a list is returned.
     """
@@ -521,7 +521,7 @@ class AbstractPointProcess:
 
         Returns
         -------
-        spiketrain : neo.SpikeTrain or np.ndarray
+        spiketrain : neo.SpikeTrain | np.ndarray
             The generated spike train in the specified format.
         """
         spikes = self._generate_spiketrain_as_array()
@@ -550,7 +550,7 @@ class AbstractPointProcess:
 
         Returns
         -------
-        list_of_spiketrain : list of neo.SpikeTrain or list of np.ndarray
+        list_of_spiketrain : list[neo.SpikeTrain] | list[np.ndarray]
             A list generated spike trains in the specified format.
         """
         return [self.generate_spiketrain(as_array=as_array)
@@ -1821,7 +1821,7 @@ def compound_poisson_process(
         Average rate of each spike train generated. Can be:
           - a single value, all spike trains will have same rate rate
           - an array of values (of length `len(A)-1`), each indicating the firing rate of one process in output
-    amplitude_distribution : np.ndarray or list
+    amplitude_distribution : np.ndarray | list
         CPP's amplitude distribution :math:`A`. `A[j]` represents the probability of a synchronous event of size `j`
         among the generated spike trains. The sum over all entries of :math:`A` must be equal to one.
     t_stop : pq.Quantity

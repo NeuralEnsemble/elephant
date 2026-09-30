@@ -123,7 +123,7 @@ def _get_all_objs(container, class_name):
 
     Parameters
     ----------
-    container : list, tuple, iterable, dict, neo.Container
+    container : list | tuple | Iterable | dict | neo.Container
                 The container for the Neo objects.
     class_name : str
                 The name of the class, with proper capitalization
@@ -170,12 +170,12 @@ def get_all_spiketrains(container):
 
     Parameters
     ----------
-    container : list, tuple, iterable, dict, neo.Block, neo.Segment, neo.Unit, neo.ChannelIndex
+    container : list | tuple | Iterable | dict | neo.Block | neo.Segment | neo.Unit | neo.ChannelIndex
         The container for the spiketrains.
 
     Returns
     -------
-    list
+    neo.SpikeTrainList
         A `neo.SpikeTrainList` object of the unique `neo.SpikeTrain` objects
         in `container`.
     """
@@ -195,12 +195,12 @@ def get_all_events(container):
 
     Parameters
     ----------
-    container : list, tuple, iterable, dict, neo.Block, neo.Segment
+    container : list | tuple | Iterable | dict | neo.Block | neo.Segment
                 The container for the events.
 
     Returns
     -------
-    list
+    list[neo.Event]
         A list of the unique `neo.Event` objects in `container`.
     """
     return _get_all_objs(container, 'Event')
@@ -219,12 +219,12 @@ def get_all_epochs(container):
 
     Parameters
     ----------
-    container : list, tuple, iterable, dict, neo.Block, neo.Segment
+    container : list | tuple | Iterable | dict | neo.Block | neo.Segment
                 The container for the epochs.
 
     Returns
     -------
-    list
+    list[neo.Epoch]
         A list of the unique `neo.Epoch` objects in `container`.
     """
     return _get_all_objs(container, 'Epoch')

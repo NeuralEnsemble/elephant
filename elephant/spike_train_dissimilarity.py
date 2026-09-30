@@ -80,7 +80,7 @@ def victor_purpura_distance(spiketrains, cost_factor=1.0 * pq.Hz, kernel=None,
         spike shift and hence exclusion of spike shifts, are explicitly
         allowed. If `kernel` is not `None`, :math:`q` will be ignored.
         Default: 1.0 * pq.Hz
-    kernel : elephant.kernels.Kernel or None, optional
+    kernel : elephant.kernels.Kernel | None, optional
         Kernel to use in the calculation of the distance. If `kernel` is
         `None`, an unnormalized triangular kernel with standard deviation
         of :math:'2.0/(q * sqrt(6.0))' corresponding to a half width of

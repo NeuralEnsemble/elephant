@@ -198,7 +198,7 @@ def spade(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
     min_neu : int, optional
         Minimum number of neurons in a sequence to consider a pattern.
         Default: 1
-    approx_stab_pars : dict or None, optional
+    approx_stab_pars : dict | None, optional
         Parameter values for approximate stability computation.
 
         'n_subsets': int
@@ -260,7 +260,7 @@ def spade(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
         Method to generate surrogates. You can use every method defined in
         :func:`elephant.spike_train_surrogates.surrogates`.
         Default: 'dither_spikes'
-    psr_param : None or list of int or tuple of int
+    psr_param : list[int] | tuple[int] | None
         This list contains parameters used in the pattern spectrum filtering:
 
         `psr_param[0]`: correction parameter for subset filtering
@@ -565,7 +565,7 @@ def concepts_mining(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
 
     Parameters
     ----------
-    spiketrains : list of neo.SpikeTrain or elephant.conversion.BinnedSpikeTrain
+    spiketrains : list[neo.SpikeTrain] | elephant.conversion.BinnedSpikeTrain
         Either list of the spiketrains to analyze or
         BinningSpikeTrain object containing the binned spiketrains to analyze
     bin_size : pq.Quantity
@@ -2272,7 +2272,7 @@ def concept_output_to_patterns(concepts, winlen, bin_size, pv_spec=None,
         Length (in bins) of the sliding window used for the analysis.
     bin_size : pq.Quantity
         The time precision used to discretize the `spiketrains` (binning).
-    pv_spec : None or tuple
+    pv_spec : tuple | None
         Contains a tuple of signatures and the corresponding p-value. If equal
         to None all p-values are set to -1.
     spectrum : {'#', '3d#'}
