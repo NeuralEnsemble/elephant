@@ -20,6 +20,7 @@ from datetime import date
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 sys.path.insert(0, '..')
+sys.path.insert(0, os.path.abspath('_ext'))
 
 # -- numpydoc validation compatibility patch -----------------------------
 # Property descriptors do not always expose __module__.  numpydoc's
@@ -60,6 +61,7 @@ extensions = [
     'numpydoc',
     'nbsphinx',
     'sphinx_tabs.tabs',
+    'defaults_validation',  # Custom extension: validate default values
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -255,6 +257,18 @@ numpydoc_validation_checks = {
 # Suppresses  wrong numpy doc warnings
 # see here https://github.com/phn/pytpm/issues/3#issuecomment-12133978
 numpydoc_show_class_members = False
+
+
+# --- Options for custom validations -----------------------------------
+
+# Objects excluded from the `defaults` validation. An entry is a fully
+# qualified name and also covers everything below it, so a module or a
+# class name excludes its members.
+defaults_ignore = [
+    'elephant.statistics.cv',  # re-export of scipy.stats.variation
+    'elephant.trials',         # TODO: addressed in another PR
+]
+
 
 # --- Options for bibtex -----------------------------------------------
 

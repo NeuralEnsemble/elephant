@@ -112,35 +112,34 @@ class GPFA(sklearn.base.BaseEstimator):
     Parameters
     ----------
     bin_size : float, optional
-        Spike bin width in msec
-        Default: 20.0
+        Spike bin width in msec.
+        Default: 20 * pq.ms
     x_dim : int, optional
-        State dimensionality
+        State dimensionality.
         Default: 3
     min_var_frac : float, optional
         Fraction of overall data variance for each observed dimension to set as
         the private variance floor.  This is used to combat Heywood cases,
         where ML parameter learning returns one or more zero private variances.
-        Default: 0.01
-        (See Martin & McDonald, Psychometrika, Dec 1975.)
+        Default: 0.01 (see Martin & McDonald, Psychometrika, Dec 1975.)
     tau_init : float, optional
-        GP timescale initialization in msec
-        Default: 100
+        GP timescale initialization in msec.
+        Default: 100.0 * pq.ms
     eps_init : float, optional
-        GP noise variance initialization
+        GP noise variance initialization.
         Default: 1e-3
     em_tol : float, optional
-        Stopping criterion for EM
+        Stopping criterion for EM.
         Default: 1e-8
     em_max_iters : int, optional
-        Number of EM iterations to run
+        Number of EM iterations to run.
         Default: 500
     freq_ll : int, optional
         Data likelihood is computed at every freq_ll EM iterations. freq_ll = 1
         means that data likelihood is computed at every iteration.
         Default: 5
     verbose : bool, optional
-        Specifies whether to display status messages
+        Specifies whether to display status messages.
         Default: False
 
     Attributes
@@ -405,9 +404,10 @@ class GPFA(sklearn.base.BaseEstimator):
             trial must be fixed such that `spiketrains[l][n]` and
             `spiketrains[k][n]` refer to spike trains of the same neuron
             for any choices of `l`, `k`, and `n`.
-        returned_data : list of str
-            The dimensionality reduction transform generates the following
-            resultant data:
+        returned_data : list of str, optional
+            Specifies the keys by which the data dict is returned. The
+            dimensionality reduction transform generates the following
+            result data:
 
                'latent_variable_orth': orthonormalized posterior mean of latent
                variable
@@ -421,10 +421,7 @@ class GPFA(sklearn.base.BaseEstimator):
 
                'y': neural data used to estimate the GPFA model parameters
 
-            `returned_data` specifies the keys by which the data dict is
-            returned.
-
-            Default is ['latent_variable_orth'].
+            Default: ['latent_variable_orth']
 
         Returns
         -------
@@ -512,8 +509,9 @@ class GPFA(sklearn.base.BaseEstimator):
         spiketrains : list of list of :class:`neo.core.SpikeTrain`, list of :class:`neo.core.spiketrainlist.SpikeTrainList` or :class:`elephant.trials.Trials`
             Refer to the :func:`GPFA.fit` docstring.
 
-        returned_data : list of str
+        returned_data : list of str, optional
             Refer to the :func:`GPFA.transform` docstring.
+            Default: ['latent_variable_orth']
 
         Returns
         -------

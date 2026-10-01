@@ -157,7 +157,7 @@ def spike_extraction(
         signal: neo.core.AnalogSignal,
         threshold: pq.Quantity = 0.0 * pq.mV,
         sign: Literal['above', 'below'] = 'above',
-        time_stamps: neo.core.SpikeTrain = None,
+        time_stamps: Optional[neo.core.SpikeTrain] = None,
         interval: tuple = (-2 * pq.ms, 4 * pq.ms),
         always_as_list: bool = False
         ) -> Union[neo.core.SpikeTrain, SpikeTrainList]:
@@ -175,11 +175,11 @@ def spike_extraction(
     sign : {'above', 'below'}, optional
         Determines whether to count threshold crossings that cross above or below the threshold.
         Default: 'above'
-    time_stamps : :class:`neo.core.SpikeTrain` , optional
+    time_stamps : :class:`neo.core.SpikeTrain`, optional
         Provides the time stamps around which the waveform is extracted. If it is None, the function `peak_detection` is
         used to calculate the `time_stamps` from signal.
         Default: None
-    interval : tuple of :class:`pq.Quantity`
+    interval : tuple of :class:`pq.Quantity`, optional
         Specifies the time interval around the `time_stamps` where the waveform is extracted. The default time interval
         [-2ms, 4ms] are based on experience, and many spike sorting tools choose values in this range as the spikes are
         typically about 1-2 ms in length. This choice of default values includes a small interval before the spike peak
@@ -407,7 +407,7 @@ def peak_detection(signal: neo.core.AnalogSignal,
         An analog input signal or a list of analog input signals.
     threshold : :class:`pq.Quantity`, optional
         Contains a value that must be reached for an event to be detected.
-        Default: 0.*pq.mV
+        Default: 0.0 * pq.mV
     sign : {'above', 'below'}, optional
         Determines whether to count threshold crossings that cross above or below the threshold.
         Default: 'above'
@@ -471,10 +471,10 @@ class AbstractPointProcess:
     ----------
     t_start : pq.Quantity, optional
         The start of the spike train.
-        Default: 0.*pq.s
+        Default: 0.0 * pq.s
     t_stop : pq.Quantity, optional
         The end of the spike train.
-        Default: 1.*pq.s
+        Default: 1.0 * pq.s
     """
     def __init__(
             self,
@@ -568,10 +568,10 @@ class RenewalProcess(AbstractPointProcess):
         The constant firing rate.
     t_start : pq.Quantity, optional
         The start of the spike train.
-        Default: 0.*pq.s
+        Default: 0.0 * pq.s
     t_stop : pq.Quantity, optional
         The end of the spike train.
-        Default: 1.*pq.s
+        Default: 1.0 * pq.s
     equilibrium : bool, optional
         Generate an equilibrium or an ordinary renewal process.
         Default: True
@@ -699,14 +699,14 @@ class StationaryPoissonProcess(RenewalProcess):
         The constant firing rate.
     t_start : pq.Quantity, optional
         The start of the spike train.
-        Default: 0.*pq.s
+        Default: 0.0 * pq.ms
     t_stop : pq.Quantity, optional
         The end of the spike train.
-        Default: 1.*pq.s
+        Default: 1000.0 * pq.ms
     refractory_period : pq.Quantity, optional
         The time period after one spike in which no other spike is emitted. This can be called an absolute refractory
         period or a dead time as used in :cite:`generation-Deger12_443`.
-        Default : None
+        Default: None
     equilibrium : bool, optional
         Generate an equilibrium or an ordinary renewal process.
         Default: True
@@ -801,10 +801,10 @@ class StationaryGammaProcess(RenewalProcess):
         The shape parameter of the gamma distribution.
     t_start : pq.Quantity, optional
         The start of the spike train.
-        Default: 0.*pq.s
+        Default: 0.0 * pq.s
     t_stop : pq.Quantity, optional
         The end of the spike train.
-        Default: 1.*pq.s
+        Default: 1.0 * pq.s
     equilibrium : bool, optional
         Generate an equilibrium or an ordinary renewal process.
         Default: True
@@ -872,10 +872,10 @@ class StationaryLogNormalProcess(RenewalProcess):
         The sigma/ s parameter of the Log-Normal distribution.
     t_start : pq.Quantity, optional
         The start of the spike train.
-        Default: 0.*pq.s
+        Default: 0.0 * pq.s
     t_stop : pq.Quantity, optional
         The end of the spike train.
-        Default: 1.*pq.s
+        Default: 1.0 * pq.s
     equilibrium : bool, optional
         Generate an equilibrium or an ordinary renewal process.
         Default: True
@@ -938,10 +938,10 @@ class StationaryInverseGaussianProcess(RenewalProcess):
         The expected coefficient of variation.
     t_start : pq.Quantity, optional
         The start of the spike train.
-        Default: 0.*pq.s
+        Default: 0.0 * pq.s
     t_stop : pq.Quantity, optional
         The end of the spike train.
-        Default: 1.*pq.s
+        Default: 1.0 * pq.s
     equilibrium : bool, optional
         Generate an equilibrium or an ordinary renewal process.
         Default: True
@@ -1078,7 +1078,7 @@ class NonStationaryPoissonProcess(RateModulatedProcess):
     refractory_period : pq.Quantity, optional
         The time period after one spike in which no other spike is emitted. This can be called an absolute refractory
         period or a dead time.
-        Default : None
+        Default: None
 
     Raises
     ------
@@ -1168,10 +1168,10 @@ def homogeneous_poisson_process(rate, t_start=0.0 * pq.ms,
         The rate of the discharge.
     t_start : pq.Quantity, optional
         The beginning of the spike train.
-        Default: 0 * pq.ms
+        Default: 0.0 * pq.ms
     t_stop : pq.Quantity, optional
         The end of the spike train.
-        Default: 1000 * pq.ms
+        Default: 1000.0 * pq.ms
     as_array : bool, optional
         If True, a NumPy array of sorted spikes is returned, rather than a `neo.SpikeTrain` object.
         Default: False
@@ -1277,10 +1277,10 @@ def homogeneous_gamma_process(a, b, t_start=0.0 * pq.ms, t_stop=1000.0 * pq.ms,
         The rate parameter of the gamma distribution.
     t_start : pq.Quantity, optional
         The beginning of the spike train.
-        Default: 0 * pq.ms
+        Default: 0.0 * pq.ms
     t_stop : pq.Quantity, optional
         The end of the spike train.
-        Default: 1000 * pq.ms
+        Default: 1000.0 * pq.ms
     as_array : bool, optional
         If True, a NumPy array of sorted spikes is returned, rather than a `neo.SpikeTrain` object.
         Default: False
@@ -1368,7 +1368,7 @@ def _n_poisson(rate, t_stop, t_start=0.0 * pq.ms, n_spiketrains=1):
         Single common stop time of each output SpikeTrain. Must be > t_start.
     t_start : pq.Quantity, optional
         Single common start time of each output SpikeTrain. Must be < t_stop.
-        Default: 0 * pq.ms
+        Default: 0.0 * pq.ms
     n_spiketrains : int, optional
         If rate is a single pq.Quantity value, n specifies the number of SpikeTrains to be generated. If rate is an
         array, n is ignored and the number of SpikeTrains is equal to len(rate).
@@ -1660,7 +1660,7 @@ def _mother_proc_cpp_stat(
         Homogeneous rate of the n spike trains that will be generated by the CPP function
     t_start : pq.Quantity, optional
         The starting time of the mother process
-        Default: 0 pq.ms
+        Default: 0 * pq.ms
 
     Returns
     -------
@@ -1692,7 +1692,7 @@ def _cpp_hom_stat(amplitude_distribution, t_stop, rate, t_start=0 * pq.ms):
         Average rate of each spike train generated
     t_start : pq.Quantity, optional
         The start time of the output spike trains
-        Default: 0 pq.ms
+        Default: 0 * pq.ms
 
     Returns
     -------
@@ -1750,7 +1750,7 @@ def _cpp_het_stat(amplitude_distribution, t_stop, rates, t_start=0.*pq.ms):
         Array of firing rates of each spike train generated with
     t_start : pq.Quantity, optional
         The start time of the output spike trains
-        Default: 0 pq.ms
+        Default: 0.0 * pq.ms
 
     Returns
     -------
@@ -1833,7 +1833,7 @@ def compound_poisson_process(
         Default: None
     t_start : pq.Quantity, optional
         The `t_start` time of the output spike trains.
-        Default: 0 pq.ms
+        Default: 0 * pq.ms
 
     Returns
     -------

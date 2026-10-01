@@ -231,22 +231,35 @@ def get_src_params_3D(Lx, Ly, Lz, n_src):
 
 def generate_electrodes(dim, xlims=[0.1, 0.9], ylims=[0.1, 0.9],
                         zlims=[0.1, 0.9], res=5):
-    """Generates electrodes, helpful for FWD funtion.
-        Parameters
-        ----------
-        dim : int
-            Dimensionality of the electrodes, 1,2 or 3
-        xlims : [start, end]
-            Spatial limits of the electrodes
-        ylims : [start, end]
-            Spatial limits of the electrodes
-        zlims : [start, end]
-            Spatial limits of the electrodes
-        res : int
-            How many electrodes in each dimension
-        Returns
-        -------
-        ele_x, ele_y, ele_z : flattened np.array of the electrode pos
+    """
+    Generates electrodes, helpful for FWD function.
+
+    Parameters
+    ----------
+    dim : int
+        Dimensionality of the electrodes: 1, 2 or 3.
+    xlims : list[float], optional
+        Spatial limits of the electrodes in the first dimension. The
+        electrodes will be placed in the range [start, end].
+        Default: [0.1, 0.9]
+    ylims : list[float], optional
+        Spatial limits of the electrodes in the second dimension. The
+        electrodes will be placed in the range [start, end].
+        Default: [0.1, 0.9]
+    zlims : list[float], optional
+        Spatial limits of the electrodes in the third dimension. The
+        electrodes will be placed in the range [start, end].
+        Default: [0.1, 0.9]
+    res : int, optional
+        How many electrodes in each dimension.
+        Default: 5
+
+    Returns
+    -------
+    ele_x, ele_y, ele_z : np.ndarray
+        Flattened arrays of the electrode positions. One array for each
+        dimension. The number of arrays returned depends on the specified
+        dimensionality.
     """
     if dim == 1:
         ele_x = np.mgrid[xlims[0]: xlims[1]: complex(0, res)]

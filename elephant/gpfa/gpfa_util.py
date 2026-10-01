@@ -33,7 +33,7 @@ def get_seqs(data, bin_size, use_sqrt=True):
     bin_size: quantity.Quantity
         Spike bin width
 
-    use_sqrt: bool
+    use_sqrt: bool, optional
         Boolean specifying whether or not to use square-root transform on
         spike counts (see original paper for motivation).
         Default: True
@@ -93,7 +93,7 @@ def cut_trials(seq_in, seg_length=20):
         y : (yDim, T) np.ndarray
             neural data
 
-    seg_length : int
+    seg_length : int, optional
         length of segments to extract, in number of timesteps. If infinite,
         entire trials are extracted, i.e., no segmenting.
         Default: 20
@@ -304,19 +304,21 @@ def fill_persymm(p_in, blk_size, n_blocks, blk_size_vert=None):
      Parameters
      ----------
      p_in :  (xDim*Thalf, xDim*T) np.ndarray
-        Top half of block persymmetric matrix, where Thalf = ceil(T/2)
+         Top half of block persymmetric matrix, where Thalf = ceil(T/2)
      blk_size : int
-        Edge length of one block
+         Edge length of one block
      n_blocks : int
-        Number of blocks making up a row of Pin
+         Number of blocks making up a row of Pin
      blk_size_vert : int, optional
-        Vertical block edge length if blocks are not square.
-        `blk_size` is assumed to be the horizontal block edge length.
+         Vertical block edge length if blocks are not square.
+         `blk_size` is assumed to be the horizontal block edge length.
+         If None, `blk_size_vert` is set to `blk_size`.
+         Default: None
 
      Returns
      -------
      Pout : (xDim*T, xDim*T) np.ndarray
-        Full block persymmetric matrix
+         Full block persymmetric matrix.
     """
     if blk_size_vert is None:
         blk_size_vert = blk_size

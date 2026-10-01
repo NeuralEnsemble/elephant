@@ -71,7 +71,7 @@ def estimate_csd(lfp, coordinates='coordinates', method=None,
     ----------
     lfp : :class:`neo.core.AnalogSignal`
         Positions of electrodes can be added as an array annotation
-    coordinates : array-like Quantity or str
+    coordinates : array-like Quantity or str, optional
         Specifies the corresponding spatial coordinates of the electrodes.
         Coordinates can be directly supplied by a NxM array-like Quantity
         with dimension of space, where M is the number of signals in 'lfp',
@@ -80,23 +80,24 @@ def estimate_csd(lfp, coordinates='coordinates', method=None,
         coordinates, supplied in the same format, as annotation of 'lfp' by
         that name.
         Default: 'coordinates'
-    method : str
+    method : str, optional
         Pick a method corresponding to the setup, in this implementation
         For Laminar probe style (1D), use 'KCSD1D' or 'StandardCSD',
         or 'DeltaiCSD' or 'StepiCSD' or 'SplineiCSD'
         For MEA probe style (2D),  use 'KCSD2D', or 'MoIKCSD'
-        For array of laminar probes (3D), use 'KCSD3D'
-        Defaults to None
-    process_estimate : bool
+        For array of laminar probes (3D), use 'KCSD3D'. If None, the function
+        will raise an error.
+        Default: None
+    process_estimate : bool, optional
         In the py_iCSD_toolbox this corresponds to the filter_csd -
         the parameters are passed as kwargs here ie., f_type and f_order
         In the kcsd methods this corresponds to cross_validate -
-        the parameters are passed as kwargs here ie., lambdas and Rs
-        Defaults to True
+        the parameters are passed as kwargs here ie., lambdas and Rs.
+        Default: True
     **kwargs : parameters to each method
-        The parameters corresponding to the method chosen
-        See the documentation of the individual method
-        Default is {} - picks the best parameters,
+        The parameters corresponding to the method chosen. See the
+        documentation of the individual method. If no additional parameters
+        are specified, the function will use the default values of the method.
 
     Returns
     -------
@@ -226,27 +227,29 @@ def generate_lfp(csd_profile, x_positions, y_positions=None, z_positions=None,
         coordinates of the electrodes
     y_positions : np.ndarray, optional
         A 2D column vector (N x 1 array) containing the positions of the y
-        coordinates of the electrodes
-        Defaults to None, use in 2D or 3D cases only
+        coordinates of the electrodes. This is used only in 2D or 3D cases.
+        Default: None
     z_positions : np.ndarray, optional
         A 2D column vector (N x 1 array) containing the positions of the z
-        coordinates of the electrodes
-        Defaults to None, use in 3D case only
+        coordinates of the electrodes. This is used only in 3D cases.
+        Default: None
     x_limits : list, optional
         A list of [start, end].
         The starting spatial coordinate and the ending for integration
-        Defaults to [0.,1.]
+        Default: [0.0, 1.0]
     y_limits : list, optional
         A list of [start, end].
-        The starting spatial coordinate and the ending for integration
-        Defaults to [0.,1.], use only in 2D and 3D case
+        The starting spatial coordinate and the ending for integration.
+        This is used only in 2D and 3D cases.
+        Default: [0.0, 1.0]
     z_limits : list, optional
         A list of [start, end].
-        The starting spatial coordinate and the ending for integration
-        Defaults to [0.,1.], use only in 3D case
+        The starting spatial coordinate and the ending for integration.
+        This is used only in 3D cases.
+        Default: [0.0, 1.0]
     resolution : int, optional
         The resolution of the integration
-        Defaults to 50
+        Default: 50
 
     Returns
     -------

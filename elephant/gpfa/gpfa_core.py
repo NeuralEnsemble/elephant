@@ -46,8 +46,7 @@ def fit(seqs_train, x_dim=3, bin_width=20.0, min_var_frac=0.01, em_tol=1.0E-8,
         fraction of overall data variance for each observed dimension to set as
         the private variance floor.  This is used to combat Heywood cases,
         where ML parameter learning returns one or more zero private variances.
-        Default: 0.01
-        (See Martin & McDonald, Psychometrika, Dec 1975.)
+        Default: 0.01 (see Martin & McDonald, Psychometrika, Dec 1975.)
     em_tol : float, optional
         stopping criterion for EM
         Default: 1e-8
@@ -56,7 +55,7 @@ def fit(seqs_train, x_dim=3, bin_width=20.0, min_var_frac=0.01, em_tol=1.0E-8,
         Default: 500
     tau_init : float, optional
         GP timescale initialization in msec
-        Default: 100
+        Default: 100.0
     eps_init : float, optional
         GP noise variance initialization
         Default: 1e-3
@@ -184,8 +183,7 @@ def em(params_init, seqs_train, max_iters=500, tol=1.0E-8, min_var_frac=0.01,
         fraction of overall data variance for each observed dimension to set as
         the private variance floor.  This is used to combat Heywood cases,
         where ML parameter learning returns one or more zero private variances.
-        Default: 0.01
-        (See Martin & McDonald, Psychometrika, Dec 1975.)
+        Default: 0.01 (see Martin & McDonald, Psychometrika, Dec 1975.)
     freq_ll : int, optional
         data likelihood is computed at every freq_ll EM iterations.
         freq_ll = 1 means that data likelihood is computed at every
@@ -338,7 +336,8 @@ def exact_inference_with_ll(seqs, params, get_ll=True):
         eps : np.ndarray
             GP noise variance
     get_ll : bool, optional
-          specifies whether to compute data log likelihood (default: True)
+        Specifies whether to compute data log likelihood.
+        Default: True
 
     Returns
     -------
@@ -451,22 +450,24 @@ def exact_inference_with_ll(seqs, params, get_ll=True):
 
 
 def learn_gp_params(seqs_latent, params, verbose=False):
-    """Updates parameters of GP state model, given neural trajectories.
+    """
+    Updates parameters of GP state model, given neural trajectories.
 
     Parameters
     ----------
     seqs_latent : np.recarray
-        data structure containing neural trajectories;
+        Data structure containing neural trajectories.
     params : dict
-        current GP state model parameters, which gives starting point
-        for gradient optimization;
+        Current GP state model parameters, which gives starting point
+        for gradient optimization.
     verbose : bool, optional
-        specifies whether to display status messages (default: False)
+        Specifies whether to display status messages.
+        Default: False
 
     Returns
     -------
     param_opt : np.ndarray
-        updated GP state model parameter
+        Updated GP state model parameter.
 
     Raises
     ------

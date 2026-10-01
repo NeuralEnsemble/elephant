@@ -41,10 +41,10 @@ class MPICommExecutor(MPIPoolExecutor):
 
     Parameters
     ----------
-    comm : MPI.Intracomm or None
+    comm : MPI.Intracomm or None, optional
         MPI (intra)communicator. If None, set to `MPI.COMM_WORLD`.
         Default: None
-    root : int
+    root : int, optional
         Designated master process.
         Default: 0
 

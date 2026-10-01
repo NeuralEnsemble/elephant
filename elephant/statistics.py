@@ -123,7 +123,7 @@ def isi(spiketrain, axis=-1):
         The spike times.
     axis : int, optional
         The axis along which the difference is taken.
-        Default: the last axis
+        Default: -1 (the last axis)
 
     Returns
     -------
@@ -296,7 +296,7 @@ def fanofactor(spiketrains: Union[List[neo.SpikeTrain], List[pq.Quantity], List[
         In case of a list of input :class:`neo.core.SpikeTrain`, if their durations
         vary by more than `warn_tolerance` in their absolute values, throw a warning
         (see Notes).
-        Default: 0.1 ms
+        Default: 0.1 * pq.ms
 
     Returns
     -------
@@ -412,7 +412,7 @@ def cv2(time_intervals, with_nan=False):
         np.NaN value and a warning is raised.
         If False, `ValueError` exception is raised with a spike train with
         less than two spikes.
-        Default: True
+        Default: False
 
     Returns
     -------
@@ -479,7 +479,7 @@ def lv(time_intervals, with_nan=False):
         `np.NaN` value and a warning is raised.
         If False, a `ValueError` exception is raised with a spike train with
         less than two spikes.
-        Default: True
+        Default: False
 
     Returns
     -------
@@ -542,16 +542,16 @@ def lvr(time_intervals, R=5*pq.ms, with_nan=False):
     time_intervals : pq.Quantity or np.ndarray or list
         Vector of consecutive time intervals. Must have time units, if not unit
         is passed `ms` are assumed.
-    R : pq.Quantity or int or float
+    R : pq.Quantity or int or float, optional
         Refractoriness constant (R >= 0). If no quantity is passed `ms` are
         assumed.
-        Default: 5 ms
+        Default: 5 * pq.ms
     with_nan : bool, optional
         If True, LvR of a spike train with less than two spikes results in a
         np.NaN value and a warning is raised.
         If False, a `ValueError` exception is raised with a spike train with
         less than two spikes.
-        Default: True
+        Default: False
 
     Returns
     -------
@@ -647,25 +647,21 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
 
         Note: The kernel width is not adaptive, i.e., it is calculated as
         global optimum across the data.
-
         Default: 'auto'
     cutoff : float, optional
         This factor determines the cutoff of the probability distribution of
         the kernel, i.e., the considered width of the kernel in terms of
         multiples of the standard deviation sigma.
-
         Default: 5.0
     t_start : pq.Quantity, optional
         Start time of the interval used to compute the firing rate.
         If None, `t_start` is assumed equal to `t_start` attribute of
         `spiketrain`.
-
         Default: None
     t_stop : pq.Quantity, optional
         End time of the interval used to compute the firing rate.
         If None, `t_stop` is assumed equal to `t_stop` attribute of
         `spiketrain`.
-
         Default: None
     trim : bool, optional
         Accounts for the asymmetry of a kernel.
@@ -680,14 +676,12 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
         Transformation by a total of two times the size of the kernel, and
         `t_start` and `t_stop` are adjusted. True (trimming) is equivalent to
         'valid' convolution mode for symmetrical kernels.
-
         Default: False
     center_kernel : bool, optional
         If set to True, the kernel will be translated such that its median is
         centered on the spike, thus putting equal weight before and after the
         spike. If False, no adjustment is performed such that the spike sits at
         the origin of the kernel.
-
         Default: True
     border_correction : bool, optional
         Apply a border correction to prevent underestimating the firing rates
@@ -695,13 +689,11 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
         The correction is done by estimating the mass of the kernel outside
         these spike train borders under the assumption that the rate does not
         change strongly. Only possible in the case of a Gaussian kernel.
-
         Default: False
     pool_trials : bool, optional
         If True, calculate firing rates averaged over trials if `spiketrains` is
         of type :mod:`elephant.trials`. Has no effect for single spike train
         or lists of spike trains.
-
         Default: False
     pool_spike_trains : bool, optional
         If True, calculate firing rates averaged over spike trains. If the
@@ -709,7 +701,6 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
         across spike trains within each trial, and pool_trials determines
         whether spike trains are additionally pooled across trials.
         Has no effect for a single spike train.
-
         Default: False
 
     Returns
@@ -1354,8 +1345,9 @@ class Complexity(object):
     bin_size : pq.Quantity or None, optional
         Width of the histogram's time bins with units of time.
         The user must specify the `bin_size` or the `sampling_rate`.
-        *  If None and the `sampling_rate` is available
-        1/`sampling_rate` is used.
+
+        *  If None and the `sampling_rate` is available, 1/`sampling_rate`
+           is used.
         *  If both are given then `bin_size` is used.
 
         Default: None
@@ -1370,12 +1362,13 @@ class Complexity(object):
         Number of bins in which to check for synchronous spikes.
         Spikes that occur separated by `spread - 1` or less empty bins are
         considered synchronous.
+
         *  ``spread = 0`` corresponds to a bincount accross spike trains.
         *  ``spread = 1`` corresponds to counting consecutive spikes.
         *  ``spread = 2`` corresponds to counting consecutive spikes and
-        spikes separated by exactly 1 empty bin.
+           spikes separated by exactly 1 empty bin.
         *  ``spread = n`` corresponds to counting spikes separated by exactly
-        or less than `n - 1` empty bins.
+           or less than `n - 1` empty bins.
 
         Default: 0
     tolerance : float or None, optional
