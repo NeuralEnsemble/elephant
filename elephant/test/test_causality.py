@@ -295,7 +295,8 @@ class PairwiseSpectralGrangerTestCase(unittest.TestCase):
         signals = np.random.normal(0, 1, (num_signals, n))
 
         _, cross_spec = multitaper_cross_spectrum(signals,
-                                                  return_onesided=True)
+                                                  return_onesided=True,
+                                                  detrend=False)
 
         cross_spec = np.transpose(cross_spec, (2, 0, 1))
 
@@ -316,7 +317,8 @@ class PairwiseSpectralGrangerTestCase(unittest.TestCase):
         signals = np.random.normal(0, 1, (num_signals, n))
 
         _, cross_spec = multitaper_cross_spectrum(signals,
-                                                  return_onesided=True)
+                                                  return_onesided=True,
+                                                  detrend=False)
 
         cross_spec = np.transpose(cross_spec, (2, 0, 1))
 
@@ -348,7 +350,8 @@ class PairwiseSpectralGrangerTestCase(unittest.TestCase):
 
         freqs, coh, phase_lag = multitaper_coherence(signals[0], signals[1],
                                                      len_segment=2**7,
-                                                     num_tapers=2)
+                                                     num_tapers=2,
+                                                     detrend=False)
         f, spectral_causality = \
             elephant.causality.granger.pairwise_spectral_granger(
                 signals[0], signals[1], len_segment=2**7, num_tapers=2)
