@@ -142,12 +142,14 @@ class WelchPSDTestCase(unittest.TestCase):
         self.assertFalse(isinstance(psd_np, pq.quantity.Quantity))
 
         # check if the results from different input types are identical
-        self.assertTrue(
-            (freqs_neo == freqs_pq).all() and (
-                    psd_neo == psd_pq).all())
-        self.assertTrue(
-            (freqs_neo == freqs_np).all() and (
-                    psd_neo == psd_np).all())
+        np.testing.assert_allclose(freqs_neo.magnitude,
+                                   freqs_pq.rescale(freqs_neo.units).magnitude)
+        np.testing.assert_allclose(psd_neo[0].magnitude,
+                                   psd_pq.rescale(psd_neo.units).magnitude)
+        np.testing.assert_allclose(freqs_neo.rescale(pq.Hz).magnitude,
+                                   freqs_np)
+        np.testing.assert_allclose(
+            psd_neo[0].rescale(pq.mV ** 2 / pq.Hz).magnitude, psd_np)
 
     def test_welch_psd_multidim_input(self):
         # generate multidimensional data
@@ -1179,12 +1181,17 @@ class WelchCohereTestCase(unittest.TestCase):
         self.assertFalse(isinstance(phase_lag_np, pq.quantity.Quantity))
 
         # check if the results from different input types are identical
-        self.assertTrue((freqs_neo == freqs_pq).all() and
-                        (coherency_neo[:, 0] == coherency_pq).all() and
-                        (phase_lag_neo[:, 0] == phase_lag_pq).all())
-        self.assertTrue((freqs_neo == freqs_np).all() and
-                        (coherency_neo[:, 0] == coherency_np).all() and
-                        (phase_lag_neo[:, 0] == phase_lag_np).all())
+        np.testing.assert_allclose(freqs_neo.magnitude,
+                                   freqs_pq.rescale(freqs_neo.units).magnitude)
+        np.testing.assert_allclose(coherency_neo[:, 0], coherency_pq)
+        np.testing.assert_allclose(
+            phase_lag_neo[:, 0].magnitude,
+            phase_lag_pq.rescale(phase_lag_neo.units).magnitude)
+        np.testing.assert_allclose(freqs_neo.rescale(pq.Hz).magnitude,
+                                   freqs_np)
+        np.testing.assert_allclose(coherency_neo[:, 0], coherency_np)
+        np.testing.assert_allclose(
+            phase_lag_neo[:, 0].rescale(pq.rad).magnitude, phase_lag_np)
 
     def test_welch_cohere_multidim_input(self):
         # generate multidimensional data
