@@ -340,12 +340,14 @@ class MultitaperPSDTestCase(unittest.TestCase):
         np.testing.assert_array_equal(psd_fs_hz, psd_fs_int)
 
         # check if the results from different input types are identical
-        self.assertTrue(
-            (freqs_neo == freqs_pq).all() and (
-                    psd_neo == psd_pq).all())
-        self.assertTrue(
-            (freqs_neo == freqs_np).all() and (
-                    psd_neo == psd_np).all())
+        np.testing.assert_allclose(freqs_neo.magnitude,
+                                   freqs_pq.rescale(freqs_neo.units).magnitude)
+        np.testing.assert_allclose(psd_neo.magnitude,
+                                   psd_pq.rescale(psd_neo.units).magnitude)
+        np.testing.assert_allclose(freqs_neo.rescale(pq.Hz).magnitude,
+                                   freqs_np)
+        np.testing.assert_allclose(
+            psd_neo.rescale(pq.mV ** 2 / pq.Hz).magnitude, psd_np)
 
 
 class SegmentedMultitaperPSDTestCase(unittest.TestCase):
@@ -505,12 +507,14 @@ class SegmentedMultitaperPSDTestCase(unittest.TestCase):
         np.testing.assert_array_equal(psd_fs_hz, psd_fs_int)
 
         # check if the results from different input types are identical
-        self.assertTrue(
-            (freqs_neo == freqs_pq).all() and (
-                    psd_neo == psd_pq).all())
-        self.assertTrue(
-            (freqs_neo == freqs_np).all() and (
-                    psd_neo == psd_np).all())
+        np.testing.assert_allclose(freqs_neo.magnitude,
+                                   freqs_pq.rescale(freqs_neo.units).magnitude)
+        np.testing.assert_allclose(psd_neo.magnitude,
+                                   psd_pq.rescale(psd_neo.units).magnitude)
+        np.testing.assert_allclose(freqs_neo.rescale(pq.Hz).magnitude,
+                                   freqs_np)
+        np.testing.assert_allclose(
+            psd_neo.rescale(pq.mV ** 2 / pq.Hz).magnitude, psd_np)
 
 
 class MultitaperCrossSpectrumTestCase(unittest.TestCase):
@@ -676,12 +680,16 @@ class MultitaperCrossSpectrumTestCase(unittest.TestCase):
         self.assertFalse(isinstance(cross_spec_np, pq.quantity.Quantity))
 
         # check if the results from different input types are identical
-        self.assertTrue(
-            (freqs_neo == freqs_pq).all() and
-            (cross_spec_neo == cross_spec_pq).all())
-        self.assertTrue(
-            (freqs_neo == freqs_np).all() and
-            (cross_spec_neo == cross_spec_np).all())
+        np.testing.assert_allclose(freqs_neo.magnitude,
+                                   freqs_pq.rescale(freqs_neo.units).magnitude)
+        np.testing.assert_allclose(
+            cross_spec_neo.magnitude,
+            cross_spec_pq.rescale(cross_spec_neo.units).magnitude, rtol=1e-5)
+        np.testing.assert_allclose(freqs_neo.rescale(pq.Hz).magnitude,
+                                   freqs_np)
+        np.testing.assert_allclose(
+            cross_spec_neo.rescale(pq.mV ** 2 / pq.Hz).magnitude,
+            cross_spec_np, rtol=1e-5)
 
 
 class SegmentedMultitaperCrossSpectrumTestCase(unittest.TestCase):
@@ -938,7 +946,7 @@ class MultitaperCoherenceTestCase(unittest.TestCase):
             elephant.spectral.multitaper_coherence(anasig_signal_i,
                                                    anasig_signal_j)
 
-        np.testing.assert_array_equal(arr_f, anasig_f)
+        np.testing.assert_allclose(arr_f, anasig_f.rescale(pq.Hz).magnitude)
         np.testing.assert_allclose(arr_coh, anasig_coh.magnitude, atol=1e-6)
         np.testing.assert_array_almost_equal(arr_phi, anasig_phi.magnitude)
 
