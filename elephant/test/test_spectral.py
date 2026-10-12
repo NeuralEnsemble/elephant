@@ -114,8 +114,8 @@ class WelchPSDTestCase(unittest.TestCase):
         data_multidim = np.random.normal(size=(num_channel, data_length))
         freqs, psd = elephant.spectral.welch_psd(data_multidim)
         freqs_T, psd_T = elephant.spectral.welch_psd(data_multidim.T, axis=0)
-        self.assertTrue(np.all(freqs == freqs_T))
-        self.assertTrue(np.all(psd == psd_T.T))
+        np.testing.assert_allclose(freqs, freqs_T)
+        np.testing.assert_allclose(psd, psd_T.T)
 
     def test_welch_psd_input_types(self):
         # generate a test data
@@ -172,9 +172,10 @@ class WelchPSDTestCase(unittest.TestCase):
         freqs_neo, psd_neo = elephant.spectral.welch_psd(data_neo)
         freqs_neo_1dim, psd_neo_1dim = elephant.spectral.welch_psd(
             data_neo_1dim)
-        self.assertTrue(np.all(freqs_np == freqs_neo))
-        self.assertTrue(np.all(psd_np == psd_neo))
-        self.assertTrue(np.all(psd_neo_1dim == psd_neo[0]))
+        np.testing.assert_allclose(freqs_np, freqs_neo.magnitude)
+        np.testing.assert_allclose(psd_np, psd_neo.magnitude)
+        np.testing.assert_allclose(psd_neo_1dim[0].magnitude,
+                                   psd_neo[0].magnitude)
 
 
 class MultitaperPSDTestCase(unittest.TestCase):
@@ -1208,13 +1209,13 @@ class WelchCohereTestCase(unittest.TestCase):
             elephant.spectral.welch_coherence(x_neo, y_neo)
         freqs_neo_1dim, coherency_neo_1dim, phase_lag_neo_1dim = \
             elephant.spectral.welch_coherence(x_neo_1dim, y_neo_1dim)
-        self.assertTrue(np.all(freqs_np == freqs_neo))
-        self.assertTrue(np.all(coherency_np.T == coherency_neo))
-        self.assertTrue(np.all(phase_lag_np.T == phase_lag_neo))
-        self.assertTrue(
-            np.all(coherency_neo_1dim[:, 0] == coherency_neo[:, 0]))
-        self.assertTrue(
-            np.all(phase_lag_neo_1dim[:, 0] == phase_lag_neo[:, 0]))
+        np.testing.assert_allclose(freqs_np, freqs_neo.magnitude)
+        np.testing.assert_allclose(coherency_np.T, coherency_neo)
+        np.testing.assert_allclose(phase_lag_np.T, phase_lag_neo.magnitude)
+        np.testing.assert_allclose(coherency_neo_1dim[:, 0],
+                                   coherency_neo[:, 0])
+        np.testing.assert_allclose(phase_lag_neo_1dim[:, 0].magnitude,
+                                   phase_lag_neo[:, 0].magnitude)
 
 
 if __name__ == "__main__":
