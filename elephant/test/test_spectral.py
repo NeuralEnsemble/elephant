@@ -172,10 +172,13 @@ class WelchPSDTestCase(unittest.TestCase):
         freqs_neo, psd_neo = elephant.spectral.welch_psd(data_neo)
         freqs_neo_1dim, psd_neo_1dim = elephant.spectral.welch_psd(
             data_neo_1dim)
-        np.testing.assert_allclose(freqs_np, freqs_neo.magnitude)
-        np.testing.assert_allclose(psd_np, psd_neo.magnitude)
-        np.testing.assert_allclose(psd_neo_1dim[0].magnitude,
-                                   psd_neo[0].magnitude)
+        np.testing.assert_allclose(freqs_np,
+                                   freqs_neo.rescale(pq.Hz).magnitude)
+        np.testing.assert_allclose(
+            psd_np, psd_neo.rescale(pq.mV ** 2 / pq.Hz).magnitude)
+        np.testing.assert_allclose(
+            psd_neo_1dim[0].rescale(psd_neo.units).magnitude,
+            psd_neo[0].magnitude)
 
 
 class MultitaperPSDTestCase(unittest.TestCase):
@@ -1209,13 +1212,16 @@ class WelchCohereTestCase(unittest.TestCase):
             elephant.spectral.welch_coherence(x_neo, y_neo)
         freqs_neo_1dim, coherency_neo_1dim, phase_lag_neo_1dim = \
             elephant.spectral.welch_coherence(x_neo_1dim, y_neo_1dim)
-        np.testing.assert_allclose(freqs_np, freqs_neo.magnitude)
+        np.testing.assert_allclose(freqs_np,
+                                   freqs_neo.rescale(pq.Hz).magnitude)
         np.testing.assert_allclose(coherency_np.T, coherency_neo)
-        np.testing.assert_allclose(phase_lag_np.T, phase_lag_neo.magnitude)
+        np.testing.assert_allclose(phase_lag_np.T,
+                                   phase_lag_neo.rescale(pq.rad).magnitude)
         np.testing.assert_allclose(coherency_neo_1dim[:, 0],
                                    coherency_neo[:, 0])
-        np.testing.assert_allclose(phase_lag_neo_1dim[:, 0].magnitude,
-                                   phase_lag_neo[:, 0].magnitude)
+        np.testing.assert_allclose(
+            phase_lag_neo_1dim[:, 0].rescale(phase_lag_neo.units).magnitude,
+            phase_lag_neo[:, 0].magnitude)
 
 
 if __name__ == "__main__":
