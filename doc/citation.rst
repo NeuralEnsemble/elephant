@@ -32,7 +32,7 @@ A BibTeX entry for LaTeX users is:
 
 
 Further publications directly related to Elephant development
-:cite:`citations-Rostami17_3,citations-Stella19_104022` (see a list of full
+:cite:`citations-Rostami17_3,citations-Stella2019_104022` (see a list of full
 `BibTex references <https://github.com/NeuralEnsemble/elephant/blob/master/doc/bib/elephant.bib>`_
 used in Elephant documentation).
 
