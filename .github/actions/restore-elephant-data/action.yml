@@ -29,8 +29,10 @@ runs:
       if: runner.os == 'Windows'
       shell: pwsh
       run: |
+        Write-Host "USERPROFILE env value:"
         Write-Host $env:USERPROFILE
-        Get-ChildItem -Path D:/a/elephant/elephant
+        Write-Host "List items in D:/a/elephant:"
+        Get-ChildItem -Path D:/a/elephant
         if (Test-Path "$env:USERPROFILE\elephant-data") {
             "ELEPHANT_DATA_LOCATION=$env:USERPROFILE\elephant-data" >> $env:GITHUB_ENV
             Write-Output $env:USERPROFILE\elephant-data
