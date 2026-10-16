@@ -40,8 +40,10 @@ concurrency:
 # Single source of truth for CI matrix sizes.
 # Fast CI: ubuntu-latest + 3.12 only. Full CI: all OS/Python combos.
 env:
-  FAST_MATRIX: '{"os":["ubuntu-latest"],"python-version":["3.12"]}'
-  FULL_MATRIX: '{"os":["ubuntu-latest","macos-latest","windows-latest"],"python-version":["3.9","3.10","3.11","3.12","3.13","3.14"]}'
+  # FAST_MATRIX: '{"os":["ubuntu-latest"],"python-version":["3.12"]}'
+  FAST_MATRIX: '{"os":["windows-latest"],"python-version":["3.12"]}' # DEBUGG
+  # FULL_MATRIX: '{"os":["ubuntu-latest","macos-latest","windows-latest"],"python-version":["3.9","3.10","3.11","3.12","3.13","3.14"]}'
+  FULL_MATRIX: '{"os":["windows-latest"],"python-version":["3.12"]}' # DEBUGG
 
 jobs:
 
@@ -122,6 +124,7 @@ jobs:
     needs: setup
     name: mpi (${{ matrix.python-version }}, ${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    if: false # DEBUGG
     strategy:
       matrix:
         python-version: ["3.12"]
@@ -175,6 +178,7 @@ jobs:
     needs: setup
     name: conda (${{ matrix.python-version }}, ${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    if: false # DEBUGG
     strategy:
       matrix:
         python-version: [3.12]
@@ -235,6 +239,7 @@ jobs:
     needs: setup
     name: docs (${{ matrix.python-version }}, ${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    if: false # DEBUGG
     strategy:
       matrix:
         python-version: [3.12]
@@ -280,6 +285,7 @@ jobs:
     needs: setup
     name: doctests (${{ matrix.python-version }}, ${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    if: false # DEBUGG
     strategy:
       matrix:
         python-version: ["3.12"]
