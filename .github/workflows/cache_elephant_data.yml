@@ -27,9 +27,9 @@ jobs:
         # Loading cache of elephant-data
         id: cache-datasets
         with:
-          # Relative paths are resolved against $GITHUB_WORKSPACE; keep it relative so the
-          # cache version matches across OSs.
-          path: ../elephant-data
+          # Relative to $GITHUB_WORKSPACE, so the cache version matches across OSs.
+          # The leading dot in '.ci-data' keeps pytest from collecting the data
+          path: .ci-data/elephant-data
           key: datasets-${{ steps.elephant-data.outputs.dataset_hash }}
           enableCrossOsArchive: true
 
@@ -58,9 +58,10 @@ jobs:
         # This matches the cache path even if working-directory changes.
         run: |
           datalad --version
-          datalad install --recursive --get-data -s https://gin.g-node.org/NeuralEnsemble/elephant-data "$GITHUB_WORKSPACE/../elephant-data"
+          mkdir -p "$GITHUB_WORKSPACE/.ci-data"
+          datalad install --recursive --get-data -s https://gin.g-node.org/NeuralEnsemble/elephant-data "$GITHUB_WORKSPACE/.ci-data/elephant-data"
 
       - name: Show size of the cache to assert data is downloaded
         run: |
-          du -hs "$GITHUB_WORKSPACE/../elephant-data"
-          ls -lh "$GITHUB_WORKSPACE/../elephant-data"
+          du -hs "$GITHUB_WORKSPACE/.ci-data/elephant-data"
+          ls -lh "$GITHUB_WORKSPACE/.ci-data/elephant-data"
