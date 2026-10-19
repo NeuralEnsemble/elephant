@@ -294,6 +294,8 @@ jobs:
           cache: 'pip'
           cache-dependency-path: pyproject.toml
 
+      - uses: ./.github/actions/restore-elephant-data
+
       - name: Install dependencies
         shell: bash -el {0}
         run: |
