@@ -2,6 +2,16 @@ name: Create caches for elephant_data
 
 on:
   workflow_dispatch: # Workflow can be triggered manually via GH actions webinterface
+    inputs:
+      logLevel:
+        description: 'Log level'
+        required: true
+        default: 'warning'
+        type: choice
+        options:
+          - info
+          - warning
+          - debug
   push:  # When something is pushed into master this checks if caches need to re-created
     branches:
       - master
