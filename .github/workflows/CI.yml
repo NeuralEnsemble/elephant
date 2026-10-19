@@ -41,9 +41,9 @@ concurrency:
 # Fast CI: ubuntu-latest + 3.12 only. Full CI: all OS/Python combos.
 env:
   # FAST_MATRIX: '{"os":["ubuntu-latest"],"python-version":["3.12"]}'
-  FAST_MATRIX: '{"os":["windows-latest"],"python-version":["3.12"]}' # DEBUGG
+  FAST_MATRIX: '{"os":["ubuntu-latest","windows-latest"],"python-version":["3.12"]}' # DEBUGG
   # FULL_MATRIX: '{"os":["ubuntu-latest","macos-latest","windows-latest"],"python-version":["3.9","3.10","3.11","3.12","3.13","3.14"]}'
-  FULL_MATRIX: '{"os":["windows-latest"],"python-version":["3.12"]}' # DEBUGG
+  FULL_MATRIX: '{"os":["ubuntu-latest","windows-latest"],"python-version":["3.12"]}' # DEBUGG
 
 jobs:
 
@@ -100,6 +100,43 @@ jobs:
         run: |
           pip list
           python --version
+
+      - name: DNS probe (Windows) # DEBUGG
+        if: runner.os == 'Windows'
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          Get-DnsClientServerAddress -AddressFamily IPv4 | Format-Table -AutoSize
+          foreach ($h in 'datasets.python-elephant.org', 'gin.g-node.org') {
+            Write-Host "== $h (default resolver)"; Resolve-DnsName $h -ErrorAction Continue
+            Write-Host "== $h (8.8.8.8)"; Resolve-DnsName $h -Server 8.8.8.8 -ErrorAction Continue
+          }
+          Write-Host "== python-elephant.org NS"; Resolve-DnsName python-elephant.org -Type NS -Server 8.8.8.8 -ErrorAction Continue
+
+      - name: DNS probe (Unix) # DEBUGG
+        if: runner.os != 'Windows'
+        shell: bash
+        continue-on-error: true
+        run: |
+          cat /etc/resolv.conf
+          for h in datasets.python-elephant.org gin.g-node.org; do
+            echo "== $h (default resolver)"; getent ahosts "$h" || echo "getent failed: $?"
+            echo "== $h (8.8.8.8)"; dig +short "$h" @8.8.8.8 || echo "dig failed: $?"
+          done
+          echo "== python-elephant.org NS"; dig +short NS python-elephant.org @8.8.8.8 || true
+
+      - name: DNS probe (Python getaddrinfo) # DEBUGG
+        shell: bash
+        continue-on-error: true
+        run: |
+          python - <<'PY'
+          import socket
+          for h in ("datasets.python-elephant.org", "gin.g-node.org"):
+              try:
+                  print(h, sorted({a[4][0] for a in socket.getaddrinfo(h, 443)}))
+              except OSError as e:
+                  print(h, "FAILED:", repr(e))
+          PY
 
       - name: Test with pytest
         shell: bash
