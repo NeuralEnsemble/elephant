@@ -66,6 +66,14 @@ class TestDownloadDatasets(unittest.TestCase):
         cls._server_thread.join()
         cls._serve_dir.cleanup()
 
+    def setUp(self):
+        # Point the default root URL (used when `ELEPHANT_DATA_LOCATION` is
+        # empty) at the local server, so no test in this class contacts GIN.
+        patcher = patch('elephant.datasets.ELEPHANT_DATA_ROOT_URL',
+                        self.root_url)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
     @patch.dict(os.environ, {'ELEPHANT_DATA_LOCATION': '/invalid/path'},
                 clear=True)
     def test_invalid_path(self):
