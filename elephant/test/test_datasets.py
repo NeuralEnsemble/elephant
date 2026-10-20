@@ -94,7 +94,7 @@ class TestDownloadDatasets(unittest.TestCase):
         repo_path = 'some/repo/path'
         self.assertRaises(URLError, download_datasets, repo_path)
 
-    @patch.dict(os.environ, {'ELEPHANT_DATA_LOCATION': ''}, clear=True)
+    @patch.dict(os.environ, {'ELEPHANT_DATA_LOCATION': ''})
     def test_invalid_data(self):
         repo_path = 'some/repo/path'
         self.assertRaises(URLError, download_datasets, repo_path)
@@ -110,8 +110,7 @@ class TestDownloadDatasets(unittest.TestCase):
                       exception_msg)
         self.assertIn("invalid_path_or_url", exception_msg)
 
-    @patch.dict(os.environ, {'ELEPHANT_DATA_LOCATION': ''},
-                clear=True)
+    @patch.dict(os.environ, {'ELEPHANT_DATA_LOCATION': ''})
     def test_valid_data(self):
         # This is expected to download a file with the same name in GIN to a
         # folder 'elephant' within the current system temporary folder
@@ -126,8 +125,7 @@ class TestDownloadDatasets(unittest.TestCase):
         self.assertTrue(Path(downloaded_file).is_file())
         self.assertEqual(expected_file_path, downloaded_file)
 
-    @patch.dict(os.environ, {'ELEPHANT_DATA_LOCATION': ''},
-                clear=True)
+    @patch.dict(os.environ, {'ELEPHANT_DATA_LOCATION': ''})
     def test_valid_data_with_path(self):
         # This is expected to download a file to the provided path
         # (using a temporary directory specific to the test)
@@ -140,8 +138,7 @@ class TestDownloadDatasets(unittest.TestCase):
             self.assertTrue(Path(downloaded_file).is_file())
             self.assertEqual(target_file_path, downloaded_file)
 
-    @patch.dict(os.environ, {'ELEPHANT_DATA_LOCATION': ''},
-                clear=True)
+    @patch.dict(os.environ, {'ELEPHANT_DATA_LOCATION': ''})
     def test_valid_data_with_integrity_check(self):
         # This is expected to check the integrity of the downloaded file by
         # comparing the MD5 hash. We manually download the file to the current
@@ -166,8 +163,7 @@ class TestDownloadDatasets(unittest.TestCase):
             self.assertTrue(Path(downloaded_file).is_file())
             self.assertEqual(target_file_path, downloaded_file)
 
-    @patch.dict(os.environ, {'ELEPHANT_DATA_LOCATION': ''},
-                clear=True)
+    @patch.dict(os.environ, {'ELEPHANT_DATA_LOCATION': ''})
     def test_valid_data_existing(self):
         # This is expected to avoid downloading the file two times, since
         # the file has been previously downloaded and a checksum is provided.
@@ -190,8 +186,7 @@ class TestDownloadDatasets(unittest.TestCase):
             self.assertEqual(target_file_path, existing_file)
             self.assertEqual(downloaded_file, existing_file)
 
-    @patch.dict(os.environ, {'ELEPHANT_DATA_LOCATION': ''},
-                clear=True)
+    @patch.dict(os.environ, {'ELEPHANT_DATA_LOCATION': ''})
     def test_valid_data_with_failed_integrity_check(self):
         # This forces a failure by setting an invalid checksum for a dataset
         # in GIN.
