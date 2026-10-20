@@ -89,6 +89,10 @@ __all__= ["load_data"]
 
 ELEPHANT_TMP_DIR = Path(tempfile.gettempdir()) / "elephant"
 
+# Default URL of `elephant-data`, used when `ELEPHANT_DATA_LOCATION` not set.
+# This redirects to the current location of `elephant-data`
+ELEPHANT_DATA_ROOT_URL = "https://datasets.python-elephant.org/"
+
 
 # Data generation functions
 
@@ -395,9 +399,9 @@ def download_datasets(repo_path, filepath=None, checksum=None,
 
     else:
         # The user did not set a URL or path in `ELEPHANT_DATA_LOCATION`.
-        # Use the default root URL, which redirects to the current location of
-        # `elephant-data`.
-        url_to_root = "https://datasets.python-elephant.org/"
+        # Use the default root URL.
+        # PR 720: Read from module at call time, so that tests can patch it
+        url_to_root = ELEPHANT_DATA_ROOT_URL
 
         # Get the final URL to the current version of `elephant data`
         # (version of Elephant is equal to version of `elephant-data`).
