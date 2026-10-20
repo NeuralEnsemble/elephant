@@ -1,5 +1,8 @@
 import unittest
 import os
+import threading
+from functools import partial
+from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from unittest.mock import patch
 from pathlib import Path
 from tempfile import TemporaryDirectory, gettempdir
@@ -22,7 +25,46 @@ HAS_CACHE_DIR = ("ELEPHANT_DATA_LOCATION" in os.environ
                  and Path(os.environ["ELEPHANT_DATA_LOCATION"]).is_dir())
 
 
+class _QuietHandler(SimpleHTTPRequestHandler):
+    # To avoid logging each request to stderr
+    def log_message(self, format, *args):
+        pass
+
+
 class TestDownloadDatasets(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        """
+        Serve a minimal copy of `elephant-data` from 127.0.0.1
+        so tests don't have to contact GIN. The master branch
+        of GIN dataset is mocked.
+        """
+        # Mockup a dummy dataset location
+        cls._serve_dir = TemporaryDirectory()
+        master = Path(cls._serve_dir.name) / 'raw' / 'master'
+        cls.repo_data_path = 'dataset-1/dataset-1.h5'
+        dataset = master / cls.repo_data_path
+        dataset.parent.mkdir(parents=True)
+
+        # Dummy dataset, content is irrelevant for tests
+        dataset.write_bytes(bytes(range(256)) * 4)
+        (master / 'README.md').write_text('Mock elephant-data\n')
+
+        # Port 0 lets the OS pick a free port
+        handler = partial(_QuietHandler, directory=cls._serve_dir.name)
+        cls.server = ThreadingHTTPServer(('127.0.0.1', 0), handler)
+        cls.root_url = f'http://127.0.0.1:{cls.server.server_port}/'
+        cls._server_thread = threading.Thread(target=cls.server.serve_forever,
+                                              daemon=True)
+        cls._server_thread.start()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.server.shutdown()
+        cls.server.server_close()
+        cls._server_thread.join()
+        cls._serve_dir.cleanup()
 
     @patch.dict(os.environ, {'ELEPHANT_DATA_LOCATION': '/invalid/path'},
                 clear=True)
