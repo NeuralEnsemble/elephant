@@ -41,7 +41,7 @@ concurrency:
 # Fast CI: ubuntu-latest + 3.12 only. Full CI: all OS/Python combos.
 env:
   # FAST_MATRIX: '{"os":["ubuntu-latest"],"python-version":["3.12"]}'
-  FAST_MATRIX: '{"os":["windows-latest"],"python-version":["3.12"]}' # DEBUGG
+  FAST_MATRIX: '{"os":["windows-latest", "ubuntu-latest"],"python-version":["3.12"]}' # DEBUGG
   # FULL_MATRIX: '{"os":["ubuntu-latest","macos-latest","windows-latest"],"python-version":["3.9","3.10","3.11","3.12","3.13","3.14"]}'
   FULL_MATRIX: '{"os":["windows-latest"],"python-version":["3.12"]}' # DEBUGG
 
@@ -103,7 +103,7 @@ jobs:
 
       - name: Test with pytest
         shell: bash
-        run: pytest -v elephant/test/test_datasets.py # DEBUGG
+        run: pytest --cov=elephant --cov-report=lcov:coverage.lcov -v elephant/test/test_datasets.py # DEBUGG
        # pytest --cov=elephant --cov-report=lcov:coverage.lcov
 
       - name: Upload coverage to Coveralls
