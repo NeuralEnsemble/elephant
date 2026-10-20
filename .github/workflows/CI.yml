@@ -101,16 +101,6 @@ jobs:
           pip list
           python --version
 
-      - name: SystemRoot probe # DEBUGG
-        if: runner.os == 'Windows'
-        shell: bash
-        continue-on-error: true
-        run: |
-          echo "== cleared env before first lookup (expect 11001)"
-          python -c "import os,socket; os.environ.clear(); print(socket.getaddrinfo('gin.g-node.org',443)[0][4])" || true
-          echo "== lookup first, then clear (expect success)"
-          python -c "import os,socket; socket.getaddrinfo('gin.g-node.org',443); os.environ.clear(); print(socket.getaddrinfo('gin.g-node.org',443)[0][4])" || true
-
       - name: Test with pytest
         shell: bash
         run: pytest -v elephant/test/test_datasets.py # DEBUGG
