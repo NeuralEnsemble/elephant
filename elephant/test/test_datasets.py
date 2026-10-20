@@ -7,6 +7,7 @@ from unittest.mock import patch
 from pathlib import Path
 from tempfile import TemporaryDirectory, gettempdir
 import hashlib
+import warnings
 from urllib.error import URLError
 
 import numpy as np
@@ -33,23 +34,36 @@ class _QuietHandler(SimpleHTTPRequestHandler):
 
 class TestDownloadDatasets(unittest.TestCase):
 
+    # Version served under `raw/v{FAKE_VERSION}`, for the version probe tests
+    FAKE_VERSION = '9.9.9'
+
     @classmethod
     def setUpClass(cls):
         """
         Serve a minimal copy of `elephant-data` from 127.0.0.1
         so tests don't have to contact GIN. The master branch
-        of GIN dataset is mocked.
+        and one fake version of the GIN dataset are mocked.
         """
         # Mockup a dummy dataset location
         cls._serve_dir = TemporaryDirectory()
-        master = Path(cls._serve_dir.name) / 'raw' / 'master'
+        raw = Path(cls._serve_dir.name) / 'raw'
         cls.repo_data_path = 'dataset-1/dataset-1.h5'
-        dataset = master / cls.repo_data_path
-        dataset.parent.mkdir(parents=True)
 
         # Dummy dataset, content is irrelevant for tests
-        dataset.write_bytes(bytes(range(256)) * 4)
-        (master / 'README.md').write_text('Mock elephant-data\n')
+        cls.master_payload = bytes(range(256)) * 4
+        dataset = raw / 'master' / cls.repo_data_path
+        dataset.parent.mkdir(parents=True)
+        dataset.write_bytes(cls.master_payload)
+
+        # Versioned copy with different content, so tests can tell which one
+        # was downloaded. `download_datasets` probes the README of the
+        # version, so only the versioned copy needs one.
+        cls.versioned_payload = b'versioned' * 100
+        versioned = raw / f'v{cls.FAKE_VERSION}'
+        dataset = versioned / cls.repo_data_path
+        dataset.parent.mkdir(parents=True)
+        dataset.write_bytes(cls.versioned_payload)
+        (versioned / 'README.md').write_text('Mock elephant-data\n')
 
         # Port 0 lets the OS pick a free port
         handler = partial(_QuietHandler, directory=cls._serve_dir.name)
@@ -210,6 +224,50 @@ class TestDownloadDatasets(unittest.TestCase):
             self.assertIn(repo_path, exception_msg)
             self.assertIn("Data at", exception_msg)
             self.assertIn("does not agree with MD5 hash aaaaaa", exception_msg)
+
+    @patch.dict(os.environ, {'ELEPHANT_DATA_LOCATION': ''})
+    def test_valid_data_versioned(self):
+        """
+        Intent: Ensure versioned dataset download path works
+        Condition: Version of Elephant exists in (mocked) `elephant-data`
+        Expected: No warning raised
+        """
+        with (
+            patch('elephant.datasets._get_version',
+                  return_value=self.FAKE_VERSION),
+            TemporaryDirectory() as temp_dir,
+            warnings.catch_warnings(record=True) as caught,
+        ):
+            warnings.simplefilter('always')
+            target_file_path = Path(temp_dir) / 'target_versioned'
+            downloaded_file = download_datasets(self.repo_data_path,
+                                                filepath=target_file_path)
+            self.assertEqual(target_file_path, downloaded_file)
+            self.assertEqual(self.versioned_payload,
+                             Path(downloaded_file).read_bytes())
+        self.assertFalse([w for w in caught
+                          if issubclass(w.category, UserWarning)])
+
+    @patch.dict(os.environ, {'ELEPHANT_DATA_LOCATION': ''})
+    def test_valid_data_version_fallback(self):
+        """
+        Intent: Ensure fallback to master branch of dataset if version not
+                available
+        Condition: Version of Elephant does not exist in `elephant-data` (404)
+        Expected: Raises a warning
+        """
+        with (
+            patch('elephant.datasets._get_version', return_value='0.0.0'),
+            TemporaryDirectory() as temp_dir,
+        ):
+            target_file_path = Path(temp_dir) / 'target_fallback'
+            with self.assertWarns(UserWarning) as warning:
+                downloaded_file = download_datasets(self.repo_data_path,
+                                                    filepath=target_file_path)
+            self.assertIn("No corresponding version", str(warning.warning))
+            self.assertEqual(target_file_path, downloaded_file)
+            self.assertEqual(self.master_payload,
+                             Path(downloaded_file).read_bytes())
 
     @unittest.skipIf(not HAS_CACHE_DIR,
                      "Not testing since ELEPHANT_DATA_LOCATION is not set to "
