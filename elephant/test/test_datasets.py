@@ -8,12 +8,15 @@ from pathlib import Path
 from tempfile import TemporaryDirectory, gettempdir
 import hashlib
 import warnings
-from urllib.error import URLError
+from urllib.error import HTTPError, URLError
+from urllib.parse import urlparse
+from urllib.request import urlopen
 
 import numpy as np
 from numpy.testing import assert_allclose
 import neo
-from elephant.datasets import download_datasets, load_data, ELEPHANT_DATA
+from elephant.datasets import (download_datasets, load_data, ELEPHANT_DATA,
+                               ELEPHANT_DATA_ROOT_URL)
 
 
 # Most tests are done with mocking the environment variable to test different
@@ -24,6 +27,10 @@ from elephant.datasets import download_datasets, load_data, ELEPHANT_DATA
 # cache directory.
 HAS_CACHE_DIR = ("ELEPHANT_DATA_LOCATION" in os.environ
                  and Path(os.environ["ELEPHANT_DATA_LOCATION"]).is_dir())
+
+# Opt in flag for tests that contact the real `elephant-data` repository on GIN
+# To run set env val ELEPHANT_NETWORK_TESTS=1.
+RUN_NETWORK_TESTS = os.environ.get("ELEPHANT_NETWORK_TESTS") == "1"
 
 
 class _QuietHandler(SimpleHTTPRequestHandler):
@@ -392,6 +399,72 @@ class TestDownloadDatasets(unittest.TestCase):
                       exception_msg)
         self.assertIn(f"'{repo_path}' does not exist in that path",
                       exception_msg)
+
+
+@unittest.skipUnless(RUN_NETWORK_TESTS,
+                     "Not testing GIN connectivity since "
+                     "ELEPHANT_NETWORK_TESTS is not set to 1")
+class TestGinConnectivity(unittest.TestCase):
+    """
+    Checks that the real `elephant-data` repository on GIN is reachable via
+    the default root URL.
+    """
+
+    GIN_HOST = 'gin.g-node.org'
+    TIMEOUT = 60  # seconds
+    repo_data_path = 'dataset-1/dataset-1.h5'
+
+    def _open(self, url):
+        # Re-raise HTTP errors with the URL, so a 403 from GIN is obvious
+        # in the CI log
+        try:
+            return urlopen(url, timeout=self.TIMEOUT)
+        except HTTPError as error:
+            self.fail(f"GET {url} failed with HTTP {error.code}: {error}")
+
+    def test_root_url_redirects_to_gin(self):
+        """
+        Intent: Ensure the default root URL reaches GIN
+        Condition: Receive README of the master branch requested
+        Expected: HTTP 200, final URL is on GIN
+        """
+        url = ELEPHANT_DATA_ROOT_URL + 'raw/master/README.md'
+        with self._open(url) as response:
+            self.assertEqual(200, response.status)
+            self.assertEqual(self.GIN_HOST,
+                             urlparse(response.geturl()).hostname)
+
+    def test_missing_version_probe_is_404(self):
+        """
+        Intent: Ensure the version probe of `download_datasets` gets a real
+                "not found" for a missing version, not e.g. a 403 (Forbidden)
+        Condition: README of a version that does not exist is requested
+        Expected: HTTPError with code 404
+        """
+        url = ELEPHANT_DATA_ROOT_URL + 'raw/v0.0.0/README.md'
+        with self.assertRaises(HTTPError) as error:
+            urlopen(url, timeout=self.TIMEOUT)
+        self.assertEqual(404, error.exception.code)
+
+    @patch.dict(os.environ, {'ELEPHANT_DATA_LOCATION': ''})
+    def test_download_default_url(self):
+        """
+        Intent: Ensure `download_datasets` works end to end against GIN
+        Condition: `ELEPHANT_DATA_LOCATION` is empty, so the default root URL
+                   and the version probe are used
+        Expected: The file is downloaded to the requested path without error
+        """
+        # TODO: Discuss with the team what other checks can be done to verify
+        #  the end-to-end download from GIN (e.g. content/checksum, given that
+        #  the downloaded version may differ from any cached copy).
+        with TemporaryDirectory() as temp_dir:
+            target_file_path = Path(temp_dir) / 'dataset-1.h5'
+            downloaded_file = download_datasets(self.repo_data_path,
+                                                filepath=target_file_path,
+                                                verbose=False)
+            self.assertTrue(Path(downloaded_file).is_file())
+            self.assertEqual(target_file_path, downloaded_file)
+
 
 class TestLoadData(unittest.TestCase):
 
