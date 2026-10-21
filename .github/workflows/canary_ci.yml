@@ -79,3 +79,13 @@ jobs:
 
       - name: Test with pytest
         run: pytest
+
+      # Opt-in tests to check network connectivity for elephant-data
+      # repository on GIN, kept out of regular CI because GIN
+      # may answer runners with HTTP 403.
+      - name: Test GIN connectivity
+        if: ${{ !cancelled() }}
+        timeout-minutes: 10
+        env:
+          ELEPHANT_NETWORK_TESTS: "1"
+        run: pytest -v elephant/test/test_datasets.py::TestGinConnectivity
