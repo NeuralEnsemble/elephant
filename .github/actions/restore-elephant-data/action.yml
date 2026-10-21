@@ -3,33 +3,45 @@ name: Restore elephant-data cache
 runs:
   using: "composite"
   steps:
-    - name: Get elephant_data hash
-      id: elephant-data
-      shell: bash
-      run: echo "dataset_hash=$(git ls-remote https://gin.g-node.org/NeuralEnsemble/elephant-data.git HEAD | cut -f1)" >> $GITHUB_OUTPUT
-
     - uses: actions/cache/restore@v5
+      id: restore
       with:
-        path: ~/elephant-data
-        key: datasets-${{ steps.elephant-data.outputs.dataset_hash }}
+        # Must be identical to path in cache_elephant_data.yml. Relative to $GITHUB_WORKSPACE;
+        # so that it matches across OSs.
+        path: .ci-data/elephant-data
+        # Note: The "main" key never matches, so it falls back to restore-keys
+        # which picks latest cache matching the prefix
+        key: use-restore-key
         restore-keys: datasets-
         enableCrossOsArchive: true
 
+    - name: Show restored cache key
+      shell: bash
+      run: |
+        echo "Restored cache key: ${{ steps.restore.outputs.cache-matched-key }}"
+
+    # Use $GITHUB_WORKSPACE (the base actions/cache resolves `path` against) rather than the
+    # working directory, so this matches the cache path even if working-directory changes.
     - name: Export Data Location (Unix)
       shell: bash
       if: runner.os != 'Windows'
       run: |
-        DATA_DIR="$HOME/elephant-data"
-        if [ -d "$DATA_DIR" ]; then
-          echo "ELEPHANT_DATA_LOCATION=$DATA_DIR" >> "$GITHUB_ENV"
-          echo "$DATA_DIR"
+        DATA_DIR="$GITHUB_WORKSPACE/.ci-data/elephant-data"
+        if [ ! -d "$DATA_DIR" ]; then
+          echo "Data location not found: $DATA_DIR"
+          exit 1
         fi
+        echo "ELEPHANT_DATA_LOCATION=$DATA_DIR" >> "$GITHUB_ENV"
+        echo "$DATA_DIR"
 
     - name: Export Data Location (Windows)
       if: runner.os == 'Windows'
       shell: pwsh
       run: |
-        if (Test-Path "$env:USERPROFILE\elephant-data") {
-            "ELEPHANT_DATA_LOCATION=$env:USERPROFILE\elephant-data" >> $env:GITHUB_ENV
-            Write-Output $env:USERPROFILE\elephant-data
+        $DATA_LOCATION = Join-Path $env:GITHUB_WORKSPACE ".ci-data\elephant-data"
+        if (-not (Test-Path $DATA_LOCATION)) {
+            Write-Host "Data location not found: $DATA_LOCATION"
+            exit 1
         }
+        "ELEPHANT_DATA_LOCATION=$DATA_LOCATION" >> $env:GITHUB_ENV
+        Write-Host $DATA_LOCATION

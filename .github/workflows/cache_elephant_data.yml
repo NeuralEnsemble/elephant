@@ -21,13 +21,30 @@ jobs:
       - name: Get current hash (SHA) of the elephant_data repo
         id: elephant-data
         run: |
-            echo "dataset_hash=$(git ls-remote https://gin.g-node.org/NeuralEnsemble/elephant-data.git HEAD | cut -f1)" >> $GITHUB_OUTPUT
+          set -o pipefail
+          for attempt in 1 2 3; do
+            if response=$(git ls-remote https://gin.g-node.org/NeuralEnsemble/elephant-data.git HEAD); then
+              # Cut out the hash, and do a sanity check on the hash
+              if hash=$(echo "$response" | awk '{print $1}') && [[ "$hash" =~ ^[0-9a-f]{40}$ ]]; then
+                echo "dataset_hash=$hash" >> "$GITHUB_OUTPUT"
+                exit 0
+              fi
+            fi
+            echo "ls-remote failed (attempt $attempt)"
+            # Don't sleep after the last attempt
+            if [ "$attempt" -lt 3 ]; then
+              echo "retrying ..."; sleep $((attempt * 30))
+            fi
+          done
+          echo "::error::Could not get elephant-data HEAD from GIN"; exit 1
 
       - uses: actions/cache@v5
         # Loading cache of elephant-data
         id: cache-datasets
         with:
-          path: ~/elephant-data
+          # Relative to $GITHUB_WORKSPACE, so the cache version matches across OSs.
+          # The leading dot in '.ci-data' keeps pytest from collecting the data
+          path: .ci-data/elephant-data
           key: datasets-${{ steps.elephant-data.outputs.dataset_hash }}
           enableCrossOsArchive: true
 
@@ -48,19 +65,18 @@ jobs:
           pip install datalad-installer
           datalad-installer --sudo ok git-annex --method datalad/packages
           pip install datalad
-                
+
       - name: Download dataset
         id: download-dataset
         if: steps.cache-datasets.outputs.cache-hit != 'true'
-        # Download repository and also fetch data
+        # Use $GITHUB_WORKSPACE (the path cache step resolves against)
+        # This matches the cache path even if working-directory changes.
         run: |
-          cd ~
           datalad --version
-          datalad install --recursive --get-data https://gin.g-node.org/NeuralEnsemble/elephant-data
+          mkdir -p "$GITHUB_WORKSPACE/.ci-data"
+          datalad install --recursive --get-data -s https://gin.g-node.org/NeuralEnsemble/elephant-data "$GITHUB_WORKSPACE/.ci-data/elephant-data"
 
       - name: Show size of the cache to assert data is downloaded
         run: |
-          cd ~
-          du -hs ~/elephant-data
-          ls -lh ~/elephant-data
-
+          du -hs "$GITHUB_WORKSPACE/.ci-data/elephant-data"
+          ls -lh "$GITHUB_WORKSPACE/.ci-data/elephant-data"
