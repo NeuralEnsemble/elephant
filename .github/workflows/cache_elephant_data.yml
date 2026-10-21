@@ -5,6 +5,7 @@ on:
   push:  # When something is pushed into master this checks if caches need to re-created
     branches:
       - master
+  pull_request:  # TEMPORARY: create a cache on refs/pull/722/merge for testing; remove before merge
   schedule:
     - cron: "11 23 * * *"  # Daily at 23:11 UTC
 
