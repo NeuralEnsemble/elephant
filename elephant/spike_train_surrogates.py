@@ -1213,7 +1213,9 @@ def trial_shifting(spiketrains, dither, n_surrogates=1):
         A list of spike trains of the same neuron
         where each element corresponds to one trial.
     dither : pq.Quantity
-        Amount of dithering.
+        Amount of dithering. All spikes in a trial are shifted by the same
+        random amount, drawn uniformly from the interval
+        `[-dither, +dither]`.
     n_surrogates : int, optional
         Number of surrogates to be generated.
         Default: 1
@@ -1263,7 +1265,7 @@ def _trial_shifting(spiketrains, dither, t_starts, t_stops, n_surrogates):
         surrogate_spiketrain = []
         # looping over all trials
         for trial_id, single_trial_st in enumerate(copied_spiketrain):
-            single_trial_st += dither * (2 * random.random() - 1)
+            single_trial_st += random.uniform(-dither, dither)
             single_trial_st = np.remainder(
                 single_trial_st - t_starts[trial_id],
                 t_stops[trial_id] - t_starts[trial_id]
@@ -1292,7 +1294,9 @@ def _trial_shifting_of_concatenated_spiketrain(
     spiketrain : neo.SpikeTrain
         A single spike train, where the trials are concatenated.
     dither : pq.Quantity
-        Amount of dithering.
+        Amount of dithering. All spikes in a trial are shifted by the same
+        random amount, drawn uniformly from the interval
+        `[-dither, +dither]`.
     trial_length : pq.Quantity
         The length of the single-trial spiketrain.
     trial_separation : pq.Quantity
