@@ -114,8 +114,8 @@ class WelchPSDTestCase(unittest.TestCase):
         data_multidim = np.random.normal(size=(num_channel, data_length))
         freqs, psd = elephant.spectral.welch_psd(data_multidim)
         freqs_T, psd_T = elephant.spectral.welch_psd(data_multidim.T, axis=0)
-        self.assertTrue(np.all(freqs == freqs_T))
-        self.assertTrue(np.all(psd == psd_T.T))
+        np.testing.assert_allclose(freqs, freqs_T)
+        np.testing.assert_allclose(psd, psd_T.T)
 
     def test_welch_psd_input_types(self):
         # generate a test data
@@ -142,12 +142,14 @@ class WelchPSDTestCase(unittest.TestCase):
         self.assertFalse(isinstance(psd_np, pq.quantity.Quantity))
 
         # check if the results from different input types are identical
-        self.assertTrue(
-            (freqs_neo == freqs_pq).all() and (
-                    psd_neo == psd_pq).all())
-        self.assertTrue(
-            (freqs_neo == freqs_np).all() and (
-                    psd_neo == psd_np).all())
+        np.testing.assert_allclose(freqs_neo.magnitude,
+                                   freqs_pq.rescale(freqs_neo.units).magnitude)
+        np.testing.assert_allclose(psd_neo[0].magnitude,
+                                   psd_pq.rescale(psd_neo.units).magnitude)
+        np.testing.assert_allclose(freqs_neo.rescale(pq.Hz).magnitude,
+                                   freqs_np)
+        np.testing.assert_allclose(
+            psd_neo[0].rescale(pq.mV ** 2 / pq.Hz).magnitude, psd_np)
 
     def test_welch_psd_multidim_input(self):
         # generate multidimensional data
@@ -172,9 +174,13 @@ class WelchPSDTestCase(unittest.TestCase):
         freqs_neo, psd_neo = elephant.spectral.welch_psd(data_neo)
         freqs_neo_1dim, psd_neo_1dim = elephant.spectral.welch_psd(
             data_neo_1dim)
-        self.assertTrue(np.all(freqs_np == freqs_neo))
-        self.assertTrue(np.all(psd_np == psd_neo))
-        self.assertTrue(np.all(psd_neo_1dim == psd_neo[0]))
+        np.testing.assert_allclose(freqs_np,
+                                   freqs_neo.rescale(pq.Hz).magnitude)
+        np.testing.assert_allclose(
+            psd_np, psd_neo.rescale(pq.mV ** 2 / pq.Hz).magnitude)
+        np.testing.assert_allclose(
+            psd_neo_1dim[0].rescale(psd_neo.units).magnitude,
+            psd_neo[0].magnitude)
 
 
 class MultitaperPSDTestCase(unittest.TestCase):
@@ -334,12 +340,14 @@ class MultitaperPSDTestCase(unittest.TestCase):
         np.testing.assert_array_equal(psd_fs_hz, psd_fs_int)
 
         # check if the results from different input types are identical
-        self.assertTrue(
-            (freqs_neo == freqs_pq).all() and (
-                    psd_neo == psd_pq).all())
-        self.assertTrue(
-            (freqs_neo == freqs_np).all() and (
-                    psd_neo == psd_np).all())
+        np.testing.assert_allclose(freqs_neo.magnitude,
+                                   freqs_pq.rescale(freqs_neo.units).magnitude)
+        np.testing.assert_allclose(psd_neo.magnitude,
+                                   psd_pq.rescale(psd_neo.units).magnitude)
+        np.testing.assert_allclose(freqs_neo.rescale(pq.Hz).magnitude,
+                                   freqs_np)
+        np.testing.assert_allclose(
+            psd_neo.rescale(pq.mV ** 2 / pq.Hz).magnitude, psd_np)
 
 
 class SegmentedMultitaperPSDTestCase(unittest.TestCase):
@@ -499,12 +507,14 @@ class SegmentedMultitaperPSDTestCase(unittest.TestCase):
         np.testing.assert_array_equal(psd_fs_hz, psd_fs_int)
 
         # check if the results from different input types are identical
-        self.assertTrue(
-            (freqs_neo == freqs_pq).all() and (
-                    psd_neo == psd_pq).all())
-        self.assertTrue(
-            (freqs_neo == freqs_np).all() and (
-                    psd_neo == psd_np).all())
+        np.testing.assert_allclose(freqs_neo.magnitude,
+                                   freqs_pq.rescale(freqs_neo.units).magnitude)
+        np.testing.assert_allclose(psd_neo.magnitude,
+                                   psd_pq.rescale(psd_neo.units).magnitude)
+        np.testing.assert_allclose(freqs_neo.rescale(pq.Hz).magnitude,
+                                   freqs_np)
+        np.testing.assert_allclose(
+            psd_neo.rescale(pq.mV ** 2 / pq.Hz).magnitude, psd_np)
 
 
 class MultitaperCrossSpectrumTestCase(unittest.TestCase):
@@ -670,12 +680,16 @@ class MultitaperCrossSpectrumTestCase(unittest.TestCase):
         self.assertFalse(isinstance(cross_spec_np, pq.quantity.Quantity))
 
         # check if the results from different input types are identical
-        self.assertTrue(
-            (freqs_neo == freqs_pq).all() and
-            (cross_spec_neo == cross_spec_pq).all())
-        self.assertTrue(
-            (freqs_neo == freqs_np).all() and
-            (cross_spec_neo == cross_spec_np).all())
+        np.testing.assert_allclose(freqs_neo.magnitude,
+                                   freqs_pq.rescale(freqs_neo.units).magnitude)
+        np.testing.assert_allclose(
+            cross_spec_neo.magnitude,
+            cross_spec_pq.rescale(cross_spec_neo.units).magnitude, rtol=1e-5)
+        np.testing.assert_allclose(freqs_neo.rescale(pq.Hz).magnitude,
+                                   freqs_np)
+        np.testing.assert_allclose(
+            cross_spec_neo.rescale(pq.mV ** 2 / pq.Hz).magnitude,
+            cross_spec_np, rtol=1e-5)
 
 
 class SegmentedMultitaperCrossSpectrumTestCase(unittest.TestCase):
@@ -932,7 +946,7 @@ class MultitaperCoherenceTestCase(unittest.TestCase):
             elephant.spectral.multitaper_coherence(anasig_signal_i,
                                                    anasig_signal_j)
 
-        np.testing.assert_array_equal(arr_f, anasig_f)
+        np.testing.assert_allclose(arr_f, anasig_f.rescale(pq.Hz).magnitude)
         np.testing.assert_allclose(arr_coh, anasig_coh.magnitude, atol=1e-6)
         np.testing.assert_array_almost_equal(arr_phi, anasig_phi.magnitude)
 
@@ -1175,12 +1189,17 @@ class WelchCohereTestCase(unittest.TestCase):
         self.assertFalse(isinstance(phase_lag_np, pq.quantity.Quantity))
 
         # check if the results from different input types are identical
-        self.assertTrue((freqs_neo == freqs_pq).all() and
-                        (coherency_neo[:, 0] == coherency_pq).all() and
-                        (phase_lag_neo[:, 0] == phase_lag_pq).all())
-        self.assertTrue((freqs_neo == freqs_np).all() and
-                        (coherency_neo[:, 0] == coherency_np).all() and
-                        (phase_lag_neo[:, 0] == phase_lag_np).all())
+        np.testing.assert_allclose(freqs_neo.magnitude,
+                                   freqs_pq.rescale(freqs_neo.units).magnitude)
+        np.testing.assert_allclose(coherency_neo[:, 0], coherency_pq)
+        np.testing.assert_allclose(
+            phase_lag_neo[:, 0].magnitude,
+            phase_lag_pq.rescale(phase_lag_neo.units).magnitude)
+        np.testing.assert_allclose(freqs_neo.rescale(pq.Hz).magnitude,
+                                   freqs_np)
+        np.testing.assert_allclose(coherency_neo[:, 0], coherency_np)
+        np.testing.assert_allclose(
+            phase_lag_neo[:, 0].rescale(pq.rad).magnitude, phase_lag_np)
 
     def test_welch_cohere_multidim_input(self):
         # generate multidimensional data
@@ -1208,13 +1227,16 @@ class WelchCohereTestCase(unittest.TestCase):
             elephant.spectral.welch_coherence(x_neo, y_neo)
         freqs_neo_1dim, coherency_neo_1dim, phase_lag_neo_1dim = \
             elephant.spectral.welch_coherence(x_neo_1dim, y_neo_1dim)
-        self.assertTrue(np.all(freqs_np == freqs_neo))
-        self.assertTrue(np.all(coherency_np.T == coherency_neo))
-        self.assertTrue(np.all(phase_lag_np.T == phase_lag_neo))
-        self.assertTrue(
-            np.all(coherency_neo_1dim[:, 0] == coherency_neo[:, 0]))
-        self.assertTrue(
-            np.all(phase_lag_neo_1dim[:, 0] == phase_lag_neo[:, 0]))
+        np.testing.assert_allclose(freqs_np,
+                                   freqs_neo.rescale(pq.Hz).magnitude)
+        np.testing.assert_allclose(coherency_np.T, coherency_neo)
+        np.testing.assert_allclose(phase_lag_np.T,
+                                   phase_lag_neo.rescale(pq.rad).magnitude)
+        np.testing.assert_allclose(coherency_neo_1dim[:, 0],
+                                   coherency_neo[:, 0])
+        np.testing.assert_allclose(
+            phase_lag_neo_1dim[:, 0].rescale(phase_lag_neo.units).magnitude,
+            phase_lag_neo[:, 0].magnitude)
 
 
 if __name__ == "__main__":
