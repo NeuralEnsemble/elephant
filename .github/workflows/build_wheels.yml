@@ -43,7 +43,7 @@ jobs:
         run: python -m cibuildwheel --output-dir wheelhouse
         env:
           CIBW_ARCHS: "auto"
-          CIBW_SKIP: cp38-*
+          CIBW_SKIP: "cp38-* cp39-*"
 
       - name: Verify wheels contain compiled code
         run: |
