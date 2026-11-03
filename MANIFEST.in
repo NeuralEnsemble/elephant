@@ -19,3 +19,4 @@ prune doc/reference/toctree
 include doc/reference/toctree/kernels/*
 recursive-exclude * *.h5
 recursive-exclude * *~
+prune doc/adr
