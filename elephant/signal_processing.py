@@ -286,6 +286,8 @@ def cross_correlation_function(signal, channel_pairs, hilbert_envelope=False,
 
         If `n_lags` is not a positive integer.
 
+        If `n_lags` is larger than the number of lags available for `signal`.
+
         If `scaleopt` is not one of the predefined above keywords.
 
     Examples
@@ -372,7 +374,15 @@ def cross_correlation_function(signal, channel_pairs, hilbert_envelope=False,
     # Cut off lags outside the desired range
     if n_lags is not None:
         tau0 = np.argwhere(tau == 0).item()
+        max_n_lags = min(tau0, nt - tau0 - 1)
+        if n_lags > max_n_lags:
+            raise ValueError(
+                f"'n_lags' ({n_lags}) is larger than the number of lags "
+                f"available for a signal of {nt} samples ({max_n_lags}).")
         xcorr = xcorr[tau0 - n_lags: tau0 + n_lags + 1, :]
+        # The lag vector has to follow the same cut, it defines t_start of
+        # the returned signal below.
+        tau = tau[tau0 - n_lags: tau0 + n_lags + 1]
 
     # Return neo.AnalogSignal
     cross_corr = neo.AnalogSignal(xcorr,
