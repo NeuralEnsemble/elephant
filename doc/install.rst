@@ -14,7 +14,7 @@ Below is the explanation of how to proceed with these two steps.
 Prerequisites
 *************
 
-Elephant requires `Python <http://python.org/>`_ 3.9, 3.10, 3.11, 3.12 or 3.13.
+Elephant requires `Python <http://python.org/>`_ 3.10, 3.11, 3.12, 3.13 or 3.14.
 
 .. tabs::
 
