@@ -47,7 +47,7 @@ def fit(seqs_train, x_dim=3, bin_width=20.0, min_var_frac=0.01, em_tol=1.0E-8,
         the private variance floor.  This is used to combat Heywood cases,
         where ML parameter learning returns one or more zero private variances.
         Default: 0.01
-        (See Martin & McDonald, Psychometrika, Dec 1975.)
+        (see :cite:t:`gpfa-Martin75_505`)
     em_tol : float, optional
         stopping criterion for EM
         Default: 1e-8
@@ -185,7 +185,7 @@ def em(params_init, seqs_train, max_iters=500, tol=1.0E-8, min_var_frac=0.01,
         the private variance floor.  This is used to combat Heywood cases,
         where ML parameter learning returns one or more zero private variances.
         Default: 0.01
-        (See Martin & McDonald, Psychometrika, Dec 1975.)
+        (see :cite:t:`gpfa-Martin75_505`)
     freq_ll : int, optional
         data likelihood is computed at every freq_ll EM iterations.
         freq_ll = 1 means that data likelihood is computed at every

@@ -122,7 +122,7 @@ class GPFA(sklearn.base.BaseEstimator):
         the private variance floor.  This is used to combat Heywood cases,
         where ML parameter learning returns one or more zero private variances.
         Default: 0.01
-        (See Martin & McDonald, Psychometrika, Dec 1975.)
+        (see :cite:t:`gpfa-Martin75_505`)
     tau_init : float, optional
         GP timescale initialization in msec
         Default: 100
