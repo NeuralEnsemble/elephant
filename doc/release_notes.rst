@@ -2,6 +2,17 @@
 Release Notes
 =============
 
+Unreleased
+==========
+
+New Features
+------------
+- Added a `detrend` parameter to `spectral.multitaper_psd`, `spectral.segmented_multitaper_psd`, `spectral.multitaper_cross_spectrum`, `spectral.segmented_multitaper_cross_spectrum` and `spectral.multitaper_coherence`. As in `spectral.welch_psd`, it accepts 'constant', 'linear', a function or False, and is applied to each channel (and each segment, for the segmented functions) before tapering. Detrending removes the DC component and its leakage beyond the taper bandwidth, which otherwise dominates the low-frequency part of the spectrum, in particular for a `BinnedSpikeTrain`.
+
+Deprecations
+------------
+- The default of the `detrend` parameter of the multitaper functions in `spectral` will change from False (no detrending) to 'constant' in a future version, consistent with `spectral.welch_psd`. Until then, the default (`detrend=None`) does not detrend and issues a `FutureWarning`. Pass `detrend=False` to keep the current results, or `detrend='constant'` to adopt the future behavior.
+
 Release 1.2.1
 =============
 This is a patch release of Elephant, restoring full C++ acceleration for the SPADE module on macOS and Windows, and modernizing the build system.

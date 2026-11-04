@@ -9,9 +9,17 @@ spectrum).
     welch_psd
     welch_coherence
     multitaper_psd
+    segmented_multitaper_psd
     multitaper_cross_spectrum
     segmented_multitaper_cross_spectrum
     multitaper_coherence
+
+
+References
+----------
+
+.. bibliography::
+   :keyprefix: spectral-
 
 
 :copyright: Copyright 2014-2026 by the Elephant team, see `doc/authors.rst`.
@@ -20,15 +28,17 @@ spectrum).
 
 import warnings
 
-import neo
 import numpy as np
 import quantities as pq
 import scipy.signal
+import neo
+import elephant.conversion
 
 __all__ = [
     "welch_psd",
     "welch_coherence",
     "multitaper_psd",
+    "segmented_multitaper_psd",
     "multitaper_cross_spectrum",
     "segmented_multitaper_cross_spectrum",
     "multitaper_coherence"
@@ -39,9 +49,9 @@ def welch_psd(signal, n_segments=8, len_segment=None,
               frequency_resolution=None, overlap=0.5, fs=1.0, window='hann',
               nfft=None, detrend='constant', return_onesided=True,
               scaling='density', axis=-1):
-    """
+    r"""
     Estimates power spectrum density (PSD) of a given `neo.AnalogSignal`
-    using Welch's method.
+    or `BinnedSpikeTrain` using Welch's method.
 
     The PSD is obtained through the following steps:
 
@@ -62,7 +72,7 @@ def welch_psd(signal, n_segments=8, len_segment=None,
 
     Parameters
     ----------
-    signal : neo.AnalogSignal or pq.Quantity or np.ndarray
+    signal : neo.AnalogSignal or pq.Quantity or np.ndarray or BinnedSpikeTrain
         Time series data, of which PSD is estimated. When `signal` is
         `pq.Quantity` or `np.ndarray`, sampling frequency should be given
         through the keyword argument `fs`. Otherwise, the default value is
@@ -176,6 +186,64 @@ def welch_psd(signal, n_segments=8, len_segment=None,
        `signal.shape[axis] / (n_segments - overlap * (n_segments - 1))`
 
        converted to integer.
+    4. If `signal` is a `BinnedSpikeTrain`, it is first converted into a
+       signal of instantaneous firing rates using
+       `BinnedSpikeTrain.to_analog_signal()`. This divides the spike count
+       :math:`n_k` of each bin by the bin size :math:`b` (in seconds), so that
+       the analyzed signal is :math:`r_k = n_k / b` in Hz, sampled at
+       :math:`f_s = 1/b`. The returned PSD consequently has units of Hz, that
+       is, Hz^2/Hz.
+    5. The normalization procedure makes the estimate independent of the
+       choice of `b`. For a homogeneous Poisson process of rate
+       :math:`\lambda`, the two-sided spectral density is flat at
+       :math:`\lambda` for all frequencies away from zero
+       :cite:`spectral-Gerstner2002`. The result can be understood from
+       the following argument: the spike counts of disjoint bins of a Poisson
+       process are independent and Poisson distributed, so that their mean
+       and variance are equal,
+       :math:`\mathrm{E}[n_k] = \mathrm{Var}[n_k] = \lambda b`. The variance
+       of the rates :math:`r_k = n_k / b` becomes
+       :math:`\mathrm{Var}[r_k] = \mathrm{Var}[n_k] / b^2 = \lambda / b`.
+       A white discrete-time series with variance :math:`\sigma^2` has the
+       covariance :math:`C[m] = \sigma^2` for :math:`m = 0`, and
+       :math:`C[m] = 0` otherwise. By the Wiener-Khinchin theorem, the
+       spectrum relates to the covariance as
+       :math:`S(f) = \frac{1}{f_s} \sum_m C[m] e^{-i 2 \pi f m / f_s}`,
+       which yields the white two-sided spectral density
+       :math:`S(f) = \sigma^2 / f_s`. Inserting
+       :math:`\sigma^2 = \mathrm{Var}[r_k] = \lambda / b` and
+       :math:`f_s = 1 / b` gives
+
+       .. math::
+           S(f) = \frac{\lambda / b}{1 / b} = \lambda .
+
+       The estimate remains flat up to the Nyquist frequency, because the
+       attenuation :math:`\mathrm{sinc}^2(f b)` that binning imposes is
+       exactly compensated by the power which aliasing folds back into the
+       baseband, :math:`\sum_m \mathrm{sinc}^2(f b + m) = 1`. For any renewal
+       process, :math:`S(f)` approaches :math:`\lambda` for large :math:`f`,
+       as this limit reflects the discreteness of the spikes rather than the
+       shape of the interval distribution.
+    6. The values quoted above refer to the two-sided spectrum, as commonly
+       used in the theoretical literature. This function instead follows
+       the convention of `scipy.signal.welch`, which returns a one-sided
+       power spectrum by default. With the default `return_onesided` = True,
+       negative frequencies are mapped onto the positive axis, doubling the
+       power of every bin that has a negative counterpart. In particular,
+       the frequency bin at 0 is not doubled. Likewise, the frequency bin at
+       the Nyquist frequency is not doubled if `nfft` (by default equal to
+       the segment length) is even. Neither of these bins is doubled, since
+       they have no distinct negative-frequency counterpart. Consequently,
+       the one-sided spectrum of a Poisson process levels off at
+       :math:`2 \lambda` for large :math:`f`, and at :math:`\lambda` only if
+       `return_onesided` = False is used. For even `nfft`, the last
+       (Nyquist) bin of the one-sided estimate is an exception: it remains
+       at :math:`\lambda` rather than :math:`2 \lambda`, which is expected
+       and does not indicate an error.
+    7. All values given in these notes presuppose actual spike counts. They
+       do not hold for a binarized `BinnedSpikeTrain`, in which bins
+       containing more than one spike are clipped to one (i.e., all bins are
+       zero or one).
 
     Examples
     --------
@@ -199,6 +267,10 @@ def welch_psd(signal, n_segments=8, len_segment=None,
             1.00810196e-05, 2.40079315e-06, 7.35821437e-07, 2.58361700e-07,
             9.44183422e-08, 3.14573483e-08, 6.82050475e-09, 1.18183354e-10]]) * mV**2/Hz
     """
+    if isinstance(signal, elephant.conversion.BinnedSpikeTrain):
+        # Convert spike train to an analog signal with units of Hz
+        signal = signal.to_analog_signal(scaling="normalized")
+
     # 'hanning' window was removed with release of scipy 1.9.0, it was
     # deprecated since 1.1.0.
     if window == 'hanning':
@@ -280,10 +352,10 @@ def welch_psd(signal, n_segments=8, len_segment=None,
 
 
 def multitaper_psd(signal, fs=1, nw=4, num_tapers=None, peak_resolution=None,
-                   attach_units=True):
-    """
-    Estimates power spectrum density (PSD) of a given 'neo.AnalogSignal'
-    using the Multitaper method.
+                   attach_units=True, detrend=None):
+    r"""
+    Estimates power spectrum density (PSD) of a given `neo.AnalogSignal`
+    or `BinnedSpikeTrain` using the Multitaper method.
 
     The PSD is obtained through the following steps:
 
@@ -297,7 +369,7 @@ def multitaper_psd(signal, fs=1, nw=4, num_tapers=None, peak_resolution=None,
 
     Parameters
     ----------
-    signal : neo.AnalogSignal or pq.Quantity or np.ndarray
+    signal : neo.AnalogSignal or pq.Quantity or np.ndarray or BinnedSpikeTrain
         Time series data of which PSD is estimated. When `signal` is np.ndarray
         sampling frequency should be given through keyword argument `fs`.
         Signal should be passed as (n_channels, n_samples)
@@ -318,9 +390,20 @@ def multitaper_psd(signal, fs=1, nw=4, num_tapers=None, peak_resolution=None,
         When given as a `float`, it is taken as frequency in Hz.
         Default: None.
     attach_units : bool, optional
-        If True and signals is an instance of pq.Quantity, units are attached
-        to the estimated cross spectrum.
+        If True and signal is an instance of pq.Quantity, units are attached
+        to the estimated PSD.
         Default: True
+    detrend : {'constant', 'linear'} or function or False or None, optional
+        Specifies how to detrend each channel of the signal before it is
+        multiplied by the tapers. If 'constant', the mean is subtracted. If
+        'linear', the least-squares linear fit is subtracted (see
+        :func:`scipy.signal.detrend`). If a function, it is called with the
+        data of shape (n_channels, n_samples) and must return the detrended
+        data of the same shape. If False, the data are not detrended. If None,
+        the data are not detrended either, but a FutureWarning is issued, as
+        the default will change to 'constant' in a future version.
+        See Notes [5].
+        Default: None
 
     Returns
     -------
@@ -336,6 +419,9 @@ def multitaper_psd(signal, fs=1, nw=4, num_tapers=None, peak_resolution=None,
 
         If `peak_resolution` is None and `num_tapers` is not a positive number.
 
+        If `detrend` is not 'constant', 'linear', a function, False or None,
+        or if a function passed as `detrend` changes the shape of the data.
+
     TypeError
         If `peak_resolution` is None and `num_tapers` is not an int.
 
@@ -345,10 +431,80 @@ def multitaper_psd(signal, fs=1, nw=4, num_tapers=None, peak_resolution=None,
        peak_resolution. If peak_resolution is provided, it determines both nw
        and the num_tapers. Specifying num_tapers has an effect only if
        peak_resolution is not provided.
+    2. If `signal` is a `BinnedSpikeTrain`, it is first converted into a
+       signal of instantaneous firing rates using
+       `BinnedSpikeTrain.to_analog_signal()`. This divides the spike count
+       :math:`n_k` of each bin by the bin size :math:`b` (in seconds), so that
+       the analyzed signal is :math:`r_k = n_k / b` in Hz, sampled at
+       :math:`f_s = 1/b`. The returned PSD consequently has units of Hz, that
+       is, Hz^2/Hz.
+    3. The normalization procedure makes the estimate independent of the
+       choice of `b`. For a homogeneous Poisson process of rate
+       :math:`\lambda`, the two-sided spectral density is flat at
+       :math:`\lambda` for all frequencies away from zero
+       :cite:`spectral-Gerstner2002`. The result can be understood from
+       the following argument: the spike counts of disjoint bins of a Poisson
+       process are independent and Poisson distributed, so that their mean
+       and variance are equal,
+       :math:`\mathrm{E}[n_k] = \mathrm{Var}[n_k] = \lambda b`. The variance
+       of the rates :math:`r_k = n_k / b` becomes
+       :math:`\mathrm{Var}[r_k] = \mathrm{Var}[n_k] / b^2 = \lambda / b`.
+       A white discrete-time series with variance :math:`\sigma^2` has the
+       covariance :math:`C[m] = \sigma^2` for :math:`m = 0`, and
+       :math:`C[m] = 0` otherwise. By the Wiener-Khinchin theorem, the
+       spectrum relates to the covariance as
+       :math:`S(f) = \frac{1}{f_s} \sum_m C[m] e^{-i 2 \pi f m / f_s}`,
+       which yields the white two-sided spectral density
+       :math:`S(f) = \sigma^2 / f_s`. Inserting
+       :math:`\sigma^2 = \mathrm{Var}[r_k] = \lambda / b` and
+       :math:`f_s = 1 / b` gives
+
+       .. math::
+           S(f) = \frac{\lambda / b}{1 / b} = \lambda .
+
+       The estimate remains flat up to the Nyquist frequency, because the
+       attenuation :math:`\mathrm{sinc}^2(f b)` that binning imposes is
+       exactly compensated by the power which aliasing folds back into the
+       baseband, :math:`\sum_m \mathrm{sinc}^2(f b + m) = 1`. For any renewal
+       process, :math:`S(f)` approaches :math:`\lambda` for large :math:`f`,
+       as this limit reflects the discreteness of the spikes rather than the
+       shape of the interval distribution.
+    4. This function always returns a one-sided spectrum. The values
+       quoted above refer to the two-sided spectrum, as commonly used in the
+       theoretical literature. In the one-sided spectrum, negative
+       frequencies are mapped onto the positive axis, doubling the power of
+       every bin except the one at zero frequency, which has no distinct
+       negative-frequency counterpart. Consequently, the one-sided spectrum
+       of a Poisson process levels off at :math:`2 \lambda` for large
+       :math:`f`.
+    5. In contrast to :func:`welch_psd`, this function does not yet detrend
+       the data by default (see `detrend`). Without detrending, the mean of
+       each channel is retained as a large DC component. Most of its power
+       falls into the frequency bins within the bandwidth of the tapers,
+       :math:`|f| \le W` with :math:`W = nw / T` for a signal of duration
+       :math:`T`, but the remainder leaks into neighboring bins and decays
+       only gradually with frequency. For a `BinnedSpikeTrain`, this
+       component is the mean firing rate, which is large compared to the
+       spectrum itself. With `detrend` = 'constant', the mean
+       is subtracted before tapering, which removes the DC component together
+       with its leakage. The bins within the bandwidth then remain somewhat
+       reduced, as the subtracted mean also contains the power of the signal
+       at frequencies close to zero. With `detrend` = 'linear', a linear
+       trend, whose power leaks in the same manner, is removed as well.
+    6. All values given in these notes presuppose actual spike counts. They
+       do not hold for a binarized `BinnedSpikeTrain`, in which bins
+       containing more than one spike are clipped to one (i.e., all bins are
+       zero or one).
     """
 
     # When the input is AnalogSignal, the data is added after rolling the axis
     # for time index to the last
+    if isinstance(signal, elephant.conversion.BinnedSpikeTrain):
+        # Convert spike train to an analog signal with units of Hz
+        signal = signal.to_analog_signal(scaling="normalized")
+
+    detrend = _resolve_multitaper_detrend(detrend)
+
     data = np.asarray(signal)
     if isinstance(signal, neo.AnalogSignal):
         data = np.moveaxis(data, 0, 1)
@@ -360,6 +516,8 @@ def multitaper_psd(signal, fs=1, nw=4, num_tapers=None, peak_resolution=None,
     # Add a dim if data has only one dimension
     if data.ndim == 1:
         data = data[np.newaxis, :]
+
+    data = _detrend_multitaper(data, detrend)
 
     length_signal = np.shape(data)[1]
 
@@ -413,10 +571,11 @@ def multitaper_psd(signal, fs=1, nw=4, num_tapers=None, peak_resolution=None,
 
 def segmented_multitaper_psd(signal, n_segments=1, len_segment=None,
                              frequency_resolution=None, overlap=0.5, fs=1,
-                             nw=4, num_tapers=None, peak_resolution=None):
-    """
-    Estimates power spectrum density (PSD) of a given 'neo.AnalogSignal'
-    using Multitaper method
+                             nw=4, num_tapers=None, peak_resolution=None,
+                             detrend=None):
+    r"""
+    Estimates power spectrum density (PSD) of a given `neo.AnalogSignal`
+    or `BinnedSpikeTrain` using the Multitaper method.
 
     The PSD is obtained through the following steps:
 
@@ -439,13 +598,10 @@ def segmented_multitaper_psd(signal, n_segments=1, len_segment=None,
 
     Parameters
     ----------
-    signal : neo.AnalogSignal or pq.Quantity or np.ndarray
+    signal : neo.AnalogSignal or pq.Quantity or np.ndarray or BinnedSpikeTrain
         Time series data of which PSD is estimated. When `signal` is np.ndarray
         sampling frequency should be given through keyword argument `fs`.
         Signal should be passed as (n_channels, n_samples)
-    fs : float, optional
-        Specifies the sampling frequency of the input time series
-        Default: 1.0.
     n_segments : int, optional
         Number of segments. The length of segments is adjusted so that
         overlapping segments cover the entire stretch of the given data. This
@@ -466,6 +622,9 @@ def segmented_multitaper_psd(signal, n_segments=1, len_segment=None,
         Overlap between segments represented as a float number between 0 (no
         overlap) and 1 (complete overlap).
         Default: 0.5 (half-overlapped).
+    fs : float, optional
+        Specifies the sampling frequency of the input time series
+        Default: 1.0.
     nw : float, optional
         Time bandwidth product
         Default: 4.0.
@@ -479,28 +638,32 @@ def segmented_multitaper_psd(signal, n_segments=1, len_segment=None,
         High peak resolution --> high numerical value --> high number of tapers
         When given as a `float`, it is taken as frequency in Hz.
         Default: None.
-
-    Notes
-    -----
-    1. There is a parameter hierarchy regarding n_segments and len_segment. The
-       former parameter is ignored if the latter one is passed.
-
-    2. There is a parameter hierarchy regarding nw, num_tapers and
-       peak_resolution. If peak_resolution is provided, it determines both nw
-       and the num_tapers. Specifying num_tapers has an effect only if
-       peak_resolution is not provided.
+    detrend : {'constant', 'linear'} or function or False or None, optional
+        Specifies how to detrend each segment of each channel before it is
+        multiplied by the tapers. If 'constant', the mean is subtracted. If
+        'linear', the least-squares linear fit is subtracted (see
+        :func:`scipy.signal.detrend`). If a function, it is called with the
+        data of shape (n_channels, n_samples) and must return the detrended
+        data of the same shape. If False, the data are not detrended. If None,
+        the data are not detrended either, but a FutureWarning is issued, as
+        the default will change to 'constant' in a future version.
+        See Notes [6].
+        Default: None
 
     Returns
     -------
     freqs : np.ndarray
-        Frequencies associated with power estimate in `psd`
+        Frequencies associated with power estimate in `psd`.
     psd : np.ndarray
-        PSD estimate of the time series in `signal`
+        PSD estimate of the time series in `signal`.
 
     Raises
     ------
     ValueError
         If `peak_resolution` is None and `num_tapers` is not a positive number.
+
+        If `detrend` is not 'constant', 'linear', a function, False or None,
+        or if a function passed as `detrend` changes the shape of the data.
 
         If `frequency_resolution` is too high for the given data size.
 
@@ -518,7 +681,91 @@ def segmented_multitaper_psd(signal, n_segments=1, len_segment=None,
 
     TypeError
         If `peak_resolution` is None and `num_tapers` is not an int.
+
+    Notes
+    -----
+    1. There is a parameter hierarchy regarding n_segments and len_segment. The
+       former parameter is ignored if the latter one is passed.
+
+    2. There is a parameter hierarchy regarding nw, num_tapers and
+       peak_resolution. If peak_resolution is provided, it determines both nw
+       and the num_tapers. Specifying num_tapers has an effect only if
+       peak_resolution is not provided.
+
+    3. If `signal` is a `BinnedSpikeTrain`, it is first converted into a
+       signal of instantaneous firing rates using
+       `BinnedSpikeTrain.to_analog_signal()`. This divides the spike count
+       :math:`n_k` of each bin by the bin size :math:`b` (in seconds), so that
+       the analyzed signal is :math:`r_k = n_k / b` in Hz, sampled at
+       :math:`f_s = 1/b`. The returned PSD consequently has units of Hz, that
+       is, Hz^2/Hz.
+
+    4. The normalization procedure makes the estimate independent of the
+       choice of `b`. For a homogeneous Poisson process of rate
+       :math:`\lambda`, the two-sided spectral density is flat at
+       :math:`\lambda` for all frequencies away from zero
+       :cite:`spectral-Gerstner2002`. The result can be understood from
+       the following argument: the spike counts of disjoint bins of a Poisson
+       process are independent and Poisson distributed, so that their mean
+       and variance are equal,
+       :math:`\mathrm{E}[n_k] = \mathrm{Var}[n_k] = \lambda b`. The variance
+       of the rates :math:`r_k = n_k / b` becomes
+       :math:`\mathrm{Var}[r_k] = \mathrm{Var}[n_k] / b^2 = \lambda / b`.
+       A white discrete-time series with variance :math:`\sigma^2` has the
+       covariance :math:`C[m] = \sigma^2` for :math:`m = 0`, and
+       :math:`C[m] = 0` otherwise. By the Wiener-Khinchin theorem, the
+       spectrum relates to the covariance as
+       :math:`S(f) = \frac{1}{f_s} \sum_m C[m] e^{-i 2 \pi f m / f_s}`,
+       which yields the white two-sided spectral density
+       :math:`S(f) = \sigma^2 / f_s`. Inserting
+       :math:`\sigma^2 = \mathrm{Var}[r_k] = \lambda / b` and
+       :math:`f_s = 1 / b` gives
+
+       .. math::
+           S(f) = \frac{\lambda / b}{1 / b} = \lambda .
+
+       The estimate remains flat up to the Nyquist frequency, because the
+       attenuation :math:`\mathrm{sinc}^2(f b)` that binning imposes is
+       exactly compensated by the power which aliasing folds back into the
+       baseband, :math:`\sum_m \mathrm{sinc}^2(f b + m) = 1`. For any renewal
+       process, :math:`S(f)` approaches :math:`\lambda` for large :math:`f`,
+       as this limit reflects the discreteness of the spikes rather than the
+       shape of the interval distribution.
+
+    5. This function always returns a one-sided spectrum. The values
+       quoted above refer to the two-sided spectrum, as commonly used in the
+       theoretical literature. In the one-sided spectrum, negative
+       frequencies are mapped onto the positive axis, doubling the power of
+       every bin except the one at zero frequency, which has no distinct
+       negative-frequency counterpart. Consequently, the one-sided spectrum
+       of a Poisson process levels off at :math:`2 \lambda` for large
+       :math:`f`.
+
+    6. In contrast to :func:`welch_psd`, this function does not yet detrend
+       the data by default (see `detrend`). Without detrending, the mean of
+       each segment is retained as a large DC component. Most of its power
+       falls into the frequency bins within the bandwidth of the tapers,
+       :math:`|f| \le W` with :math:`W = nw / T` for a signal of duration
+       :math:`T`, but the remainder leaks into neighboring bins and decays
+       only gradually with frequency. For a `BinnedSpikeTrain`, this
+       component is the mean firing rate, which is large compared to the
+       spectrum itself. With `detrend` = 'constant', the mean
+       is subtracted before tapering, which removes the DC component together
+       with its leakage. The bins within the bandwidth then remain somewhat
+       reduced, as the subtracted mean also contains the power of the signal
+       at frequencies close to zero. With `detrend` = 'linear', a linear
+       trend, whose power leaks in the same manner, is removed as well.
+
+    7. All values given in these notes presuppose actual spike counts. They
+       do not hold for a binarized `BinnedSpikeTrain`, in which bins
+       containing more than one spike are clipped to one (i.e., all bins are
+       zero or one).
     """
+    if isinstance(signal, elephant.conversion.BinnedSpikeTrain):
+        # Convert spike train to an analog signal with units of Hz
+        signal = signal.to_analog_signal(scaling="normalized")
+
+    detrend = _resolve_multitaper_detrend(detrend)
 
     # When the input is AnalogSignal, the data is added after rolling the axis
     # for time index to the last
@@ -538,7 +785,8 @@ def segmented_multitaper_psd(signal, n_segments=1, len_segment=None,
         'nw': nw,
         'num_tapers': num_tapers,
         'peak_resolution': peak_resolution,
-        'attach_units': False
+        'attach_units': False,
+        'detrend': detrend
     }
 
     freqs, psd = _segmented_apply_func(
@@ -556,8 +804,8 @@ def segmented_multitaper_psd(signal, n_segments=1, len_segment=None,
 
 def multitaper_cross_spectrum(signals, fs=1.0, nw=4.0, num_tapers=None,
                               peak_resolution=None, return_onesided=True,
-                              attach_units=True):
-    """
+                              attach_units=True, detrend=None):
+    r"""
     Estimates the cross spectrum of a given `neo.AnalogSignal` using the
     Multitaper method.
 
@@ -613,6 +861,17 @@ def multitaper_cross_spectrum(signals, fs=1.0, nw=4.0, num_tapers=None,
         If True and signals is instance of pq.Quantity, units are attached to
         the estimated cross spectrum.
         Default: True
+    detrend : {'constant', 'linear'} or function or False or None, optional
+        Specifies how to detrend each channel of the signals before it is
+        multiplied by the tapers. If 'constant', the mean is subtracted. If
+        'linear', the least-squares linear fit is subtracted (see
+        :func:`scipy.signal.detrend`). If a function, it is called with the
+        data of shape (n_channels, n_samples) and must return the detrended
+        data of the same shape. If False, the data are not detrended. If None,
+        the data are not detrended either, but a FutureWarning is issued, as
+        the default will change to 'constant' in a future version.
+        See Notes [2].
+        Default: None
 
     Returns
     -------
@@ -632,6 +891,9 @@ def multitaper_cross_spectrum(signals, fs=1.0, nw=4.0, num_tapers=None,
     ValueError
         If `peak_resolution` is None and `num_tapers` is not a positive number.
 
+        If `detrend` is not 'constant', 'linear', a function, False or None,
+        or if a function passed as `detrend` changes the shape of the data.
+
     TypeError
         If `peak_resolution` is None and `num_tapers` is not an int.
 
@@ -641,12 +903,28 @@ def multitaper_cross_spectrum(signals, fs=1.0, nw=4.0, num_tapers=None,
        `peak_resolution`. If peak_resolution is provided, it determines both
        `nw` and the `num_tapers`. Specifying `num_tapers` has an effect only if
        `peak_resolution` is not provided.
+    2. In contrast to :func:`welch_psd`, this function does not yet detrend
+       the data by default (see `detrend`). Without detrending, the mean of
+       each channel is retained as a large DC component. Most of its power
+       falls into the frequency bins within the bandwidth of the tapers,
+       :math:`|f| \le W` with :math:`W = nw / T` for a signal of duration
+       :math:`T`, but the remainder leaks into neighboring bins and decays
+       only gradually with frequency. With `detrend` = 'constant', the mean
+       is subtracted before tapering, which removes the DC component together
+       with its leakage. The bins within the bandwidth then remain somewhat
+       reduced, as the subtracted mean also contains the power of the signal
+       at frequencies close to zero. With `detrend` = 'linear', a linear
+       trend, whose power leaks in the same manner, is removed as well.
     """
+    detrend = _resolve_multitaper_detrend(detrend)
+
     # When the input is AnalogSignal, fetch the underlying numpy array and swap
     # axes from (n_samples, n_channels) to (n_channels, n_samples)
     data = np.asarray(signals)
     if isinstance(signals, neo.AnalogSignal):
         data = np.moveaxis(data, 0, 1)
+
+    data = _detrend_multitaper(data, detrend)
 
     # Number of data points in time series
     length_signal = np.shape(data)[1]
@@ -709,6 +987,55 @@ def multitaper_cross_spectrum(signals, fs=1.0, nw=4.0, num_tapers=None,
         cross_spec = cross_spec * signals.units * signals.units / pq.Hz
 
     return freqs, cross_spec
+
+
+def _resolve_multitaper_detrend(detrend):
+    """
+    Resolves the default `detrend` = None of the multitaper functions.
+
+    None currently selects False, i.e., no detrending, and issues a
+    FutureWarning announcing the change of the default to 'constant'. The
+    public multitaper functions resolve the default before passing `detrend`
+    on to other multitaper functions, so that the warning is issued only once
+    per call of a public function, and not once per segment.
+    """
+    if detrend is None:
+        warnings.warn(
+            "The default of the `detrend` parameter of the multitaper "
+            "functions will change from False to 'constant' in a future "
+            "version of Elephant, consistent with welch_psd(). Pass "
+            "`detrend` explicitly to keep the current behavior "
+            "(detrend=False) or to adopt the future one "
+            "(detrend='constant') and silence this warning.",
+            FutureWarning, stacklevel=3)
+        return False
+    return detrend
+
+
+def _detrend_multitaper(data, detrend):
+    """
+    Detrends data of shape (n_channels, n_samples) along the time axis
+    according to the `detrend` parameter of the multitaper functions.
+
+    The accepted values follow those of :func:`scipy.signal.welch`: 'constant'
+    or 'linear' are passed to :func:`scipy.signal.detrend`, and a function is
+    called with `data` and must return an array of the same shape.
+    """
+    if detrend is False:
+        return data
+    if isinstance(detrend, str):
+        if detrend not in ('constant', 'linear'):
+            raise ValueError("detrend must be 'constant', 'linear', a "
+                             "function or False")
+        return scipy.signal.detrend(data, axis=-1, type=detrend)
+    if callable(detrend):
+        detrended = np.asarray(detrend(data))
+        if detrended.shape != data.shape:
+            raise ValueError("The function passed as detrend must return an "
+                             "array of the same shape as its input")
+        return detrended
+    raise ValueError("detrend must be 'constant', 'linear', a function or "
+                     "False")
 
 
 def _segmented_apply_func(data, func, fs=1.0, n_segments=1, len_segment=None,
@@ -778,9 +1105,9 @@ def _segmented_apply_func(data, func, fs=1.0, n_segments=1, len_segment=None,
     Returns
     -------
     freqs : np.ndarray
-        Frequencies associated with the estimated spectral measure
+        Frequencies associated with the estimated spectral measure.
     avg_estimate : np.ndarray
-        Estimated spectral measure for segmented data
+        Estimated spectral measure for segmented data.
 
     Raises
     ------
@@ -863,14 +1190,15 @@ def _segmented_apply_func(data, func, fs=1.0, n_segments=1, len_segment=None,
     data = np.pad(data, [(0, 0), (0, remainder)],
                   mode='constant', constant_values=0)
 
-    # Generate array for storing cross spectra estimates of segments
-    seg_estimates = np.zeros((n_segments,
-                              data.shape[0],
-                              data.shape[0],
-                              len(freqs)),
-                             dtype=np.complex64)
-
     n_overlap_step = n_per_seg - n_overlap
+
+    # Buffer for storing the per-segment estimates, allocated from the
+    # shape and dtype of the estimate of the first segment.
+    # `func` may return a per-channel spectral measure of shape
+    # (n_channels, n_freqs), as multitaper_psd does, or
+    # a genuine cross-spectral measure of shape (n_channels, n_channels,
+    # n_freqs), as multitaper_cross_spectrum does.
+    seg_estimates = None
 
     for i in range(n_segments):
 
@@ -878,11 +1206,12 @@ def _segmented_apply_func(data, func, fs=1.0, n_segments=1, len_segment=None,
             data[:, i * n_overlap_step:i * n_overlap_step + n_per_seg],
             **func_params_dict)
 
-        # Workaround for mismatched dimensions
-        if estimate.ndim != seg_estimates.ndim - 1:  # Multitaper PSD
-            seg_estimates[i] = estimate[:, np.newaxis, :]
-        else:
-            seg_estimates[i] = estimate
+        if seg_estimates is None:
+            # First loop allocates the buffer based on the return
+            seg_estimates = np.zeros((n_segments,) + estimate.shape,
+                                     dtype=estimate.dtype)
+
+        seg_estimates[i] = estimate
 
     avg_estimate = np.mean(seg_estimates, axis=0)
 
@@ -894,7 +1223,8 @@ def segmented_multitaper_cross_spectrum(signals, n_segments=1,
                                         frequency_resolution=None, overlap=0.5,
                                         fs=1.0, nw=4.0, num_tapers=None,
                                         peak_resolution=None,
-                                        return_onesided=True):
+                                        return_onesided=True,
+                                        detrend=None):
     """
     Estimates the cross spectrum of a given `neo.AnalogSignal` using the
     Multitaper method on segments of the data.
@@ -978,6 +1308,18 @@ def segmented_multitaper_cross_spectrum(signals, n_segments=1,
         If True, return a one-sided spectrum for real data.
         If False return a two-sided spectrum.
         Default: True
+    detrend : {'constant', 'linear'} or function or False or None, optional
+        Specifies how to detrend each segment of each channel before it is
+        multiplied by the tapers. If 'constant', the mean is subtracted. If
+        'linear', the least-squares linear fit is subtracted (see
+        :func:`scipy.signal.detrend`). If a function, it is called with the
+        data of shape (n_channels, n_samples) and must return the detrended
+        data of the same shape. If False, the data are not detrended. If None,
+        the data are not detrended either, but a FutureWarning is issued, as
+        the default will change to 'constant' in a future version.
+        See Notes [2] of
+        :func:`multitaper_cross_spectrum`.
+        Default: None
 
     Returns
     -------
@@ -994,6 +1336,8 @@ def segmented_multitaper_cross_spectrum(signals, n_segments=1,
     --------
     :func:`multitaper_cross_spectrum`
     """
+    detrend = _resolve_multitaper_detrend(detrend)
+
     # When the input is AnalogSignal, fetch the underlying numpy array and swap
     # axes from (n_samples, n_channels) to (n_channels, n_samples)
     data = np.asarray(signals)
@@ -1008,7 +1352,8 @@ def segmented_multitaper_cross_spectrum(signals, n_segments=1,
         'num_tapers': num_tapers,
         'peak_resolution': peak_resolution,
         'return_onesided': return_onesided,
-        'attach_units': False}
+        'attach_units': False,
+        'detrend': detrend}
 
     # Apply segmentation
     freqs, cross_spec = _segmented_apply_func(
@@ -1027,7 +1372,8 @@ def segmented_multitaper_cross_spectrum(signals, n_segments=1,
 
 def multitaper_coherence(signal_i, signal_j, n_segments=1, len_segment=None,
                          frequency_resolution=None, overlap=0.5, fs=1,
-                         nw=4, num_tapers=None, peak_resolution=None):
+                         nw=4, num_tapers=None, peak_resolution=None,
+                         detrend=None):
     r"""
     Estimates the magnitude-squared coherence and phase-lag of two given
     `neo.AnalogSignal` using the Multitaper method.
@@ -1086,6 +1432,19 @@ def multitaper_coherence(signal_i, signal_j, n_segments=1, len_segment=None,
         High peak resolution --> high numerical value --> high number of tapers
         When given as a `float`, it is taken as frequency in Hz.
         Default: None.
+    detrend : {'constant', 'linear'} or function or False or None, optional
+        Specifies how to detrend each segment of both signals before it is
+        multiplied by the tapers. If 'constant', the mean is subtracted. If
+        'linear', the least-squares linear fit is subtracted (see
+        :func:`scipy.signal.detrend`). If a function, it is called with the
+        data of shape (n_channels, n_samples) and must return the detrended
+        data of the same shape. If False, the data are not detrended. If None,
+        the data are not detrended either, but a FutureWarning is issued, as
+        the default will change to 'constant' in a future version.
+        Without detrending, the leakage of the means of the two signals
+        is common to both, and thereby inflates the coherence at low
+        frequencies. See Notes [2] of :func:`multitaper_cross_spectrum`.
+        Default: None
 
     Returns
     -------
@@ -1096,6 +1455,8 @@ def multitaper_coherence(signal_i, signal_j, n_segments=1, len_segment=None,
     phase_lag : np.ndarray
         Phase lags associated with the magnitude-square coherence estimate.
     """
+    detrend = _resolve_multitaper_detrend(detrend)
+
     if isinstance(signal_i, neo.core.AnalogSignal) and \
             isinstance(signal_j, neo.core.AnalogSignal):
         signals = signal_i.merge(signal_j)
@@ -1105,7 +1466,8 @@ def multitaper_coherence(signal_i, signal_j, n_segments=1, len_segment=None,
     freqs, Pxy = segmented_multitaper_cross_spectrum(
         signals=signals, n_segments=n_segments, len_segment=len_segment,
         frequency_resolution=frequency_resolution, overlap=overlap, fs=fs,
-        nw=nw, num_tapers=num_tapers, peak_resolution=peak_resolution)
+        nw=nw, num_tapers=num_tapers, peak_resolution=peak_resolution,
+        detrend=detrend)
 
     # Calculate magnitude-squared coherence.
     coherence = np.abs(Pxy[0, 1]) ** 2 / (Pxy[0, 0].real * Pxy[1, 1].real)
