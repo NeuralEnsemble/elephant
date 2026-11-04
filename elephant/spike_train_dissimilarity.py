@@ -266,7 +266,7 @@ def _victor_purpura_dist_for_st_pair_intuitive(spiketrain_a, spiketrain_b,
     ----------
     spiketrain_a, spiketrain_b : :class:`neo.core.SpikeTrain` objects of
         which the Victor-Purpura distance will be calculated pairwise.
-    cost_factor : Quantity scalar of rate dimension
+    cost_factor : Quantity scalar of rate dimension, optional
         The cost parameter.
         Default: 1.0 * pq.Hz
 
@@ -312,14 +312,14 @@ def van_rossum_distance(spiketrains, time_constant=1.0 * pq.s, sort=True):
     spiketrains : list of neo.SpikeTrain
         Sequence of :class:`neo.core.SpikeTrain` objects of
         which the van Rossum distance will be calculated pairwise.
-    time_constant : Quantity scalar
+    time_constant : Quantity scalar, optional
         Decay rate of the exponential function as time scalar. Controls for
         which time scale the metric will be sensitive. Denoted as :math:`t_c`
         in :cite:`dissimilarity-Rossum2001_751`. This parameter will be
         ignored if `kernel` is not `None`. May also be :const:`scipy.inf`
         which will lead to only measuring differences in spike count.
         Default: 1.0 * pq.s
-    sort : bool
+    sort : bool, optional
         Spike trains with sorted spike times might be needed for the
         calculation. You can set `sort` to `False` if you know that your
         spike trains are already sorted to decrease calculation time.

@@ -439,7 +439,7 @@ def butter(signal, highpass_frequency=None, lowpass_frequency=None, order=4,
         Default: 1.0
     axis : int, optional
         Axis along which filter is applied.
-        Default: last axis (-1)
+        Default: -1 (last axis)
 
     Returns
     -------

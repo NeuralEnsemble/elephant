@@ -224,6 +224,9 @@ def spade(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
             * extensional stability is greater than `stability_thresh[1]`
 
             are further analyzed.
+
+        If None, the stability is not computed.
+        Default: None
     n_surr : int, optional
         Number of surrogates to generate to compute the p-value spectrum.
         This number should be large (`n_surr >= 1000` is recommended for 100
@@ -235,7 +238,7 @@ def spade(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
         filtering the pattern spectrum. A spike at time `t` is placed randomly
         within `[t-dither, t+dither]` (see also
         :func:`elephant.spike_train_surrogates.dither_spikes`).
-        Default: 15*pq.ms
+        Default: 15 * pq.ms
     spectrum : {'#', '3d#'}, optional
         Define the signature of the patterns.
 
@@ -252,15 +255,15 @@ def spade(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
         If `0.<alpha<1.`, the concepts are filtered according to their
         signature in the p-value spectrum.
         Default: None
-    stat_corr : str
+    stat_corr : str, optional
         Method used for multiple testing.
         See: :func:`test_signature_significance`
         Default: 'fdr_bh'
-    surr_method : str
+    surr_method : str, optional
         Method to generate surrogates. You can use every method defined in
         :func:`elephant.spike_train_surrogates.surrogates`.
         Default: 'dither_spikes'
-    psr_param : None or list of int or tuple of int
+    psr_param : None or list of int or tuple of int, optional
         This list contains parameters used in the pattern spectrum filtering:
 
         `psr_param[0]`: correction parameter for subset filtering
@@ -270,7 +273,9 @@ def spade(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
         `psr_param[2]`: correction parameter for covered-spikes criterion
             (see `l_covered_spikes` in :func:`pattern_set_reduction`).
 
-    output_format : {'concepts', 'patterns'}
+        If None, the pattern set reduction is not applied.
+        Default: None
+    output_format : {'concepts', 'patterns'}, optional
         Distinguish the format of the output (see Returns).
         Default: 'patterns'
     **surr_kwargs
@@ -798,42 +803,45 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
     Parameters
     ----------
     transactions: tuple
-                Transactions database to mine.
-                The database must be an iterable of transactions;
-                each transaction must be an iterable of items;
-                each item must be a hashable object.
-                If the database is a dictionary, the transactions are
-                the keys, the values their (integer) multiplicities.
-    target: str
-            type of frequent item sets to find
-            s/a   sets/all   all     frequent item sets
-            c     closed     closed  frequent item sets
-            m     maximal    maximal frequent item sets
-            g     gens       generators
-            Default:'c'
-    min_c: int
-        minimum support of an item set
+        Transactions database to mine. The database must be an iterable of
+        transactions, each transaction must be an iterable of items, and
+        each item must be a hashable object. If the database is a dictionary,
+        the transactions are the keys, the values their (integer)
+        multiplicities.
+    target: str, optional
+        Type of frequent item sets to find:
+
+        * 's/a': sets/all; all frequent item sets
+        * 'c': closed; closed frequent item sets
+        * 'm': maximal; maximal frequent item sets
+        * 'g': gens; generators
+
+        Default: 'c'
+    min_c: int, optional
+        Minimum support of an item set.
         Default: 2
-    min_z: int
-         minimum number of items per item set
+    min_z: int, optional
+        Minimum number of items per item set.
         Default: 2
-    max_z: None/int
-         maximum number of items per item set. If max_c==None no maximal
-         size required
+    max_z: int | None, optional
+        Maximum number of items per item set. If None, no maximal number is
+        required.
         Default: None
-    max_c: None/int
-         maximum support per item set. If max_c==None no maximal
-         support required
+    max_c: int | None, optional
+        Maximum support per item set. If None, no maximal support is required.
         Default: None
-    report: str
-        'a': all the mined patterns
-        '#': pattern spectrum using as signature the pair:
-            (number of spikes, number of occurrence)
-        '3d#': pattern spectrum using as signature the triplets:
-            (number of spikes, number of occurrence, difference between the
-            times of the last and the first spike of the pattern)
+    report: str, optional
+        The type of output to return. It can be:
+
+        * 'a': all the mined patterns
+        * '#': pattern spectrum using as signature the pair:
+          (number of spikes, number of occurrence)
+        * '3d#': pattern spectrum using as signature the triplets:
+          (number of spikes, number of occurrence, difference between the
+          times of the last and the first spike of the pattern)
+
         Default: 'a'
-    rel_matrix : None or sparse.coo_matrix
+    rel_matrix : scipy.sparse.coo_matrix | None, optional
         A binary matrix with shape (number of windows,
         winlen*len(spiketrains)). Each row corresponds to a window (order
         according to their position in time).
@@ -846,16 +854,16 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
         If == None only the closed frequent itemsets (intent) are returned and
         not which the index of their occurrences (extent)
         Default: None
-    The following parameters are specific to Massive parallel SpikeTrains
-    winlen: int
+    The following parameters are specific to Massive parallel SpikeTrains:
+    winlen: int, optional
         The size (number of bins) of the sliding window used for the
         analysis. The maximal length of a pattern (delay between first and
         last spike) is then given by winlen*bin_size
         Default: 1
-    min_neu: int
-         Minimum number of neurons in a sequence to be considered a
-         potential pattern.
-         Default: 1
+    min_neu: int, optional
+        Minimum number of neurons in a sequence to be considered a
+        potential pattern.
+        Default: 1
 
     Returns
     -------
@@ -868,12 +876,12 @@ def _fpgrowth(transactions, min_c=2, min_z=2, max_z=None,
         spike_id=neuron_id*bin_id; with neuron_id in [0, len(spiketrains)] and
         bin_id in [0, winlen].
     If report == '#':
-         The pattern spectrum is represented as a numpy array of triplets each
-         formed by:
+        The pattern spectrum is represented as a numpy array of triplets each
+        formed by:
             (pattern size, number of occurrences, number of patterns)
     If report == '3d#':
-         The pattern spectrum is represented as a numpy array of quadruplets
-         each formed by:
+        The pattern spectrum is represented as a numpy array of quadruplets
+        each formed by:
             (pattern size, number of occurrences, difference between last
             and first spike of the pattern, number of patterns)
     """
@@ -1063,39 +1071,41 @@ def _fast_fca(context, min_c=2, min_z=2, max_z=None,
     ----------
     context : list
         List of tuples containing one object and one the correspondent
-        attribute
-    min_c: int
-        minimum support of an item set
+        attribute.
+    min_c: int, optional
+        Minimum support of an item set.
         Default: 2
-    min_z: int
-         minimum number of items per item set
+    min_z: int, optional
+        Minimum number of items per item set.
         Default: 2
-    max_z: None/int
-         maximum number of items per item set. If max_c==None no maximal
-         size required
+    max_z: int | None, optional
+        Maximum number of items per item set. If None, no maximal number is
+        required.
         Default: None
-    max_c: None/int
-         maximum support per item set. If max_c==None no maximal
-         support required
+    max_c: int | None, optional
+        Maximum support per item set. If None, no maximal support is required.
         Default: None
-    report: str
-        'a': all the mined patterns
-        '#': pattern spectrum using as signature the pair:
-            (number of spikes, number of occurrence)
-        '3d#': pattern spectrum using as signature the triplets:
-            (number of spikes, number of occurrence, difference between the
-            times of the last and the first spike of the pattern)
+    report: str, optional
+        The type of output to return. It can be:
+
+        * 'a': all the mined patterns
+        * '#': pattern spectrum using as signature the pair:
+          (number of spikes, number of occurrence)
+        * '3d#': pattern spectrum using as signature the triplets:
+          (number of spikes, number of occurrence, difference between the
+          times of the last and the first spike of the pattern)
+
         Default: 'a'
     The following parameters are specific to Massive parallel SpikeTrains
-    winlen: int
+    winlen: int, optional
         The size (number of bins) of the sliding window used for the
         analysis. The maximal length of a pattern (delay between first and
-        last spike) is then given by winlen*bin_size
+        last spike) is then given by winlen*bin_size.
         Default: 1
-    min_neu: int
-         Minimum number of neurons in a sequence to be considered a
-         potential pattern.
-         Default: 1
+    min_neu: int, optional
+        Minimum number of neurons in a sequence to be considered a
+        potential pattern.
+        Default: 1
 
     Returns
     -------
@@ -1107,12 +1117,12 @@ def _fast_fca(context, min_c=2, min_z=2, max_z=None,
         spike_id=neuron_id*bin_id; with neuron_id in [0, len(spiketrains)] and
         bin_id in [0, winlen].
     If report == '#':
-         The pattern spectrum is represented as a list of triplets each
-         formed by:
+        The pattern spectrum is represented as a list of triplets each
+        formed by:
             (pattern size, number of occurrences, number of patterns)
     If report == '3d#':
-         The pattern spectrum is represented as a list of quadruplets each
-         formed by:
+        The pattern spectrum is represented as a list of quadruplets each
+        formed by:
             (pattern size, number of occurrences, difference between last
             and first spike of the pattern, number of patterns)
     """
@@ -1258,7 +1268,7 @@ def pvalue_spectrum(
             and first spike of the pattern)
 
         Default: '#'
-    surr_method : str
+    surr_method : str, optional
         Method that is used to generate the surrogates. You can use every
         method defined in
         :func:`elephant.spike_train_surrogates.dither_spikes`.
@@ -1614,19 +1624,20 @@ def test_signature_significance(pv_spec, concepts, alpha, winlen,
         For further description see:
         https://www.statsmodels.org/stable/generated/statsmodels.stats.multitest.multipletests.html
         Default: 'fdr_bh'
-
     report : {'spectrum', 'significant', 'non_significant'}, optional
         Format to be returned for the significance spectrum:
 
-        'spectrum': list of triplets (z,c,b), where b is a boolean specifying
-                    whether signature (z,c) is significant (True) or not
-                    (False)
+        *  'spectrum': list of triplets (z,c,b), where b is a boolean
+           specifying whether signature (z,c) is significant (True) or not
+           (False)
 
-        'significant': list containing only the significant signatures (z,c) of
-                       pvalue_spectrum
+        *  'significant': list containing only the significant signatures
+           (z,c) of pvalue_spectrum
 
-        'non_significant': list containing only the non-significant signatures
+        *  'non_significant': list containing only the non-significant
+           signatures
 
+        Default: 'spectrum'
     spectrum : {'#', '3d#'}, optional
         Defines the signature of the patterns.
 
@@ -1758,7 +1769,7 @@ def approximate_stability(concepts, rel_matrix, n_subsets=0,
         corresponds to the first bin of the first window position for the first
         neuron, the entry `[0, winlen]` to the first bin of the first window
         position for the second neuron.
-    n_subsets : int
+    n_subsets : int, optional
         Number of subsets of a concept used to approximate its stability.
         If `n_subsets` is 0, it is calculated according to to the formula
         given in Babin, Kuznetsov (2012), proposition 6:
@@ -1864,7 +1875,7 @@ def _calculate_single_stability_parameter(intent, extent,
         See approximate_stabilty
     rel_matrix : sparse.coo_matrix
         See approximate_stabilty
-    look_at : {'extent', 'intent'}
+    look_at : {'extent', 'intent'}, optional
         whether to determine stability for extent or intent.
         Default: 'intent'
 
@@ -2273,10 +2284,11 @@ def concept_output_to_patterns(concepts, winlen, bin_size, pv_spec=None,
         Length (in bins) of the sliding window used for the analysis.
     bin_size : pq.Quantity
         The time precision used to discretize the `spiketrains` (binning).
-    pv_spec : None or tuple
+    pv_spec : None or tuple, optional
         Contains a tuple of signatures and the corresponding p-value. If equal
-        to None all p-values are set to -1.
-    spectrum : {'#', '3d#'}
+        to None, all p-values are set to -1.
+        Default: None
+    spectrum : {'#', '3d#'}, optional
         '#': pattern spectrum using the as signature the pair:
             (number of spikes, number of occurrences)
         '3d#': pattern spectrum using the as signature the triplets:
@@ -2284,8 +2296,9 @@ def concept_output_to_patterns(concepts, winlen, bin_size, pv_spec=None,
             and first spike of the pattern)
 
         Default: '#'
-    t_start : pq.Quantity
-        Start time of the analyzed spike trains
+    t_start : pq.Quantity, optional
+        Start time of the analyzed spike trains.
+        Default: 0 * pq.ms
 
     Returns
     -------
