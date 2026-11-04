@@ -412,7 +412,7 @@ def cv2(time_intervals, with_nan=False):
         np.NaN value and a warning is raised.
         If False, `ValueError` exception is raised with a spike train with
         less than two spikes.
-        Default: True
+        Default: False
 
     Returns
     -------
@@ -479,7 +479,7 @@ def lv(time_intervals, with_nan=False):
         `np.NaN` value and a warning is raised.
         If False, a `ValueError` exception is raised with a spike train with
         less than two spikes.
-        Default: True
+        Default: False
 
     Returns
     -------
@@ -551,7 +551,7 @@ def lvr(time_intervals, R=5*pq.ms, with_nan=False):
         np.NaN value and a warning is raised.
         If False, a `ValueError` exception is raised with a spike train with
         less than two spikes.
-        Default: True
+        Default: False
 
     Returns
     -------
