@@ -23,6 +23,24 @@ import elephant.spectral
 from elephant.datasets import download_datasets
 
 
+def _unit_power_signals(data_length, fs):
+    """
+    Creates various signals with power sitting at different locations of the
+    frequency axis (near 0, middle, near Nyquist). The signals have unit mean
+    power. The signals are used to check for correct behaviour at the edges,
+    including regressions for the folding of negative frequencies of one-sided
+    spectra with even and odd signal lengths (see #715, #716).
+    """
+    n = np.arange(data_length)
+    return {
+        # sinusoid on the Nyquist frequency (fs / 2)
+        'nyquist': (-1.0) ** n,
+        # sinusoid in the middle of the band (fs / 10)
+        'mid_band': np.sqrt(2) * np.cos(2 * np.pi * (fs / 10) * n / fs),
+        # constant signal, i.e., power concentrated at 0 Hz
+        'constant': np.ones(data_length)}
+
+
 class WelchPSDTestCase(unittest.TestCase):
     def test_welch_psd_errors(self):
         # generate a dummy data
@@ -176,6 +194,21 @@ class WelchPSDTestCase(unittest.TestCase):
         self.assertTrue(np.all(psd_np == psd_neo))
         self.assertTrue(np.all(psd_neo_1dim == psd_neo[0]))
 
+    def test_welch_psd_onesided_total_power(self):
+        # Complementing the regression test
+        # test_multitaper_psd_onesided_total_power, although here the test is
+        # against scipy's behavior. Detrending is switched off, as it would
+        # remove the constant signal.
+        fs = 1000.0
+        for data_length in (2000, 2001):  # even and odd number of samples
+            for name, signal in _unit_power_signals(data_length, fs).items():
+                freqs, psd = elephant.spectral.welch_psd(
+                    signal, fs=fs, n_segments=1, detrend=False)
+                total_power = np.sum(psd) * (freqs[1] - freqs[0])
+                self.assertAlmostEqual(
+                    total_power, 1.0, places=2,
+                    msg=f"{name} signal of length {data_length}")
+
 
 class MultitaperPSDTestCase(unittest.TestCase):
     def test_multitaper_psd_errors(self):
@@ -266,6 +299,31 @@ class MultitaperPSDTestCase(unittest.TestCase):
                                                         num_tapers=9)
         self.assertTrue((freqs1 == freqs2).all() and (psd1 != psd2).all())
 
+    def test_multitaper_psd_onesided_total_power(self):
+        # Regression test for #715, #716
+        # The one-sided PSD is obtained by doubling the power of all bins
+        # that have a counterpart on the negative frequency axis. The DC bin
+        # has no counterpart. Also, the Nyquist bin of an even-length signal
+        # only has an entry for positive frequencies. The convention for
+        # doubling the frequency bins with counterparts follows from scipy.
+        #
+        # By Parseval's theorem, integrating the one-sided PSD over all
+        # frequencies must return the mean power (mean square) of the signal,
+        # as multitaper_psd does not remove the mean. This is checked here
+        # for a sinusoid sitting exactly at the Nyquist frequency to test correct
+        # doubling of the Nyquist bin. A constant signal, whose power lies in
+        # the DC bin, checks that this bin is not doubled either. A sinusoid in
+        # the middle of the band is a control. All three signals have
+        # unit mean power.
+        fs = 1000.0
+        for data_length in (2000, 2001):  # even and odd number of samples
+            for name, signal in _unit_power_signals(data_length, fs).items():
+                freqs, psd = elephant.spectral.multitaper_psd(signal, fs=fs)
+                total_power = np.sum(psd[0]) * (freqs[1] - freqs[0])
+                self.assertAlmostEqual(
+                    total_power, 1.0, places=2,
+                    msg=f"{name} signal of length {data_length}")
+
     def test_multitaper_psd_against_nitime(self):
         """
         This test assesses the match between this implementation of
@@ -295,8 +353,10 @@ class MultitaperPSDTestCase(unittest.TestCase):
         freqs, psd_multitaper = elephant.spectral.multitaper_psd(
             signal=time_series, fs=0.1, nw=4, num_tapers=8)
 
+        # The reference spectrum spans several orders of magnitude, so we use
+        # a relative tolerance only.
         np.testing.assert_allclose(np.squeeze(psd_multitaper), psd_nitime,
-                                   rtol=0.3, atol=0.1)
+                                   rtol=0.3)
 
     def test_multitaper_psd_input_types(self):
         # generate a test data
@@ -415,6 +475,21 @@ class SegmentedMultitaperPSDTestCase(unittest.TestCase):
 
         np.testing.assert_array_equal(freqs_fr, freqs_ls)
         np.testing.assert_array_equal(psd_fr, psd_ls)
+
+    def test_segmented_multitaper_psd_onesided_total_power(self):
+        # Complementing the regression test
+        # test_multitaper_psd_onesided_total_power, here for the segmented
+        # version of the function.
+        fs = 1000.0
+        for data_length in (2000, 2001):  # even and odd number of samples
+            for name, signal in _unit_power_signals(data_length, fs).items():
+                freqs, psd = elephant.spectral.segmented_multitaper_psd(
+                    signal, fs=fs, n_segments=1)
+                # ravel: one channel, independent of channel axes in output
+                total_power = np.sum(np.ravel(psd).real) * (freqs[1] - freqs[0])
+                self.assertAlmostEqual(
+                    total_power, 1.0, places=2,
+                    msg=f"{name} signal of length {data_length}")
 
     def test_segmented_multitaper_psd_parameter_hierarchy(self):
         # generate data by adding white noise and a sinusoid
@@ -842,37 +917,41 @@ class SegmentedMultitaperCrossSpectrumTestCase(unittest.TestCase):
         self.assertNotEqual(cross_spec_fr.shape, cross_spec_ns.shape)
 
     def test_segmented_multitaper_cross_spectrum_against_multitaper_psd(self):
-        data_length = 5000
+        # Regression test for #715, #716
+        # The one-sided cross-spectrum is the two-sided one restricted to
+        # non-negative frequencies, without folding. Its diagonal therefore
+        # equals the one-sided PSD with the doubling undone only in bins that
+        # have a negative-frequency counterpart: all bins except the DC bin (0)
+        # and, for an even signal length, the Nyquist bin. Deterministic signals
+        # with strong power at DC and Nyquist reveal errors in these bins.
         sampling_period = 0.001
-        signal_freq = 100.0
-        noise = np.random.normal(size=(2, data_length))
-        time_points = np.arange(0, data_length * sampling_period,
-                                sampling_period)
-        signal_x = np.sin(2 * np.pi * signal_freq * time_points) + noise[0]
-        signal_y = np.cos(2 * np.pi * signal_freq * time_points) + noise[1]
-        data = AnalogSignal(np.vstack([signal_x, signal_y]).T,
-                            sampling_period=sampling_period * pq.s,
-                            units='mV')
+        fs = 1 / sampling_period
+        for data_length in (2000, 2001):  # even and odd number of samples
+            signals = _unit_power_signals(data_length, fs)
+            data = AnalogSignal(
+                np.vstack([2 * signals['nyquist'],
+                           signals['constant'] + signals['mid_band']]).T,
+                sampling_period=sampling_period * pq.s, units='mV')
 
-        freqs1, psd_multitaper = elephant.spectral.multitaper_psd(
-            signal=data, fs=data.sampling_rate, nw=4, num_tapers=8)
+            freqs_psd, psd = elephant.spectral.multitaper_psd(
+                signal=data, fs=data.sampling_rate, nw=4, num_tapers=8)
 
-        psd_multitaper[:, 1:] /= 2  # since comparing rfft and fft results
+            # Undo the folding of negative frequencies of the one-sided PSD,
+            # which the one-sided cross-spectrum does not perform. The DC bin
+            # and, for an even signal length, the Nyquist bin were not doubled.
+            last = -1 if data_length % 2 == 0 else None
+            psd[:, 1:last] /= 2
 
-        freqs2, cross_spec = \
-            elephant.spectral.segmented_multitaper_cross_spectrum(
-                data,
-                fs=data.sampling_rate,
-                nw=4,
-                num_tapers=8,
-                return_onesided=True)
-
-        self.assertTrue((freqs1 == freqs2).all())
-
-        np.testing.assert_allclose(psd_multitaper.magnitude,
-                                   np.diagonal(cross_spec).T.real.magnitude,
-                                   rtol=0.01,
-                                   atol=0.01)
+            for func in (elephant.spectral.multitaper_cross_spectrum,
+                         elephant.spectral.segmented_multitaper_cross_spectrum):
+                freqs_cs, cross_spec = func(
+                    data, fs=data.sampling_rate, nw=4, num_tapers=8,
+                    return_onesided=True)
+                np.testing.assert_array_equal(freqs_psd, freqs_cs)
+                np.testing.assert_allclose(
+                    psd.magnitude, np.diagonal(cross_spec).T.real.magnitude,
+                    rtol=1e-5, atol=0,
+                    err_msg=f"{func.__name__}, length {data_length}")
 
     def test_segmented_multitaper_cross_spectrum_input_types(self):
         # generate a test data
