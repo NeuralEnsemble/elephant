@@ -89,6 +89,10 @@ __all__= ["load_data"]
 
 ELEPHANT_TMP_DIR = Path(tempfile.gettempdir()) / "elephant"
 
+# Default URL of `elephant-data`, used when `ELEPHANT_DATA_LOCATION` not set.
+# This redirects to the current location of `elephant-data`
+ELEPHANT_DATA_ROOT_URL = "https://datasets.python-elephant.org/"
+
 
 # Data generation functions
 
@@ -395,9 +399,9 @@ def download_datasets(repo_path, filepath=None, checksum=None,
 
     else:
         # The user did not set a URL or path in `ELEPHANT_DATA_LOCATION`.
-        # Use the default root URL, which redirects to the current location of
-        # `elephant-data`.
-        url_to_root = "https://datasets.python-elephant.org/"
+        # Use the default root URL.
+        # Read from module at call time, so that tests can patch it
+        url_to_root = ELEPHANT_DATA_ROOT_URL
 
         # Get the final URL to the current version of `elephant data`
         # (version of Elephant is equal to version of `elephant-data`).
@@ -410,6 +414,9 @@ def download_datasets(repo_path, filepath=None, checksum=None,
             urlopen(data_location + '/README.md')
 
         except HTTPError as error:
+            # Only missing version (404) should fall back to master. (PR 721)
+            if error.code != 404:
+                raise
             # If the corresponding `elephant-data` version is not found,
             # use the latest commit of `elephant-data` (`master` branch).
             # This is expected for development versions of Elephant, which may
@@ -430,6 +437,9 @@ def download_datasets(repo_path, filepath=None, checksum=None,
                 ctx.check_hostname = True
                 urlopen(data_location + '/README.md', context=ctx)
             except HTTPError as unverified_ctx_error:  # e.g. 404
+                # Only missing version (404) fall back to master. (PR 721)
+                if unverified_ctx_error.code != 404:
+                    raise
                 # If it still fails, use latest commit of `elephant-data` in
                 # the `master` branch.
                 data_location = url_to_root + "raw/master"
