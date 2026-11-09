@@ -62,7 +62,7 @@ def welch_psd(signal, n_segments=8, len_segment=None,
 
     Parameters
     ----------
-    signal : neo.AnalogSignal or pq.Quantity or np.ndarray
+    signal : neo.AnalogSignal | pq.Quantity | np.ndarray
         Time series data, of which PSD is estimated. When `signal` is
         `pq.Quantity` or `np.ndarray`, sampling frequency should be given
         through the keyword argument `fs`. Otherwise, the default value is
@@ -77,7 +77,7 @@ def welch_psd(signal, n_segments=8, len_segment=None,
         Length of segments. This parameter is ignored if `frequency_resolution`
         is given. If None, it will be determined from other parameters.
         Default: None
-    frequency_resolution : pq.Quantity or float, optional
+    frequency_resolution : pq.Quantity | float, optional
         Desired frequency resolution of the obtained PSD estimate in terms of
         the interval between adjacent frequency bins. When given as a `float`,
         it is taken as frequency in Hz.
@@ -87,12 +87,12 @@ def welch_psd(signal, n_segments=8, len_segment=None,
         Overlap between segments represented as a float number between 0 (no
         overlap) and 1 (complete overlap).
         Default: 0.5 (half-overlapped)
-    fs : pq.Quantity or float, optional
+    fs : pq.Quantity | float, optional
         Specifies the sampling frequency of the input time series. When the
         input is given as a `neo.AnalogSignal`, the sampling frequency is
         taken from its attribute and this parameter is ignored.
         Default: 1.0
-    window : str or tuple or np.ndarray, optional
+    window : str | tuple | np.ndarray, optional
         Desired window to use.
         See Notes [2].
         Default: 'hann'
@@ -100,7 +100,7 @@ def welch_psd(signal, n_segments=8, len_segment=None,
         Length of the FFT used.
         See Notes [2].
         Default: None
-    detrend : str or function or False, optional
+    detrend : str | function | bool, optional
         Specifies how to detrend each segment.
         See Notes [2].
         Default: 'constant'
@@ -123,14 +123,14 @@ def welch_psd(signal, n_segments=8, len_segment=None,
 
     Returns
     -------
-    freqs : pq.Quantity or np.ndarray
+    freqs : pq.Quantity | np.ndarray
         Frequencies associated with the power estimates in `psd`.
         `freqs` is always a vector irrespective of the shape of the input
         data in `signal`.
         If `signal` is `neo.AnalogSignal` or `pq.Quantity`, a `pq.Quantity`
         array is returned.
         Otherwise, a `np.ndarray` containing frequency in Hz is returned.
-    psd : pq.Quantity or np.ndarray
+    psd : pq.Quantity | np.ndarray
         PSD estimates of the time series in `signal`.
         If `signal` is `neo.AnalogSignal`, a `pq.Quantity` array is returned.
         Otherwise, the return is a `np.ndarray`.
@@ -297,7 +297,7 @@ def multitaper_psd(signal, fs=1, nw=4, num_tapers=None, peak_resolution=None,
 
     Parameters
     ----------
-    signal : neo.AnalogSignal or pq.Quantity or np.ndarray
+    signal : neo.AnalogSignal | pq.Quantity | np.ndarray
         Time series data of which PSD is estimated. When `signal` is np.ndarray
         sampling frequency should be given through keyword argument `fs`.
         Signal should be passed as (n_channels, n_samples)
@@ -311,7 +311,7 @@ def multitaper_psd(signal, fs=1, nw=4, num_tapers=None, peak_resolution=None,
         Number of tapers used in 1. to obtain estimate of PSD. By default,
         [2*nw] - 1 is chosen.
         Default: None.
-    peak_resolution : pq.Quantity float, optional
+    peak_resolution : pq.Quantity | float, optional
         Quantity in Hz determining the number of tapers used for analysis.
         Fine peak resolution --> low numerical value --> low number of tapers
         High peak resolution --> high numerical value --> high number of tapers
@@ -575,7 +575,7 @@ def multitaper_cross_spectrum(signals, fs=1.0, nw=4.0, num_tapers=None,
 
     Parameters
     ----------
-    signals : neo.AnalogSignal or pq.Quantity or np.ndarray
+    signals : neo.AnalogSignal | pq.Quantity | np.ndarray
         Time series data of which PSD is estimated. When `signal` is
         `np.ndarray` or `pq.Quantity`, it needs to be passed as a 2-dimensional
         array of shape (n_channels, n_samples), and the data sampling frequency
@@ -599,7 +599,7 @@ def multitaper_cross_spectrum(signals, fs=1.0, nw=4.0, num_tapers=None,
         Number of tapers used in step 2 (see above) to obtain estimate of PSD.
         By default, [2*nw] - 1 is chosen.
         Default: None (see Notes [1])
-    peak_resolution : pq.Quantity float, optional
+    peak_resolution : pq.Quantity | float, optional
         Quantity in Hz determining the number of tapers used for analysis.
         Fine peak resolution --> low numerical value --> low number of tapers
         High peak resolution --> high numerical value --> high number of tapers
@@ -924,7 +924,7 @@ def segmented_multitaper_cross_spectrum(signals, n_segments=1,
 
     Parameters
     ----------
-    signals : neo.AnalogSignal or pq.Quantity or np.ndarray
+    signals : neo.AnalogSignal | pq.Quantity | np.ndarray
         Time series data of which CSD is estimated. When `signal` is
         `np.ndarray` or `pq.Quantity`, it needs to be passed as a 2-dimensional
         array of shape (n_channels, n_samples), and the data sampling frequency
@@ -939,7 +939,7 @@ def segmented_multitaper_cross_spectrum(signals, n_segments=1,
         Length of segments. This parameter is ignored if `frequency_resolution`
         is given. If None, it will be determined from other parameters.
         Default: None
-    frequency_resolution : pq.Quantity or float, optional
+    frequency_resolution : pq.Quantity | float, optional
         Desired frequency resolution of the obtained PSD estimate in terms of
         the interval between adjacent frequency bins. When given as a `float`,
         it is taken as frequency in Hz.
@@ -968,7 +968,7 @@ def segmented_multitaper_cross_spectrum(signals, n_segments=1,
         Number of tapers used in step 2 (see above) to obtain estimate of PSD.
         By default, [2*nw] - 1 is chosen.
         Default: None
-    peak_resolution : pq.Quantity float, optional
+    peak_resolution : pq.Quantity | float, optional
         Quantity in Hz determining the number of tapers used for analysis.
         Fine peak resolution --> low numerical value --> low number of tapers
         High peak resolution --> high numerical value --> high number of tapers
@@ -1039,10 +1039,10 @@ def multitaper_coherence(signal_i, signal_j, n_segments=1, len_segment=None,
 
     Parameters
     ----------
-    signal_i : neo.AnalogSignal or pq.Quantity or np.ndarray
+    signal_i : neo.AnalogSignal | pq.Quantity | np.ndarray
         First time series data of the pair between which coherence is
         computed.
-    signal_j : neo.AnalogSignal or pq.Quantity or np.ndarray
+    signal_j : neo.AnalogSignal | pq.Quantity | np.ndarray
         Second time series data of the pair between which coherence is
         computed.
         The shapes and the sampling frequencies of `signal_i` and `signal_j`
@@ -1060,7 +1060,7 @@ def multitaper_coherence(signal_i, signal_j, n_segments=1, len_segment=None,
         Length of segments. This parameter is ignored if `frequency_resolution`
         is given. If None, it will be determined from other parameters.
         Default: None
-    frequency_resolution : pq.Quantity or float, optional
+    frequency_resolution : pq.Quantity | float, optional
         Desired frequency resolution of the obtained coherence estimate in
         terms of the interval between adjacent frequency bins. When given as a
         `float`, it is taken as frequency in Hz.
@@ -1080,7 +1080,7 @@ def multitaper_coherence(signal_i, signal_j, n_segments=1, len_segment=None,
         Number of tapers used in 1. to obtain estimate of PSD. By default,
         [2*nw] - 1 is chosen.
         Default: None
-    peak_resolution : pq.Quantity float, optional
+    peak_resolution : pq.Quantity | float, optional
         Quantity in Hz determining the number of tapers used for analysis.
         Fine peak resolution --> low numerical value --> low number of tapers
         High peak resolution --> high numerical value --> high number of tapers
@@ -1133,10 +1133,10 @@ def welch_coherence(signal_i, signal_j, n_segments=8, len_segment=None,
 
     Parameters
     ----------
-    signal_i : neo.AnalogSignal or pq.Quantity or np.ndarray
+    signal_i : neo.AnalogSignal | pq.Quantity | np.ndarray
         First time series data of the pair between which coherence is
         computed.
-    signal_j : neo.AnalogSignal or pq.Quantity or np.ndarray
+    signal_j : neo.AnalogSignal | pq.Quantity | np.ndarray
         Second time series data of the pair between which coherence is
         computed.
         The shapes and the sampling frequencies of `signal_i` and `signal_j`
@@ -1153,7 +1153,7 @@ def welch_coherence(signal_i, signal_j, n_segments=8, len_segment=None,
         Length of segments. This parameter is ignored if `frequency_resolution`
         is given. If None, it is determined from other parameters.
         Default: None
-    frequency_resolution : pq.Quantity or float, optional
+    frequency_resolution : pq.Quantity | float, optional
         Desired frequency resolution of the obtained coherence estimate in
         terms of the interval between adjacent frequency bins. When given as a
         `float`, it is taken as frequency in Hz.
@@ -1163,12 +1163,12 @@ def welch_coherence(signal_i, signal_j, n_segments=8, len_segment=None,
         Overlap between segments represented as a float number between 0 (no
         overlap) and 1 (complete overlap).
         Default: 0.5 (half-overlapped)
-    fs : pq.Quantity or float, optional
+    fs : pq.Quantity | float, optional
         Specifies the sampling frequency of the input time series. When the
         input time series are given as `neo.AnalogSignal`, the sampling
         frequency is taken from their attribute and this parameter is ignored.
         Default: 1.0
-    window : str or tuple or np.ndarray, optional
+    window : str | tuple | np.ndarray, optional
         Desired window to use.
         See Notes [1].
         Default: 'hann'
@@ -1176,7 +1176,7 @@ def welch_coherence(signal_i, signal_j, n_segments=8, len_segment=None,
         Length of the FFT used.
         See Notes [1].
         Default: None
-    detrend : str or function or False, optional
+    detrend : str | function | bool, optional
         Specifies how to detrend each segment.
         See Notes [1].
         Default: 'constant'
@@ -1194,7 +1194,7 @@ def welch_coherence(signal_i, signal_j, n_segments=8, len_segment=None,
 
     Returns
     -------
-    freqs : pq.Quantity or np.ndarray
+    freqs : pq.Quantity | np.ndarray
         Frequencies associated with the estimates of coherency and phase lag.
         `freqs` is always a vector irrespective of the shape of the input
         data. If `signal_i` and `signal_j` are `neo.AnalogSignal` or
@@ -1209,7 +1209,7 @@ def welch_coherence(signal_i, signal_j, n_segments=8, len_segment=None,
         indexed depending on the type of the input. If the input is
         `neo.AnalogSignal`, the first axis indexes frequency. Otherwise,
         frequency is indexed by the last axis.
-    phase_lag : pq.Quantity or np.ndarray
+    phase_lag : pq.Quantity | np.ndarray
         Estimate of phase lag in radian between the input time series. For
         each frequency, phase lag takes a value between :math:`-\pi` and
         :math:`\pi`, with positive values meaning phase precession of

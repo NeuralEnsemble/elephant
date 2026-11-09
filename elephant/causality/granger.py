@@ -545,7 +545,7 @@ def pairwise_granger(signals, max_order, information_criterion='aic'):
 
     Parameters
     ----------
-    signals : (N, 2) np.ndarray or neo.AnalogSignal
+    signals : (N, 2) np.ndarray | neo.AnalogSignal
         A matrix with two time series (second dimension) that have N time
         points (first dimension).
     max_order : int
@@ -713,7 +713,7 @@ def conditional_granger(signals, max_order, information_criterion='aic'):
 
     Parameters
     ----------
-    signals : (N, 3) np.ndarray or neo.AnalogSignal
+    signals : (N, 3) np.ndarray | neo.AnalogSignal
         A matrix with three time series (second dimension) that have N time
         points (first dimension). The time series to be conditioned on is the
         third.
@@ -803,10 +803,10 @@ def pairwise_spectral_granger(signal_i, signal_j, fs=1, nw=4, num_tapers=None,
 
     Parameters
     ----------
-    signal_i : neo.AnalogSignal or pq.Quantity or np.ndarray
+    signal_i : neo.AnalogSignal | pq.Quantity | np.ndarray
         First time series data of the pair between which spectral Granger
         Causality is computed.
-    signal_j : neo.AnalogSignal or pq.Quantity or np.ndarray
+    signal_j : neo.AnalogSignal | pq.Quantity | np.ndarray
         Second time series data of the pair between which spectral Granger
         Causality is computed.
         The shapes and the sampling frequencies of `signal_i` and `signal_j`
@@ -824,7 +824,7 @@ def pairwise_spectral_granger(signal_i, signal_j, fs=1, nw=4, num_tapers=None,
         Number of tapers used in 1. to obtain estimate of PSD. By default,
         [2*nw] - 1 is chosen.
         Default: None
-    peak_resolution : pq.Quantity float, optional
+    peak_resolution : pq.Quantity | float, optional
         Quantity in Hz determining the number of tapers used for analysis.
         Fine peak resolution --> low numerical value --> low number of tapers
         High peak resolution --> high numerical value --> high number of tapers
@@ -840,7 +840,7 @@ def pairwise_spectral_granger(signal_i, signal_j, fs=1, nw=4, num_tapers=None,
         Length of segments. This parameter is ignored if `frequency_resolution`
         is given. If None, it will be determined from other parameters.
         Default: None
-    frequency_resolution : pq.Quantity or float, optional
+    frequency_resolution : pq.Quantity | float, optional
         Desired frequency resolution of the obtained spectral Granger Causality
         estimate in terms of the interval between adjacent frequency bins. When
         given as a `float`, it is taken as frequency in Hz.

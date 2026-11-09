@@ -33,9 +33,8 @@ def waveform_width(waveform, cutoff=0.75):
 
     Parameters
     ----------
-    waveform : array-like
-        Time course of a single waveform. Accepts a list, a numpy array or a
-        quantity.
+    waveform : list | np.ndarray | pq.Quantity
+        Time course of a single waveform.
     cutoff : float, optional
         Defines the normalized range `[0, cutoff]` of the input sequence for
         computing the minimum. Must be in `[0, 1)` range.
@@ -88,15 +87,14 @@ def waveform_snr(waveforms):
 
     Parameters
     ----------
-    waveforms : array-like
-        A list or a quantity or a numpy array of waveforms of shape
-        ``(n_waveforms, time)`` in case of a single spike train or
-        ``(n_waveforms, n_spiketrains, time)`` in case of one or more spike
-        trains.
+    waveforms : list | np.ndarray | pq.Quantity
+        Waveforms of shape `(n_waveforms, time)`` in case of a single spike
+        train or ``(n_waveforms, n_spiketrains, time)`` in case of one or more
+        spike trains.
 
     Returns
     -------
-    snr : float or np.ndarray
+    snr : float | np.ndarray
         Signal-to-noise ratio according to
         :cite:`waveforms-Hatsopoulos2007_5105`. If the input `waveforms`
         shape is ``(n_waveforms, time)`` or ``(n_waveforms, 1, time)``, a

@@ -158,7 +158,7 @@ def cell_assembly_detection(binned_spiketrain, max_lag, reference_lag=2,
 
     Returns
     -------
-    assembly : list of dict
+    assembly : list[dict]
         Contains the assemblies detected for the bin size chosen. Each
         assembly is a dictionary with attributes:
 

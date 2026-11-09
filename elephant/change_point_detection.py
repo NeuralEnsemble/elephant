@@ -64,9 +64,9 @@ def multiple_filter_test(window_sizes, spiketrain, t_final, alpha,
 
     Parameters
     ----------
-    window_sizes : list of pq.Quantity
+    window_sizes : list[pq.Quantity]
         List that contains windows sizes
-    spiketrain : neo.SpikeTrain or pq.Quantity
+    spiketrain : neo.SpikeTrain | pq.Quantity
         A spiketrain object to analyze.
     t_final : pq.Quantity
         The final time of the spike train which is to be analysed
@@ -76,28 +76,28 @@ def multiple_filter_test(window_sizes, spiketrain, t_final, alpha,
     n_surrogates : int, optional
         The number of simulated limit processes.
         Default: 1000
-    test_quantile : float or None, optional
+    test_quantile : float | None, optional
         The threshold for the maxima of the filter derivative processes; if any
         of these maxima is larger than this value, it is assumed the
         presence of a change point (cp) at the time corresponding to that
         maximum.
         If None, will be set according to the :func:`empirical_parameters`.
         Default: None
-    test_param : (3, num. of windows) np.ndarray or None, optional
+    test_param : (3, n_windows) np.ndarray | None, optional
         First row: list of `h`, second and third rows: empirical means and
         variances of the limit process corresponding to `h`. This will be
         used to normalize the *filter processes* in order to give to the
         every maximum the same impact on the global statistic.
         If None, will be set according to the :func:`empirical_parameters`.
         Default: None
-    time_step : pq.Quantity or None, optional
+    time_step : pq.Quantity | None, optional
         The resolution - the time step at which the windows are slided.
         If None, will be set to ``window_size / 20``.
         Default: None
 
     Returns
     -------
-    cps : list of list
+    cps : list[list]
         The change points,
         one list for each window size `h`, containing the points detected with
         the corresponding `filter_process`. N.B.: only cps whose h-neighborhood
@@ -268,7 +268,7 @@ def empirical_parameters(window_sizes, t_final, alpha, n_surrogates=1000,
 
     Parameters
     ----------
-    window_sizes : list of pq.Quantity
+    window_sizes : list[pq.Quantity]
         List that contains windows sizes
     t_final : pq.Quantity
         The final time of the spike train which is to be analysed
@@ -278,7 +278,7 @@ def empirical_parameters(window_sizes, t_final, alpha, n_surrogates=1000,
     n_surrogates : int, optional
         The number of simulated limit processes.
         Default: 1000
-    time_step : pq.Quantity or None, optional
+    time_step : pq.Quantity | None, optional
         The resolution - the time step at which the windows are slided.
         If None, will be set to ``window_size / 20``.
         Default: None
@@ -290,7 +290,7 @@ def empirical_parameters(window_sizes, t_final, alpha, n_surrogates=1000,
         of these maxima is larger than this value, it is assumed the
         presence of a change point (cp) at the time corresponding to that
         maximum.
-    test_param : (3, num. of windows) np.ndarray
+    test_param : (3, n_windows) np.ndarray
         First row: list of `h`, second and third rows: empirical means and
         variances of the limit process corresponding to `h`. This will be
         used to normalize the *filter processes* in order to give to the

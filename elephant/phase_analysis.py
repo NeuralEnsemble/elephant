@@ -44,13 +44,13 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
 
     Parameters
     ----------
-    hilbert_transform : neo.AnalogSignal or list of neo.AnalogSignal
+    hilbert_transform : neo.AnalogSignal | list[neo.AnalogSignal]
         `neo.AnalogSignal` of the complex analytic signal (e.g., returned by
         the `elephant.signal_processing.hilbert` function).
         If `hilbert_transform` is only one signal, all spike trains are
         compared to this signal. Otherwise, length of `hilbert_transform` must
         match the length of `spiketrains`.
-    spiketrains : neo.SpikeTrain or list of neo.SpikeTrain
+    spiketrains : neo.SpikeTrain | list[neo.SpikeTrain]
         Spike trains on which to trigger `hilbert_transform` extraction.
     interpolate : bool
         If True, the phases and amplitudes of `hilbert_transform` for spikes
@@ -59,13 +59,13 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
 
     Returns
     -------
-    phases : list of np.ndarray
+    phases : list[np.ndarray]
         Spike-triggered phases. Entries in the list correspond to the
         `neo.SpikeTrain`s in `spiketrains`. Each entry contains an array with
         the spike-triggered angles (in rad) of the signal.
-    amp : list of pq.Quantity
+    amp : list[pq.Quantity]
         Corresponding spike-triggered amplitudes.
-    times : list of pq.Quantity
+    times : list[pq.Quantity]
         A list of times corresponding to the signal. They correspond to the
         times of the `neo.SpikeTrain` referred by the list item.
 
@@ -342,10 +342,10 @@ def weighted_phase_lag_index(signal_i, signal_j, sampling_frequency=None,
 
     Parameters
     ----------
-    signal_i, signal_j : np.array, pq.quantity.Quantity, neo.AnalogSignal
+    signal_i, signal_j : neo.AnalogSignal | pq.Quantity | np.ndarray
         Time-series of the first and second signals,
         with `t` time points and `n` trials.
-    sampling_frequency : pq.quantity.Quantity
+    sampling_frequency : pq.Quantity
         Sampling frequency of the signals in Hz. Not needed if signal i and j
         are neo.AnalogSignals.
         Default: None
@@ -361,10 +361,10 @@ def weighted_phase_lag_index(signal_i, signal_j, sampling_frequency=None,
 
     Returns
     -------
-    freqs : pq.quantity.Quantity
+    freqs : pq.Quantity
         Positive frequencies in Hz associated with the estimates of `wpli`.
         Range: :math:`[0, sampling frequency/2]`
-    wpli : np.ndarray with dtype=float
+    wpli : np.ndarray
         Weighted phase-lag index of `signal_i` and `signal_j` across trials.
         Range: :math:`[0, 1]`
 

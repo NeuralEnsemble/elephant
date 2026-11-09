@@ -147,7 +147,7 @@ def get_common_start_stop_times(neo_objects):
 
     Parameters
     ----------
-    neo_objects : neo.SpikeTrain or neo.AnalogSignal or list
+    neo_objects : neo.SpikeTrain | neo.AnalogSignal | list
         A neo object or a list of neo objects that have `t_start` and `t_stop`
         attributes.
 
@@ -189,11 +189,11 @@ def check_neo_consistency(
 
     Parameters
     ----------
-    neo_objects : list of neo.SpikeTrain or neo.AnalogSignal
+    neo_objects : list[neo.SpikeTrain] | list[neo.AnalogSignal] | neo.SpikeTrainList
         A list of neo spike trains or analog signals.
     object_type : type
         The common type.
-    t_start, t_stop : pq.Quantity or None, optional
+    t_start, t_stop : pq.Quantity | None, optional
         If None, check for exact match of t_start/t_stop across the input.
     tolerance : float, optional
         The absolute affordable tolerance for the discrepancies between
@@ -241,7 +241,7 @@ def check_same_units(quantities, object_type=pq.Quantity):
 
     Parameters
     ----------
-    quantities : list of pq.Quantity or pq.Quantity
+    quantities : list[pq.Quantity] | pq.Quantity
         A list of quantities, neo objects or a single neo object.
     object_type : type, optional
         The common type.
@@ -282,16 +282,16 @@ def round_binning_errors(values, tolerance=1e-8):
 
     Parameters
     ----------
-    values : np.ndarray or float
+    values : np.ndarray | float
         An input array or a scalar.
-    tolerance : float or None, optional
+    tolerance : float | None, optional
         The precision error absolute tolerance; acts as ``atol`` in
         :func:`numpy.isclose` function. If None, no rounding is performed.
         Default: 1e-8
 
     Returns
     -------
-    values : np.ndarray or int
+    values : np.ndarray | int
         Corrected integer values.
 
     Examples

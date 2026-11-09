@@ -145,12 +145,12 @@ class GPFA(sklearn.base.BaseEstimator):
 
     Attributes
     ----------
-    valid_data_names : tuple of str
+    valid_data_names : tuple[str]
         Names of the data contained in the resultant data structure, used to
         check the validity of users' request
-    has_spikes_bool : np.ndarray of bool
-        Indicates if a neuron has any spikes across trials of the training
-        data.
+    has_spikes_bool : np.ndarray
+        Array of boolean values indicating if a neuron has any spikes across
+        trials of the training data.
     params_estimated : dict
         Estimated model parameters. Updated at each run of the fit() method.
 
@@ -308,7 +308,7 @@ class GPFA(sklearn.base.BaseEstimator):
 
         Parameters
         ---------- # noqa
-        spiketrains : :class:`elephant.trials.Trials`, list of :class:`neo.core.spiketrainlist.SpikeTrainList` or list of list of :class:`neo.core.SpikeTrain`
+        spiketrains : elephant.trials.Trials | list[neo.SpikeTrainList] | list[list[neo.SpikeTrain]]
             Spike train data to be fit to latent variables.
             For list of lists, the outer list corresponds to trials and the
             inner list corresponds to the neurons recorded in that trial, such
@@ -395,7 +395,7 @@ class GPFA(sklearn.base.BaseEstimator):
 
         Parameters
         ---------- # noqa
-        spiketrains : list of list of :class:`neo.core.SpikeTrain`, list of :class:`neo.core.spiketrainlist.SpikeTrainList` or :class:`elephant.trials.Trials`
+        spiketrains : elephant.trials.Trials | list[neo.SpikeTrainList] | list[list[neo.SpikeTrain]]
             Spike train data to be transformed to latent variables.
             For list of lists, the outer list corresponds to trials and the
             inner list corresponds to the neurons recorded in that trial, such
@@ -405,7 +405,7 @@ class GPFA(sklearn.base.BaseEstimator):
             trial must be fixed such that `spiketrains[l][n]` and
             `spiketrains[k][n]` refer to spike trains of the same neuron
             for any choices of `l`, `k`, and `n`.
-        returned_data : list of str
+        returned_data : list[str]
             The dimensionality reduction transform generates the following
             resultant data:
 
@@ -428,7 +428,7 @@ class GPFA(sklearn.base.BaseEstimator):
 
         Returns
         -------
-        :class:`np.ndarray` or dict
+        np.ndarray | dict[str, np.ndarray]
             When the length of `returned_data` is one, a single np.ndarray,
             containing the requested data (the first entry in `returned_data`
             keys list), is returned. Otherwise, a dict of multiple np.ndarrays
@@ -509,15 +509,15 @@ class GPFA(sklearn.base.BaseEstimator):
 
         Parameters
         ---------- # noqa
-        spiketrains : list of list of :class:`neo.core.SpikeTrain`, list of :class:`neo.core.spiketrainlist.SpikeTrainList` or :class:`elephant.trials.Trials`
+        spiketrains : elephant.trials.Trials | list[neo.SpikeTrainList] | list[list[neo.SpikeTrain]]
             Refer to the :func:`GPFA.fit` docstring.
 
-        returned_data : list of str
+        returned_data : list[str]
             Refer to the :func:`GPFA.transform` docstring.
 
         Returns
         -------
-        np.ndarray or dict
+        np.ndarray | dict[str, np.ndarray]
             Refer to the :func:`GPFA.transform` docstring.
 
         Raises
@@ -547,7 +547,7 @@ class GPFA(sklearn.base.BaseEstimator):
 
         Parameters
         ---------- # noqa
-        spiketrains : list of list of :class:`neo.core.SpikeTrain`, list of :class:`neo.core.spiketrainlist.SpikeTrainList` or :class:`elephant.trials.Trials`
+        spiketrains : elephant.trials.Trials | list[neo.SpikeTrainList] | list[list[neo.SpikeTrain]]
             Spike train data to be scored.
             The outer list corresponds to trials and the inner list corresponds
             to the neurons recorded in that trial, such that

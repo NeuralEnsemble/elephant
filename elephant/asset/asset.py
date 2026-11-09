@@ -259,7 +259,7 @@ def _transactions(spiketrains, bin_size, t_start, t_stop, ids=None):
 
     Parameters
     ----------
-    spiketrains : list of neo.SpikeTrain or list of tuple
+    spiketrains : list[neo.SpikeTrain] | list[tuple]
         A list of `neo.SpikeTrain` objects, or list of pairs
         (Train_ID, `neo.SpikeTrain`), where `Train_ID` can be any hashable
         object.
@@ -581,7 +581,7 @@ class _GPUBackend:
     """
     Parameters
     ----------
-    max_chunk_size: int or None, optional
+    max_chunk_size: int | None, optional
         Defines the maximum chunk size used in the `_split_axis` function. The
         users typically don't need to set this parameter manually - it's used
         to simulate scenarios when the input matrix is so large that it cannot
@@ -1881,7 +1881,7 @@ def get_sse_start_and_end_time_bins(sse):
 
     Returns
     -------
-    start, end: list
+    start, end : list[int]
         Two-element list containing the first bins (`start`) or the last bins
         (`end`) in each repeated sequence. In each list, the first element
         corresponds to the first sequence (elements `i` in the SSE pixel), and
@@ -1989,7 +1989,7 @@ class ASSET(object):
 
     Parameters
     ----------
-    spiketrains_i, spiketrains_j : list of neo.SpikeTrain
+    spiketrains_i, spiketrains_j : list[neo.SpikeTrain]
         Input spike trains for the first and second time dimensions,
         respectively, to compute the p-values from.
         If `spiketrains_y` is None, it's set to `spiketrains`.
@@ -2007,7 +2007,7 @@ class ASSET(object):
         If None, the attribute `t_stop` of the spike trains is used
         (if the same for all spike trains).
         Default: None
-    bin_tolerance : float or 'default' or None, optional
+    bin_tolerance : float | 'default' | None, optional
         Defines the tolerance value for rounding errors when binning the
         spike trains. If 'default', the value is the default as defined in
         :class:`~.conversion.BinnedSpikeTrain`. If None, no correction for
@@ -2143,7 +2143,7 @@ class ASSET(object):
 
         Parameters
         ----------
-        normalization : {'intersection', 'mean', 'union'} or None, optional
+        normalization : {'intersection', 'mean', 'union'} | None, optional
             The normalization type to be applied to each entry `M[i,j]` of the
             intersection matrix `M`. Given the sets `s_i` and `s_j` of neuron
             IDs in the bins `i` and `j` respectively, the normalization
@@ -2158,7 +2158,7 @@ class ASSET(object):
 
         Returns
         -------
-        imat : (n,n) np.ndarray
+        imat : (n, n) np.ndarray
             The floating point intersection matrix of a list of spike trains.
             It has the shape `(n, n)`, where `n` is the number of bins that
             time was discretized in.
@@ -2200,7 +2200,7 @@ class ASSET(object):
         n_surrogates : int
             The number of spike train surrogates to generate for the bootstrap
             procedure.
-        imat : (n,n) np.ndarray or None, optional
+        imat : (n, n) np.ndarray | None, optional
             The floating point intersection matrix of a list of spike trains.
             It has the shape `(n, n)`, where `n` is the number of bins that
             time was discretized in.
@@ -2324,13 +2324,13 @@ class ASSET(object):
 
         Parameters
         ----------
-        imat : (n,n) np.ndarray or None, optional
+        imat : (n, n) np.ndarray | None, optional
             The intersection matrix of a list of spike trains.
             It has the shape `(n, n)`, where `n` is the number of bins that
             time was discretized in.
             If None, the output of :func:`ASSET.intersection_matrix` is used.
             Default: None
-        firing_rates_x, firing_rates_y : list of neo.AnalogSignal or 'estimate'
+        firing_rates_x, firing_rates_y : list[neo.AnalogSignal] | 'estimate'
             If a list, `firing_rates[i]` is the firing rate of the spike train
             `spiketrains[i]`.
             If 'estimate', firing rates are estimated by simple boxcar kernel
@@ -2461,7 +2461,7 @@ class ASSET(object):
             :func:`ASSET.probability_matrix_analytical`, of cumulative
             probability values between 0 and 1. The values are assumed
             to be uniformly distributed in the said range.
-        filter_shape : tuple of int
+        filter_shape : tuple[int]
             A pair of integers representing the kernel shape `(l, w)`.
         n_largest : int
             The number of the largest neighbors to collect for each entry in
@@ -2484,7 +2484,7 @@ class ASSET(object):
             Double floating-point precision is typically x4 times slower than
             the single floating-point equivalent.
             Default: 'float'
-        cuda_threads : int or tuple of int, optional
+        cuda_threads : int | tuple[int], optional
             [CUDA/OpenCL performance parameter that does not influence the
             result.]
             The number of CUDA/OpenCL threads per block (in X axis) between 1
@@ -2613,12 +2613,12 @@ class ASSET(object):
 
         Parameters
         ----------
-        matrices : list of np.ndarray
+        matrices : list[np.ndarray]
             The matrices which are compared to the respective thresholds to
             build the mask. All matrices must have the same shape.
             Typically, it is a list `[pmat, jmat]`, i.e., the (cumulative)
             probability and joint probability matrices.
-        thresholds : float or list of float
+        thresholds : float | list[float]
             The significance thresholds for each matrix in `matrices`.
 
         Returns
@@ -2714,7 +2714,7 @@ class ASSET(object):
             stretching increases from 1 to `stretch` as the direction of the
             two elements moves from the 45 to the 135 degree direction.
             `stretch` must be greater than 1.
-        working_memory : int or None, optional
+        working_memory : int | None, optional
             The sought maximum memory in MiB for temporary distance matrix
             chunks. When None (default), no chunking is performed. This
             parameter is passed directly to
@@ -2722,7 +2722,7 @@ class ASSET(object):
             has no influence on the outcome matrix. Instead, it controls the
             memory VS speed trade-off.
             Default: None
-        array_file : str or path-like, optional
+        array_file : str | Path | None, optional
             Path to a location of a temporary file, that should be used to
             store the matrix of stretched  distances when chunking the
             computations. This is achieved using `np.memmap`. If
@@ -2816,7 +2816,7 @@ class ASSET(object):
 
         Parameters
         ----------
-        cmat : (n,n) np.ndarray
+        cmat : (n, n) np.ndarray
             The cluster matrix, the output of
             :func:`ASSET.cluster_matrix_entries`.
         ids : list, optional

@@ -71,7 +71,7 @@ def victor_purpura_distance(spiketrains, cost_factor=1.0 * pq.Hz, kernel=None,
 
     Parameters
     ----------
-    spiketrains : list of neo.SpikeTrain
+    spiketrains : list[neo.SpikeTrain]
         Spike trains to calculate pairwise distance.
     cost_factor : pq.Quantity, optional
         A cost factor :math:`q` for spike shifts as inverse time scalar.
@@ -80,7 +80,7 @@ def victor_purpura_distance(spiketrains, cost_factor=1.0 * pq.Hz, kernel=None,
         spike shift and hence exclusion of spike shifts, are explicitly
         allowed. If `kernel` is not `None`, :math:`q` will be ignored.
         Default: 1.0 * pq.Hz
-    kernel : elephant.kernels.Kernel or None, optional
+    kernel : elephant.kernels.Kernel | None, optional
         Kernel to use in the calculation of the distance. If `kernel` is
         `None`, an unnormalized triangular kernel with standard deviation
         of :math:'2.0/(q * sqrt(6.0))' corresponding to a half width of
@@ -309,10 +309,10 @@ def van_rossum_distance(spiketrains, time_constant=1.0 * pq.s, sort=True):
 
     Parameters
     ----------
-    spiketrains : list of neo.SpikeTrain
+    spiketrains : list[neo.SpikeTrain]
         Sequence of :class:`neo.core.SpikeTrain` objects of
         which the van Rossum distance will be calculated pairwise.
-    time_constant : Quantity scalar
+    time_constant : pq.Quantity
         Decay rate of the exponential function as time scalar. Controls for
         which time scale the metric will be sensitive. Denoted as :math:`t_c`
         in :cite:`dissimilarity-Rossum2001_751`. This parameter will be

@@ -154,20 +154,20 @@ def _spike_extraction_from_single_channel(
 
 
 def spike_extraction(
-        signal: neo.core.AnalogSignal,
+        signal: neo.AnalogSignal,
         threshold: pq.Quantity = 0.0 * pq.mV,
         sign: Literal['above', 'below'] = 'above',
-        time_stamps: neo.core.SpikeTrain = None,
-        interval: tuple = (-2 * pq.ms, 4 * pq.ms),
+        time_stamps: neo.SpikeTrain = None,
+        interval: tuple[pq.Quantity] = (-2 * pq.ms, 4 * pq.ms),
         always_as_list: bool = False
-        ) -> Union[neo.core.SpikeTrain, SpikeTrainList]:
+        ) -> Union[neo.SpikeTrain, SpikeTrainList]:
     """
     Return the peak times for all events that cross threshold and the waveforms. Usually used for extracting spikes from
     a membrane potential to calculate waveform properties.
 
     Parameters
     ----------
-    signal : :class:`neo.core.AnalogSignal`
+    signal : neo.AnalogSignal
         An analog input signal one or more channels.
     threshold : pq.Quantity, optional
         Contains a value that must be reached for an event to be detected.
@@ -175,11 +175,11 @@ def spike_extraction(
     sign : {'above', 'below'}, optional
         Determines whether to count threshold crossings that cross above or below the threshold.
         Default: 'above'
-    time_stamps : :class:`neo.core.SpikeTrain` , optional
+    time_stamps : neo.SpikeTrain, optional
         Provides the time stamps around which the waveform is extracted. If it is None, the function `peak_detection` is
         used to calculate the `time_stamps` from signal.
         Default: None
-    interval : tuple of :class:`pq.Quantity`
+    interval : tuple[pq.Quantity]
         Specifies the time interval around the `time_stamps` where the waveform is extracted. The default time interval
         [-2ms, 4ms] are based on experience, and many spike sorting tools choose values in this range as the spikes are
         typically about 1-2 ms in length. This choice of default values includes a small interval before the spike peak
@@ -193,7 +193,7 @@ def spike_extraction(
 
     Returns
     -------
-    result_st : :class:`neo.core.SpikeTrain`, :class:`neo.core.spiketrainslist.SpikeTrainList`.
+    result_st : neo.SpikeTrain | neo.SpikeTrainList
         Contains the time_stamps of each of the spikes and the waveforms in `result_st.waveforms`.
 
     See Also
@@ -285,9 +285,9 @@ def threshold_detection(
 
     Parameters
     ----------
-    signal : :class:`neo.core.AnalogSignal`
+    signal : neo.AnalogSignal
         An analog input signal with one or multiple channels.
-    threshold : :class:`pq.Quantity`, optional
+    threshold : pq.Quantity, optional
         Contains a value that must be reached for an event to be detected.
         Default: 0.0 * pq.mV
     sign : {'above', 'below'}, optional
@@ -299,7 +299,7 @@ def threshold_detection(
 
     Returns
     ------- # noqa
-    result_st : :class:`neo.core.SpikeTrain`, :class:`neo.core.spiketrainslist.SpikeTrainList`
+    result_st : neo.SpikeTrain | neo.SpikeTrainList
         Contains the spike times of each of the events (spikes) extracted from the signal. If `signal` is an
         AnalogSignal with multiple channels, or `always_return_list=True` , a
         :class:`neo.core.spiketrainlist.SpikeTrainList` is returned.
@@ -403,9 +403,9 @@ def peak_detection(signal: neo.core.AnalogSignal,
 
     Parameters
     ----------
-    signal : :class:`neo.core.AnalogSignal`
+    signal : neo.AnalogSignal
         An analog input signal or a list of analog input signals.
-    threshold : :class:`pq.Quantity`, optional
+    threshold : pq.Quantity, optional
         Contains a value that must be reached for an event to be detected.
         Default: 0.*pq.mV
     sign : {'above', 'below'}, optional
@@ -420,8 +420,7 @@ def peak_detection(signal: neo.core.AnalogSignal,
 
     Returns
     ------- # noqa
-    result_st : :class:`neo.core.SpikeTrain`, :class:`neo.core.spiketrainslist.SpikeTrainList`
-        :class:`np.ndarrav`, List[:class:`np.ndarrav`]
+    result_st : neo.SpikeTrain | neo.SpikeTrainList | np.ndarray | list[np.ndarray]
         Contains the spike times of each of the events (spikes) extracted from the signal. If `signal` is an
         AnalogSignal with multiple channels or `always_return_list=True` a list is returned.
     """
@@ -522,7 +521,7 @@ class AbstractPointProcess:
 
         Returns
         -------
-        spiketrain : neo.SpikeTrain or np.ndarray
+        spiketrain : neo.SpikeTrain | np.ndarray
             The generated spike train in the specified format.
         """
         spikes = self._generate_spiketrain_as_array()
@@ -551,7 +550,7 @@ class AbstractPointProcess:
 
         Returns
         -------
-        list_of_spiketrain : list of neo.SpikeTrain or list of np.ndarray
+        list_of_spiketrain : list[neo.SpikeTrain] | list[np.ndarray]
             A list generated spike trains in the specified format.
         """
         return [self.generate_spiketrain(as_array=as_array)
@@ -1822,7 +1821,7 @@ def compound_poisson_process(
         Average rate of each spike train generated. Can be:
           - a single value, all spike trains will have same rate rate
           - an array of values (of length `len(A)-1`), each indicating the firing rate of one process in output
-    amplitude_distribution : np.ndarray or list
+    amplitude_distribution : np.ndarray | list
         CPP's amplitude distribution :math:`A`. `A[j]` represents the probability of a synchronous event of size `j`
         among the generated spike trains. The sum over all entries of :math:`A` must be equal to one.
     t_stop : pq.Quantity
@@ -1837,7 +1836,7 @@ def compound_poisson_process(
 
     Returns
     -------
-    list of neo.SpikeTrain
+    list[neo.SpikeTrain]
         A list of `len(A) - 1` neo.SpikeTrains with specified firing rates forming the CPP with amplitude distribution
         :math:`A`.
     """
