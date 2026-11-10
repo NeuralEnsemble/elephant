@@ -684,12 +684,12 @@ class MultitaperCrossSpectrumTestCase(unittest.TestCase):
                                    freqs_pq.rescale(freqs_neo.units).magnitude)
         np.testing.assert_allclose(
             cross_spec_neo.magnitude,
-            cross_spec_pq.rescale(cross_spec_neo.units).magnitude, rtol=1e-5)
+            cross_spec_pq.rescale(cross_spec_neo.units).magnitude)
         np.testing.assert_allclose(freqs_neo.rescale(pq.Hz).magnitude,
                                    freqs_np)
         np.testing.assert_allclose(
             cross_spec_neo.rescale(pq.mV ** 2 / pq.Hz).magnitude,
-            cross_spec_np, rtol=1e-5)
+            cross_spec_np)
 
 
 class SegmentedMultitaperCrossSpectrumTestCase(unittest.TestCase):
