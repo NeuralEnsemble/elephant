@@ -83,7 +83,7 @@ def cubic(histogram, max_iterations=100, alpha=0.05):
         population of neurons.
     max_iterations : int, optional
          The maximum number of iterations of the hypothesis test. Corresponds
-         to the :math:`\hat{\xi_{\text{max}}}` in :cite:`cubic-Staude2010_327`.
+         to the :math:`\hat{\xi_{\text{max}}}` in :cite:t:`cubic-Staude2010_327`.
          If it is not possible to compute the :math:`\hat{\xi}` before
          `max_iterations` iteration, the CuBIC procedure is aborted.
          Default: 100
