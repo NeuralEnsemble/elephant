@@ -587,6 +587,7 @@ class _GPUBackend:
         to simulate scenarios when the input matrix is so large that it cannot
         fit into GPU memory. Setting this parameter manually can resolve GPU
         memory errors in case automatic parameters adjustment fails.
+        Default: None
 
     Notes
     -----
@@ -1989,12 +1990,16 @@ class ASSET(object):
 
     Parameters
     ----------
-    spiketrains_i, spiketrains_j : list of neo.SpikeTrain
-        Input spike trains for the first and second time dimensions,
-        respectively, to compute the p-values from.
-        If `spiketrains_y` is None, it's set to `spiketrains`.
+    spiketrains_i : list of neo.SpikeTrain
+        The input spike trains for the first time dimension, from which the
+        p-values are computed.
+    spiketrains_j : list of neo.SpikeTrain, optional
+        The input spike trains for the second time dimension. If None,
+        `spiketrains_i` is used for the second dimension as well.
+        Default: None
     bin_size : pq.Quantity, optional
         The width of the time bins used to compute the probability matrix.
+        Default: 3 * pq.ms
     t_start_i, t_start_j : pq.Quantity, optional
         The start time of the binning for the first and second axes,
         respectively.
@@ -2206,15 +2211,22 @@ class ASSET(object):
             time was discretized in.
             If None, the output of :func:`ASSET.intersection_matrix` is used.
             Default: None
-        surrogate_method : {'dither_spike_train', 'dither_spikes',
-            'jitter_spikes', 'randomise_spikes', 'shuffle_isis',
-            'joint_isi_dithering'}, optional
+        surrogate_method : str, optional
+            The method to generate surrogate spike trains. The following are
+            supported:
 
-            The method to generate surrogate spike trains. Refer to the
-            :func:`spike_train_surrogates.surrogates` documentation for more
-            information about each surrogate method. Note that some of these
-            methods need `surrogate_dt` parameter, others ignore it.
-            Default: 'dither_spike_train'
+            * 'dither_spike_train'
+            * 'dither_spikes'
+            * 'jitter_spikes'
+            * 'randomise_spikes'
+            * 'shuffle_isis'
+            * 'joint_isi_dithering'
+
+            Refer to the :func:`spike_train_surrogates.surrogates`
+            documentation for more information about each surrogate method.
+            Note that some of these methods need the `surrogate_dt` parameter,
+            others ignore it.
+            Default: 'dither_spikes'
         surrogate_dt : pq.Quantity, optional
             For surrogate methods shifting spike times randomly around their
             original time ('dither_spike_train', 'dither_spikes') or replacing
@@ -2330,7 +2342,7 @@ class ASSET(object):
             time was discretized in.
             If None, the output of :func:`ASSET.intersection_matrix` is used.
             Default: None
-        firing_rates_x, firing_rates_y : list of neo.AnalogSignal or 'estimate'
+        firing_rates_x, firing_rates_y : list of neo.AnalogSignal or 'estimate', optional
             If a list, `firing_rates[i]` is the firing rate of the spike train
             `spiketrains[i]`.
             If 'estimate', firing rates are estimated by simple boxcar kernel

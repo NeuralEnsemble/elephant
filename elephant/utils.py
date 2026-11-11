@@ -195,10 +195,11 @@ def check_neo_consistency(
         The common type.
     t_start, t_stop : pq.Quantity or None, optional
         If None, check for exact match of t_start/t_stop across the input.
+        Default: None
     tolerance : float, optional
         The absolute affordable tolerance for the discrepancies between
         t_start/stop magnitude values across trials.
-        Default : 1e-6
+        Default: 1e-8
 
     Raises
     ------

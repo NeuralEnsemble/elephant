@@ -88,7 +88,7 @@ def hash_from_pattern(m, base=2):
         spike patterns represented as a binary matrix (i.e., matrix of 0's and
         1's).
         Rows and columns correspond to patterns and neurons, respectively.
-    base: integer
+    base: int, optional
         The base for hashes calculation.
         Default: 2
 
@@ -144,7 +144,7 @@ def inverse_hash_from_pattern(h, N, base=2):
         Array-like of integer hash values of length of the number of patterns.
     N: integer
         The number of neurons.
-    base: integer
+    base: int, optional
         The base, used to generate the hash values.
         Default: 2
 
@@ -203,7 +203,7 @@ def n_emp_mat(mat, pattern_hash, base=2):
     pattern_hash: list of int
         List of hash values, representing the spike coincidence patterns
         of which occurrences are counted.
-    base: integer
+    base: int, optional
         The base, used to generate the hash values.
         Default: 2
 
@@ -372,10 +372,10 @@ def n_exp_mat(mat, pattern_hash, method='analytic', n_surrogates=1):
          'analytic' -- > analytically
          'surr' -- > with surrogates (spike time randomization)
          Default: 'analytic'
-    n_surrogates: int
+    n_surrogates: int, optional
          number of surrogates for constructing the distribution of expected
-         joint probability.
-         Default: 1 and this number is needed only when method = 'surr'
+         joint probability. This is needed only when ``method='surr'``.
+         Default: 1
 
     Returns
     -------
@@ -431,31 +431,32 @@ def n_exp_mat_sum_trial(mat, pattern_hash, method='analytic_TrialByTrial',
 
     Parameters
     ----------
-    mat: np.ndarray
+    mat : np.ndarray
         Binned spike trains represented as a binary matrix (i.e., matrix of
         0's and 1's), segmented into trials. Trials should contain an identical
         number of neurons and an identical number of time bins.
         The entries of mat should be a list of a list where 0-axis is trials
         and 1-axis is neurons.
-         0-axis --> trials
-         1-axis --> neurons
-         2-axis --> time bins
-    pattern_hash: list of int
-         List of hash values, length: number of patterns
-    method: str
-         method with which the unitary events whould be computed
-         'analytic_TrialByTrial' -- > calculate the expectency
-         (analytically) on each trial, then sum over all trials.
-         'analytic_TrialAverage' -- > calculate the expectency
-         by averaging over trials.
-         (cf. Gruen et al. 2003)
-         'surrogate_TrialByTrial' -- > calculate the distribution
-         of expected coincidences by spike time randomzation in
-         each trial and sum over trials.
-         Default: 'analytic_trialByTrial'.
-    n_surrogates: int, optional
-         The number of surrogate to be used.
-         Default: 1
+        0-axis --> trials
+        1-axis --> neurons
+        2-axis --> time bins
+    pattern_hash : list of int
+        List of hash values, length: number of patterns
+    method : str, optional
+        Method with which the unitary events should be computed:
+
+        *  'analytic_TrialByTrial' -- > calculate the expectancy
+           (analytically) on each trial, then sum over all trials.
+        *  'analytic_TrialAverage' -- > calculate the expectancy by averaging
+           over trials (cf. Gruen et al. 2003).
+        *  'surrogate_TrialByTrial' -- > calculate the distribution of
+           expected coincidences by spike time randomization in each trial
+           and sum over trials.
+
+        Default: 'analytic_TrialByTrial'
+    n_surrogates : int, optional
+        The number of surrogate to be used.
+        Default: 1
 
     Returns
     -------
@@ -521,22 +522,23 @@ def gen_pval_anal(mat, pattern_hash, method='analytic_TrialByTrial',
         number of neurons and an identical number of time bins.
         The entries of mat should be a list of a list where 0-axis is trials
         and 1-axis is neurons.
-         0-axis --> trials
-         1-axis --> neurons
-         2-axis --> time bins
+        0-axis --> trials
+        1-axis --> neurons
+        2-axis --> time bins
     pattern_hash: list of int
          List of hash values, length: number of patterns
-    method: string
-         method with which the unitary events whould be computed
-         'analytic_TrialByTrial' -- > calculate the expectency
-         (analytically) on each trial, then sum over all trials.
-         ''analytic_TrialAverage' -- > calculate the expectency
-         by averaging over trials.
-         Default: 'analytic_trialByTrial'
-         (cf. Gruen et al. 2003)
-    n_surrogates: integer, optional
-         number of surrogate to be used
-         Default: 1
+    method: str, optional
+        Method with which the unitary events should be computed:
+
+        *  'analytic_TrialByTrial' -- > calculate the expectancy
+           (analytically) on each trial, then sum over all trials.
+        *  'analytic_TrialAverage' -- > calculate the expectancy by averaging
+           over trials.
+
+        Default: 'analytic_TrialByTrial' (cf. Gruen et al. 2003)
+    n_surrogates: int, optional
+        Number of surrogate to be used.
+        Default: 1
 
     Returns
     --------
@@ -701,13 +703,13 @@ def jointJ_window_analysis(spiketrains, bin_size=5 * pq.ms,
           * 2-axis --> Spike times
     bin_size : pq.Quantity, optional
         The size of bins for discretizing spike trains.
-        Default: 5 ms
+        Default: 5 * pq.ms
     win_size : pq.Quantity, optional
         The size of the window of analysis.
-        Default: 100 ms
+        Default: 100 * pq.ms
     win_step : pq.Quantity, optional
         The size of the window step.
-        Default: 5 ms
+        Default: 5 * pq.ms
     pattern_hash : int or list of int or None, optional
         A list of interested patterns in hash values (see `hash_from_pattern`
         and `inverse_hash_from_pattern` functions). If None, all neurons
@@ -724,11 +726,12 @@ def jointJ_window_analysis(spiketrains, bin_size=5 * pq.ms,
             coincidences by spike time randomization in each trial and sum over
             trials.
 
-        Default: 'analytic_trialByTrial'
+        Default: 'analytic_TrialByTrial'
     t_start, t_stop : float or pq.Quantity, optional
         The start and stop times to use for the time points.
-        If not specified, retrieved from the `t_start` and `t_stop` attributes
-        of the input spiketrains.
+        If None, times are retrieved from the `t_start` and `t_stop`
+        attributes of the input spiketrains.
+        Default: None
     binary : bool, optional
         Binarize the binned spike train objects (True) or not. Only the binary
         matrices are supported at the moment.

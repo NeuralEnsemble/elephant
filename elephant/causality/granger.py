@@ -336,11 +336,11 @@ def _optimal_vector_arm(signals, dimension, max_order,
         dimensionality of the data
     max_order : int
         maximal order to consider
-    information_criterion : str
+    information_criterion : str, optional
         A function to compute the information criterion:
             `bic` for Bayesian information_criterion,
             `aic` for Akaike information criterion
-        Default: aic
+        Default: 'aic'
 
     Returns
     -------
@@ -465,7 +465,7 @@ def _spectral_factorization(cross_spectrum, num_iterations, term_crit=1e-12):
         function
     num_iterations : int
         Maximal number of iterations of iterative algorithm
-    term_crit : float
+    term_crit : float, optional
         Termination criterion for iteration step in spectral matrix
         factorization
         Default: 1e-12
@@ -813,13 +813,13 @@ def pairwise_spectral_granger(signal_i, signal_j, fs=1, nw=4, num_tapers=None,
         must be identical. When `signal_i` and `signal_j` are not
         `neo.AnalogSignal`, sampling frequency should be specified through the
         keyword argument `fs`. Otherwise, the default value is used
-        (`fs` = 1.0).
+        (`fs` = 1).
     fs : float, optional
         Specifies the sampling frequency of the input time series
-        Default: 1.0
+        Default: 1
     nw : float, optional
         Time bandwidth product
-        Default: 4.0
+        Default: 4
     num_tapers : int, optional
         Number of tapers used in 1. to obtain estimate of PSD. By default,
         [2*nw] - 1 is chosen.
@@ -829,7 +829,7 @@ def pairwise_spectral_granger(signal_i, signal_j, fs=1, nw=4, num_tapers=None,
         Fine peak resolution --> low numerical value --> low number of tapers
         High peak resolution --> high numerical value --> high number of tapers
         When given as a `float`, it is taken as frequency in Hz.
-        Default: None.
+        Default: None
     n_segments : int, optional
         Number of segments. The length of segments is adjusted so that
         overlapping segments cover the entire stretch of the given data. This
@@ -850,12 +850,12 @@ def pairwise_spectral_granger(signal_i, signal_j, fs=1, nw=4, num_tapers=None,
         Overlap between segments represented as a float number between 0 (no
         overlap) and 1 (complete overlap).
         Default: 0.5 (half-overlapped)
-    num_iterations : int
+    num_iterations : int, optional
         Number of iterations for algorithm to estimate spectral factorization.
         Default: 300
-    term_crit : float
+    term_crit : float, optional
         Termination criterion for iteration step in spectral matrix
-        factorization
+        factorization.
         Default: 1e-12
 
     Returns
