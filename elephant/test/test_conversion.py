@@ -513,6 +513,82 @@ class BinnedSpikeTrainTestCase(unittest.TestCase):
         arr_float = x.to_array(dtype=float)
         assert_array_equal(arr_float, x.to_array().astype(float))
 
+    # Checks if the scaling parameter "normalized" is respected when converting
+    # to an array.
+    def test_to_array_scaling(self):
+        # A bin size different from 1 s is required here, since otherwise the
+        # two scalings coincide numerically.
+        x = cv.BinnedSpikeTrain(self.spiketrain_a, bin_size=0.5 * pq.s,
+                                n_bins=20, t_start=0 * pq.s)
+        counts = x.to_array()
+        rates = x.to_array(scaling="normalized")
+
+        # 'counts' is the default
+        assert_array_equal(counts, x.to_array(scaling="counts"))
+        # 'normalized' divides the counts by the bin size in seconds
+        assert_array_almost_equal(rates, counts / 0.5)
+        self.assertEqual(counts.sum(), len(self.spiketrain_a))
+
+    # Tests whether the units of an array conversion are correctly handled during
+    # normalization, so that the resulting array has Hz as unit.
+    def test_to_array_scaling_bin_size_units(self):
+        # The normalization must divide by the bin size in seconds, so that
+        # the result is a rate in Hz whatever time units are used. A
+        # BinnedSpikeTrain inherits its units from the spike train, so the
+        # spike train itself has to be rescaled to probe this.
+        spiketrain_ms = self.spiketrain_a.rescale(pq.ms)
+        x_sec = cv.BinnedSpikeTrain(self.spiketrain_a, bin_size=0.5 * pq.s,
+                                    n_bins=20, t_start=0 * pq.s)
+        x_ms = cv.BinnedSpikeTrain(spiketrain_ms, bin_size=500 * pq.ms,
+                                   n_bins=20, t_start=0 * pq.ms)
+        self.assertEqual(x_ms.units, pq.ms)
+        assert_array_almost_equal(x_sec.to_array(scaling="normalized"),
+                                  x_ms.to_array(scaling="normalized"))
+
+    # Tests if invalid arguments to the scaling parameter are causing an error
+    # as would be expected.
+    def test_to_array_scaling_invalid(self):
+        x = cv.BinnedSpikeTrain(self.spiketrain_a, bin_size=1 * pq.s,
+                                n_bins=10, t_stop=10. * pq.s)
+        self.assertRaises(ValueError, x.to_array, scaling="rate")
+
+    # Test if conversion to normalized analog signal works correctly.
+    def test_to_analog_signal(self):
+        spiketrains = [self.spiketrain_a, self.spiketrain_b]
+        x = cv.BinnedSpikeTrain(spiketrains, bin_size=0.5 * pq.s,
+                                n_bins=20, t_start=0 * pq.s)
+        signal = x.to_analog_signal(scaling="normalized")
+
+        # AnalogSignal is (time, channels), the binned matrix is the transpose
+        self.assertIsInstance(signal, neo.AnalogSignal)
+        self.assertEqual(signal.shape, (20, 2))
+        assert_array_almost_equal(signal.magnitude.T,
+                                  x.to_array(scaling="normalized"))
+
+        # time base is taken over from the BinnedSpikeTrain
+        self.assertEqual(signal.units, pq.Hz)
+        self.assertEqual(signal.t_start, x.t_start)
+        self.assertEqual(signal.sampling_period, x.bin_size)
+
+    # Tests that the normalized AnalogSignal of a BinnedSpikeTrain (in Hz) is
+    # identical to the counts (in counts/bin size) rescaled to Hz.
+    def test_to_analog_signal_counts_rescale_to_normalized(self):
+        # The two scalings describe the same signal: 'counts' carries the bin
+        # size in its unit, so rescaling it to Hz must reproduce 'normalized'.
+        x = cv.BinnedSpikeTrain(self.spiketrain_a, bin_size=0.5 * pq.s,
+                                n_bins=20, t_start=0 * pq.s)
+        counts = x.to_analog_signal()
+        rates = x.to_analog_signal(scaling="normalized")
+        assert_array_almost_equal(counts.rescale(pq.Hz).magnitude,
+                                  rates.magnitude)
+
+    # Tests if invalid arguments to the scaling parameter are causing an error
+    # as would be expected.
+    def test_to_analog_signal_scaling_invalid(self):
+        x = cv.BinnedSpikeTrain(self.spiketrain_a, bin_size=1 * pq.s,
+                                n_bins=10, t_stop=10. * pq.s)
+        self.assertRaises(ValueError, x.to_analog_signal, scaling="rate")
+
     # Test if error is raised when providing insufficient number of
     # parameters
     def test_binned_spiketrain_insufficient_arguments(self):
