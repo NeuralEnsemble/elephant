@@ -893,7 +893,7 @@ def pairwise_spectral_granger(signal_i, signal_j, fs=1, nw=4, num_tapers=None,
         signals=signals, n_segments=n_segments, len_segment=len_segment,
         frequency_resolution=frequency_resolution, overlap=overlap, fs=fs,
         nw=nw, num_tapers=num_tapers, peak_resolution=peak_resolution,
-        return_onesided=False)
+        return_onesided=False, detrend=False)
 
     # Remove units attached by the multitaper_cross_spectrum
     if isinstance(S, pq.Quantity):
