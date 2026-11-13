@@ -95,7 +95,8 @@ __all__ = (
     "Causality",
     "pairwise_granger",
     "conditional_granger",
-    "pairwise_spectral_granger"
+    "pairwise_spectral_granger",
+    "conditional_spectral_granger"
 )
 
 
@@ -948,3 +949,164 @@ def pairwise_spectral_granger(signal_i, signal_j, fs=1, nw=4, num_tapers=None,
         total_interdependence=total_interdependence)
 
     return freqs, spectral_causality
+
+
+def conditional_spectral_granger(signals, n_segments=1, len_segment=None,
+                                 frequency_resolution=None, overlap=0.5, 
+                                 fs=1.0, nw=4.0, num_tapers=None, 
+                                 peak_resolution=None, num_iterations=300, 
+                                 term_crit=1e-12):
+    """
+    Determine the conditional spectral Granger causality between time series.
+
+    This function calculates the directed causal influence from a source
+    signal to a target signal conditioned on all remaining signals in the
+    input matrix. The cross-spectrum is estimated using a segmented
+    multitaper approach and factorized using Wilson's algorithm.
+
+    Parameters
+    ----------
+    signals : (N, C) np.ndarray or neo.AnalogSignal
+        A matrix with `C` time series (channels) that have `N` time points.
+    n_segments : int, optional
+        Number of segments. Default: 1.
+    len_segment : int, optional
+        Length of segments. Default: None.
+    frequency_resolution : pq.Quantity or float, optional
+        Desired frequency resolution of the obtained spectra. Default: None.
+    overlap : float, optional
+        Overlap between segments represented as a float number between 0 and 1.
+        Default: 0.5.
+    fs : float, optional
+        Sampling rate of the signals. Default: 1.0.
+    nw : float, optional
+        Time bandwidth product. Default: 4.0.
+    num_tapers : int, optional
+        Number of tapers used in the multitaper approach. Default: None.
+    peak_resolution : pq.Quantity or float, optional
+        Quantity in Hz determining the number of tapers. Default: None.
+    num_iterations : int, optional
+        Maximum number of iterations for the Wilson factorization algorithm.
+        Default: 300.
+    term_crit : float, optional
+        Termination criterion for convergence of the Wilson factorization.
+        Default: 1e-12.
+
+    Returns
+    -------
+    freqs : (F,) np.ndarray
+        Array of sample frequencies in Hz.
+        
+    cGC : (C, C, F) np.ndarray
+        Conditional spectral Granger causality matrix.
+         `cGC[i, j, k]` represents the conditional causality from source 
+        signal `j` to target signal `i` at frequency index `k`.
+
+    Raises
+    ------
+    ValueError
+        If fewer than three channels are provided.
+    """
+    if isinstance(signals, neo.AnalogSignal):
+        data = signals.magnitude
+        fs = signals.sampling_rate.rescale("Hz").magnitude
+    else:
+        data = np.asarray(signals)
+
+    if data.ndim != 2:
+        raise ValueError("'signals' must be a 2-dimensional array of shape (N_samples, N_channels).")
+
+    n_channels = data.shape[1]
+
+    if n_channels < 3:
+        raise ValueError(
+            "Conditional Granger causality requires at least 3 "
+            f"channels, but only {n_channels} were provided."
+        )
+
+    # Spectral estimation expects (n_channels, n_samples)
+    signals_T = data.T
+
+    freqs, S_twosided = segmented_multitaper_cross_spectrum(
+        signals=signals_T,
+        n_segments=n_segments,
+        len_segment=len_segment,
+        frequency_resolution=frequency_resolution,
+        overlap=overlap,
+        fs=fs,
+        nw=nw,
+        num_tapers=num_tapers,
+        peak_resolution=peak_resolution,
+        return_onesided=False,
+    )
+
+    if isinstance(freqs, pq.Quantity):
+        freqs = freqs.magnitude
+
+    if isinstance(S_twosided, pq.Quantity):
+        S_twosided = S_twosided.magnitude
+
+    # Transpose cross spectrum to (n_freqs, n_channels, n_channels)
+    S_twosided = np.transpose(S_twosided, axes=(1, 0, 2))
+    S_twosided = np.transpose(S_twosided, axes=(2, 0, 1))
+
+    # Factorize full system
+    C_full, H_full_twosided = _spectral_factorization(
+        S_twosided, num_iterations=num_iterations, term_crit=term_crit
+    )
+    C_full = C_full.real
+
+    # Mask out negative frequencies after factorization to save computation
+    pos_mask = freqs >= 0
+    freqs = freqs[pos_mask]
+    H_full = H_full_twosided[pos_mask]
+    n_freqs = len(freqs)
+
+    # Initialize cGC matrix with [target, source, freq] convention
+    cGC = np.zeros((n_channels, n_channels, n_freqs))
+
+    for ch_source in range(n_channels):
+        remaining_chs = np.delete(np.arange(n_channels), ch_source)
+        
+        # S_reduced excludes the source channel. 
+        # Wilson factorization requires the two-sided spectrum. 
+        S_reduced_twosided = np.delete(np.delete(S_twosided, ch_source, axis=1), ch_source, axis=2)
+
+        C_reduced, H_reduced_twosided = _spectral_factorization(
+            S_reduced_twosided, num_iterations=num_iterations, term_crit=term_crit
+        )
+        C_reduced = C_reduced.real
+        H_reduced = H_reduced_twosided[pos_mask]
+
+        # Construct G block matrix by zero-padding the reduced transfer function
+        # Shape: (n_freqs, n_channels, n_channels)
+        G_pad = np.zeros((n_freqs, n_channels, n_channels), dtype=np.complex128)
+        
+        # Map the reduced factors back to their original channel indices 
+        idx_mesh = np.ix_(np.arange(n_freqs), remaining_chs, remaining_chs)
+        G_pad[idx_mesh] = H_reduced
+        
+        # Pad the missing source channel with the identity
+        G_pad[:, ch_source, ch_source] = 1.0
+
+        # Direct block-matrix algebraic inversion: Q = G^-1 * H
+        # This replaces Geweke's iterative P-matrix constructions
+        G_pad_inv = np.linalg.inv(G_pad)
+        Q = np.matmul(G_pad_inv, H_full)
+
+        for i_tgt, ch_target in enumerate(remaining_chs):
+            
+            # Extract normalized transfer vector for the specific target
+            Q_ii = Q[:, ch_target, ch_target]
+            
+            # Calculate conditional spectral GC directly
+            numerator = C_reduced[i_tgt, i_tgt]
+            denominator = np.abs(Q_ii * C_full[ch_target, ch_target] * np.conj(Q_ii))            
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                # Assign to [target, source, freq]
+                ratio = numerator / denominator
+                # ratio = np.maximum(ratio.real, np.finfo(float).eps)  # Avoid log of zero or negative
+                cGC[ch_target, ch_source, :] = np.log(ratio)
+
+    return freqs, cGC
