@@ -760,14 +760,13 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
     TypeError
         *  If `spiketrain` is not an instance of :class:`neo.core.SpikeTrain`.
         *  If `sampling_period` is not a `pq.Quantity`.
-        *  If `sampling_period` is not larger than zero.
         *  If `kernel` is neither instance of :mod:`elephant.kernels` nor string
            'auto'.
         *  If `cutoff` is neither `float` nor `int`.
         *  If `t_start` and `t_stop` are neither None nor a `pq.Quantity`.
         *  If `trim` is not `bool`.
     ValueError
-        *  If `sampling_period` is smaller than zero.
+        *  If `sampling_period` is not larger than zero.
         *  If `kernel` is 'auto' and the function was unable to calculate
            optimal kernel width for instantaneous rate from input data.
         *  If `kernel` length is larger than binned spiketrain length
@@ -987,9 +986,9 @@ def instantaneous_rate(spiketrains, sampling_period, kernel='auto',
         raise TypeError(f"The 'sampling_period' must be a time Quantity."
                         f"Found: {type(sampling_period)}")
 
-    if sampling_period.magnitude < 0:
+    if sampling_period.magnitude <= 0:
         raise ValueError(f"The 'sampling_period' ({sampling_period}) "
-                         f"must be non-negative.")
+                         f"must be larger than zero.")
 
     if not (isinstance(kernel, kernels.Kernel) or kernel == 'auto'):
         raise TypeError(f"'kernel' must be instance of class "
