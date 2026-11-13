@@ -1107,6 +1107,61 @@ class InstantaneousRateTestCase(unittest.TestCase):
             self.assertLess(np.min(average_estimated_rate),
                             (1. - rtol) * rate.item())
 
+    def test_instantaneous_rate_border_correction_pool_spike_trains(self):
+        # The border correction rescales every column of the rate estimate
+        # with the spike count of the corresponding spike train, so it has to
+        # run before the spike trains are pooled. Pooling first collapses the
+        # column axis to a single column and the correction loop then indexes
+        # columns that no longer exist.
+        np.random.seed(0)
+        n_spiketrains = 5
+        t_start = 0. * pq.ms
+        t_stop = 1000. * pq.ms
+        sampling_period = 1. * pq.ms
+        kernel = kernels.GaussianKernel(sigma=50. * pq.ms)
+        spiketrains = StationaryPoissonProcess(
+            rate=30. * pq.Hz, t_start=t_start, t_stop=t_stop
+        ).generate_n_spiketrains(n_spiketrains)
+
+        kwargs = dict(sampling_period=sampling_period, kernel=kernel,
+                      border_correction=True)
+        rate_pooled = statistics.instantaneous_rate(
+            spiketrains, pool_spike_trains=True, **kwargs)
+        rate_per_spiketrain = statistics.instantaneous_rate(
+            spiketrains, pool_spike_trains=False, **kwargs)
+
+        n_bins = int(((t_stop - t_start) / sampling_period).simplified)
+        self.assertIsInstance(rate_pooled, neo.AnalogSignal)
+        self.assertEqual(rate_pooled.shape, (n_bins, 1))
+        self.assertEqual(rate_per_spiketrain.shape, (n_bins, n_spiketrains))
+
+        # Pooling is documented as an average over spike trains, so the
+        # pooled rate has to equal the mean over the columns of the
+        # un-pooled rate.
+        assert_array_almost_equal(
+            rate_pooled.magnitude[:, 0],
+            np.mean(rate_per_spiketrain.magnitude, axis=1))
+
+        # The border correction makes the integral over each un-pooled rate
+        # equal to the spike count of the corresponding spike train, hence
+        # the integral over the pooled rate equals the mean spike count.
+        mean_spike_count = np.mean([len(st) for st in spiketrains])
+        area_under_curve = spint.cumulative_trapezoid(
+            y=rate_pooled.magnitude[:, 0],
+            x=rate_pooled.times.rescale('s').magnitude)[-1]
+        self.assertAlmostEqual(mean_spike_count, area_under_curve,
+                               delta=0.01 * mean_spike_count)
+
+        # The same spike trains wrapped in a Trials object already take this
+        # order, the trials branch estimates the rates per spike train and
+        # averages the corrected result afterwards. Both routes have to give
+        # the same answer.
+        rate_from_trials = statistics.instantaneous_rate(
+            TrialsFromLists([spiketrains]), pool_trials=False,
+            pool_spike_trains=True, **kwargs)[0]
+        assert_array_almost_equal(rate_from_trials.magnitude,
+                                  rate_pooled.magnitude)
+
     def test_instantaneous_rate_trials_pool_trials(self):
         # Input:
         #   Trials object with self.n_trials, self.n_spiketrains
