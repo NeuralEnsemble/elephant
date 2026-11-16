@@ -83,7 +83,7 @@ def spike_contrast(spiketrains, t_start=None, t_stop=None,
 
     Parameters
     ----------
-    spiketrains : list of neo.SpikeTrain
+    spiketrains : list[neo.SpikeTrain]
         A list of input spike trains to calculate the synchrony from.
     t_start : pq.Quantity, optional
         The beginning of the spike train. If None, it's taken as the minimum
@@ -308,7 +308,7 @@ class Synchrotool(Complexity):
 
         Returns
         -------
-        list of neo.SpikeTrain
+        list[neo.SpikeTrain]
             List of spiketrains where the spikes with
             ``complexity >= threshold`` have been deleted/extracted.
 

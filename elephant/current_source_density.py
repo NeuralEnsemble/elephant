@@ -69,9 +69,9 @@ def estimate_csd(lfp, coordinates='coordinates', method=None,
 
     Parameters
     ----------
-    lfp : :class:`neo.core.AnalogSignal`
+    lfp : neo.AnalogSignal
         Positions of electrodes can be added as an array annotation
-    coordinates : array-like Quantity or str
+    coordinates : pq.Quantity | str
         Specifies the corresponding spatial coordinates of the electrodes.
         Coordinates can be directly supplied by a NxM array-like Quantity
         with dimension of space, where M is the number of signals in 'lfp',
@@ -93,9 +93,9 @@ def estimate_csd(lfp, coordinates='coordinates', method=None,
         In the kcsd methods this corresponds to cross_validate -
         the parameters are passed as kwargs here ie., lambdas and Rs
         Defaults to True
-    **kwargs : parameters to each method
-        The parameters corresponding to the method chosen
-        See the documentation of the individual method
+    **kwargs
+        The parameters corresponding to the method chosen. See the
+        documentation of the individual method.
         Default is {} - picks the best parameters,
 
     Returns
@@ -250,7 +250,7 @@ def generate_lfp(csd_profile, x_positions, y_positions=None, z_positions=None,
 
     Returns
     -------
-    LFP : :class:`neo.core.AnalogSignal`
+    LFP : neo.AnalogSignal
        The potentials created by the csd profile at the electrode positions.
        The electrode positions are attached as an annotation named
        'coordinates'.

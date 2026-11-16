@@ -172,7 +172,7 @@ def spade(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
 
     Parameters
     ----------
-    spiketrains : list of :class:`neo.core.SpikeTrain`
+    spiketrains : list[neo.SpikeTrain]
         List containing the parallel spike trains to analyze
     bin_size : pq.Quantity
         The time precision used to discretize the spiketrains (binning).
@@ -198,7 +198,7 @@ def spade(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
     min_neu : int, optional
         Minimum number of neurons in a sequence to consider a pattern.
         Default: 1
-    approx_stab_pars : dict or None, optional
+    approx_stab_pars : dict | None, optional
         Parameter values for approximate stability computation.
 
         'n_subsets': int
@@ -260,7 +260,7 @@ def spade(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
         Method to generate surrogates. You can use every method defined in
         :func:`elephant.spike_train_surrogates.surrogates`.
         Default: 'dither_spikes'
-    psr_param : None or list of int or tuple of int
+    psr_param : list[int] | tuple[int] | None
         This list contains parameters used in the pattern spectrum filtering:
 
         `psr_param[0]`: correction parameter for subset filtering
@@ -565,8 +565,7 @@ def concepts_mining(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
 
     Parameters
     ----------
-    spiketrains : list of :class:`neo.core.SpikeTrain` or
-     :class:`elephant.conversion.BinnedSpikeTrain`
+    spiketrains : list[neo.SpikeTrain] | elephant.conversion.BinnedSpikeTrain
         Either list of the spiketrains to analyze or
         BinningSpikeTrain object containing the binned spiketrains to analyze
     bin_size : pq.Quantity
@@ -612,7 +611,7 @@ def concepts_mining(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
 
     Returns
     -------
-    mining_results : :class:`numpy.ndarray`
+    mining_results : np.ndarray
         If report == 'a':
             Numpy array of all the pattern candidates (concepts) found in the
             `spiketrains`. Each pattern is represented as a tuple containing
@@ -627,7 +626,7 @@ def concepts_mining(spiketrains, bin_size, winlen, min_spikes=2, min_occ=2,
              The pattern spectrum is represented as a numpy array of
              quadruplets (pattern size, number of occurrences, difference
              between last and first spike of the pattern, number of patterns)
-    rel_matrix : :class:`scipy.sparse.coo_matrix`
+    rel_matrix : scipy.sparse.coo_matrix
         A binary matrix of shape (number of windows, winlen*len(spiketrains)).
         Each row corresponds to a window (order
         according to their position in time). Each column corresponds to one
@@ -1210,7 +1209,7 @@ def pvalue_spectrum(
 
     Parameters
     ----------
-    spiketrains : list of :class:`neo.core.SpikeTrain`
+    spiketrains : list[neo.SpikeTrain]
         List containing the parallel spike trains to analyze
     bin_size : pq.Quantity
         The time precision used to discretize the `spiketrains` (binning).
@@ -1578,7 +1577,7 @@ def test_signature_significance(pv_spec, concepts, alpha, winlen,
     pv_spec : list
         A list of triplets (z,c,p), where z is pattern size, c is pattern
         support and p is the p-value of signature (z,c)
-    concepts : list of tuple
+    concepts : list[tuple]
         Output of the concepts mining for the original data.
     alpha : float
         Significance level of the statistical test
@@ -1748,7 +1747,7 @@ def approximate_stability(concepts, rel_matrix, n_subsets=0,
         of the  occurrences of the pattern). The spike IDs are defined as:
         `spike_id=neuron_id*bin_id` with `neuron_id` in `[0, len(spiketrains)]`
         and `bin_id` in `[0, winlen]`.
-    rel_matrix : :class:`scipy.sparse.coo_matrix`
+    rel_matrix : scipy.sparse.coo_matrix
         A binary matrix with shape (number of windows,
         winlen*len(spiketrains)). Each row corresponds to a window (order
         according to their position in time).
@@ -2273,7 +2272,7 @@ def concept_output_to_patterns(concepts, winlen, bin_size, pv_spec=None,
         Length (in bins) of the sliding window used for the analysis.
     bin_size : pq.Quantity
         The time precision used to discretize the `spiketrains` (binning).
-    pv_spec : None or tuple
+    pv_spec : tuple | None
         Contains a tuple of signatures and the corresponding p-value. If equal
         to None all p-values are set to -1.
     spectrum : {'#', '3d#'}

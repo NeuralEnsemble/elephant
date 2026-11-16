@@ -692,7 +692,7 @@ def jointJ_window_analysis(spiketrains, bin_size=5 * pq.ms,
 
     Parameters
     ----------
-    spiketrains : list
+    spiketrains : list[neo.SpikeTrain]
         A list of spike trains (`neo.SpikeTrain` objects) in different trials:
           * 0-axis --> Trials
 
@@ -708,7 +708,7 @@ def jointJ_window_analysis(spiketrains, bin_size=5 * pq.ms,
     win_step : pq.Quantity, optional
         The size of the window step.
         Default: 5 ms
-    pattern_hash : int or list of int or None, optional
+    pattern_hash : int | list[int] | None, optional
         A list of interested patterns in hash values (see `hash_from_pattern`
         and `inverse_hash_from_pattern` functions). If None, all neurons
         are participated.
@@ -725,7 +725,7 @@ def jointJ_window_analysis(spiketrains, bin_size=5 * pq.ms,
             trials.
 
         Default: 'analytic_trialByTrial'
-    t_start, t_stop : float or pq.Quantity, optional
+    t_start, t_stop : float | pq.Quantity, optional
         The start and stop times to use for the time points.
         If not specified, retrieved from the `t_start` and `t_stop` attributes
         of the input spiketrains.

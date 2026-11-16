@@ -301,7 +301,7 @@ def covariance(binned_spiketrain, binary=False, fast=True):
 
     Parameters
     ----------
-    binned_spiketrain : (N, ) elephant.conversion.BinnedSpikeTrain
+    binned_spiketrain : (N,) elephant.conversion.BinnedSpikeTrain
         A binned spike train containing the spike trains to be evaluated.
     binary : bool, optional
         If True, the spikes of a particular spike train falling in the same bin
@@ -405,7 +405,7 @@ def correlation_coefficient(binned_spiketrain, binary=False, fast=True):
 
     Parameters
     ----------
-    binned_spiketrain : (N, ) elephant.conversion.BinnedSpikeTrain
+    binned_spiketrain : (N,) elephant.conversion.BinnedSpikeTrain
         A binned spike train containing the spike trains to be evaluated.
     binary : bool, optional
         If True, two spikes of a particular spike train falling in the same bin
@@ -508,7 +508,7 @@ def _covariance_sparse(binned_spiketrain, corrcoef_norm):
 
     Parameters
     ----------
-    binned_spiketrain : (N, ) elephant.conversion.BinnedSpikeTrain
+    binned_spiketrain : (N,) elephant.conversion.BinnedSpikeTrain
         See `covariance()` or `corrcoef()`, respectively.
     corrcoef_norm : bool
         Use normalization factor for the correlation coefficient rather than
@@ -563,7 +563,7 @@ def cross_correlation_histogram(
         Binned spike trains of lengths N and M to cross-correlate - the output
         of :class:`elephant.conversion.BinnedSpikeTrain`. The input
         spike trains can have any `t_start` and `t_stop`.
-    window : {'valid', 'full'} or list of int, optional
+    window : {'valid', 'full'} | list[int], optional
         Specifies the mode or lag range used to compute the cross-correlation.
         The options are:
 
@@ -594,7 +594,7 @@ def cross_correlation_histogram(
         If True, spikes falling in the same bin are counted as a single spike;
         otherwise they are counted as different spikes.
         Default: False
-    kernel : np.ndarray or None, optional
+    kernel : np.ndarray | None, optional
         A one dimensional array containing a smoothing kernel applied
         to the resulting CCH. The length N of the kernel indicates the
         smoothing window. The smoothing window cannot be larger than the
@@ -848,7 +848,7 @@ def spike_time_tiling_coefficient(spiketrain_i: neo.core.SpikeTrain,
 
     Parameters
     ----------
-    spiketrain_i, spiketrain_j : :class:`neo.core.SpikeTrain`
+    spiketrain_i, spiketrain_j : neo.SpikeTrain
         Spike trains to cross-correlate. They must have the same `t_start` and
         `t_stop`.
     dt : pq.Quantity
@@ -860,7 +860,7 @@ def spike_time_tiling_coefficient(spiketrain_i: neo.core.SpikeTrain,
 
     Returns
     -------
-    index : :class:`float` or :obj:`numpy.nan`
+    index : float | np.nan
         The spike time tiling coefficient (STTC). Returns :obj:`numpy.nan` if
         any spike train is empty.
 
