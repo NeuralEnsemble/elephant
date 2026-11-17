@@ -58,7 +58,7 @@ class ProcessPoolExecutor(SingleProcess):
 
     Parameters
     ----------
-    max_workers : int or None
+    max_workers : int or None, optional
         The maximum number of processes that can be used to
         execute the given calls. If None or not given then as many
         worker processes will be created as the machine has processors.

@@ -593,9 +593,10 @@ def bin_shuffling(
         to create surrogates of.
     max_displacement : int
         Number of bins that a single spike can be displaced.
-    bin_size : pq.Quantity or None
+    bin_size : pq.Quantity or None, optional
         The bin size needs to be specified only if a not-binned spike train
-        is passed to the method
+        is passed to the method.
+        Default: None
     n_surrogates : int, optional
         Number of surrogates to create.
         Default: 1
@@ -670,11 +671,14 @@ def _continuous_time_bin_shuffling(spiketrain, max_displacement, bin_size,
     Parameters
     ----------
     spiketrain : neo.SpikeTrain
+        Input spiketrain to create surrogates of.
     max_displacement : int
-        number of bins that a single spike can be displaced
+        Number of bins that a single spike can be displaced.
     bin_size : pq.Quantity
+        The bin size used to create the binned spike train.
     n_surrogates : int, optional
-        Default : 1
+        Number of surrogates to create.
+        Default: 1
 
     Returns
     -------
@@ -753,14 +757,14 @@ class JointISI(object):
         `method` is 'window'. It is also used for the uniform dithering for
         the spikes, which are outside the regime in the Joint-ISI
         histogram, where Joint-ISI dithering is applicable.
-        Default: 15. * pq.ms
+        Default: 15.0 * pq.ms
     truncation_limit : pq.Quantity, optional
         The Joint-ISI distribution of :math:`(ISI_i, ISI_{i+1})` is defined
         within the range :math:`[0, \infty)`. Since this is computationally not
         feasible, the Joint-ISI distribution is truncated for high ISI.
         The Joint-ISI histogram is calculated for
         :math:`(ISI_i, ISI_{i+1})` from 0 to `truncation_limit`.
-        Default: 100. * pq.ms
+        Default: 100.0 * pq.ms
     n_bins : int, optional
         The size of the joint-ISI-distribution will be
         `n_bins*n_bins/2`.
@@ -768,7 +772,7 @@ class JointISI(object):
     sigma : pq.Quantity, optional
         The standard deviation of the Gaussian kernel, with which
         the data is convolved.
-        Default: 2. * pq.ms
+        Default: 2.0 * pq.ms
     alternate : bool, optional
         If True, then all even spikes are dithered followed
         by all odd spikes. Otherwise, the spikes are dithered in ascending
@@ -794,7 +798,7 @@ class JointISI(object):
     refractory_period : pq.Quantity, optional
         Defines the refractory period of the dithered `spiketrain` unless
         the smallest ISI of the `spiketrain` is lower than this value.
-        Default: 4. * pq.ms
+        Default: 4.0 * pq.ms
     isi_dithering : bool, optional
         If True, the Joint-ISI distribution is evaluated as the outer product
         of the ISI-distribution with itself. Thus, all serial correlations are
@@ -1036,7 +1040,7 @@ class JointISI(object):
 
         Parameters
         ----------
-        n_surrogates : int
+        n_surrogates : int, optional
             The number of dithered spiketrains to be returned.
             Default: 1
 

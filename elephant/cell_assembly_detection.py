@@ -128,7 +128,7 @@ def cell_assembly_detection(binned_spiketrain, max_lag, reference_lag=2,
         Minimal number of occurrences required for an assembly
         (all assemblies, even if significant, with fewer occurrences
         than min_occurrences are discarded).
-        Default: 0
+        Default: 1
     size_chunks : int, optional
         Size (in bins) of chunks in which the spike trains are divided
         to compute the variance (to reduce non stationarity effects
@@ -137,7 +137,7 @@ def cell_assembly_detection(binned_spiketrain, max_lag, reference_lag=2,
     max_spikes : int, optional
         Maximal assembly order (the algorithm will return assemblies
         composed of maximum `max_spikes` elements).
-        Default: `np.inf`
+        Default: np.inf
     significance_pruning : bool, optional
         If True, the method performs significance pruning among
         the detected assemblies.
