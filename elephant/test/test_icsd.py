@@ -1187,5 +1187,33 @@ class TestICSD(unittest.TestCase):
         nt.assert_array_almost_equal(C_i, csd, decimal=3)
 
 
+class TestFilterCSDErrors(unittest.TestCase):
+    """Invalid filter settings must raise the intended error message."""
+
+    def setUp(self):
+        self.lfp = np.ones((5, 3)) * pq.V
+        self.csd = np.ones((5, 3)) * pq.A / pq.m**3
+
+    def test_gaussian_order_must_have_length_two(self):
+        csd = icsd.CSD(self.lfp, f_type='gaussian', f_order=(3, 1, 2))
+        with self.assertRaisesRegex(AssertionError, 'tuple of length 2'):
+            csd.filter_csd(self.csd)
+
+    def test_order_must_be_positive_int(self):
+        csd = icsd.CSD(self.lfp, f_type='boxcar', f_order=0)
+        with self.assertRaisesRegex(AssertionError, 'must be int > 0'):
+            csd.filter_csd(self.csd)
+
+    def test_unknown_filterfunction(self):
+        csd = icsd.CSD(self.lfp, f_type='boxcar', f_order=3)
+        with self.assertRaisesRegex(AssertionError, 'not equal to'):
+            csd.filter_csd(self.csd, filterfunction='nope')
+
+    def test_unknown_filter_type(self):
+        csd = icsd.CSD(self.lfp, f_type='nope', f_order=3)
+        with self.assertRaisesRegex(ValueError, 'Wrong filter type'):
+            csd.filter_csd(self.csd)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
