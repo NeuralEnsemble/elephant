@@ -438,6 +438,9 @@ from sphinxcontrib.bibtex.style.referencing.basic_author_year import (
     BasicAuthorYearParentheticalReferenceStyle,
     BasicAuthorYearTextualReferenceStyle,
 )
+from sphinxcontrib.bibtex.style.referencing.extra_year import (
+    ExtraYearReferenceStyle,
+)
 from sphinxcontrib.bibtex.style.template import (
     join, join2, pre_text, post_text, reference,
 )
@@ -514,6 +517,16 @@ class DisambiguatedTextualStyle(BasicAuthorYearTextualReferenceStyle):
 
 
 @dataclass
+class DisambiguatedYearStyle(ExtraYearReferenceStyle):
+    """
+    Year-only citation style using `year_with_suffix`.
+    """
+
+    def inner(self, role_name):
+        return reference[year_with_suffix]
+
+
+@dataclass
 class RoundBracketReferenceStyle(AuthorYearReferenceStyle):
     bracket_parenthetical: BracketStyle = field(default_factory=bracket_style)
     bracket_textual: BracketStyle = field(default_factory=bracket_style)
@@ -522,7 +535,10 @@ class RoundBracketReferenceStyle(AuthorYearReferenceStyle):
     bracket_year: BracketStyle = field(default_factory=bracket_style)
 
     def __post_init__(self):
-        self.styles.extend([
+        # Register all default author-year roles, then override the roles
+        # that display a year with the disambiguated styles.
+        super().__post_init__()
+        disambiguated_styles = [
             DisambiguatedParentheticalStyle(
                 bracket=self.bracket_parenthetical,
                 person=self.person,
@@ -537,11 +553,14 @@ class RoundBracketReferenceStyle(AuthorYearReferenceStyle):
                 pre_text_sep=self.pre_text_sep,
                 post_text_sep=self.post_text_sep,
             ),
-        ])
-        # Call GroupReferenceStyle.__post_init__ directly to avoid
-        # AuthorYearReferenceStyle.__post_init__ adding a second set of styles.
-        from sphinxcontrib.bibtex.style.referencing import GroupReferenceStyle
-        GroupReferenceStyle.__post_init__(self)
+            DisambiguatedYearStyle(bracket=self.bracket_year),
+        ]
+        self.styles.extend(disambiguated_styles)
+        self.role_style.update(
+            (role_name, style)
+            for style in disambiguated_styles
+            for role_name in style.role_names()
+        )
 
 
 sphinxcontrib.bibtex.plugin.register_plugin(
