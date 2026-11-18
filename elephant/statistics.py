@@ -212,7 +212,7 @@ def mean_firing_rate(spiketrain, t_start=None, t_stop=None, axis=None):
     Examples
     --------
     >>> from elephant import statistics
-    >>> statistics.mean_firing_rate([0.3, 4.5, 6.7, 9.3])
+    >>> print(statistics.mean_firing_rate([0.3, 4.5, 6.7, 9.3]))
     0.4301075268817204
     """
     if isinstance(spiketrain, neo.SpikeTrain) and t_start is None \
@@ -329,7 +329,7 @@ def fanofactor(spiketrains: Union[List[neo.SpikeTrain], List[pq.Quantity], List[
     ...     neo.SpikeTrain([0.3, 4.5, 6.7, 9.3], t_stop=10, units='s'),
     ...     neo.SpikeTrain([1.4, 3.3, 8.2], t_stop=10, units='s')
     ... ]
-    >>> statistics.fanofactor(spiketrains)
+    >>> print(statistics.fanofactor(spiketrains))
     0.07142857142857142
     """
     def _check_input_spiketrains_durations(spiketrains: Union[List[neo.SpikeTrain], List[pq.Quantity],
@@ -437,7 +437,7 @@ def cv2(time_intervals, with_nan=False):
     Examples
     --------
     >>> from elephant import statistics
-    >>> statistics.cv2([0.3, 4.5, 6.7, 9.3])
+    >>> print(statistics.cv2([0.3, 4.5, 6.7, 9.3]))
     0.8226190476190478
     """
     # convert to array, cast to float
@@ -504,7 +504,7 @@ def lv(time_intervals, with_nan=False):
     Examples
     --------
     >>> from elephant import statistics
-    >>> statistics.lv([0.3, 4.5, 6.7, 9.3])
+    >>> print(statistics.lv([0.3, 4.5, 6.7, 9.3]))
     0.8306154336734695
     """
     # convert to array, cast to float
@@ -577,7 +577,7 @@ def lvr(time_intervals, R=5*pq.ms, with_nan=False):
     Examples
     --------
     >>> from elephant import statistics
-    >>> statistics.lvr([0.3, 4.5, 6.7, 9.3], R=0.005)
+    >>> print(statistics.lvr([0.3, 4.5, 6.7, 9.3], R=0.005))
     0.833907445980624
     """
     if isinstance(R, pq.Quantity):
