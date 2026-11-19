@@ -565,6 +565,16 @@ class InstantaneousRateTestCase(unittest.TestCase):
             ValueError, statistics.instantaneous_rate,
             spiketrains=self.spike_train, kernel=self.kernel,
             sampling_period=-0.01 * pq.ms)
+        self.assertRaisesRegex(  # sampling period is == 0
+            ValueError, r"must be larger than zero",
+            statistics.instantaneous_rate,
+            spiketrains=self.spike_train, kernel=self.kernel,
+            sampling_period=0 * pq.ms)
+        self.assertRaisesRegex(  # sampling period is == 0, list input
+            ValueError, r"must be larger than zero",
+            statistics.instantaneous_rate,
+            spiketrains=[self.spike_train, self.spike_train],
+            kernel=self.kernel, sampling_period=0 * pq.s)
         self.assertRaises(  # no kernel or kernel='auto'
             TypeError, statistics.instantaneous_rate,
             spiketrains=self.spike_train, sampling_period=0.01 * pq.ms,
