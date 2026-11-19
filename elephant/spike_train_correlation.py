@@ -900,10 +900,14 @@ def spike_time_tiling_coefficient(spiketrain_i: neo.core.SpikeTrain,
         """
         # Create a boolean array where each element represents whether a spike
         # in spiketrain_j lies within +- dt of any spike in spiketrain_i.
-        tiled_spikes_j = np.isclose(
-            spiketrain_j.times.magnitude[:, np.newaxis],
-            spiketrain_i.times.magnitude,
-            atol=dt.item())
+        # The comparison is done explicitly rather than with `np.isclose`:
+        # `np.isclose` also applies its default relative tolerance rtol=1e-5,
+        # which widens the synchronicity window by 1e-5 * |spike time|. Because
+        # spike times are absolute, that made the window grow with the distance
+        # of the recording from t = 0 instead of staying at the requested dt.
+        tiled_spikes_j = np.abs(
+            spiketrain_j.times.magnitude[:, np.newaxis]
+            - spiketrain_i.times.magnitude) <= dt.item()
         # Determine which spikes in spiketrain_j satisfy the time window
         # condition.
         tiled_spike_indices = np.any(tiled_spikes_j, axis=1)
