@@ -95,17 +95,19 @@ class CSD(object):
             try:
                 assert(len(self.f_order) == 2)
             except AssertionError as ae:
-                raise ae('filter order f_order must be a tuple of length 2')
+                raise AssertionError(
+                    'filter order f_order must be a tuple of length 2') from ae
         else:
             try:
                 assert (self.f_order > 0 and isinstance(self.f_order, int))
             except AssertionError as ae:
-                raise ae('Filter order must be int > 0!')
+                raise AssertionError('Filter order must be int > 0!') from ae
         try:
             assert (filterfunction in ['filtfilt', 'convolve'])
         except AssertionError as ae:
-            raise ae("{} not equal to 'filtfilt' or \
-                     'convolve'".format(filterfunction))
+            raise AssertionError(
+                "{} not equal to 'filtfilt' or 'convolve'".format(
+                    filterfunction)) from ae
 
         if self.f_type == 'boxcar':
             num = ss.windows.boxcar(self.f_order)
@@ -123,8 +125,7 @@ class CSD(object):
             num = np.array([1.])
             denom = np.array([1.])
         else:
-            print('%s Wrong filter type!' % self.f_type)
-            raise
+            raise ValueError('%s Wrong filter type!' % self.f_type)
 
         num_string = '[ '
         for i in num:
