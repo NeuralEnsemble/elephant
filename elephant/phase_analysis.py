@@ -210,9 +210,12 @@ def spike_triggered_phase(hilbert_transform, spiketrains, interpolate):
     for i, entry in enumerate(result_phases):
         result_phases[i] = np.array(entry).flatten()
     for i, entry in enumerate(result_amps):
-        result_amps[i] = pq.Quantity(entry, units=entry[0].units).flatten()
+        phase_i = i if num_phase > 1 else 0
+        units = hilbert_transform[phase_i].units
+        result_amps[i] = pq.Quantity(entry, units=units).flatten()
     for i, entry in enumerate(result_times):
-        result_times[i] = pq.Quantity(entry, units=entry[0].units).flatten()
+        units = spiketrains[i].units
+        result_times[i] = pq.Quantity(entry, units=units).flatten()
     return result_phases, result_amps, result_times
 
 
