@@ -309,6 +309,57 @@ class PairwiseSpectralGrangerTestCase(unittest.TestCase):
 
         np.testing.assert_array_almost_equal(cross_spec, cross_spec_est)
 
+    def test_spectral_factorization_ar1_normalization(self):
+        """
+        Intent: Recover innovation variance rather than zero-frequency power.
+        Condition: Exact scalar AR(1) spectra with known unit-lag dynamics.
+        Expected: Known noise covariance and transfer, including white noise.
+        """
+        num_freqs = 256
+        angular_freqs = 2 * np.pi * np.fft.fftfreq(num_freqs)
+        noise_variance = 2.0
+        for coefficient in (0.0, 0.25, 0.75, -0.5):
+            with self.subTest(coefficient=coefficient):
+                expected_transfer = 1 / (
+                    1 - coefficient * np.exp(-1j * angular_freqs))
+                spectrum = (noise_variance * np.abs(expected_transfer)**2
+                            )[:, np.newaxis, np.newaxis]
+                covariance, transfer = \
+                    elephant.causality.granger._spectral_factorization(
+                        spectrum, num_iterations=100)
+                np.testing.assert_allclose(covariance, [[noise_variance]],
+                                           atol=1e-10)
+                np.testing.assert_allclose(transfer[:, 0, 0],
+                                           expected_transfer, atol=1e-10)
+
+    def test_spectral_factorization_zero_lag_transfer(self):
+        """
+        Intent: Normalize multivariate transfer at lag, not frequency, zero.
+        Condition: Two independent AR(1) signals with different dynamics.
+        Expected: Correct innovation covariance and unit zero-lag transfer.
+        """
+        num_freqs = 256
+        angular_freqs = 2 * np.pi * np.fft.fftfreq(num_freqs)
+        expected_transfer = np.zeros((num_freqs, 2, 2), dtype=complex)
+        expected_transfer[:, 0, 0] = 1 / (
+            1 - 0.5 * np.exp(-1j * angular_freqs))
+        expected_transfer[:, 1, 1] = 1 / (
+            1 + 0.25 * np.exp(-1j * angular_freqs))
+        expected_covariance = np.diag([2.0, 3.0])
+        spectrum = (expected_transfer @ expected_covariance
+                    @ elephant.causality.granger._dagger(expected_transfer))
+        covariance, transfer = \
+            elephant.causality.granger._spectral_factorization(
+                spectrum, num_iterations=100)
+        np.testing.assert_allclose(covariance, expected_covariance, atol=1e-10)
+        np.testing.assert_allclose(transfer, expected_transfer, atol=1e-10)
+        np.testing.assert_allclose(np.fft.ifft(transfer, axis=0)[0],
+                                   np.eye(2), atol=1e-10)
+        np.testing.assert_allclose(
+            transfer @ covariance
+            @ elephant.causality.granger._dagger(transfer),
+            spectrum, atol=1e-10)
+
     def test_spectral_factorization_non_conv_exception(self):
         np.random.seed(11)
         n = 10
