@@ -530,11 +530,12 @@ def _spectral_factorization(cross_spectrum, num_iterations, term_crit=1e-12):
                         + " in the termination criterion, currently "
                         + f"{term_crit}")
 
-    cov_matrix = np.matmul(factorization[0],
-                           _dagger(factorization[0]))
+    # Normalize by the zero-lag coefficient, not the zero-frequency value.
+    factor_lag0 = np.fft.ifft(factorization, axis=0)[0]
+    cov_matrix = np.matmul(factor_lag0, _dagger(factor_lag0))
 
     transfer_function = np.matmul(factorization,
-                                  np.linalg.inv(factorization[0]))
+                                  np.linalg.inv(factor_lag0))
 
     return cov_matrix, transfer_function
 
