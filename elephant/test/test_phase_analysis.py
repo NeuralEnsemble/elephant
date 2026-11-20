@@ -38,6 +38,54 @@ class SpikeTriggeredPhaseTestCase(unittest.TestCase):
             [100., 100.1, 100.2, 100.3, 100.9, 101.] * pq.ms,
             t_start=0 * pq.ms, t_stop=tlen0)
 
+    def test_no_spikes_in_signal_interval(self):
+        """
+        Intent: Return empty, unit-carrying outputs for trials without spikes.
+        Condition: An empty train or a train with spikes outside the signal.
+        Expected: Empty phase, amplitude and time arrays, with correct units.
+        """
+        signal = AnalogSignal(np.ones(3, dtype=complex), units=pq.mV,
+                              t_start=1 * pq.s, sampling_period=1 * pq.ms)
+        for spikes in ([], [0.5, 2.0]):
+            for interpolate in (False, True):
+                with self.subTest(spikes=spikes, interpolate=interpolate):
+                    train = SpikeTrain(spikes, units=pq.s, t_stop=3 * pq.s)
+                    phases, amps, times = \
+                        elephant.phase_analysis.spike_triggered_phase(
+                            signal, train, interpolate=interpolate)
+                    self.assertEqual(phases[0].shape, (0,))
+                    self.assertEqual(amps[0].shape, (0,))
+                    self.assertEqual(times[0].shape, (0,))
+                    self.assertEqual(amps[0].units, pq.mV)
+                    self.assertEqual(times[0].units, pq.s)
+
+    def test_empty_trial_preserves_other_trial(self):
+        """
+        Intent: Preserve populated trials when another trial has no spikes.
+        Condition: Two signals with different units and an empty second train.
+        Expected: Existing first-trial values and second-trial empty units.
+        """
+        signals = [
+            AnalogSignal(np.ones(3, dtype=complex), units=units,
+                         sampling_period=1 * pq.ms)
+            for units in (pq.mV, pq.uV)]
+        trains = [SpikeTrain([1], units=pq.ms, t_stop=3 * pq.ms),
+                  SpikeTrain([], units=pq.s, t_stop=3 * pq.ms)]
+        for transforms in (signals, signals[0]):
+            with self.subTest(shared_signal=not isinstance(transforms, list)):
+                phases, amps, times = \
+                    elephant.phase_analysis.spike_triggered_phase(
+                        transforms, trains, interpolate=False)
+                assert_allclose(phases[0], [0])
+                assert_allclose(amps[0].magnitude, [1])
+                assert_allclose(times[0].magnitude, [1])
+                self.assertEqual(times[0].units, pq.ms)
+                expected_units = (pq.uV if isinstance(transforms, list)
+                                  else pq.mV)
+                self.assertEqual(amps[1].units, expected_units)
+                self.assertEqual(times[1].units, pq.s)
+                self.assertEqual(phases[1].size, 0)
+
     def test_perfect_locking_one_spiketrain_one_signal(self):
         phases, amps, times = elephant.phase_analysis.spike_triggered_phase(
             elephant.signal_processing.hilbert(self.anasig0),
