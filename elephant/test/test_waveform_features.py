@@ -80,6 +80,44 @@ class WaveformSignalToNoiseRatioTestCase(unittest.TestCase):
         self.assertEqual(waveform_features.waveform_snr(np.squeeze(waveforms)),
                          target_snr)
 
+    def test_single_time_sample_preserves_channels(self):
+        """
+        Intent: Keep the waveform and channel axes for one-sample waveforms.
+        Condition: Multiple waveforms with one or three channels, one sample.
+        Expected: Zero peak-to-trough range and zero SNR in every channel.
+        """
+        for shape in ((2, 1), (2, 1, 1), (2, 3, 1)):
+            with self.subTest(shape=shape):
+                waveforms = np.arange(np.prod(shape)).reshape(shape)
+                result = waveform_features.waveform_snr(waveforms)
+                expected = np.zeros(3) if shape == (2, 3, 1) else 0.0
+                np.testing.assert_array_equal(result, expected)
+
+    def test_single_waveform_preserves_channels(self):
+        """
+        Intent: Do not measure channel differences as spike-to-spike noise.
+        Condition: One nonconstant waveform per channel, so noise is zero.
+        Expected: Infinite SNR for each channel, not a cross-channel ratio.
+        """
+        for shape in ((1, 4), (1, 1, 4), (1, 3, 4)):
+            with self.subTest(shape=shape), np.errstate(divide='ignore'):
+                waveforms = np.arange(np.prod(shape)).reshape(shape)
+                result = waveform_features.waveform_snr(waveforms)
+                expected = np.full(3, np.inf) if shape == (1, 3, 4) else np.inf
+                np.testing.assert_array_equal(result, expected)
+
+    def test_invalid_dimensions(self):
+        for shape in ((), (4,), (2, 2, 2, 2)):
+            with self.subTest(shape=shape):
+                with self.assertRaisesRegex(ValueError,
+                                            'two or three dimensions'):
+                    waveform_features.waveform_snr(np.zeros(shape))
+
+    def test_quantity_single_sample(self):
+        waveforms = np.arange(6).reshape(2, 3, 1) * pq.mV
+        np.testing.assert_array_equal(
+            waveform_features.waveform_snr(waveforms), np.zeros(3))
+
     def test_waveforms_arange_multiple_spiketrains(self):
         target_snr = [0.3, 0.3, 0.3]
         waveforms = np.arange(60).reshape((2, 3, 10))
