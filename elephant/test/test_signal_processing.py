@@ -172,6 +172,28 @@ class ZscoreTestCase(unittest.TestCase):
                           19, 20, 17, 19, 2, 4, 1, 3, 5, 23,
                           20, 15, 4, 7, 10, 14, 15, 15, 20, 1]
 
+    def test_zscore_invalid_later_dtype_preserves_inputs(self):
+        """
+        Intent: Do not partly normalize trials before rejecting their dtypes.
+        Condition: An integer trial follows one or more floating-point trials.
+        Expected: ValueError with every input value and unit unchanged.
+        """
+        for invalid_index in (0, 1, 2):
+            with self.subTest(invalid_index=invalid_index):
+                signals = [
+                    neo.AnalogSignal(np.arange(6).reshape(3, 2) + index,
+                                     units='mV', sampling_rate=1 * pq.kHz,
+                                     dtype=int if index == invalid_index
+                                     else float, name=str(index))
+                    for index in range(3)]
+                originals = [signal.copy() for signal in signals]
+                with self.assertRaisesRegex(ValueError, 'not float'):
+                    elephant.signal_processing.zscore(signals, inplace=True)
+                for signal, original in zip(signals, originals):
+                    assert_array_equal(signal.magnitude, original.magnitude)
+                    self.assertEqual(signal.units, original.units)
+                    self.assertEqual(signal.dtype, original.dtype)
+
     def test_zscore_single_dup(self):
         """
         Test z-score on a single AnalogSignal, asking to return a
