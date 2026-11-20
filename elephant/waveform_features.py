@@ -104,6 +104,11 @@ def waveform_snr(waveforms):
         ``(n_waveforms, n_spiketrains, time)``, a numpy array of length
         ``n_spiketrains`` is returned.
 
+    Raises
+    ------
+    ValueError
+        If `waveforms` does not have two or three dimensions.
+
     Notes
     -----
     The waveforms of a `neo.SpikeTrain` can be extracted as
@@ -122,7 +127,11 @@ def waveform_snr(waveforms):
                       "'spiketrain.waveforms' directly.", DeprecationWarning)
         waveforms = waveforms.waveforms
     # asarray removes quantities, if present
-    waveforms = np.squeeze(np.asarray(waveforms))
+    waveforms = np.asarray(waveforms)
+    if waveforms.ndim == 2:
+        waveforms = waveforms[:, np.newaxis, :]
+    elif waveforms.ndim != 3:
+        raise ValueError('Expected waveforms with two or three dimensions.')
     # average over all waveforms for each bin
     mean_waveform = waveforms.mean(axis=0)
     # standard deviation over all waveforms over all bins
@@ -137,4 +146,4 @@ def waveform_snr(waveforms):
     if np.isnan(snr).any():
         warnings.warn('The waveforms noise was evaluated to 0. Returning NaN')
 
-    return snr
+    return snr[0] if len(snr) == 1 else snr
