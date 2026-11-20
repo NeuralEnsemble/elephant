@@ -839,6 +839,29 @@ class WaveletTestCase(unittest.TestCase):
         self.assertRaises(
             ValueError, elephant.signal_processing.wavelet_transform, **kwds)
 
+    def test_wavelet_list_input(self):
+        """
+        Intent: Accept documented nested-list signals like equivalent arrays.
+        Condition: One or two channels, scalar or multiple center frequencies.
+        Expected: Identical output shape and values, with input unchanged.
+        """
+        values = np.sin(np.arange(32, dtype=float))
+        for signal in (values, np.stack([values, 2 * values])):
+            for frequency in (5.0, [5.0, 10.0]):
+                for zero_padding in (False, True):
+                    with self.subTest(shape=signal.shape, frequency=frequency,
+                                      zero_padding=zero_padding):
+                        sequence = signal.tolist()
+                        result = elephant.signal_processing.wavelet_transform(
+                            sequence, frequency, sampling_frequency=100,
+                            zero_padding=zero_padding)
+                        expected = \
+                            elephant.signal_processing.wavelet_transform(
+                                signal, frequency, sampling_frequency=100,
+                                zero_padding=zero_padding)
+                        assert_array_equal(result, expected)
+                        assert_array_equal(sequence, signal)
+
     def test_wavelet_io(self):
         """
         Tests the data type and data shape of the output is consistent with
