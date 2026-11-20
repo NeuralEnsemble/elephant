@@ -662,6 +662,7 @@ def wavelet_transform(signal, frequency, n_cycles=6.0, sampling_frequency=1.0,
         return ft_real + 1.0j * ft_imag
 
     data = np.asarray(signal)
+    input_ndim = data.ndim
     # When the input is AnalogSignal, the axis for time index (i.e. the
     # first axis) needs to be rolled to the last
     if isinstance(signal, neo.AnalogSignal):
@@ -716,7 +717,7 @@ def wavelet_transform(signal, frequency, n_cycles=6.0, sampling_frequency=1.0,
         if not isinstance(frequency, (list, tuple, np.ndarray)):
             signal_wt = signal_wt[..., 0]
     else:
-        if signal.ndim == 1:
+        if input_ndim == 1:
             signal_wt = signal_wt[0]
         if not isinstance(frequency, (list, tuple, np.ndarray)):
             signal_wt = signal_wt[..., 0, :]
