@@ -154,6 +154,14 @@ def zscore(signal, inplace=True):
         signal = [signal]
     check_same_units(signal, object_type=neo.AnalogSignal)
 
+    # Validate every trial before changing any input values or units.
+    if inplace:
+        for sig in signal:
+            if not np.issubdtype(sig.dtype, np.floating):
+                raise ValueError("Cannot perform inplace operation as the "
+                                 "signal dtype is not float. "
+                                 f"Source: {sig.name}")
+
     # Calculate mean and standard deviation
     signal_stacked = np.vstack(signal).magnitude
     mean = signal_stacked.mean(axis=0)
@@ -161,12 +169,6 @@ def zscore(signal, inplace=True):
 
     signal_ztransformed = []
     for sig in signal:
-        # Perform inplace operation only if array is of dtype float.
-        # Otherwise, raise an error.
-        if inplace and not np.issubdtype(sig.dtype, np.floating):
-            raise ValueError(f"Cannot perform inplace operation as the "
-                             f"signal dtype is not float. Source: {sig.name}")
-
         sig_normalized = sig.magnitude.astype(mean.dtype, copy=not inplace)
         sig_normalized -= mean
 
