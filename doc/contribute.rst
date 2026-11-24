@@ -39,8 +39,8 @@ A contribution to Elephant follows these steps:
    `issue tracker`_ (see :ref:`using_the_issue_tracker`) and wait until a
    maintainer agrees to it.
 3. **Open a pull request.** Once the issue is agreed on, implement the change
-   and open a pull request that links to the issue (see
-   :ref:`set_up_an_environment` and the sections below). If you use AI tools
+   (see :ref:`set_up_an_environment`) and open a pull request that links to
+   the issue and meets the requirements in :ref:`submitting_a_pull_request`. If you use AI tools
    for any part of your contribution, follow the rules in
    :ref:`ai_assisted_contributions`.
 
@@ -324,14 +324,75 @@ Fields are not limited to one sentence; indent continuation lines to align
 with the text of the first line.
 
 
+.. _submitting_a_pull_request:
+
+*************************
+Submitting a pull request
+*************************
+
+This section applies to every pull request, whether it fixes a bug, adds a
+feature, or improves the documentation.
+
+
+.. _pull_request_requirements:
+
+Pull request requirements
+-------------------------
+
+A pull request is ready for review when it meets the following requirements:
+
+* **Linked to an approved issue.** The pull request links to an issue that a
+  maintainer has agreed to (see :ref:`contribution_flow`). Only
+  :ref:`trivial changes <trivial_changes>` are exempt.
+* **Template filled in.** All sections of the pull request template are
+  completed, including the disclosure of AI use (see
+  :ref:`ai_assisted_contributions`).
+* **One topic per pull request.** A pull request addresses a single bug,
+  feature, or improvement. It should be as large as necessary and as small as
+  possible: do not mix unrelated changes such as refactoring or reformatting
+  of untouched code into it.
+* **Fast CI passes.** Every push to a pull request runs a fast CI job (one
+  operating system, one Python version). Make sure it passes before you
+  request a review; the full test matrix runs once a maintainer approves the
+  pull request. This does not apply to first-time contributors, whose CI runs
+  only start after a maintainer has approved them.
+* **At most two open pull requests.** Contributors who are not maintainers may
+  have at most two pull requests open at the same time. This keeps the review
+  load manageable and lets us give each pull request proper attention.
+
+
 .. _self_review_checklist:
 
-Pushing the changes and creating a pull request
------------------------------------------------
+Self-review checklist
+---------------------
+
+Before you open a pull request (or request a review), check that:
+
+* **Tests**: new functionality and bug fixes are covered by tests, and the
+  test suite passes locally (see :ref:`set_up_an_environment`).
+* **Test docstrings**: new or changed tests that are not self-explanatory
+  have a structured docstring (see `Describing tests`_).
+* **Docstrings**: new and changed functions and classes have docstrings that
+  follow the `NumPy docstring standard
+  <https://numpydoc.readthedocs.io/en/latest/format.html>`_.
+* **Style**: the code follows the :doc:`style_guide`.
+* **Documentation**: the documentation builds without new warnings (see
+  :ref:`building_documentation`).
+* **Scope**: the pull request contains only changes related to its issue, and
+  you can explain every one of them.
+
+
+.. _opening_a_pull_request:
+
+Opening the pull request
+------------------------
 
 Now you're ready to share the code publicly.
 
-1.  Commit your changes:
+1.  Go through the :ref:`self-review checklist <self_review_checklist>`
+    above.
+
+2.  Commit and push your changes to your fork:
 
     .. code-block:: sh
 
@@ -339,11 +400,9 @@ Now you're ready to share the code publicly.
         git commit -m "informative commit message"
         git push
 
-    If this is your first commitment to Elephant, please add your name and
-    affiliation/employer in :file:`doc/authors.rst`
+3.  Open a `pull request <https://github.com/NeuralEnsemble/elephant/pulls>`_
+    against the ``master`` branch and fill in the pull request template.
 
-2.  Open a `pull request <https://github.com/NeuralEnsemble/elephant/pulls>`_.
-    Then we will guide you through the process of merging your code into Elephant.
 
 That's all! We're happy to assist you throughout the process of contributing.
 
@@ -382,6 +441,8 @@ listed functionality. Class and function docstrings should conform to the
 
 .. note:: Please refer to our :doc:`style_guide`.
 
+
+.. _building_documentation:
 
 Building documentation
 ----------------------
