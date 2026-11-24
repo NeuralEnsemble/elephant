@@ -4,19 +4,70 @@
 Contributing to Elephant
 ========================
 
-You are here to help with Elephant? Awesome, feel welcome to get in touch with
-us by asking questions, proposing features and improvements to Elephant.
+You are here to help with Elephant? Awesome, you are very welcome! This guide
+describes how contributions to Elephant work, from the first idea to a merged
+pull request.
 
 For guidelines on code documentation, please see the :ref:`documentation_guide`
 below.
 
 
-.. note::
+.. important::
 
-    We highly recommend to get in touch with us *before* starting to implement a
-    new feature in Elephant. This way, we can point out synergies with complementary
-    efforts and help in designing your implementation such that its integration
-    into Elephant will be an easy process.
+    **Open an issue first.** Every pull request must be linked to an issue on
+    the `issue tracker`_ that a maintainer has agreed to. Please wait for this
+    agreement before you open a pull request. Only :ref:`trivial changes
+    <trivial_changes>` are exempt from this rule.
+
+    This way, we can point out synergies with complementary efforts, agree on
+    the scope and design early, and make sure your work can be integrated into
+    Elephant without wasted effort on either side.
+
+
+.. _contribution_flow:
+
+*****************
+Contribution flow
+*****************
+
+A contribution to Elephant follows these steps:
+
+1. **Discuss (optional).** If you would like to talk through an idea in depth
+   before writing it up, join the `Elephant Feature Requests`_ room on Matrix
+   and talk to the maintainers.
+2. **Open an issue.** Describe the bug, feature, or improvement on the
+   `issue tracker`_ and wait until a maintainer agrees to it.
+3. **Open a pull request.** Once the issue is agreed on, implement the change
+   and open a pull request that links to the issue (see
+   :ref:`set_up_an_environment` and the sections below).
+
+
+.. _trivial_changes:
+
+What counts as trivial
+----------------------
+
+Small, obviously correct changes may be submitted as a pull request directly,
+without an issue. Examples:
+
+* fixing typos in the documentation or in code comments,
+* fixing broken links,
+* small corrections to docstrings (e.g., a wrong parameter name or type).
+
+If you are unsure whether a change is trivial, it is not: please open an issue.
+
+
+Other ways to contribute
+------------------------
+
+Contributing to Elephant is not limited to code. The following contributions
+are equally welcome:
+
+* **Bug reports**: clear, reproducible reports on the `issue tracker`_.
+* **Documentation**: improvements to the user guide, the API reference.
+* **Tutorials**: new or improved examples showing how to use Elephant.
+* **Testing pull requests**: trying out open pull requests and reporting
+  whether they work for you.
 
 
 .. _get_in_touch:
@@ -25,13 +76,13 @@ below.
 Get in touch
 ************
 
-Using the mailing list
-----------------------
+Besides contributions, you are welcome to contact us with general questions,
+feedback, or to discuss the use of Elephant through the following channels:
 
-General discussion of Elephant development takes place in the
-`NeuralEnsemble Google group <http://groups.google.com/group/neuralensemble>`_.
-
-Please raise concrete issues, bugs, and feature requests on the `issue tracker`_.
+* The `Elephant Support`_ room on Matrix for questions about using Elephant
+  that are not suitable for an issue.
+* The `NeuralEnsemble Google group <http://groups.google.com/group/neuralensemble>`_
+  mailing list for general discussion of Elephant development.
 
 
 Using the issue tracker
@@ -46,8 +97,7 @@ recreate the problem. The best way to do this is to create the shortest possible
 Python script that demonstrates the problem, and attach the file to the ticket.
 
 If you have an idea for an improvement to Elephant, create a ticket with type
-"enhancement". If you already have an implementation of the idea, open a
-`pull request <https://github.com/NeuralEnsemble/elephant/pulls>`_.
+"enhancement".
 
 .. _set_up_an_environment:
 
@@ -389,3 +439,6 @@ and ``<module name>`` - to ``spade``.
 To cite Elephant itself, refer to :doc:`citation`.
 
 .. _Issue tracker: https://github.com/NeuralEnsemble/elephant/issues
+.. TODO: replace the placeholders below with the room aliases once they exist.
+.. _Elephant Support: https://matrix.to/#/TODO-elephant-support
+.. _Elephant Feature Requests: https://matrix.to/#/TODO-elephant-feature-requests
