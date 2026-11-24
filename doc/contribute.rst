@@ -36,10 +36,30 @@ A contribution to Elephant follows these steps:
    before writing it up, join the `Elephant Feature Requests`_ room on Matrix
    and talk to the maintainers.
 2. **Open an issue.** Describe the bug, feature, or improvement on the
-   `issue tracker`_ and wait until a maintainer agrees to it.
+   `issue tracker`_ (see :ref:`using_the_issue_tracker`) and wait until a
+   maintainer agrees to it.
 3. **Open a pull request.** Once the issue is agreed on, implement the change
    and open a pull request that links to the issue (see
-   :ref:`set_up_an_environment` and the sections below).
+   :ref:`set_up_an_environment` and the sections below). If you use AI tools
+   for any part of your contribution, follow the rules in
+   :ref:`ai_assisted_contributions`.
+
+
+.. _using_the_issue_tracker:
+
+Using the issue tracker
+-----------------------
+
+If you find a bug in Elephant, please create a new ticket on the
+`issue tracker`_. Choose one of the available templates - "Bug report",
+"Feature request", or "Questions".
+Choose an issue title that is as specific as possible to the problem you've found, and
+in the description give as much information as you think is necessary to
+recreate the problem. The best way to do this is to create the shortest possible
+Python script that demonstrates the problem, and attach the file to the ticket.
+
+If you have an idea for an improvement to Elephant, create a ticket with type
+"enhancement".
 
 
 .. _trivial_changes:
@@ -70,34 +90,35 @@ are equally welcome:
   whether they work for you.
 
 
-.. _get_in_touch:
+.. _ai_assisted_contributions:
 
-************
-Get in touch
-************
+*************************
+AI-assisted contributions
+*************************
 
-Besides contributions, you are welcome to contact us with general questions,
-feedback, or to discuss the use of Elephant through the following channels:
+You may use AI tools (e.g., code assistants or coding agents) when
+contributing to Elephant. You remain responsible for everything you submit,
+and the following rules apply:
 
-* The `Elephant Support`_ room on Matrix for questions about using Elephant
-  that are not suitable for an issue.
-* The `NeuralEnsemble Google group <http://groups.google.com/group/neuralensemble>`_
-  mailing list for general discussion of Elephant development.
+* **Keep a human in the loop.** You must understand every line you submit and
+  be able to explain it in review. "The AI wrote it" is not an answer to a
+  review question.
+* **Disclose AI use.** State in the pull request description which tool or
+  model you used and what you used it for (e.g., generating tests, drafting
+  docstrings, refactoring).
+* **Write your own replies.** Discussions on issues and pull requests are
+  between people. Do not post AI-generated comments or replies; if you use a
+  tool to help with wording or translation, the content and the reasoning must
+  be your own.
+* **Fully automated pull requests may be closed.** Maintainers may close pull
+  requests that appear to be generated without meaningful human involvement,
+  without a detailed review.
+* **Engage deeply with one project rather than many.** We value contributors
+  who take the time to understand Elephant and its scientific background.
+  Pull requests should be meaningful contributions, not mass-produced changes.
 
+Before submitting, go through the :ref:`self-review checklist <self_review_checklist>` yourself.
 
-Using the issue tracker
------------------------
-
-If you find a bug in Elephant, please create a new ticket on the
-`issue tracker`_. Choose one of the available templates - "Bug report",
-"Feature request", or "Questions".
-Choose an issue title that is as specific as possible to the problem you've found, and
-in the description give as much information as you think is necessary to
-recreate the problem. The best way to do this is to create the shortest possible
-Python script that demonstrates the problem, and attach the file to the ticket.
-
-If you have an idea for an improvement to Elephant, create a ticket with type
-"enhancement".
 
 .. _set_up_an_environment:
 
@@ -303,6 +324,8 @@ Fields are not limited to one sentence; indent continuation lines to align
 with the text of the first line.
 
 
+.. _self_review_checklist:
+
 Pushing the changes and creating a pull request
 -----------------------------------------------
 
@@ -324,8 +347,23 @@ Now you're ready to share the code publicly.
 
 That's all! We're happy to assist you throughout the process of contributing.
 
-If you experience any problems during one of the steps below, please contact us
-and we'll help you.
+If you experience any problems during one of the steps above, please
+:ref:`get in touch <get_in_touch>` and we'll help you.
+
+
+.. _get_in_touch:
+
+************
+Get in touch
+************
+
+Besides contributions, you are welcome to contact us with general questions,
+feedback, or to discuss the use of Elephant through the following channels:
+
+* The `Elephant Support`_ room on Matrix for questions about using Elephant
+  that are not suitable for an issue.
+* The `NeuralEnsemble Google group <http://groups.google.com/group/neuralensemble>`_
+  mailing list for general discussion of Elephant development.
 
 
 .. _documentation_guide:
