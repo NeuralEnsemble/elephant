@@ -97,7 +97,7 @@ def spike_contrast(spiketrains, t_start=None, t_stop=None,
         Sets the minimum value for the `bin_min` that is calculated by the
         algorithm and defines the smallest bin size to compute the histogram
         of the input `spiketrains`.
-        Default: 0.01 ms
+        Default: 10 * pq.ms
     bin_shrink_factor : float, optional
         A multiplier to shrink the bin size on each iteration. The value must
         be in range `(0, 1)`.

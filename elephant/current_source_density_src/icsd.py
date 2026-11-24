@@ -47,11 +47,14 @@ class CSD(object):
         Parameters
         ----------
         lfp : np.ndarray * quantity.Quantity
-            LFP signal of shape (# channels, # time steps)
-        f_type : str
-            type of spatial filter, must be a scipy.signal filter design method
-        f_order : list
-            settings for spatial filter, arg passed to  filter design function
+            LFP signal of shape (# channels, # time steps).
+        f_type : str, optional
+            Type of spatial filter, must be a `scipy.signal` filter design
+            method.
+            Default: 'gaussian'
+        f_order : tuple, optional
+            Settings for spatial filter, passed to the filter design function.
+            Default: (3, 1)
         """
         self.name = 'CSD estimate parent class'
         self.lfp = lfp

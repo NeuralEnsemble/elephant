@@ -132,9 +132,9 @@ class KCSD(CSD):
         table whose shape=(dist_table_density,)
         Parameters
         ----------
-        dist_table_density : int
+        dist_table_density : int, optional
             number of distance values at which potentials are computed.
-            Default 100
+            Default: 20
         """
         xs = np.logspace(0., np.log10(self.dist_max+1.), dist_table_density)
         xs = xs - 1.0 #starting from 0
@@ -190,16 +190,19 @@ class KCSD(CSD):
         self.k_interp_pot /= self.n_src
 
     def values(self, estimate='CSD'):
-        """Computes the values of the quantity of interest
+        """
+        Computes the values of the quantity of interest.
+
         Parameters
         ----------
-        estimate : 'CSD' or 'POT'
+        estimate : {'CSD', 'POT'}, optional
             What quantity is to be estimated
-            Defaults to 'CSD'
+            Default: 'CSD'
+
         Returns
         -------
         estimation : np.array
-            estimated quantity of shape (ngx, ngy, ngz, nt)
+            Estimated quantity of shape (ngx, ngy, ngz, nt).
         """
         if estimate == 'CSD': #Maybe used for estimating the potentials also.
             estimation_table = self.k_interp_cross
