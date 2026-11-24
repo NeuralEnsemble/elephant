@@ -410,6 +410,71 @@ If you experience any problems during one of the steps above, please
 :ref:`get in touch <get_in_touch>` and we'll help you.
 
 
+.. _after_opening_a_pull_request:
+
+After opening a pull request
+----------------------------
+
+* **Pull requests that do not meet the requirements may be closed.** If a pull
+  request does not meet the :ref:`pull request requirements
+  <pull_request_requirements>` (for example, it has no approved issue), a
+  maintainer may close it without review. You are welcome to open it again
+  once the requirements are met.
+* **Stale pull requests are closed.** If a maintainer asks a question or
+  requests changes and there is no reply for 8 weeks, the pull request is
+  closed. If you want to pick up the work again later, comment on the pull
+  request or the linked issue.
+
+
+.. _recognition_and_authorship:
+
+**************************
+Recognition and authorship
+**************************
+
+We recognise contributions to Elephant on two levels.
+
+
+Release notes: all contributors
+-------------------------------
+
+Everyone whose changes are merged is credited in the release notes of the next
+release. The list of contributors is generated from the git history and
+includes co-authors named in ``Co-authored-by:`` trailers of commit messages.
+First-time contributors are marked as such.
+
+If several people worked on a change, add a trailer for each co-author at the
+end of the commit message so that everyone is credited:
+
+.. code-block:: text
+
+    Add statistics_x to the statistics module
+
+    Co-authored-by: Jane Doe <jane.doe@example.org>
+
+
+Authors list: substantial contributions
+---------------------------------------
+
+The :doc:`authors` page lists people who have made substantial contributions
+to Elephant. It is maintained by the maintainers: you do not need to add
+yourself in your pull request. Maintainers add contributors who meet at least
+one of the following criteria:
+
+.. TODO: criteria wording to be confirmed by the maintainers (see plan, Open items).
+
+* contributed a new function, class, or module that was merged into Elephant;
+* substantially extended or improved existing functionality (e.g., a new
+  method option, a major performance improvement, or a rewrite);
+* made sustained contributions over time, e.g., several merged bug fixes,
+  documentation, or tutorial improvements across releases;
+* provided substantial scientific input, e.g., the method that a module
+  implements.
+
+If you think you meet these criteria but are not listed, please
+:ref:`get in touch <get_in_touch>`.
+
+
 .. _get_in_touch:
 
 ************
