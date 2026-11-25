@@ -71,6 +71,7 @@
 	- Neither location is shipped in the sdist or wheel.
 	- Note: this may change later, e.g. if the docs switch to a Sphinx build with Markdown sources, `CONTRIBUTING.md` could be used directly as the guide.
 - What should the saved replies / standard closing messages for low-effort PRs say?
+- Should the `doc/contribute.rst` list counter-examples of what is not trivial, even if the change is small?
 - Should `doc/contribute.rst` state the criteria for when maintainers invite you to the authors list, or leave it open-ended?
 	- Draft criteria, at least one of:
 		- contributed a new function, class, or module that was merged into Elephant;

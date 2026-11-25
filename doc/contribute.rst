@@ -591,6 +591,5 @@ and ``<module name>`` - to ``spade``.
 To cite Elephant itself, refer to :doc:`citation`.
 
 .. _Issue tracker: https://github.com/NeuralEnsemble/elephant/issues
-.. TODO: replace the placeholders below with the room aliases once they exist.
-.. _Elephant Support: https://matrix.to/#/TODO-elephant-support
-.. _Elephant Feature Requests: https://matrix.to/#/TODO-elephant-feature-requests
+.. _Elephant Support: https://matrix.to/#/#elephant-support:matrix.org
+.. _Elephant Feature Requests: https://matrix.to/#/#elephant-feature-requests:matrix.org
