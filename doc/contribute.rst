@@ -452,27 +452,15 @@ end of the commit message so that everyone is credited:
 
     Co-authored-by: Jane Doe <jane.doe@example.org>
 
+If you do not want to be listed in the release notes, say so in the
+description of your pull request.
+
 
 Authors list: substantial contributions
 ---------------------------------------
 
 The :doc:`authors` page lists people who have made substantial contributions
-to Elephant. It is maintained by the maintainers: you do not need to add
-yourself in your pull request. Maintainers add contributors who meet at least
-one of the following criteria:
-
-.. TODO: criteria wording to be confirmed by the maintainers (see plan, Open items).
-
-* contributed a new function, class, or module that was merged into Elephant;
-* substantially extended or improved existing functionality (e.g., a new
-  method option, a major performance improvement, or a rewrite);
-* made sustained contributions over time, e.g., several merged bug fixes,
-  documentation, or tutorial improvements across releases;
-* provided substantial scientific input, e.g., the method that a module
-  implements.
-
-If you think you meet these criteria but are not listed, please
-:ref:`get in touch <get_in_touch>`.
+to Elephant. Maintainers will invite you to add yourself to the authors list.
 
 
 .. _get_in_touch:

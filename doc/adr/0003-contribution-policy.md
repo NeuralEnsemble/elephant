@@ -53,7 +53,7 @@
 ### Recognition
 - Two tiers instead of three.
 - All contributors: credited in the release notes, list generated from git log (incl. `Co-authored-by:`), first-timers marked.
-- `doc/authors.rst`: maintained by maintainers, who add people meeting written criteria; contributors no longer add themselves in their PR.
+- `doc/authors.rst`: "Maintainers will invite you to add yourself to the authors list."; nobody adds themselves unprompted.
 - Contributors can opt out of being listed in the release notes.
 
 ### Other welcome contributions
@@ -71,6 +71,15 @@
 	- Neither location is shipped in the sdist or wheel.
 	- Note: this may change later, e.g. if the docs switch to a Sphinx build with Markdown sources, `CONTRIBUTING.md` could be used directly as the guide.
 - What should the saved replies / standard closing messages for low-effort PRs say?
-- Wording of the `doc/authors.rst` criteria?
-	- About the intro above the authors list ("The following people have contributed code and/or ideas to the current version of Elephant..."): does it need new wording now that maintainers add people based on criteria?
+- Should `doc/contribute.rst` state the criteria for when maintainers invite you to the authors list, or leave it open-ended?
+	- Draft criteria, at least one of:
+		- contributed a new function, class, or module that was merged into Elephant;
+		- substantially extended or improved existing functionality (e.g. a new method option, a major performance improvement, or a rewrite);
+		- made sustained contributions over time, e.g. several merged bug fixes, documentation, or tutorial improvements across releases;
+		- provided substantial scientific input, e.g. the method that a module implements.
+- Should the opt-out sentence (`doc/contribute.rst`, "Release notes: all contributors") also cover the authors list?
+	- Currently: "If you do not want to be listed in the release notes, say so in the description of your pull request."
+	- Alternative: "If you do not want to be listed in the release notes or the authors list, say so in the description of your pull request."
+- Wording of the intro above the list in `doc/authors.rst`?
+	- Currently: "The following people have contributed code and/or ideas to the current version of Elephant...": does it need new wording now that maintainers invite people?
 - Any other suggestions
