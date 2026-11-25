@@ -79,8 +79,8 @@
 		- made sustained contributions over time, e.g. several merged bug fixes, documentation, or tutorial improvements across releases;
 		- provided substantial scientific input, e.g. the method that a module implements.
 - Should the opt-out sentence (`doc/contribute.rst`, "Release notes: all contributors") also cover the authors list?
-	- Currently: "If you do not want to be listed in the release notes, say so in the description of your pull request."
-	- Alternative: "If you do not want to be listed in the release notes or the authors list, say so in the description of your pull request."
+	- Currently: "If you do not want to be listed in the release notes, tick the corresponding box in the pull request template."
+	- Alternative: also cover the authors list (sentence and PR template checkbox).
 - Wording of the intro above the list in `doc/authors.rst`?
 	- Currently: "The following people have contributed code and/or ideas to the current version of Elephant...": does it need new wording now that maintainers invite people?
 - Any other suggestions

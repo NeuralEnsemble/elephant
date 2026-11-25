@@ -452,8 +452,8 @@ end of the commit message so that everyone is credited:
 
     Co-authored-by: Jane Doe <jane.doe@example.org>
 
-If you do not want to be listed in the release notes, say so in the
-description of your pull request.
+If you do not want to be listed in the release notes, tick the corresponding
+box in the pull request template.
 
 
 Authors list: substantial contributions
