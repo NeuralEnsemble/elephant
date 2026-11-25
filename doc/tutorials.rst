@@ -103,6 +103,17 @@ Additional
   .. image:: https://img.shields.io/badge/launch-ebrains-brightgreen
      :target: https://lab.ch.ebrains.eu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FNeuralEnsemble%2Felephant&urlpath=lab%2Ftree%2Felephant%2Fdoc%2Ftutorials%2Fparallel.ipynb+&branch=master
 
+* Trials
+
+  ``elephant.trials`` module provides a unified way to handle trial data in neuroscience experiments, supporting both `neo.Block` and list-of-lists structures.
+
+  :doc:`View the notebook <../tutorials/trials>` or run interactively:
+
+  .. image:: https://mybinder.org/badge.svg
+     :target: https://mybinder.org/v2/gh/NeuralEnsemble/elephant/master?filepath=doc/tutorials/trials.ipynb
+  .. image:: https://img.shields.io/badge/launch-ebrains-brightgreen
+     :target: https://lab.ch.ebrains.eu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FNeuralEnsemble%2Felephant&urlpath=lab%2Ftree%2Felephant%2Fdoc%2Ftutorials%2Ftrials.ipynb+&branch=master
+
 ..
     Index the notebooks in a hidden toctree to avoid sphinx warnings.
 
@@ -116,3 +127,4 @@ Additional
     tutorials/unitary_event_analysis.ipynb
     tutorials/granger_causality.ipynb
     tutorials/spade.ipynb
+    tutorials/trials.ipynb
