@@ -7,6 +7,9 @@ assignees: ''
 
 ---
 
+<!-- Want to talk through an idea in depth first? Join the Elephant Feature Requests room on Matrix: https://matrix.to/#/#elephant-feature-requests:matrix.org
+Please wait for a maintainer to agree to this request before opening a pull request, see https://elephant.readthedocs.io/en/latest/contribute.html -->
+
 **Feature**
 <!-- A clear and concise description of the feature proposal. -->
 

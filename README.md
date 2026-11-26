@@ -6,7 +6,7 @@
 [![![PyPi] Status](https://img.shields.io/pypi/v/elephant)](https://pypi.org/project/elephant/)
 [![DOI Latest Release](https://zenodo.org/badge/10311278.svg)](https://zenodo.org/badge/latestdoi/10311278)
 [![Download Statistics](https://img.shields.io/pypi/dm/elephant)](https://seladb.github.io/StarTrack-js/#/preload?r=neuralensemble,elephant)<br>
-[![Chat on Gitter](https://badges.gitter.im/python-elephant/community.svg)](https://gitter.im/python-elephant/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
+[![Chat on Matrix](https://img.shields.io/matrix/elephant-support%3Amatrix.org?logo=matrix)](https://matrix.to/#/#elephant-support:matrix.org)
 [![Follow me on Bluesky](https://img.shields.io/badge/Bluesky-0285FF?logo=bluesky&logoColor=fff&label=Follow%20me%20on&color=0285FF)](https://bsky.app/profile/pyelephant.bsky.social)
 [![Follow me on Fosstodon](https://img.shields.io/badge/@elephant-6364FF?logo=mastodon&logoColor=fff&style=flat)](https://fosstodon.org/@elephant)<br>
 [![fair-software.eu](https://img.shields.io/badge/fair--software.eu-%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F-green)](https://fair-software.eu)
@@ -24,6 +24,7 @@ spike trains, LFP, analog signals. The input-output data format is either
 
 * Documentation: https://elephant.readthedocs.io/en/latest/
 * Mailing list: https://groups.google.com/group/neuralensemble
+* Matrix chat: https://matrix.to/#/#elephant-support:matrix.org
 * Maintainer: contact[at]python-elephant[dot]org
 
 

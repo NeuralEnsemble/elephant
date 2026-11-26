@@ -4,35 +4,48 @@
 Contributing to Elephant
 ========================
 
-You are here to help with Elephant? Awesome, feel welcome to get in touch with
-us by asking questions, proposing features and improvements to Elephant.
+You are here to help with Elephant? Awesome, you are very welcome! This guide
+describes how contributions to Elephant work, from the first idea to a merged
+pull request.
 
 For guidelines on code documentation, please see the :ref:`documentation_guide`
 below.
 
 
-.. note::
+.. important::
 
-    We highly recommend to get in touch with us *before* starting to implement a
-    new feature in Elephant. This way, we can point out synergies with complementary
-    efforts and help in designing your implementation such that its integration
-    into Elephant will be an easy process.
+    **Open an issue first.** Every pull request must be linked to an issue on
+    the `issue tracker`_ that a maintainer has agreed to. Please wait for this
+    agreement before you open a pull request. Only :ref:`trivial changes
+    <trivial_changes>` are exempt from this rule.
+
+    This way, we can point out synergies with complementary efforts, agree on
+    the scope and design early, and make sure your work can be integrated into
+    Elephant without wasted effort on either side.
 
 
-.. _get_in_touch:
+.. _contribution_flow:
 
-************
-Get in touch
-************
+*****************
+Contribution flow
+*****************
 
-Using the mailing list
-----------------------
+A contribution to Elephant follows these steps:
 
-General discussion of Elephant development takes place in the
-`NeuralEnsemble Google group <http://groups.google.com/group/neuralensemble>`_.
+1. **Discuss (optional).** If you would like to talk through an idea in depth
+   before writing it up, join the `Elephant Feature Requests`_ room on Matrix
+   and talk to the maintainers.
+2. **Open an issue.** Describe the bug, feature, or improvement on the
+   `issue tracker`_ (see :ref:`using_the_issue_tracker`) and wait until a
+   maintainer agrees to it.
+3. **Open a pull request.** Once the issue is agreed on, implement the change
+   (see :ref:`set_up_an_environment`) and open a pull request that links to
+   the issue and meets the requirements in :ref:`submitting_a_pull_request`. If you use AI tools
+   for any part of your contribution, follow the rules in
+   :ref:`ai_assisted_contributions`.
 
-Please raise concrete issues, bugs, and feature requests on the `issue tracker`_.
 
+.. _using_the_issue_tracker:
 
 Using the issue tracker
 -----------------------
@@ -46,8 +59,66 @@ recreate the problem. The best way to do this is to create the shortest possible
 Python script that demonstrates the problem, and attach the file to the ticket.
 
 If you have an idea for an improvement to Elephant, create a ticket with type
-"enhancement". If you already have an implementation of the idea, open a
-`pull request <https://github.com/NeuralEnsemble/elephant/pulls>`_.
+"enhancement".
+
+
+.. _trivial_changes:
+
+What counts as trivial
+----------------------
+
+Small, obviously correct changes may be submitted as a pull request directly,
+without an issue. Examples:
+
+* fixing typos in the documentation or in code comments,
+* fixing broken links,
+* small corrections to docstrings (e.g., a wrong parameter name or type).
+
+If you are unsure whether a change is trivial, it is not: please open an issue.
+
+
+Other ways to contribute
+------------------------
+
+Contributing to Elephant is not limited to code. The following contributions
+are equally welcome:
+
+* **Bug reports**: clear, reproducible reports on the `issue tracker`_.
+* **Documentation**: improvements to the user guide, the API reference.
+* **Tutorials**: new or improved examples showing how to use Elephant.
+* **Testing pull requests**: trying out open pull requests and reporting
+  whether they work for you.
+
+
+.. _ai_assisted_contributions:
+
+*************************
+AI-assisted contributions
+*************************
+
+You may use AI tools (e.g., code assistants or coding agents) when
+contributing to Elephant. You remain responsible for everything you submit,
+and the following rules apply:
+
+* **Keep a human in the loop.** You must understand every line you submit and
+  be able to explain it in review. "The AI wrote it" is not an answer to a
+  review question.
+* **Disclose AI use.** State in the pull request description which tool or
+  model you used and what you used it for (e.g., generating tests, drafting
+  docstrings, refactoring).
+* **Write your own replies.** Discussions on issues and pull requests are
+  between people. Do not post AI-generated comments or replies; if you use a
+  tool to help with wording or translation, the content and the reasoning must
+  be your own.
+* **Fully automated pull requests may be closed.** Maintainers may close pull
+  requests that appear to be generated without meaningful human involvement,
+  without a detailed review.
+* **Engage deeply with one project rather than many.** We value contributors
+  who take the time to understand Elephant and its scientific background.
+  Pull requests should be meaningful contributions, not mass-produced changes.
+
+Before submitting, go through the :ref:`self-review checklist <self_review_checklist>` yourself.
+
 
 .. _set_up_an_environment:
 
@@ -253,12 +324,75 @@ Fields are not limited to one sentence; indent continuation lines to align
 with the text of the first line.
 
 
-Pushing the changes and creating a pull request
------------------------------------------------
+.. _submitting_a_pull_request:
+
+*************************
+Submitting a pull request
+*************************
+
+This section applies to every pull request, whether it fixes a bug, adds a
+feature, or improves the documentation.
+
+
+.. _pull_request_requirements:
+
+Pull request requirements
+-------------------------
+
+A pull request is ready for review when it meets the following requirements:
+
+* **Linked to an approved issue.** The pull request links to an issue that a
+  maintainer has agreed to (see :ref:`contribution_flow`). Only
+  :ref:`trivial changes <trivial_changes>` are exempt.
+* **Template filled in.** All sections of the pull request template are
+  completed, including the disclosure of AI use (see
+  :ref:`ai_assisted_contributions`).
+* **One topic per pull request.** A pull request addresses a single bug,
+  feature, or improvement. It should be as large as necessary and as small as
+  possible: do not mix unrelated changes such as refactoring or reformatting
+  of untouched code into it.
+* **Fast CI passes.** Every push to a pull request runs a fast CI job (one
+  operating system, one Python version). Make sure it passes before you
+  request a review; the full test matrix runs once a maintainer approves the
+  pull request. This does not apply to first-time contributors, whose CI runs
+  only start after a maintainer has approved them.
+* **At most two open pull requests.** Contributors who are not maintainers may
+  have at most two pull requests open at the same time. This keeps the review
+  load manageable and lets us give each pull request proper attention.
+
+
+.. _self_review_checklist:
+
+Self-review checklist
+---------------------
+
+Before you open a pull request (or request a review), check that:
+
+* **Tests**: new functionality and bug fixes are covered by tests, and the
+  test suite passes locally (see :ref:`set_up_an_environment`).
+* **Test docstrings**: new or changed tests that are not self-explanatory
+  have a structured docstring (see `Describing tests`_).
+* **Docstrings**: new and changed functions and classes have docstrings that
+  follow the `NumPy docstring standard
+  <https://numpydoc.readthedocs.io/en/latest/format.html>`_.
+* **Style**: the code follows the :doc:`style_guide`.
+* **Documentation**: the documentation builds without new warnings (see
+  :ref:`building_documentation`).
+* **Scope**: the pull request contains only changes related to its issue, and
+  you can explain every one of them.
+
+
+.. _opening_a_pull_request:
+
+Opening the pull request
+------------------------
 
 Now you're ready to share the code publicly.
 
-1.  Commit your changes:
+1.  Go through the :ref:`self-review checklist <self_review_checklist>`
+    above.
+
+2.  Commit and push your changes to your fork:
 
     .. code-block:: sh
 
@@ -266,16 +400,82 @@ Now you're ready to share the code publicly.
         git commit -m "informative commit message"
         git push
 
-    If this is your first commitment to Elephant, please add your name and
-    affiliation/employer in :file:`doc/authors.rst`
+3.  Open a `pull request <https://github.com/NeuralEnsemble/elephant/pulls>`_
+    against the ``master`` branch and fill in the pull request template.
 
-2.  Open a `pull request <https://github.com/NeuralEnsemble/elephant/pulls>`_.
-    Then we will guide you through the process of merging your code into Elephant.
 
 That's all! We're happy to assist you throughout the process of contributing.
 
-If you experience any problems during one of the steps below, please contact us
-and we'll help you.
+If you experience any problems during one of the steps above, please
+:ref:`get in touch <get_in_touch>` and we'll help you.
+
+
+.. _after_opening_a_pull_request:
+
+After opening a pull request
+----------------------------
+
+* **Pull requests that do not meet the requirements may be closed.** If a pull
+  request does not meet the :ref:`pull request requirements
+  <pull_request_requirements>` (for example, it has no approved issue), a
+  maintainer may close it without review. You are welcome to open it again
+  once the requirements are met.
+* **Stale pull requests are closed.** If a maintainer asks a question or
+  requests changes and there is no reply for 8 weeks, the pull request is
+  closed. If you want to pick up the work again later, comment on the pull
+  request or the linked issue.
+
+
+.. _recognition_and_authorship:
+
+**************************
+Recognition and authorship
+**************************
+
+We recognise contributions to Elephant on two levels.
+
+
+Release notes: all contributors
+-------------------------------
+
+Everyone whose changes are merged is credited in the release notes of the next
+release. The list of contributors is generated from the git history and
+includes co-authors named in ``Co-authored-by:`` trailers of commit messages.
+First-time contributors are marked as such.
+
+If several people worked on a change, add a trailer for each co-author at the
+end of the commit message so that everyone is credited:
+
+.. code-block:: text
+
+    Add statistics_x to the statistics module
+
+    Co-authored-by: Jane Doe <jane.doe@example.org>
+
+If you do not want to be listed in the release notes, tick the corresponding
+box in the pull request template.
+
+
+Authors list: substantial contributions
+---------------------------------------
+
+The :doc:`authors` page lists people who have made substantial contributions
+to Elephant. Maintainers will invite you to add yourself to the authors list.
+
+
+.. _get_in_touch:
+
+************
+Get in touch
+************
+
+Besides contributions, you are welcome to contact us with general questions,
+feedback, or to discuss the use of Elephant through the following channels:
+
+* The `Elephant Support`_ room on Matrix for questions about using Elephant
+  that are not suitable for an issue.
+* The `NeuralEnsemble Google group <http://groups.google.com/group/neuralensemble>`_
+  mailing list for general discussion of Elephant development.
 
 
 .. _documentation_guide:
@@ -294,6 +494,8 @@ listed functionality. Class and function docstrings should conform to the
 
 .. note:: Please refer to our :doc:`style_guide`.
 
+
+.. _building_documentation:
 
 Building documentation
 ----------------------
@@ -389,3 +591,5 @@ and ``<module name>`` - to ``spade``.
 To cite Elephant itself, refer to :doc:`citation`.
 
 .. _Issue tracker: https://github.com/NeuralEnsemble/elephant/issues
+.. _Elephant Support: https://matrix.to/#/#elephant-support:matrix.org
+.. _Elephant Feature Requests: https://matrix.to/#/#elephant-feature-requests:matrix.org
