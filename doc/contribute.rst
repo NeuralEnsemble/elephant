@@ -221,6 +221,37 @@ something like
             assert_array_almost_equal(result.magnitude, expected_magnitude)
             ...  # more checking
 
+Describing tests
+~~~~~~~~~~~~~~~~
+
+New tests, and existing tests whose body your pull request changes, should
+have a structured docstring if what they check is not obvious from the name
+and a quick look at the body, something like:
+
+.. code-block:: python
+
+    def test_valid_data_version_forbidden(self):
+        """
+        Intent: Ensure only a missing version (404) falls back to master
+        Condition: Version probe of `elephant-data` answers 403
+        Expected: HTTPError 403 raised, nothing downloaded from master
+        """
+Trivial tests can go without one.
+
+Fields:
+
+* ``Intent``: why the test exists, i.e. the behaviour or bug it protects.
+  Start it with a verb, e.g. "Ensure ..." or "Reproduce ...".
+* ``Condition``: the input or environment that makes this case different from
+  the other tests in the class.
+* ``Expected``: the observable outcome that the assertions check.
+* ``Context`` (optional): a longer explanation of the test, e.g. background on
+  the bug or why the setup looks the way it does.
+* ``Tag`` (optional): a label to group tests, e.g. ``type-regression``.
+
+Fields are not limited to one sentence; indent continuation lines to align
+with the text of the first line.
+
 
 Pushing the changes and creating a pull request
 -----------------------------------------------

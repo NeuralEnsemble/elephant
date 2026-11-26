@@ -51,7 +51,7 @@ throughout Elephant.
                          min_threshold, n_bins, n_surrogates, bin_size, max_size,
                          time_limits, time_range, t_start, t_stop, period, order,
                          error, capacity, source_matrix, cov_matrix,
-                         selection_method='aic'
+                         selection_method='bic'
                          ):
         r"""
         Full example of the docstring and naming conventions.
@@ -88,7 +88,7 @@ throughout Elephant.
             underscore because Neo does not use underscore, and Elephant must keep
             compatibility. Do not use names such as `sts`, `spks`, or
             `spike_trains`.
-        spiketrain: neo.SpikeTrain
+        spiketrain : neo.SpikeTrain
             If the function EXPLICITLY requires only a single spike train, then
             the parameter should be named in singular (i.e., `spiketrain`). Do
             not use names such as `st`, `spk`, or `spike_train`.
@@ -96,7 +96,7 @@ throughout Elephant.
             If a function uses more than one parameter with single spike trains,
             then each parameter name begins with a meaningful name,
             followed by "_spiketrain" in singular form.
-        target_spiketrain: neo.SpikeTrain
+        target_spiketrain : neo.SpikeTrain
             Second parameter that is a single spike train. Note that the difference
             from `reference_spiketrain` is indicated by a meaningful name at the
             beginning.
@@ -128,7 +128,7 @@ throughout Elephant.
         max_size : float
             Another example showing that words should be separated by underscores.
             This intersects with the naming convention for a maximum value.
-        time_limits: list or tuple
+        time_limits : list or tuple
             For parameters that define minimum and maximum values as a list or
             tuple (e.g., [-2, 2]), the parameter must start with a meaningful
             word followed by the suffix "_limits". Preferentially, one should use
@@ -136,7 +136,7 @@ throughout Elephant.
             the convention for maximum and minimum already mentioned). But should
             the function require the definition of limits in this form, use the
             name `_limits` and not `_range` (see next parameter).
-        time_range: list
+        time_range : list
             For parameters that behave like a Python range (e.g. [1, 2, 3, 4])), in
             the sense that it is a sequence, not only the lower and upper limits
             as in the example above, the parameter should start with a meaningful
@@ -186,10 +186,10 @@ throughout Elephant.
             (such as `C` for capacity), always use the meaning
             of the letter. Therefore, the parameter should be named `capacity`,
             not `C`. Acknowledge this in the docstring as already mentioned.
-        source_matrix: np.ndarray
+        source_matrix : np.ndarray
             Parameters that are matrices should end with the suffix "_matrix", and
             start with a meaningful name.
-        cov_matrix: np.ndarray
+        cov_matrix : np.ndarray
             A few exceptions allow the use of abbreviations instead of full words
             in the name of the parameter. These are:
             * "cov" for "covariance" (e.g., `cov_matrix`)
@@ -200,15 +200,14 @@ throughout Elephant.
             `calculate_covariance_matrix`. If the function name becomes very long,
             then an alias may be created and described appropriately in the "Notes"
             section, as mentioned above. For aliases, see example below.
-        selection_method : {'aic', 'bic'}
+        selection_method : {'aic', 'bic'}, optional
+            <!-- Note that the default value that comes in the last line is
+            followed by a short explanation in parentheses to provide the
+            needed reasoning for defining the default `selection_method`. -->
             Metric for selecting the autoregressive model.
             If 'aic', uses the Akaike Information Criterion (AIC).
             If 'bic', uses Bayesian Information Criterion (BIC).
-            Default: 'bic', because it is more reliable than AIC due to the
-            mathematical properties (see Notes [3]).
-            <!-- Note that the default value that comes in the last line is
-            followed by comma and a brief reasoning for defining the default
-            `selection_method`). -->
+            Default: 'bic' (more reliable than AIC; see Notes [3])
 
         <!-- Other remarks:
         1. Do not use general parameter names, such as `data` or `matrix`.
@@ -334,22 +333,24 @@ Class docstrings follow function docstring format. Here is an example.
             Colon omitted if the type is absent.
         x : float
             The X coordinate.
-        y : float
+        y : float, optional
+            <!-- Do not describe defaults with "Default is 1.0.", and
+            do not end the line with a trailing period -->
             The Y coordinate.
-            Default: 1.0.  <!-- not "Default is 1.0." (it is just a convention) -->
+            Default: 1.0
         z : float or int or pq.Quantity
             This is Z coordinate.
             If it can take multiple types, separate them by "or", do not use commas
             (numpy style).
             If different actions will happen depending on the type of `z`, explain
             it briefly here, not in the main text of the function/class docstring.
-        s : {'valid', 'full', 'other'}
+        s : {'valid', 'full', 'other'}, optional
             This is the way to describe a list of possible argument values, if the
             list is discrete and predefined (typically concerns strings).
             If 'valid', the function performs some action.
             If 'full', the function performs another action.
             If 'other', the function will ignore the value defined in `z`.
-            Default: 'valid'.
+            Default: 'valid'
         spiketrains : neo.SpikeTrain or list of neo.SpikeTrain or np.ndarray
             When the parameter can be a container (such as list or tuple), you can
             specify the type of elements using "of". But use the Python type name
@@ -361,15 +362,15 @@ Class docstrings follow function docstring format. Here is an example.
             the number of rows and `M` to the number of columns. Refer to the same
             `N` and `M` to describe the dimensions of the returned values when
             they are determined by the dimensions of the parameter.
-        is_true : bool
+        is_true : bool, optional
             True, if 1.
             False, if 0.
-            Default: True.
-        other_parameter : int
+            Default: True
+        other_parameter : int or None, optional
             Some value.
             If value is None and the function takes some specific action (e.g.,
             calculate some value based on the other inputs), describe here.
-            Default: None.
+            Default: None
 
         Attributes
         ----------

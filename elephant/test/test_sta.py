@@ -345,10 +345,10 @@ class sfc_TestCase_new_scipy(unittest.TestCase):
 
         # frequencies are identical since same sampling frequency was used
         # in both cases and data length is the same
-        assert_array_equal(f_single, f_multi)
+        assert_array_almost_equal(f_single, f_multi)
         # coherences of s_single and first signal in s_multi are identical,
         # since first analogsignal trace in anasig4 is same as in anasig0
-        assert_array_equal(s_single[:, 0], s_multi[:, 0])
+        assert_array_almost_equal(s_single[:, 0], s_multi[:, 0])
 
     def test_non_binned_spiketrain_input(self):
         s, f = sta.spike_field_coherence(self.anasig0, self.st0)

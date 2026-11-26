@@ -705,16 +705,7 @@ class BinnedSpikeTrain(object):
                 
         # taken from csr_matrix.__getitem__
         valid_indices = self._validate_indices_cached(item)
-        # TODO: The following is a hot fix to compensate an API change in SciPy 1.15 (#653)
-        # Currently, we cannot set scipy>=1.15 since this would not allow for Python 3.9.
-        # Once we phase out support for Python 3.9, remove the if statement and the else 
-        # branch and require scipy>=1.15.
-        if isinstance(valid_indices[0], tuple):
-            # New version of SciPy (1.15 and later)
-            row, col = valid_indices[0]
-        else:
-            # Previous version of SciPy
-            row, col = valid_indices
+        row, col = valid_indices[0]
         spmat = self.sparse_matrix[item]
         if np.isscalar(spmat):
             # data with one element
@@ -832,7 +823,7 @@ class BinnedSpikeTrain(object):
               * "random": generate spikes from a homogenous Poisson process;
                 it's the fastest mode.
 
-            Default: "random"
+            Default: 'random'
         as_array : bool, optional
             If True, numpy arrays are returned; otherwise, wrap the arrays in
             `neo.SpikeTrain`.
@@ -894,7 +885,7 @@ class BinnedSpikeTrain(object):
             If `None`, compute the total num. of spikes.
             Otherwise, compute num. of spikes along axis.
             If axis is `1`, compute num. of spikes per spike train (row).
-            Default is `None`.
+            Default: None
 
         Returns
         -------
